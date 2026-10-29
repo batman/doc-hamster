@@ -9,9 +9,17 @@
 *.key
 *.pem
 
-# Runtime data (never commit uploaded receipts)
-/storage/*
-!/storage/.gitkeep
+# Runtime data (never commit uploaded receipts) – only the folder skeleton
+# with its .gitignore files is tracked
+/storage/**
+!/storage/**/
+!/storage/**/.gitignore
+/bootstrap/cache/*.php
+/public/storage
+/public/build
+/public/hot
+.phpunit.cache/
+/.phpstan-cache/
 /database/*.sqlite
 /database/*.sqlite-*
 

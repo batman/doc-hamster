@@ -84,11 +84,11 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | P0-24 | Critical review of the Manager's PLAN v2 PR (P0-1c) and receipt-pack layout (P0-5) | Lead | todo | P0-1c, P0-5 | |
 | P0-25 | In P0-23: mark which Phase 1 sub-tasks the Manager codes **together with the Lead** (Lead assigns, Lead reviews) | Lead | todo | P0-23 | Manager never codes alone |
 
-## Phase 1 – Foundation (v0.1) – not started
+## Phase 1 – Foundation (v0.1) – started 2026-10-29 (PO go, issue #8)
 
 | ID | Task | Owner | Status | Depends on |
 |----|------|-------|--------|------------|
-| P1-1 | Project skeleton (Laravel, D-001), config, `.env.example`, setup command (no Docker, D-010), CI, gitleaks | Lead | todo | P0-23 + PO go |
+| P1-1 | Project skeleton (Laravel, D-001), config, `.env.example`, `dochamster:doctor`/`setup` (no Docker, D-010), CI, gitleaks | Manager (PO override, issue #8) | done | PO go |
 | P1-2 | Migrations: identity & access tables | Lead | todo | P1-1 |
 | P1-3 | Layout, CSS base, i18n, error pages | Lead | todo | P1-1 |
 | P1-4 | Setup CLI, invitations, pairing (link/QR), passkeys | Lead | todo | P1-2 |

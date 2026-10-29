@@ -1,0 +1,11 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    # PLAN §13 / PLAN-REVIEW B13: level 8 now, 9 once the codebase is stable.
+    level: 8
+    paths:
+        - app
+        - routes
+        - database
+    tmpDir: .phpstan-cache

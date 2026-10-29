@@ -10,7 +10,9 @@ DocHamster is an open-source (MIT) PHP web app for collecting receipts: snap a p
 
 ## Current phase
 
-**Phase 0 – planning.** No application code yet. Allowed work: editing the plan, decisions, task board, design notes, repo tooling. Do **not** scaffold the framework or write app code until the "must decide before code" items in `docs/collaboration/DECISIONS.md` are decided and the PO says Phase 1 can start.
+**Phase 1 – foundation (v0.1), started 2026-10-29 by PO go** (issue #8). Planning work (PLAN v2, open decisions) continues in parallel. Still open and needed before the packages that use them: D-000 (name), D-011 (v1 scope), D-018 (receipt-pack layout), Q-11 (`BankConnector`) – don't build on them until the Lead has decided.
+
+Local checks before every PR: `composer lint`, `composer analyse`, `composer test`, `composer licenses`. Enable the secret-scan hook once per clone: `composer hooks` (needs gitleaks).
 
 ## Who is who
 

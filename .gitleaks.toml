@@ -1,0 +1,15 @@
+# Secret scanning (AGENTS.md, public repository rules). Used by the
+# pre-commit hook in .githooks/ and by CI.
+title = "DocHamster gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Third-party and generated code, never committed"
+paths = [
+    '''^vendor/''',
+    '''^node_modules/''',
+    '''^\.phpstan-cache/''',
+    '''^storage/''',
+]
