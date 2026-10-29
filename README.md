@@ -1,13 +1,14 @@
 # DocHamster 🐹
 
-Snap a receipt, send it, forget it. DocHamster takes the photo with time and (optional) location, matches it to your Revolut transaction, and builds a clean receipt pack (PDF) for your tax advisor.
+Snap a receipt, send it, forget it. DocHamster takes the photo with time and (optional) location, matches it to your bank transactions (CSV/Excel import from any bank), and builds a clean receipt pack (PDF) for your tax advisor.
 
 > **Status: planning (Phase 0).** There is no runnable code yet. The plan is in [`docs/PLAN.md`](docs/PLAN.md) (German).
 
 ## Planned features
 
 - Mobile-first web app (PWA): camera → send, records capture time and optional location, works offline
-- Revolut transactions matched automatically to the photos (other banks via CSV/XLSX import)
+- Bank statement import for **any bank** (CSV/Excel, mapping wizard), matched automatically to the photos
+- Interface for live bank modules – e.g. an installable **Revolut Business** module with a step-by-step setup
 - Receipt pack for your tax advisor: one PDF with every transaction and its receipt photo
 - Server-side OCR (Tesseract), tags, categories, full-text search
 - Voice notes with local speech-to-text

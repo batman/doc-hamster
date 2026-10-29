@@ -25,3 +25,12 @@ Author: <!-- Lead / Manager / PO -->
 
 ## Notes for the reviewer
 
+<!-- What should the other agent look at especially critically? -->
+
+## Review (filled in by the other agent – WORKFLOW.md §10)
+
+- Checked: <!-- AC, decisions, public-repo rules, security, tests, install/update/failure paths -->
+- Must fix:
+- Should fix:
+- Questions:
+

@@ -6,15 +6,15 @@ See the table in `AGENTS.md`. In short:
 
 - **PO (human):** priorities, scope, product decisions, approves merges.
 - **Lead (Claude):** all technical decisions (framework, server, hosting, infrastructure, security architecture) and the implementation.
-- **Manager (Claude):** keeps the plan and the shared files current, slices work into tasks, tracks progress, reviews PRs against plan and public-repo rules, relays questions. Writes no application code and makes no server/infrastructure decisions.
+- **Manager (Claude):** manages the **work split** only – who does what, what the Manager takes over, where the Lead's operator must answer or act (TASKS.md "Work split"). Programs **together with the Lead** on sub-tasks the Lead assigns. Critical reviews. No technical or product decisions; all questions go to the Lead.
 
 ### Who answers which question
 
 | Question type | Goes to |
 |---------------|---------|
 | Server, hosting, network, Docker, framework, libraries, DB, OCR toolchain, security design | Lead |
-| Scope, priorities, features, UX wording, what users need | PO |
-| Plan structure, task breakdown, status, process, docs | Manager |
+| Scope, priorities, features, UX wording, what users need | Lead (asks its operator) |
+| Plan structure, task breakdown, status, process, docs | Manager (questions about them → Lead) |
 
 ## 2. The shared state lives in the repo
 
@@ -41,7 +41,7 @@ todo ──claim──▶ in progress ──PR opened──▶ in review ──a
 2. **Lead** claims the next unblocked task (owner + `in progress`).
 3. Branch `<prefix><task-id>-<slug>` from latest `main`; small commits; lint/tests locally.
 4. Push the branch, open a PR with the template → status `in review`; tell the PO so the Manager reviews it.
-5. **Manager review:** acceptance criteria met, scope matches the task, docs/TASKS/LOG updated, public-repo rules respected (no personal data, secrets, server details). Technical depth is the Lead's responsibility; the Manager flags what looks risky.
+5. **Critical review by the other agent** (§10): the Manager reviews Lead PRs, the Lead reviews Manager PRs. The reviewer either approves or requests changes; the author answers every point.
 6. PO merges (squash) → `done` → log entry.
 
 ## 4. Handoff / log entry
@@ -83,3 +83,34 @@ The repo will be public. Before every PR, the author runs the checklist in the P
 - CI must be green before review.
 - PRs touching auth, permissions, uploads, file serving, ingestion channels or exports list their security considerations in the PR.
 - Definition of Done: PLAN.md §13.
+
+## 10. Critical review (both directions)
+
+Every PR gets a review from the **other** agent before the PO merges. Reviews are meant to find problems, not to be polite.
+
+**The reviewer must:**
+- Say **what was checked** (acceptance criteria, plan/decisions consistency, public-repo rules, security, tests, first-install/update/failure paths).
+- List concrete findings as **must fix / should fix / question**, each with "what breaks" or "what is missing".
+- Check the PR against **other decisions** – a change can be right on its own and still contradict D-0xx.
+- Look for what is **not** in the PR (missing tests, missing docs, missing edge cases, missing migration path).
+- Use `code-review-and-quality` (and `security-review` for auth, uploads, file serving, bank modules, exports).
+- Use GitHub's **Request changes** when a must-fix exists; **Approve** only when none is left.
+
+**The author must:**
+- Reply to **every** point (fixed / disagree + reason / follow-up task with ID).
+- Not merge around an open must-fix. Disagreements that stay open go to the deciding role (§1); the PO can override.
+
+**Lead reviews Manager PRs** with focus on technical feasibility: is the plan implementable as written, are estimates and phase order realistic, do acceptance criteria test the right thing.
+**Manager reviews Lead PRs** with focus on plan fit, scope, consistency between decisions, public-repo hygiene, and the user-visible result.
+
+## 11. Communication channels
+
+| What | Where |
+|------|-------|
+| Question / request to the other role | GitHub issue, label `to:lead`, `to:manager` or `to:po` |
+| Feedback on a change | PR review comments |
+| Result of a discussion | DECISIONS.md (decision) or TASKS.md (new task) |
+| Session summary / handoff | LOG.md |
+
+Open issues addressed to you are checked at the start of every session and answered before new work starts.
+

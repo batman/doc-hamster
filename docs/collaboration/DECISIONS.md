@@ -1,14 +1,14 @@
 # Decisions (ADR-lite) & open questions
 
 Status: `open` → `proposed` (recommendation) → `decided` (by the **owner**; PO may veto) → later maybe `superseded by D-NNN`.
-Owner = who decides: **Lead** for technical/server topics, **PO** for product/scope (see WORKFLOW.md §1).
+Owner = who decides. Since 2026-10-29 (PO rule) **all open questions go to the Lead**, technical and product; the Lead asks its operator when needed. Decisions already taken by the PO stay as they are; the PO can veto anything.
 The original v0 plan referred to questions "F1–F4 in chat"; that chat is not in the repo, so they are reconstructed below as D-001, D-003, D-010 and D-011. **PO: if your F1–F4 answers differ, just write them in.**
 
 > Public repo: write decisions generically. No server names, IPs, providers, personal bank or advisor details here.
 
 ## Must decide before code (blocks Phase 1)
 
-### D-000 · Project name — Owner: PO
+### D-000 · Project name — Owner: Lead
 - **Status:** proposed
 - **Question:** v0 used the working title "Belegbox"; the repo is "DocHamster".
 - **Recommendation (Manager):** Use **DocHamster** everywhere (repo, namespace `DocHamster\`, UI). "Belegbox" retired.
@@ -71,7 +71,7 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
     Estimates to verify in P1 on the PO's test server (its details stay out of the repo).
   - **Data files:** GeoNames place names (D-017) are loaded by the setup/update command (pinned version + checksum), Tesseract language data and the Whisper model by the add-on's install step. Nothing is downloaded while processing documents.
 
-### D-011 · Scope of v1.0: single household or teams? — Owner: PO
+### D-011 · Scope of v1.0: single household or teams? — Owner: Lead
 - **Status:** open
 - **Recommendation (Manager):** Multi-org in the data model from day one; member-role UI may move to v1.1.
 - **Decision:** _…_
@@ -114,9 +114,34 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
   - **Auth and CSRF for the API:** device cookie (D-009) + session. Queued uploads may be sent a day later, when the session's CSRF token is long gone (HTTP 419). Therefore `/api/*` does **not** use the session CSRF token; instead it requires same-origin (`Origin` header = our origin, `Sec-Fetch-Site: same-origin` where sent) plus a custom request header (`X-DocHamster-Client: 1`, which a cross-site form can't set). HTML forms keep Laravel's normal CSRF token. E2E test: queue offline, expire the session, go online → upload succeeds.
   - **Offline queue:** IndexedDB holds blobs + metadata until the server confirms. Sent on app open, on `online`, on `visibilitychange`, and via Background Sync where available (not on iOS). `navigator.storage.persist()` requested; the app recommends installing to the home screen (iOS evicts storage of non-installed sites). Badge shows queue length.
 
-### D-018 · Receipt pack layout ("Belegpaket") — Owner: PO
+### D-018 · Receipt pack layout ("Belegpaket") — Owner: Lead
 - **Status:** proposed
 - **Proposal (Manager):** PLAN.md §10.1 – cover page with key figures, overview table, one page per transaction with details + large receipt photo, list of missing receipts. Manager drafts the layout in P0-5; PO signs off. PDF technology → Lead.
+- **Decision:** _…_
+
+### D-021 · CSV for every bank in the core; Revolut as an installable module — Owner: PO (scope), Lead (how)
+- **Status:** decided (PO, 2026-10-29); integration details open for the Lead (Q-11)
+- **Decision (PO):**
+  - **Core (this repo):** CSV/Excel import for **every bank** (import wizard + profiles), matching, receipt pack. Works completely on its own. The core contains **no Revolut-specific code**, only a generic `BankConnector` interface.
+  - **Revolut Business module:** its **own public repo** (e.g. `DocHamster-revolut`, MIT), installed **later on demand** with one command, then connected with the guided setup wizard (AK-4.4.R5). Anyone with Revolut Business has it easier; everyone else never gets Revolut code.
+  - Credentials only encrypted on each user's own server, never in any repo (also sandbox ones).
+- **Why a separate module:** legal/brand risk isolated from the core (Revolut API terms: no brand features without written consent, no competing products – if Revolut objects, only the module goes, core and its history stay clean); neutral bank-agnostic core; template for other bank modules; independent updates when the Revolut API changes.
+- **Rules for the module:** no Revolut logo/colours/screenshots/copied docs; name only descriptive ("works with Revolut Business") + "not affiliated with Revolut" note; read-only scope (D-016).
+- **Before going public:** PO asks Revolut (business-partners@revolut.com) whether an open-source module for Revolut Business users is fine (task P0-10). Revolut-specific details in this repo's docs (D-016, PLAN §4.4/§9.0) move to the module repo in P8-3.
+- **Consequence for D-016:** the Lead's Revolut decision stays valid; it is implemented in the module.
+- **Questions for the Lead (Q-11):** shape of `BankConnector` (sync, fields, states, errors); how a module is installed and enabled (e.g. Composer package + Laravel auto-discovery + one artisan command; **no installing code from the web UI**); version compatibility core ↔ module; which transaction fields stay generic in the core (time, original currency, fee also help CSV).
+- **Integration decision:** _…_
+
+### D-022 · License policy for third-party software — Owner: Lead
+- **Status:** proposed (Manager, 2026-10-29) – Lead decides
+- **Context:** DocHamster is MIT. Strictly MIT-only third-party software is not realistic (Tesseract and Caddy are Apache-2.0, libvips/Dompdf LGPL, ocrmypdf MPL-2.0).
+- **Proposal:**
+  - Anything **bundled into our code** (Composer/npm packages, vendored JS like htmx): only **permissive** licenses – MIT, BSD-2/3, Apache-2.0, ISC, 0BSD, public domain. LGPL/MPL only if used unmodified as a library and the Lead documents why.
+  - **Separately executed programs** (Tesseract, ffmpeg, whisper.cpp …) may use other OSS licenses because they are not part of our code.
+  - **No AGPL anywhere** (e.g. Ghostscript, needed by ocrmypdf → Lead looks for an alternative in D-005).
+  - Data sets: CC BY allowed with attribution (GeoNames).
+  - We publish the Dockerfile, **not** prebuilt Docker images (avoids redistribution duties for the bundled programs).
+  - Lead adds an automatic license check to CI in P1-1; every new dependency is listed with its license in `docs/DEPENDENCIES.md`.
 - **Decision:** _…_
 
 ### D-019 · Local processing only, no cloud AI — Owner: PO (principle), Lead (engines)
@@ -145,19 +170,20 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
 | D-009 | Device cookie SameSite Strict vs Lax | Lead | Phase 1 | decided (Lead, 2026-10-29) | **Lax** + `Origin` check; CSRF token for HTML forms, same-origin + custom header for `/api/*` (D-017). Strict would drop the cookie when the app is opened from a mail/QR link and look like a logout |
 | D-012 | Password+TOTP fallback or passkeys only? | Lead (PO requirement Q-9) | Phase 1 | decided (Lead after PO answer, 2026-10-29) | **By role.** *Owner/member:* passkeys + device token (PLAN §11.1), no password; recovery = owner issues a new pairing link, setup CLI for the owner. *Tax advisor (`accountant`):* **username + password**, nothing to install, no app, no phone needed. **No self-registration:** the owner creates the account (username, role, share scope) and the app generates a strong random password (≥ 20 characters) that is shown to the owner **once** to pass on; the owner can reset it any time (old sessions end). Safeguards: Argon2id hash, rate limit + temporary lockout after repeated failures, session 8 h without long-lived device token, logins in the audit log, account inherits share expiry/revocation (§4.6). The advisor may change the password; optional TOTP for the advisor can come later (C). Affected PLAN sections: PLAN-REVIEW B18 |
 | D-013 | AI in the app | PO | – | superseded by D-019 | (was: no AI features at all) |
-| D-014 | When does the repo go public? | PO | anytime | open | After P0-8 history scan; suggested at v0.3 |
+| D-014 | When does the repo go public? | Lead | anytime | open | After P0-8 history scan; suggested at v0.3 |
 
 ## Open questions
 
 | # | From → To | Question | Answer |
 |---|-----------|----------|--------|
 | Q-1 | Manager → PO | ~~Which AI is the second agent?~~ | Claude, as Lead (2026-10-29) |
-| Q-2 | Manager → PO | Which bank export formats should be supported first? (Answer generically, e.g. "Sparkasse CSV" – no account details.) | |
-| Q-3 | Manager → PO | Public right away, or later? → see D-014 | |
-| Q-4 | Manager → PO | Typical first users: household, freelancer, small business, club? | |
+| Q-2 | Manager → Lead | Which bank export formats should be supported first? (Answer generically, e.g. "Sparkasse CSV" – no account details.) | |
+| Q-3 | Manager → Lead | Public right away, or later? → see D-014 | |
+| Q-4 | Manager → Lead | Typical first users: household, freelancer, small business, club? | |
 | Q-5 | Manager → PO | ~~Scanner details~~ | Obsolete – no scanner (D-015) |
 | Q-6 | Manager → Lead | D-010 + D-017: how does the phone web app deliver photos securely to the chosen hosting variant? | HTTPS to one fixed, publicly reachable domain with a trusted certificate (D-010), per-file idempotent upload with offline queue (D-017); same for every environment (Lead, 2026-10-29) |
 | Q-7 | Manager → PO | Revolut personal or business account? | **Business** (2026-10-29) → Business API possible, see D-016 |
 | Q-8 | Lead → PO | For D-010/D-019: where should DocHamster run – **VPS** or **always-on home server/NAS**? Roughly how many CPU cores and how much RAM, x86 or ARM? Should the phone reach it from the mobile network (public HTTPS) or only at home/via VPN? (Answer generically – no provider, IP or domain.) | Partly (PO, 2026-10-29): follow common standards, as compatible as reasonable, not every environment; MariaDB as prerequisite → D-003, tiers in D-010. PO, 2026-10-29 (2): the phone must reach the server from anywhere → public HTTPS; define and publish minimum requirements (table in D-010); a stable test server is available. PO, 2026-10-29 (3): no Docker needed; the app detects its environment and greys out add-ons that don't work there → D-010 decided |
 | Q-9 | Lead → PO | D-012: passkeys only, or keep password + TOTP as fallback? Passkeys only = less code and attack surface, but a tax advisor on a desktop without Windows Hello/Touch ID must confirm with the phone (QR) or a security key. | **PO, 2026-10-29:** the tax advisor installs nothing and needs no phone app; logs in with **username + password**; no self-registration – the owner/admin assigns username and password. → D-012 |
 | Q-10 | Lead → PO | PLAN-REVIEW B19: Revolut's API has no spending category, only the merchant category code (MCC). OK to show the MCC as a German label (e.g. "Tankstelle", "Restaurant") in the app and receipt pack instead of a "Revolut-Kategorie"? | **Yes** (PO, 2026-10-29) → B19 |
+| Q-11 | Manager → Lead | D-021: shape of the `BankConnector` interface, how a bank module is installed/enabled, version compatibility core ↔ module, which transaction fields stay generic in the core (details in D-021) | |

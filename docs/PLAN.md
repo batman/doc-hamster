@@ -1,7 +1,7 @@
 # DocHamster – Detaillierter Projektplan
 
 > **Status:** Planungsphase (v1.1-Entwurf, 2026-10-29). Noch kein Code.
-> **v1.1:** PO-Entscheidungen eingearbeitet – Handy-Web-App statt Scanner (D-015), Aufnahmezeit + Standort (D-017), Revolut Business (D-016), Belegpaket für den Steuerberater (D-018), alles lokal ohne Cloud-KI inkl. lokaler Spracherkennung (D-019). Phasen neu geordnet um den Kernablauf (§14).
+> **v1.1:** PO-Entscheidungen eingearbeitet – Handy-Web-App statt Scanner (D-015), Aufnahmezeit + Standort (D-017), CSV-Import für jede Bank im Kern + Revolut Business als nachinstallierbares Modul mit einfacher Einrichtung (D-016, D-021); Lizenzregel für Fremdsoftware vorgeschlagen (D-022), Belegpaket für den Steuerberater (D-018), alles lokal ohne Cloud-KI inkl. lokaler Spracherkennung (D-019). Phasen neu geordnet um den Kernablauf (§14).
 > **Vorgänger:** [`archive/plan-v0-belegbox.md`](archive/plan-v0-belegbox.md) (Arbeitstitel „Belegbox“). Alles aus v0 ist hier enthalten und ausgearbeitet.
 > **Wer bearbeitet diesen Plan?** PO (Product Owner) plus zwei KI-Agenten. Regeln für Änderungen: [`collaboration/WORKFLOW.md`](collaboration/WORKFLOW.md). Offene und getroffene Entscheidungen: [`collaboration/DECISIONS.md`](collaboration/DECISIONS.md).
 
@@ -41,10 +41,10 @@ Lizenz: **MIT**. Code, Kommentare und Commits: **Englisch**. Oberfläche: **Deut
 **Kernablauf (der wichtigste Weg durch die App):**
 
 ```
-Bezahlen mit Revolut ─▶ Beleg mit Handy fotografieren ─▶ App speichert Foto + Zeit + Ort
+Bezahlen (Karte/Konto) ─▶ Beleg mit Handy fotografieren ─▶ App speichert Foto + Zeit + Ort
         │                                                        │
         ▼                                                        ▼
-Revolut-Buchung (Händler, Betrag, Zeitpunkt) ──── Abgleich ───▶ Paar Buchung ↔ Foto
+Bank-Buchung (CSV jeder Bank; Revolut zusätzlich live) ── Abgleich ──▶ Paar Buchung ↔ Foto
                                                                  │
                                                                  ▼
                                     Monat/Quartal ─▶ „Belegpaket“ (PDF) ─▶ Steuerberater
@@ -67,7 +67,7 @@ Alles andere (Suche, Regeln, Teams) ist nachrangig gegenüber diesem Ablauf.
 
 - Keine Steuer-App: keine Steuerberechnung, keine Steuererklärung, keine USt-Voranmeldung.
 - Keine Buchhaltung: kein Kontenrahmen (SKR03/04), keine Buchungssätze, keine GoBD-Zertifizierung.
-- Kein allgemeines Banking: kein HBCI/FinTS, keine Zahlungen, nur **Lesen** von Buchungen. Einzige Live-Anbindung in v1: **Revolut** (D-016). Andere Banken nur per Datei-Import.
+- Kein allgemeines Banking: kein HBCI/FinTS, keine Zahlungen, nur **Lesen** von Buchungen. **Jede Bank per CSV/Excel-Import** (öffentlicher Kern). Einzige Live-Anbindung in v1: **Revolut Business** als nachinstallierbares Modul in einem eigenen Repo (D-016, D-021).
 - Keine native App (iOS/Android); die PWA muss reichen.
 - Kein Hardware-Scanner als Eingangskanal (D-015, PO-Entscheidung). PDF-Upload aus Dateien bleibt möglich.
 - **Keine Cloud-KI, keine externen KI-Dienste** (D-019, PO-Entscheidung, ersetzt D-013): Belegdaten, Fotos, Sprachnotizen und Standorte verlassen nie den eigenen Server Richtung KI-/Cloud-Anbieter. Funktionen wie Spracherkennung laufen **lokal auf dem eigenen Server**.
@@ -187,11 +187,21 @@ uploaded → processing → processed → reviewed
 - [ ] AK-4.3.5: „Prüfen“-Modus: Durchwischen aller `processed`-Belege, je Beleg bestätigen/korrigieren → `reviewed`.
 - [ ] AK-4.3.6: Suche liefert bei 10.000 Belegen Ergebnisse in < 1 s.
 
-### 4.4 Revolut-Anbindung, Kontoauszug-Import & Abgleich – M
+### 4.4 Kontoauszug-Import für jede Bank, Revolut-Anbindung & Abgleich – M
 
 Details in [Kapitel 9](#9-kontoauszug-import--abgleich).
 
-**Revolut zuerst (D-016).** Ziel: zu jeder Revolut-Kartenzahlung die vollständigen Buchungsdetails – Händler, Betrag, Währung (inkl. Originalwährung und Kurs bei Fremdwährung), genauer Zeitpunkt, Revolut-Kategorie, Status, Händlerort falls verfügbar – und das passende Foto dazu.
+**Aufteilung (D-021):**
+
+| Teil | Wo | Für wen |
+|------|----|---------|
+| CSV/Excel-Import für **jede Bank**, Import-Profile, Abgleich, Belegpaket | Kern (dieses Repo), immer dabei | alle Nutzer |
+| `BankConnector`-Schnittstelle für Live-Anbindungen | Kern | Bank-Module |
+| Revolut-Business-Modul | **eigenes öffentliches Repo**, bei Bedarf mit einem Befehl nachinstalliert | wer Revolut Business hat, verbindet sein eigenes Konto |
+
+DocHamster muss **ohne** Revolut-Modul vollständig funktionieren: fotografieren → CSV einer beliebigen Bank importieren → abgleichen → Belegpaket. Der Kern enthält keinen Revolut-Code. Im Code stehen nirgends Zugangsdaten; jede Installation speichert ihre eigenen Revolut-Schlüssel verschlüsselt auf ihrem Server.
+
+**Revolut live (nachinstallierbares Modul, D-016/D-021).** Ziel: zu jeder Revolut-Kartenzahlung die vollständigen Buchungsdetails – Händler, Betrag, Währung (inkl. Originalwährung und Kurs bei Fremdwährung), genauer Zeitpunkt, Revolut-Kategorie, Status, Händlerort falls verfügbar – und das passende Foto dazu.
 
 Ziel-Kontotyp: **Revolut Business** (PO, Q-7) → die offizielle Business API ist der erwartete Hauptweg. Technische Umsetzung entscheidet der Lead:
 1. **Revolut Business API** – offizielle API mit Transaktionsabruf (nur Business-Konten). Automatischer, regelmäßiger Abruf.
@@ -202,8 +212,11 @@ Ziel-Kontotyp: **Revolut Business** (PO, Q-7) → die offizielle Business API is
 - [ ] AK-4.4.R2: Nur abgeschlossene Buchungen werden abgeglichen; ausstehende/zurückgebuchte werden angezeigt, aber nicht ins Belegpaket übernommen (Rückerstattungen als eigene Zeile).
 - [ ] AK-4.4.R3: Wiederholter Abruf/Import erzeugt keine Duplikate (Revolut-Transaktions-ID bzw. Fingerprint).
 - [ ] AK-4.4.R4: API-Zugangsdaten liegen verschlüsselt auf dem Server, nie im Repo; Verbindung in den Einstellungen trennbar.
+- [ ] AK-4.4.R5: **Einfache Einrichtung:** Ein Assistent führt Schritt für Schritt durch die Verbindung (Zertifikat erzeugen → in Revolut Business eintragen → Client-ID einfügen → Zustimmung → Verbindung testen → erster Import). Ziel: in ≤ 10 min ohne Doku, verständliche deutsche Texte und Fehlermeldungen.
+- [ ] AK-4.4.R6: Das Modul wird mit **einem** Befehl installiert (nicht über die Web-Oberfläche) und lässt sich danach in den Einstellungen ein- und ausschalten; nicht installiert oder ausgeschaltet hat es keinerlei Wirkung (keine Jobs, keine Netzwerkverbindungen).
+- [ ] AK-4.4.R7: Kein Revolut-Logo, keine Revolut-Farben, keine kopierten Revolut-Texte; Hinweis „nicht mit Revolut verbunden“ im Modul.
 
-**Andere Banken (Datei-Import):**
+**Jede Bank per Datei-Import (öffentlicher Kern, Must):**
 
 - [ ] AK-4.4.1: Import von CSV (beliebiges Trennzeichen, Encoding UTF-8/ISO-8859-1/Windows-1252) und XLSX.
 - [ ] AK-4.4.2: Spaltenzuordnung per Assistent, als Profil pro Bankkonto speicherbar; bekannte Banken als Vorlagen (S).
@@ -212,6 +225,8 @@ Ziel-Kontotyp: **Revolut Business** (PO, Q-7) → die offizielle Business API is
 - [ ] AK-4.4.5: Drei Ansichten: Buchungen ohne Beleg · Belege ohne Buchung · Zugeordnete Paare. Manuelle Zuordnung per Klick bzw. Drag & Drop (Desktop).
 - [ ] AK-4.4.6: Eine Buchung kann mehreren Belegen zugeordnet werden (Sammelbuchung) und umgekehrt (Teilzahlungen) – S.
 - [ ] AK-4.4.7: Buchung als „braucht keinen Beleg“ markierbar (z. B. Gehalt, Umbuchung) mit Grund.
+- [ ] AK-4.4.8: Eine CSV einer bisher unbekannten Bank lässt sich ohne Programmierung importieren (Assistent: Spalten zuordnen, Datums-/Zahlenformat, Vorzeichen) – geprüft mit Exporten von mindestens 5 verschiedenen Banken.
+- [ ] AK-4.4.9: Enthält die CSV eine Uhrzeit, wird sie für den Abgleich genutzt; ohne Uhrzeit funktioniert der Abgleich über Datum, Betrag und Händler (mehr 1-Tap-Bestätigungen).
 
 **S – später:** Import von CAMT.053 (XML) und MT940.
 
@@ -307,7 +322,7 @@ Akzeptanzkriterien:
   /Domain       Documents, Imports, Matching, Reports, Sharing, Users (Entities, Services, Policies)
   /Http         Controller, Middleware (Auth, Org-Scope, CSRF, RateLimit)
   /Jobs         ProcessDocument, RunOcr, ExtractFields, ApplyRules, MatchTransactions, BuildExport, SendMail
-  /Infrastructure  Storage, Ocr (TesseractOcr), Speech (lokale Engine), Banking (Revolut-Anbindung), Geo (Ortsnamen), Crypto
+  /Infrastructure  Storage, Ocr (TesseractOcr), Speech (lokale Engine), Banking (CSV/XLSX-Parser, BankConnector), Geo (Ortsnamen), Crypto
 /config
 /database/migrations
 /public          index.php, manifest.webmanifest, sw.js, assets/ (einziger Webroot!)
@@ -331,7 +346,8 @@ Akzeptanzkriterien:
 | `Capture` | PWA, Kamera, Aufnahmezeit/Standort, Upload-API, Offline-Queue, Storage | Core, Auth, Org |
 | `Processing` | Job-Queue, OCR, Spracherkennung (lokal), Extraktion, Regeln, Duplikate, Ortsnamen | Core, Capture |
 | `Search` | Volltext, Filter, Detailansicht, Prüfen-Modus | Processing |
-| `Banking` | Revolut-Anbindung, Import-Profile, Parser, Transaktionen, Matching | Core, Org |
+| `Banking` | CSV/XLSX-Import für jede Bank, Import-Profile, Parser, Transaktionen, Matching, `BankConnector`-Schnittstelle | Core, Org |
+| `dochamster-revolut` (eigenes Repo) | Revolut-Business-Connector mit Einrichtungs-Assistent, implementiert `BankConnector` | Banking (nur über die Schnittstelle) |
 | `Reports` | Belegpaket, Berichte, Exporte, Mail | Banking, Capture |
 | `Sharing` | Steuerberater-Freigaben, Audit-Log | Org, Reports |
 
@@ -455,13 +471,13 @@ Danach Status `processed`; Event `DocumentProcessed`. Nach einem bestätigten Ab
 
 ## 9. Kontoauszug-Import & Abgleich
 
-### 9.0 Revolut
+### 9.0 Revolut (nachinstallierbares Modul, eigenes Repo, D-021)
 
 - **Live (Weg 1/3 aus §4.4):** Worker ruft neue Buchungen regelmäßig ab (z. B. alle 15–60 min, Lead entscheidet) und zusätzlich nach jedem Foto-Upload, damit der Abgleich schnell passiert. Token-Erneuerung und Ablauf werden überwacht; der Owner wird vor Ablauf benachrichtigt.
 - **Datei (Weg 2):** fertiges Import-Profil „Revolut“ (Spalten mit Datum **und Uhrzeit**, Betrag, Gebühr, Währung, Status, Beschreibung). Profil **anhand einer echten, anonymisierten Exportdatei bauen**, nicht aus dem Gedächtnis.
 - Gebühren und Fremdwährungsumrechnung werden getrennt gespeichert, damit Beleg-Betrag (Originalwährung) und Kontobetrag (EUR) beide abgleichbar sind.
 
-### 9.1 Import (andere Banken)
+### 9.1 Import (jede Bank, öffentlicher Kern)
 
 1. Datei hochladen (CSV/XLSX, max. 10 MB).
 2. Erkennung: Encoding (BOM, Heuristik), Trennzeichen, Kopfzeile; Vorschau der ersten 20 Zeilen.
@@ -639,21 +655,22 @@ Jede Phase endet mit einem **lauffähigen Stand**, einem Git-Tag (`v0.N.0`) und 
 
 **Testliste v0.2:** Foto in ≤ 2 Taps · Zeit + Ort gespeichert, Ort abschaltbar · Flugmodus → 3 Belege → online → alle da, Aufnahmezeit korrekt, keine Duplikate · PDF aus Dateien · fremde Datei-ID → 403/404.
 
-### Phase 3 – Revolut & Abgleich (v0.3)
+### Phase 3 – Bank-Import & Abgleich (v0.3)
 
-Der Weg zu Revolut (API, Datei, Open Banking) und alle Server-Fragen dazu liegen beim **Lead** (D-016).
+Der CSV-Import für jede Bank ist Kern und kommt zuerst. Die Revolut-Live-Anbindung entsteht als nachinstallierbares Modul in einem eigenen Repo, mit Einrichtungs-Assistent (D-021); Technik beim **Lead** (D-016).
 
 | AP | Inhalt | Abh. | Parallel |
 |----|--------|------|----------|
 | P3-1 | Job-Queue + Worker (Daemon & Cron-Modus), Retry, Fehlerstatus | P1 | mit P2 |
 | P3-2 | Bankkonten, `transactions`-Modell inkl. Zeitpunkt, Originalwährung, Gebühr, Status | P1 | mit P3-1 |
-| P3-3 | Revolut-Business-API-Anbindung (Lead-Entscheidung zu Zugang/Abrufintervall) + Datei-Profil als Fallback, Duplikatschutz über `external_id`; Tests gegen Revolut-Sandbox | P3-1, P3-2 | – |
-| P3-4 | Allgemeiner CSV/XLSX-Import mit Profilen (andere Banken) | P3-2 | mit P3-3 |
+| P3-3 | CSV/XLSX-Import für **jede Bank** mit Import-Assistent und Profilen, Duplikatschutz per Fingerprint; Test mit Exporten von ≥ 5 Banken | P3-2 | mit P3-4 |
+| P3-4a | `BankConnector`-Schnittstelle + Modul-Mechanismus (installieren mit einem Befehl, ein-/ausschalten) im Kern | P3-1, P3-2 | mit P3-3 |
+| P3-4b | Revolut-Business-Modul im eigenen Repo (D-016/D-021): Einrichtungs-Assistent (AK-4.4.R5), Duplikatschutz über `external_id`, Tests gegen Revolut-Sandbox | P3-4a, P0-10 | – |
 | P3-5 | Matching-Engine mit Zeitnähe-Score + Gründen, Kalibrierung mit Testdaten | P3-3, P2-5 | – |
 | P3-6 | Abgleich-UI (Buchungen ohne Beleg · Belege ohne Buchung · Paare, 1-Tap-Bestätigung, „kein Beleg nötig“) | P3-5 | – |
 | P3-7 | (S) „Passt zu …?“ direkt nach dem Foto | P3-5 | ja |
 
-**Testliste v0.3:** Kartenzahlung → Foto 2 min später → automatisch verknüpft · Fremdwährung korrekt · erneuter Abruf ohne Duplikate · Rückerstattung als eigene Zeile.
+**Testliste v0.3:** CSV einer fremden Bank per Assistent importiert → Buchungen da · ohne Revolut-Modul läuft alles · Modul mit einem Befehl installiert · Revolut-Einrichtung per Assistent in ≤ 10 min · Kartenzahlung → Foto 2 min später → automatisch verknüpft · Fremdwährung korrekt · erneuter Abruf ohne Duplikate · Rückerstattung als eigene Zeile.
 
 ### Phase 4 – Belegpaket für den Steuerberater (v0.4 = Kernablauf fertig)
 
@@ -706,7 +723,7 @@ OCR ist jetzt Unterstützung, nicht Voraussetzung: Sie liefert Betrag/Händler a
 | P8-0 | (C) Lokale Vorschläge für Händler/Kategorie (`LocalSuggest`), opt-in |
 | P8-1 | Performance-Test 10.000 Belege, Optimierungen |
 | P8-2 | Barrierefreiheit-/UX-Review, Texte |
-| P8-3 | Sicherheits-Check vor Veröffentlichung, History-Scan (P0-8) |
+| P8-3 | Sicherheits-Check vor Veröffentlichung, History-Scan (P0-8), Lizenz-Check aller Abhängigkeiten (D-022), Revolut-Details aus den Kern-Docs ins Modul-Repo (D-021) |
 | P8-4 | Doku komplett (Nutzer, Betrieb, Entwicklung), CHANGELOG, Release v1.0 |
 
 ### Grobe Reihenfolge

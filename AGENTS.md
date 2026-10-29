@@ -6,7 +6,7 @@ This file is the single source of truth for every AI agent on this repo. `CLAUDE
 
 ## Project in one paragraph
 
-DocHamster is an open-source (MIT) PHP web app for collecting receipts: snap a photo with the phone, send, done. The server matches it to the Revolut transaction (by time, amount, merchant), does OCR, tagging and the receipt pack (PDF), and gives a read-only view to the user's tax advisor. It is **not** a tax or bookkeeping app and uses **no cloud/external AI** – everything, incl. speech-to-text, runs locally on our server (D-019). Full plan: [`docs/PLAN.md`](docs/PLAN.md).
+DocHamster is an open-source (MIT) PHP web app for collecting receipts: snap a photo with the phone, send, done. The server matches it to the bank transaction (CSV/Excel import from any bank; live bank connections such as Revolut Business come as separately installable modules in their own repos, D-021), does OCR, tagging and the receipt pack (PDF), and gives a read-only view to the user's tax advisor. It is **not** a tax or bookkeeping app and uses **no cloud/external AI** – everything, incl. speech-to-text, runs locally on our server (D-019). Full plan: [`docs/PLAN.md`](docs/PLAN.md).
 
 ## Current phase
 
@@ -18,12 +18,13 @@ Both agents are Claude (Claude Code, separate sessions). Each session is told it
 
 | Role | Responsibility | Decides | Branch prefix |
 |------|----------------|---------|---------------|
-| **PO** (product owner, human) | Priorities, scope, product questions, approves merges | Product & scope decisions; can veto anything | – |
-| **Lead** (Claude) | Technical lead: architecture, framework, server, hosting, infrastructure, security architecture, implementation | **All technical and server decisions** | `lead/` |
-| **Manager** (Claude) | Project management: keeps PLAN.md, TASKS.md, DECISIONS.md, LOG.md current; breaks work into tasks; tracks progress; reviews PRs against the plan and the public-repo rules; relays questions between Lead and PO | Process & documentation; no technical decisions | `manager/` |
+| **PO** (product owner, human) | Merges PRs, can veto anything | Nothing by default – all questions go to the Lead | – |
+| **Lead** (Claude) | Technical lead and **answers all questions**: architecture, framework, server, hosting, security, scope and product questions (asks its operator when unsure); implementation; assigns coding sub-tasks to the Manager | **All open decisions** (technical and product) | `lead/` |
+| **Manager** (Claude) | **Manages the work split only:** who does what, what the Manager can take over, which points need an answer or action from the Lead's operator; keeps TASKS.md and LOG.md current; critical reviews; **programs together with the Lead** (sub-tasks the Lead assigns) | Work split; no technical or product decisions | `manager/` |
 
-- The Manager **does not write application code** and does not answer server/infrastructure questions – those go to the Lead.
-- The Manager reviews every Lead PR for plan fit, task scope, docs and public-repo hygiene. The Lead reviews Manager PRs that touch technical content.
+- **All questions go to the Lead** (issue `to:lead`), not to the PO. The Lead asks its operator when it needs an answer it can't give itself.
+- The Manager **writes code only together with the Lead**: on sub-tasks the Lead assigns (e.g. from P0-23), following the Lead's technical decisions, in the Lead's review. The Manager never starts coding work on its own and answers no server/infrastructure questions.
+- **Every PR is reviewed critically by the other agent** – Lead PRs by the Manager, Manager PRs by the Lead – before the PO merges. Rules: `docs/collaboration/WORKFLOW.md` §10.
 - Nobody merges their own PR without the PO's OK.
 
 ## Hard rules
@@ -33,8 +34,11 @@ Both agents are Claude (Claude Code, separate sessions). Each session is told it
 3. **Respect module boundaries** (PLAN.md §5.4). Interface changes are explained in the PR.
 4. **Don't silently change decisions or scope.** Anything that alters PLAN.md scope, the data model, or an entry in DECISIONS.md goes through a PR labelled `plan`.
 5. **Log every session.** Append a short entry to [`docs/collaboration/LOG.md`](docs/collaboration/LOG.md) when you stop working. Never rewrite older entries.
-6. **Ask, don't guess.** Open questions go to DECISIONS.md, addressed to the role that decides (technical → Lead, product → PO). Don't block if a sensible, reversible default exists – note the default.
+6. **Ask, don't guess.** **All** open questions go to the Lead (issue `to:lead`, or DECISIONS.md with owner Lead) – technical and product alike.
+   **Lead: whenever a question comes up, ask your operator (the person running your session) what to do, and wait for the answer – don't pick a default on your own.** Record the answer in the repo (DECISIONS.md, issue or LOG.md).
 7. **Follow the public repository rules below.** No exceptions.
+8. **Talk through GitHub.** Questions, requests and replies between the agents go into GitHub **issues** labelled `to:lead` / `to:manager` / `to:po`, or into PR reviews. Check them at the start of every session. Decisions that come out of a discussion are recorded in DECISIONS.md.
+9. **Review critically, never rubber-stamp.** A review names what was checked, what could break, and what is missing. "Looks good" alone is not a review.
 
 ## Public repository rules
 
@@ -44,7 +48,7 @@ The repo is private now and **will be made public**. Git history is permanent: d
 - Names, email addresses, phone numbers, addresses or any other data of real people (including the PO). Use roles ("PO", "Lead", "Manager").
 - Real receipts, invoices, bank statements, IBANs, card numbers, tax IDs – not even "just for a test". Fixtures must be **synthetic**, or fully anonymised and checked by the Manager before commit.
 - Server details: hostnames, domains, IP addresses, ports of real servers, provider account names, SSH config, deployment paths.
-- Secrets of any kind: `.env`, API keys, tokens, passwords, private keys, TOTP seeds, encryption keys, webhook URLs.
+- Secrets of any kind: `.env`, API keys, tokens, passwords, private keys, TOTP seeds, encryption keys, webhook URLs – including Revolut client IDs, certificates and tokens, even sandbox ones.
 - Screenshots or logs that show real data.
 - Answers to personal questions (which bank you use, who your tax advisor is …). Record only the generic outcome ("support Sparkasse CSV first").
 
@@ -76,6 +80,7 @@ The repo is private now and **will be made public**. Git history is permanent: d
 | `docs/collaboration/LOG.md` | Append-only session log / handoffs |
 | `docs/collaboration/PLAN-REVIEW.md` | Feedback round on the plan |
 | `docs/collaboration/LEAD-KICKOFF.md` | Start prompt for the Lead session |
+| `docs/collaboration/MANAGER-KICKOFF.md` | Start prompt for a new Manager session |
 | `docs/SKILLS.md` | Recommended agent skills |
 | `SECURITY.md` | How to report vulnerabilities |
 | `docs/archive/plan-v0-belegbox.md` | Original plan (read-only history) |
