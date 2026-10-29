@@ -10,10 +10,11 @@ Snap a receipt, send it, forget it. DocHamster takes the photo with time and (op
 - Revolut transactions matched automatically to the photos (other banks via CSV/XLSX import)
 - Receipt pack for your tax advisor: one PDF with every transaction and its receipt photo
 - Server-side OCR (Tesseract), tags, categories, full-text search
+- Voice notes with local speech-to-text
 - Read-only access for your tax advisor
 - Passkey device pairing – no password every time
 
-DocHamster is **not** a tax or bookkeeping app, and it contains **no AI features**.
+DocHamster is **not** a tax or bookkeeping app, and it uses **no cloud AI**: speech-to-text and everything else runs on your own server.
 
 ## Tech (planned)
 

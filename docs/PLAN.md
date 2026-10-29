@@ -1,7 +1,7 @@
 # DocHamster – Detaillierter Projektplan
 
 > **Status:** Planungsphase (v1.1-Entwurf, 2026-10-29). Noch kein Code.
-> **v1.1:** PO-Entscheidungen eingearbeitet – Handy-Web-App statt Scanner (D-015), Aufnahmezeit + Standort (D-017), Revolut-Anbindung (D-016), Belegpaket für den Steuerberater (D-018). Phasen neu geordnet um den Kernablauf (§14).
+> **v1.1:** PO-Entscheidungen eingearbeitet – Handy-Web-App statt Scanner (D-015), Aufnahmezeit + Standort (D-017), Revolut Business (D-016), Belegpaket für den Steuerberater (D-018), alles lokal ohne Cloud-KI inkl. lokaler Spracherkennung (D-019). Phasen neu geordnet um den Kernablauf (§14).
 > **Vorgänger:** [`archive/plan-v0-belegbox.md`](archive/plan-v0-belegbox.md) (Arbeitstitel „Belegbox“). Alles aus v0 ist hier enthalten und ausgearbeitet.
 > **Wer bearbeitet diesen Plan?** PO (Product Owner) plus zwei KI-Agenten. Regeln für Änderungen: [`collaboration/WORKFLOW.md`](collaboration/WORKFLOW.md). Offene und getroffene Entscheidungen: [`collaboration/DECISIONS.md`](collaboration/DECISIONS.md).
 
@@ -70,7 +70,7 @@ Alles andere (Suche, Regeln, Teams) ist nachrangig gegenüber diesem Ablauf.
 - Kein allgemeines Banking: kein HBCI/FinTS, keine Zahlungen, nur **Lesen** von Buchungen. Einzige Live-Anbindung in v1: **Revolut** (D-016). Andere Banken nur per Datei-Import.
 - Keine native App (iOS/Android); die PWA muss reichen.
 - Kein Hardware-Scanner als Eingangskanal (D-015, PO-Entscheidung). PDF-Upload aus Dateien bleibt möglich.
-- **Keine KI in der App** (D-013, PO-Entscheidung): keine KI-Kategorisierung, keine KI-Extraktion, keine Transkription, keine Weitergabe an KI-Anbieter. Erkennung läuft nur über OCR, Regeln und den Abgleich mit Buchungen.
+- **Keine Cloud-KI, keine externen KI-Dienste** (D-019, PO-Entscheidung, ersetzt D-013): Belegdaten, Fotos, Sprachnotizen und Standorte verlassen nie den eigenen Server Richtung KI-/Cloud-Anbieter. Funktionen wie Spracherkennung laufen **lokal auf dem eigenen Server**.
 
 ---
 
@@ -112,7 +112,7 @@ Legende: ✅ erlaubt · ❌ verboten · ⚙️ per Org-Einstellung · 🔶 einge
 2. **Mobile first.** Daumen-bedienbar, große Ziele (≥ 48 px), Kamera zuerst.
 3. **Einmal koppeln, dann in Ruhe lassen.** Kein Passwort im Alltag, trotzdem sicher (Geräte-Token + Passkey).
 4. **Server macht die Arbeit.** OCR, Tags, Kategorien, Abgleich laufen asynchron.
-5. **Ohne KI.** Keine KI-Funktionen, keine Daten an KI-Anbieter. Nachvollziehbare Regeln statt Black Box.
+5. **Privat: alles lokal.** Spracherkennung, Texterkennung und Vorschläge laufen auf dem eigenen Server. Keine Daten an Cloud- oder KI-Anbieter. Einzige ausgehende Verbindungen: Revolut-API und E-Mail-Versand.
 6. **Originale sind heilig.** Hochgeladene Dateien werden nie verändert; abgeleitete Versionen sind separat.
 7. **Einfach zu hosten.** SQLite-Standard, Docker optional, keine externen Pflichtdienste.
 8. **Nachvollziehbar.** Jede automatische Entscheidung (Tag, Kategorie, Match) speichert Quelle und Konfidenz; manuelle Korrekturen gewinnen immer.
@@ -240,9 +240,16 @@ Details in [Kapitel 10](#10-berichte--export).
 - [ ] AK-4.6.3: Einladung per Link/QR-Code mit Rolle, einmalig nutzbar, Ablauf 7 Tage.
 - [ ] AK-4.6.4: Steuerberater-Zugang: Einladung mit Freigabe-Umfang (Zeitraum, Konten, Kategorien), optional Ablaufdatum, jederzeit widerrufbar. Widerruf wirkt sofort (laufende Sitzungen enden).
 
-### 4.7 Sprachnotizen – S
+### 4.7 Sprachnotizen & Spracherkennung (lokal) – S
 
-- S: Sprachnotiz aufnehmen (MediaRecorder, Opus/WebM bzw. AAC/MP4 auf iOS), abspielen. Keine automatische Transkription (keine KI, D-013).
+- S: Sprachnotiz aufnehmen (MediaRecorder, Opus/WebM bzw. AAC/MP4 auf iOS), abspielen.
+- S: **Speech-to-Text lokal auf dem Server** (D-019): Sprachnotiz wird automatisch in Text umgewandelt (Deutsch zuerst), der Text ist durchsuchbar, editierbar und kann als Notiz übernommen werden. Die Engine wählt der Lead (lokal laufend, z. B. whisper.cpp oder Vosk); **kein** Cloud-Dienst.
+- C: **Lokale Vorschläge** für Händler/Kategorie/Tags über eine austauschbare, lokal laufende Schnittstelle – zusätzlich zu den Regeln, pro Organisation abschaltbar, nie an externe Dienste.
+
+Akzeptanzkriterien:
+- [ ] AK-4.7.1: Eine Sprachnotiz von 30 s ist typischerweise innerhalb von 2 min als Text da (Hardware-abhängig, Lead legt Ziel fest).
+- [ ] AK-4.7.2: Während der Transkription gibt es keine ausgehende Netzwerkverbindung (in Tests geprüft).
+- [ ] AK-4.7.3: Transkription ist pro Organisation abschaltbar; ohne sie funktioniert alles weiter.
 
 ### 4.8 Einstellungen – M
 
@@ -269,7 +276,8 @@ Details in [Kapitel 10](#10-berichte--export).
                           │ Worker (CLI, Cron/Supervisor)│
                           │ - Bild-Normalisierung        │ ──▶ tesseract, ocrmypdf,
                           │ - OCR, Extraktion, Tags      │     pdftotext, imagemagick/
-                          │ - Revolut-Abruf, Abgleich,   │     vips
+                          │ - Spracherkennung (lokal)    │     vips, Speech-to-Text-Engine (lokal)
+                          │ - Revolut-Abruf, Abgleich,   │
                           │   Belegpaket, Mails          │
                           └─────────────────────────────┘
 ```
@@ -299,7 +307,7 @@ Details in [Kapitel 10](#10-berichte--export).
   /Domain       Documents, Imports, Matching, Reports, Sharing, Users (Entities, Services, Policies)
   /Http         Controller, Middleware (Auth, Org-Scope, CSRF, RateLimit)
   /Jobs         ProcessDocument, RunOcr, ExtractFields, ApplyRules, MatchTransactions, BuildExport, SendMail
-  /Infrastructure  Storage, Ocr (TesseractOcr), Banking (Revolut-Anbindung), Geo (Ortsnamen), Crypto
+  /Infrastructure  Storage, Ocr (TesseractOcr), Speech (lokale Engine), Banking (Revolut-Anbindung), Geo (Ortsnamen), Crypto
 /config
 /database/migrations
 /public          index.php, manifest.webmanifest, sw.js, assets/ (einziger Webroot!)
@@ -321,7 +329,7 @@ Details in [Kapitel 10](#10-berichte--export).
 | `Auth` | Gerätekopplung, Passkeys, Sitzungen, Einladungen | Core |
 | `Org` | Organisationen, Mitgliedschaften, Rollen, Policies | Core, Auth |
 | `Capture` | PWA, Kamera, Aufnahmezeit/Standort, Upload-API, Offline-Queue, Storage | Core, Auth, Org |
-| `Processing` | Job-Queue, OCR, Extraktion, Regeln, Duplikate, Ortsnamen | Core, Capture |
+| `Processing` | Job-Queue, OCR, Spracherkennung (lokal), Extraktion, Regeln, Duplikate, Ortsnamen | Core, Capture |
 | `Search` | Volltext, Filter, Detailansicht, Prüfen-Modus | Processing |
 | `Banking` | Revolut-Anbindung, Import-Profile, Parser, Transaktionen, Matching | Core, Org |
 | `Reports` | Belegpaket, Berichte, Exporte, Mail | Banking, Capture |
@@ -353,9 +361,9 @@ Konventionen: IDs als ULID (Text, sortierbar, nicht ratbar) für öffentlich sic
 |---------|-----------------|----------|
 | `documents` | id, org_id, uploaded_by, client_upload_id (unique pro org), status, title, doc_date, amount_minor, currency, merchant_id, merchant_raw, category_id, payment_method_id, note, ocr_text, language, duplicate_of_id, reviewed_at, reviewed_by, deleted_at, created_at | Kern |
 | `document_captures` | document_id, captured_at (UTC), captured_tz, captured_at_source (`device`/`exif`/`server`), lat, lon, accuracy_m, location_source (`geolocation`/`exif`), place_name, place_country, location_deleted_at | Aufnahme-Metadaten (D-017); Koordinaten verschlüsselt speichern (Lead) |
-| `document_fields` | id, document_id, field (`doc_date`/`amount`/`merchant`/`category`…), value, source (`ocr`/`rule`/`transaction`/`user`), confidence (0–1), created_at | Nachvollziehbarkeit jeder Erkennung; `transaction` = aus der abgeglichenen Buchung übernommen |
+| `document_fields` | id, document_id, field (`doc_date`/`amount`/`merchant`/`category`…), value, source (`ocr`/`rule`/`transaction`/`local_model`/`user`), confidence (0–1), created_at | Nachvollziehbarkeit jeder Erkennung; `transaction` = aus der abgeglichenen Buchung übernommen |
 | `document_files` | id, document_id, kind (`original`/`normalized`/`thumbnail`/`searchable_pdf`), page_no, path, mime, size, sha256, width, height, encrypted (bool) | Originale unverändert |
-| `audio_notes` | id, document_id, path, mime, duration_s | S |
+| `audio_notes` | id, document_id, path, mime, duration_s, transcript, transcript_engine, transcript_status, transcribed_at | S; Transkript lokal erzeugt |
 | `merchants` | id, org_id, name, normalized_name, default_category_id | Lernt aus Korrekturen |
 | `categories` | id, org_id, name, color, icon, sort, archived | |
 | `payment_methods` | id, org_id, name, sort | Chips |
@@ -425,6 +433,8 @@ Job-Kette pro Dokument (jeder Schritt idempotent, einzeln wiederholbar):
 5. **`DetectDuplicates`** – Hash-Gleichheit, dann Fuzzy (Betrag gleich, Datum ±1 Tag, Händler-Ähnlichkeit ≥ 0,8).
 6. **`IndexDocument`** – Volltextindex aktualisieren.
 7. **`MatchDocument`** – gegen offene Buchungen abgleichen (Kapitel 9).
+Parallel dazu: **`TranscribeAudio`** (lokal, nur wenn Sprachnotiz vorhanden) → `audio_notes.transcript`, Volltextindex. Optional (C): **`LocalSuggest`** (lokale Vorschläge, `source = local_model`).
+
 Danach Status `processed`; Event `DocumentProcessed`. Nach einem bestätigten Abgleich übernimmt der Beleg fehlende Felder (Händler, Betrag, Datum) aus der Buchung (`source = transaction`).
 
 ### 8.1 Extraktions-Heuristiken (deutsch zuerst)
@@ -533,6 +543,7 @@ Zusätzlich auf Wunsch: ZIP mit Originalfotos + `index.csv` + PDF, und CSV/XLSX 
 | CSRF | Token + SameSite-Cookies |
 | Brute Force auf Login/Einladungen | Rate Limiting pro IP und Konto, lange zufällige Tokens |
 | Shell-Injection in OCR-Aufrufen | Prozesse nur mit Argument-Arrays (`proc_open`/Symfony Process), keine Shell-Strings |
+| Datenabfluss an Cloud-/KI-Dienste | Alle Verarbeitung lokal; Worker ohne ausgehenden Internetzugang außer Revolut-API und SMTP (Egress-Regel, Lead); Test, dass Transkription/OCR offline laufen |
 | Standortdaten verraten Bewegungsprofil | Opt-in, Koordinaten verschlüsselt, nach außen nur Ortsname, pro Beleg löschbar, nie in Logs; Ortsnamen-Ermittlung ohne Weitergabe an Dritte bevorzugt (D-017) |
 | Diebstahl der Revolut-Zugangsdaten | nur Lesezugriff anfordern, verschlüsselt speichern, Widerruf in den Einstellungen, Audit-Log je Abruf |
 | Verlust der Daten | dokumentierte Backups (DB + Storage), Restore-Test |
@@ -624,7 +635,7 @@ Jede Phase endet mit einem **lauffähigen Stand**, einem Git-Tag (`v0.N.0`) und 
 | P2-5 | Aufnahmezeit + Standort (Geolocation, Opt-in, EXIF-Fallback), `document_captures`, Ortsnamen (D-017) | P2-3 | mit P2-6 |
 | P2-6 | Zusatz-Schritt: Notiz, Kategorie-/Zahlungsart-Chips; Stammdaten | P2-3 | mit P2-5 |
 | P2-7 | Geschützte Datei-Auslieferung (`/files/{id}`), Thumbnails, Ausrichtung | P2-1 | ja |
-| P2-8 | Sprachnotiz (S, ohne Transkription) | P2-3 | ja |
+| P2-8 | Sprachnotiz aufnehmen und abspielen (S) | P2-3 | ja |
 
 **Testliste v0.2:** Foto in ≤ 2 Taps · Zeit + Ort gespeichert, Ort abschaltbar · Flugmodus → 3 Belege → online → alle da, Aufnahmezeit korrekt, keine Duplikate · PDF aus Dateien · fremde Datei-ID → 403/404.
 
@@ -667,6 +678,7 @@ OCR ist jetzt Unterstützung, nicht Voraussetzung: Sie liefert Betrag/Händler a
 | P5-4 | Regel-Engine, Händler-Stammdaten, Hashtags | P5-3 | mit P5-5 |
 | P5-5 | Volltextindex (FTS5 / FULLTEXT) | P5-2 | mit P5-4 |
 | P5-6 | Duplikaterkennung | P5-3 | ja |
+| P5-7 | Speech-to-Text lokal (Engine nach Lead-Entscheidung D-019), Transkript in Suche | P3-1, P2-8 | ja |
 
 ### Phase 6 – Wiederfinden (v0.6)
 
@@ -691,6 +703,7 @@ OCR ist jetzt Unterstützung, nicht Voraussetzung: Sie liefert Betrag/Händler a
 
 | AP | Inhalt |
 |----|--------|
+| P8-0 | (C) Lokale Vorschläge für Händler/Kategorie (`LocalSuggest`), opt-in |
 | P8-1 | Performance-Test 10.000 Belege, Optimierungen |
 | P8-2 | Barrierefreiheit-/UX-Review, Texte |
 | P8-3 | Sicherheits-Check vor Veröffentlichung, History-Scan (P0-8) |

@@ -26,3 +26,8 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Done: PO answered Q-7: target is Revolut **Business** → Business API is the expected main way (D-016, PLAN.md §4.4, P3-3). Open banking for personal accounts dropped from v1.
 - Next: Lead decides the API details in D-016 (access setup, sync interval, available fields, sandbox).
 - Branch/PR: `main`, not pushed.
+
+## 2026-10-29 · Manager · D-019
+- Done: PO clarified "no AI": the concern is privacy, not the features. Speech-to-text and similar features are wanted, **running locally on our server only**, nothing sent to cloud/AI providers. Recorded as D-019 (supersedes D-013). PLAN.md: principle 5, non-goals, §4.7 local STT with acceptance criteria, data model, pipeline, threat model (egress), P5-7 local STT, P8-0 local suggestions (C).
+- Next: Lead picks the local STT engine (D-019) together with hosting (D-010).
+- Branch/PR: `main`, not pushed.

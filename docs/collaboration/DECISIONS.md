@@ -73,6 +73,12 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
 - **Proposal (Manager):** PLAN.md §10.1 – cover page with key figures, overview table, one page per transaction with details + large receipt photo, list of missing receipts. Manager drafts the layout in P0-5; PO signs off. PDF technology → Lead.
 - **Decision:** _…_
 
+### D-019 · Local processing only, no cloud AI — Owner: PO (principle), Lead (engines)
+- **Status:** decided (PO, 2026-10-29), supersedes D-013
+- **Decision:** Features like **speech-to-text** (and later local suggestions) are wanted, but **only running locally on our own server**. No data goes to cloud or AI providers, for privacy. Outbound connections only: Revolut API, SMTP.
+- **For the Lead:** choose the local speech-to-text engine (e.g. whisper.cpp, Vosk) by German quality, CPU/RAM needs on the chosen hosting (D-010) and license; how to block other outbound traffic from the worker.
+- **Engine decision:** _…_
+
 ## Decide before the relevant phase
 
 | ID | Topic | Owner | Needed by | Status | Input |
@@ -83,7 +89,7 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
 | D-008 | Org in URL vs active org in session | Lead | Phase 1 | proposed | Active org in session |
 | D-009 | Device cookie SameSite Strict vs Lax | Lead | Phase 1 | open | Lax + CSRF tokens |
 | D-012 | Password+TOTP fallback or passkeys only? | Lead | Phase 1 | open | Keep fallback |
-| D-013 | AI in the app | PO | – | **decided: no AI** (PO, 2026-10-29) | No AI features, no data sent to AI providers |
+| D-013 | AI in the app | PO | – | superseded by D-019 | (was: no AI features at all) |
 | D-014 | When does the repo go public? | PO | anytime | open | After P0-8 history scan; suggested at v0.3 |
 
 ## Open questions
