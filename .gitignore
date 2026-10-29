@@ -1,0 +1,34 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# Runtime data (never commit uploaded receipts)
+/storage/*
+!/storage/.gitkeep
+/database/*.sqlite
+/database/*.sqlite-*
+
+# Tooling
+.phpunit.result.cache
+.phpunit.cache/
+.php-cs-fixer.cache
+/coverage/
+/test-results/
+/playwright-report/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Agent-local settings
+.claude/settings.local.json
