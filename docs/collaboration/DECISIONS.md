@@ -159,6 +159,25 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
   - **Proof for AK-4.7.2:** CI runs the `local` job suite (OCR, STT, geocoding, PDF) inside a runner step with networking disabled; any outbound attempt fails the build. This is CI tooling only, not something users install.
   - **On own servers (optional, documented):** run the `local` worker as its own system user and block its outbound traffic with a firewall rule (e.g. nftables/iptables owner match), allow only Revolut API + SMTP for the `net` worker. On web hosting this isn't possible; there the code rules above are the protection – the doctor page says so.
 
+### D-024 · Guided setup for non-technical users: setup wizard in the browser + shell install — Owner: PO (requirement), Lead (technical design)
+- **Status:** requirement decided (PO, 2026-10-29); technical design open for the Lead (Q-12)
+- **Requirement (PO):**
+  - Assume the person installing DocHamster has **little technical knowledge**.
+  - The main way to install is a **setup wizard**: a page the user opens in the browser that leads through the whole setup **step by step** and explains every step in plain German – server check, database, owner account, mail, background jobs, **connecting the phone** (incl. putting the app on the home screen), first steps.
+  - The wizard **sets up the database itself**. Where needed it asks for the database credentials (host, port, database name, user, password), tests them and creates the tables.
+  - A **shell installation** stays available as an alternative (own servers, technical users).
+- **Consequence for D-010:** "upload/clone, `composer install`, `.env`, `dochamster:setup`, cron" is no longer the standard path for the target user, because it needs a shell. The wizard has to work for someone who can only upload files and open a web address. D-010's minimum requirements (incl. the fixed HTTPS domain) stay.
+- **Questions for the Lead (Q-12)** – please explain each one to your operator in detail (AGENTS rule 6):
+  1. **Package without Composer:** a ready-to-upload release ZIP including `vendor/`, built by CI for every release? (Changes D-010's install path.)
+  2. **Securing a fresh instance:** before setup, anyone who finds the address could run the wizard and take the instance over. How does the installer prove it's their server without a shell – e.g. a one-time setup code that the wizard writes into a file the user opens with the hoster's file manager/FTP, or that the shell install prints? The wizard must lock itself for good once finished.
+  3. **Writing the configuration:** the wizard needs to store DB credentials, app key, URL and mail settings. Write `.env` (web server needs write access once, then lock it down?) or another place? What happens to file permissions afterwards?
+  4. **Database:** test the connection with clear error messages (wrong password, host unreachable, missing rights), create the database if the user has the right, run migrations within web-hosting time limits; MariaDB/MySQL only (D-003). Before the DB exists, sessions/cache can't use the database driver – how does the wizard run until then?
+  5. **Cron:** on web hosting the user creates the cron job in the hoster's control panel – the wizard explains it and confirms via the heartbeat (D-010). What if a hoster has no cron at all?
+  6. **Owner account and phone:** these steps depend on P1-4 (passkeys, pairing). Order of steps, and what the wizard shows so the phone gets connected and the app lands on the home screen (iPhone/Android differ, B14).
+  7. **HTTPS/domain:** on web hosting the hoster provides the certificate – the wizard can only check and explain. Should the shell install on an own server also set up the certificate (e.g. Let's Encrypt)?
+  8. **Shell install – scope:** an interactive `php artisan dochamster:setup` that asks the same questions (incl. DB credentials) and/or an `install.sh` for Debian/Ubuntu that also installs PHP, MariaDB and the web server?
+- **Plan:** PLAN §4.9 (acceptance criteria), §12, §14 (P1-9…P1-11).
+
 ## Decide before the relevant phase
 
 | ID | Topic | Owner | Needed by | Status | Input |
@@ -187,3 +206,4 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
 | Q-9 | Lead → PO | D-012: passkeys only, or keep password + TOTP as fallback? Passkeys only = less code and attack surface, but a tax advisor on a desktop without Windows Hello/Touch ID must confirm with the phone (QR) or a security key. | **PO, 2026-10-29:** the tax advisor installs nothing and needs no phone app; logs in with **username + password**; no self-registration – the owner/admin assigns username and password. → D-012 |
 | Q-10 | Lead → PO | PLAN-REVIEW B19: Revolut's API has no spending category, only the merchant category code (MCC). OK to show the MCC as a German label (e.g. "Tankstelle", "Restaurant") in the app and receipt pack instead of a "Revolut-Kategorie"? | **Yes** (PO, 2026-10-29) → B19 |
 | Q-11 | Manager → Lead | D-021: shape of the `BankConnector` interface, how a bank module is installed/enabled, version compatibility core ↔ module, which transaction fields stay generic in the core (details in D-021) | |
+| Q-12 | Manager → Lead | D-024: design of the setup wizard and the shell install – release package without Composer, securing a fresh instance, where config is written, database setup, cron, owner account + phone, HTTPS, scope of the shell install (8 points in D-024) | |

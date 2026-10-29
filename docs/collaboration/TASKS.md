@@ -96,5 +96,8 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | P1-6 | Org scope middleware, roles/policies, permission-matrix tests | Lead | todo | P1-2 |
 | P1-7 | Security headers, CSRF, rate limiting, health endpoint | Lead | todo | P1-1 |
 | P1-8 | README install, HTTPS docs, backup docs v1 | Lead | todo | P1-1 |
+| P1-9 | Setup wizard in the browser, core (D-024): securing a fresh instance, server check, database setup, lock after finishing, resume; release package if decided | Lead | todo | P1-1, P1-7, Q-12 |
+| P1-10 | Interactive shell install: same steps in the terminal, asks for DB credentials (D-024, AK-4.9.7) | Lead (Manager can take it if assigned) | todo | P1-1, Q-12 |
+| P1-11 | Setup wizard: owner account, mail, cron check, connect the phone + home-screen app, first steps | Lead | todo | P1-4, P1-9 |
 
 Phases 2–8: see PLAN.md §14 (reordered in v1.1: 2 capture with time/location → 3 Revolut & matching → 4 receipt pack = core flow done → 5 OCR → 6 search → 7 tax advisor access → 8 release). The Manager adds rows when the previous phase is in review.

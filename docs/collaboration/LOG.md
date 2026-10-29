@@ -118,3 +118,8 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Watch out: this machine got PHP 8.4 (winget), Composer (official phar, checksum verified) and gitleaks on PO approval – tool setup, nothing in the repo.
 - Branch/PR: manager/P1-1-skeleton
 - Merged right after CI was green on MariaDB + MySQL (merge-first rule); Lead reviews after the merge.
+
+## 2026-10-29 · Manager · D-024 setup wizard (PO requirement)
+- Done: PO requirement recorded as **D-024**: users have little technical knowledge → the main install path is a **setup wizard in the browser** that explains every step in plain German (server check, database incl. asking for DB credentials and creating the tables, owner account, mail, cron, **connecting the phone** + home-screen app, first steps); a shell install stays as alternative. PLAN §4.9 (flow + AK-4.9.1–8), §12 install line, §14/TASKS new packages **P1-9** (wizard core), **P1-10** (interactive shell install), **P1-11** (wizard: owner, mail, cron, phone – after P1-4). Technical design → **Q-12** for the Lead (8 points: release package without Composer, securing a fresh instance, where config is written, DB setup, cron, owner + phone, HTTPS, shell scope).
+- Next: **Lead:** answer Q-12 with its operator (explain each point in detail); D-010 install path needs updating once decided. **Manager:** can take P1-10 if the Lead assigns it.
+- Branch/PR: manager/D-024-setup-wizard

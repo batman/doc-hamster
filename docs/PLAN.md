@@ -274,6 +274,32 @@ Akzeptanzkriterien:
 - Organisation: Name, Kategorien, Zahlungsarten, Regeln, Mitglieder, Freigaben, Aufbewahrung, Papierkorb-Dauer.
 - Datenexport (DSGVO Art. 20) und Konto löschen.
 
+### 4.9 Einrichtung mit Setup-Assistent – M
+
+Ziel (PO, D-024): Wer DocHamster einrichtet, hat **wenig Ahnung von Technik**. Deshalb gibt es einen **Setup-Assistenten im Browser**, der Schritt für Schritt durch die ganze Einrichtung führt und jeden Schritt in einfachem Deutsch erklärt. Eine **Installation über die Shell** gibt es zusätzlich (eigene Server, Technik-Kundige). Die Technik dahinter (Paket, Absicherung, Speicherort der Einstellungen …) entscheidet der Lead (Q-12).
+
+**User Story:** Als Owner ohne Technik-Kenntnisse will ich DocHamster auf meinem Webspace oder Server einrichten, indem ich die Dateien hochlade, die Adresse im Browser öffne und mich durch alles führen lasse – bis mein Handy verbunden ist.
+
+Ablauf (Entwurf, Reihenfolge und Technik legt der Lead fest):
+1. **Willkommen:** was man braucht (eigene Domain mit HTTPS, Datenbank-Zugangsdaten vom Hoster, Handy, ca. 20 min) und wo man es beim Hoster findet.
+2. **Server prüfen:** die Prüfung aus `dochamster:doctor` im Browser – was fehlt, verständlich erklärt, mit konkretem Hinweis, was zu tun ist; Zusatzfunktionen (Texterkennung, Spracherkennung) als „verfügbar / nicht verfügbar“.
+3. **Datenbank:** Zugangsdaten abfragen (Server, Port, Datenbankname, Benutzer, Passwort), Verbindung testen, Datenbank anlegen falls erlaubt, Tabellen einrichten.
+4. **Owner-Konto:** Name, Passkey auf diesem Gerät anlegen (nach P1-4).
+5. **E-Mail-Versand (optional):** SMTP-Daten vom Hoster, Test-Mail.
+6. **Hintergrundaufgaben:** Cron-Eintrag beim Hoster erklären und prüfen, ob er läuft.
+7. **Handy verbinden:** QR-Code scannen, App auf den Home-Bildschirm legen (eigene Anleitung für iPhone und Android), Kamera- und Standort-Erlaubnis erklären.
+8. **Fertig:** erste Schritte – erstes Foto, Kontoauszug importieren, Steuerberater-Zugang anlegen.
+
+Akzeptanzkriterien:
+- [ ] AK-4.9.1: Einrichtung **ohne Shell** möglich: Dateien hochladen, Adresse öffnen, der Assistent führt durch alles.
+- [ ] AK-4.9.2: Jeder Schritt hat eine kurze, verständliche Erklärung auf Deutsch; Fachbegriffe werden erklärt; jeder Fehler nennt die Ursache in einfachen Worten und was zu tun ist.
+- [ ] AK-4.9.3: Der Assistent richtet die Datenbank selbst ein: fragt die Zugangsdaten ab, testet die Verbindung, legt die Tabellen an.
+- [ ] AK-4.9.4: Eine noch nicht eingerichtete Instanz kann niemand Fremdes übernehmen; nach Abschluss ist der Assistent dauerhaft gesperrt (Umsetzung: Lead, Q-12).
+- [ ] AK-4.9.5: Wird die Einrichtung abgebrochen, macht der Assistent beim nächsten Aufruf beim letzten fertigen Schritt weiter.
+- [ ] AK-4.9.6: Am Ende ist das Handy verbunden und die App liegt auf dem Home-Bildschirm.
+- [ ] AK-4.9.7: Die Shell-Installation führt durch dieselben Schritte (Fragen im Terminal, inkl. Datenbank-Zugangsdaten).
+- [ ] AK-4.9.8: Eine Person ohne Technik-Kenntnisse schafft die Einrichtung in ≤ 20 min, wenn Domain und Datenbank beim Hoster schon vorhanden sind (Test mit einer echten Person vor v1.0).
+
 ---
 
 ## 5. Architektur
@@ -608,7 +634,7 @@ Werte sind Schätzungen und werden in Phase 1 auf dem Testserver des PO geprüft
 **Datendateien:** GeoNames-Ortsnamen (D-017) lädt der Setup-/Update-Befehl (feste Version + Prüfsumme), Tesseract-Sprachdaten und das Whisper-Modell der Installationsschritt der Zusatzfunktion. Während der Verarbeitung von Belegen wird nichts heruntergeladen.
 
 Betriebsthemen (alle in `docs/operations/` zu dokumentieren):
-- Installation: Code hochladen/klonen, `composer install`, `.env`, `php artisan dochamster:setup`, Cron-Eintrag. Anleitungen für einen normalen Linux-Server (Debian/Ubuntu) und für typisches Webhosting.
+- Installation: **Standard ist der Setup-Assistent im Browser** (D-024, §4.9) – Dateien hochladen, Adresse öffnen, Schritt für Schritt einrichten. Alternativ über die Shell: Code klonen, `composer setup` bzw. `php artisan dochamster:setup` (fragt dieselben Dinge ab), Cron-Eintrag. Anleitungen für einen normalen Linux-Server (Debian/Ubuntu) und für typisches Webhosting.
 - Worker: Cron jede Minute (`schedule:run` startet kurze `queue:work --stop-when-empty`-Läufe); Dauer-Worker (systemd/Supervisor) optional auf eigenen Servern.
 - Backups: DB-Dump + Storage-Ordner; Restore-Anleitung; Hinweis auf Schlüssel.
 - Updates: `git pull` bzw. neue Version hochladen → `composer install` → `migrate` → `dochamster:doctor`; Migrationen immer vorwärtskompatibel.
@@ -658,8 +684,11 @@ Jede Phase endet mit einem **lauffähigen Stand**, einem Git-Tag (`v0.N.0`) und 
 | P1-6 | Org-Scope-Middleware, Rollen/Policies, Rechte-Matrix-Testgerüst | P1-2 | mit P1-4 |
 | P1-7 | Security-Header, CSRF, Rate Limiting, Health-Endpoint | P1-1 | mit P1-2…6 |
 | P1-8 | README-Installation mit Mindestanforderungen (D-010), HTTPS-Doku (feste Domain + öffentlich vertrauenswürdiges Zertifikat), Backup-Doku v1 | P1-1 | ja |
+| P1-9 | Setup-Assistent im Browser, Grundgerüst (D-024): Absicherung der frischen Instanz, Server-Prüfung, Datenbank einrichten, Sperre nach Abschluss, Fortsetzen nach Abbruch; ggf. Release-Paket ohne Composer | P1-1, P1-7, Q-12 | mit P1-10 |
+| P1-10 | Shell-Installation interaktiv: dieselben Schritte im Terminal, Datenbank-Zugangsdaten abfragen (D-024, AK-4.9.7) | P1-1, Q-12 | mit P1-9 |
+| P1-11 | Setup-Assistent: Owner-Konto, E-Mail, Cron-Prüfung, Handy verbinden + App auf den Home-Bildschirm, erste Schritte | P1-4, P1-9 | – |
 
-**Testliste v0.1:** Instanz aufsetzen · Owner koppeln per Passkey · zweites Gerät per QR koppeln · Gerät sperren → ausgesperrt · Mitglied einladen · Mitglied sieht andere Org nicht.
+**Testliste v0.1:** Instanz über den Setup-Assistenten im Browser einrichten (ohne Shell) · dasselbe über die Shell · Owner koppeln per Passkey · zweites Gerät per QR koppeln · Gerät sperren → ausgesperrt · Mitglied einladen · Mitglied sieht andere Org nicht.
 
 ### Phase 2 – Erfassen mit Zeit & Ort (v0.2)
 
