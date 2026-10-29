@@ -11,9 +11,12 @@ use App\Infrastructure\Crypto\IpHasher;
 use App\Infrastructure\Environment\NativeSystemProbe;
 use App\Infrastructure\Environment\SystemProbe;
 use App\Infrastructure\Session\NoIpDatabaseSessionHandler;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Encryption\MissingAppKeyException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\ServiceProvider;
 
@@ -46,6 +49,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Brute-force protection (PLAN §11.2). Keys hold the IP only as HMAC, the cache stores them.
+        RateLimiter::for('login', static function (Request $request): array {
+            $ip = app(IpHasher::class)->hash((string) $request->ip());
+            $username = mb_strtolower((string) $request->input('username'));
+
+            return [
+                Limit::perMinute(5)->by('login:'.$username.'|'.$ip),
+                Limit::perMinute(20)->by('login-ip:'.$ip),
+            ];
+        });
+        RateLimiter::for('pairing', static fn (Request $request): Limit => Limit::perMinute(10)
+            ->by('pairing:'.app(IpHasher::class)->hash((string) $request->ip())));
+
         // Org-wide abilities from the permission matrix (PLAN §2.1), e.g. Gate::allows('members.manage').
         foreach (Permission::cases() as $permission) {
             Gate::define($permission->value, static fn (User $user): bool => app(CurrentOrg::class)->isSet()
