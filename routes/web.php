@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\SetupController;
 use Illuminate\Support\Facades\Route;
 
@@ -17,3 +18,9 @@ Route::prefix('setup')->name('setup.')->controller(SetupController::class)->grou
     Route::get('finish', 'finishPage')->name('finish');
     Route::post('finish', 'finish')->name('finish.save');
 });
+
+Route::middleware('guest')->group(function (): void {
+    Route::get('login', [LoginController::class, 'show'])->name('login');
+    Route::post('login', [LoginController::class, 'login'])->middleware('throttle:login')->name('login.attempt');
+});
+Route::post('logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
