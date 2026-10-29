@@ -19,6 +19,7 @@ Task IDs match the work packages in `../PLAN.md` §14. Maintained by the Manager
 | P0-6 | Roles set: Lead + Manager (both Claude) | PO | done | – | 2026-10-29 |
 | P0-7 | Public-repo hardening: SECURITY.md, rules, `.gitignore` | Manager | done | – | 2026-10-29 |
 | P0-8 | Full history & content scan before going public | Manager | todo | before D-014 | gitleaks + manual review |
+| P0-9 | Install required skills (docs/SKILLS.md block 1) on own computer | Lead | todo | – | Manager: done 2026-10-29 |
 
 ## Phase 1 – Foundation (v0.1) – not started
 

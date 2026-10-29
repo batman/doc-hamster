@@ -27,7 +27,7 @@ The sessions don't share memory. Everything that matters must be committed:
 | What happened last, what's next | `LOG.md` |
 | What we build | `../PLAN.md` |
 
-Direct messages between the two sessions are for pings only ("PR #3 ready", "Q-6 is yours"). If it isn't committed, it didn't happen.
+The Lead and the Manager run on **different computers** and cannot message each other. The GitHub repository is the only channel: pull at the start of a session, push before ending it. Urgent things go to the PO, who relays them. If it isn't pushed, the other agent doesn't know it.
 
 ## 3. Task lifecycle
 
@@ -40,7 +40,7 @@ todo ──claim──▶ in progress ──PR opened──▶ in review ──a
 1. **Manager** creates/updates tasks in TASKS.md from the plan (IDs from PLAN.md §14), with dependencies and acceptance criteria references.
 2. **Lead** claims the next unblocked task (owner + `in progress`).
 3. Branch `<prefix><task-id>-<slug>` from latest `main`; small commits; lint/tests locally.
-4. PR with the template → status `in review`; ping the Manager.
+4. Push the branch, open a PR with the template → status `in review`; tell the PO so the Manager reviews it.
 5. **Manager review:** acceptance criteria met, scope matches the task, docs/TASKS/LOG updated, public-repo rules respected (no personal data, secrets, server details). Technical depth is the Lead's responsibility; the Manager flags what looks risky.
 6. PO merges (squash) → `done` → log entry.
 
