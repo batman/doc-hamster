@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\HealthController;
+use App\Http\Middleware\RedirectToSetup;
 use App\Http\Middleware\RequireSameOriginApi;
 use App\Http\Middleware\ResolveCurrentOrg;
 use App\Http\Middleware\SecurityHeaders;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(SecurityHeaders::class);
+        $middleware->web(append: [RedirectToSetup::class]);
         $middleware->alias([
             'org' => ResolveCurrentOrg::class,
             'api.same-origin' => RequireSameOriginApi::class,

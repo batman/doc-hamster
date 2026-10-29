@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use App\Console\Commands\Concerns\RendersDoctorResults;
 use App\Infrastructure\Environment\Doctor;
+use App\Setup\EnvFile;
 use Illuminate\Console\Command;
 
 /**
@@ -21,7 +22,7 @@ final class SetupCommand extends Command
 
     protected $description = 'Set up DocHamster on this server: check requirements, app key, database';
 
-    public function handle(Doctor $doctor): int
+    public function handle(Doctor $doctor, EnvFile $env): int
     {
         $this->info(__('setup.checking'));
         $results = $doctor->run();
@@ -42,6 +43,9 @@ final class SetupCommand extends Command
 
             return self::FAILURE;
         }
+
+        // Same end as the browser wizard: the wizard is locked from now on (D-024).
+        $env->set(['DOCHAMSTER_INSTALLED' => 'true']);
 
         $this->info(__('setup.done'));
         $this->line(__('setup.cron_hint', ['command' => '* * * * * php '.base_path('artisan').' schedule:run']));

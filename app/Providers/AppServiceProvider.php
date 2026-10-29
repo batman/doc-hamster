@@ -11,6 +11,9 @@ use App\Infrastructure\Crypto\IpHasher;
 use App\Infrastructure\Environment\NativeSystemProbe;
 use App\Infrastructure\Environment\SystemProbe;
 use App\Infrastructure\Session\NoIpDatabaseSessionHandler;
+use App\Setup\EnvFile;
+use App\Setup\SetupCode;
+use App\Setup\SetupMode;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Encryption\MissingAppKeyException;
@@ -28,6 +31,15 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(SystemProbe::class, NativeSystemProbe::class);
+
+        // Setup wizard (D-024): `.env` and the code file outside the web root.
+        $this->app->bind(EnvFile::class, fn (): EnvFile => new EnvFile($this->app->environmentFilePath()));
+        $this->app->bind(SetupCode::class, static fn (): SetupCode => new SetupCode(storage_path('app/private/setup-code.txt')));
+
+        // Only for web requests: on the console, `dochamster:setup` does the same job.
+        if (config('dochamster.installed') !== true && ! $this->app->runningInConsole()) {
+            SetupMode::apply($this->app->make(EnvFile::class), base_path('.env.example'));
+        }
 
         // Active organisation per request/job (D-008), reset between them.
         $this->app->scoped(CurrentOrg::class);
@@ -61,6 +73,8 @@ class AppServiceProvider extends ServiceProvider
         });
         RateLimiter::for('pairing', static fn (Request $request): Limit => Limit::perMinute(10)
             ->by('pairing:'.app(IpHasher::class)->hash((string) $request->ip())));
+        RateLimiter::for('setup', static fn (Request $request): Limit => Limit::perMinute(5)
+            ->by('setup:'.app(IpHasher::class)->hash((string) $request->ip())));
 
         // Org-wide abilities from the permission matrix (PLAN §2.1), e.g. Gate::allows('members.manage').
         foreach (Permission::cases() as $permission) {

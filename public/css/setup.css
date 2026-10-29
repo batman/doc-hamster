@@ -1,0 +1,13 @@
+/* Setup wizard – minimal until the shared layout (P1-3) exists. */
+:root { color-scheme: light dark; --accent: #2b6cb0; --error: #c53030; }
+body { margin: 0; font: 16px/1.5 system-ui, sans-serif; }
+.setup { max-width: 36rem; margin: 2rem auto; padding: 0 1rem; }
+.setup-brand { font-size: .875rem; opacity: .7; }
+label { display: block; margin-top: 1rem; font-weight: 600; }
+input { width: 100%; box-sizing: border-box; padding: .6rem; font: inherit; }
+button, .button { display: inline-block; margin-top: 1.5rem; padding: .7rem 1.4rem; min-height: 48px;
+    border: 0; border-radius: 6px; background: var(--accent); color: #fff; font: inherit; text-decoration: none; cursor: pointer; }
+.error { color: var(--error); }
+.checks { padding-left: 1.2rem; }
+.check-fail { color: var(--error); }
+code { word-break: break-all; }
