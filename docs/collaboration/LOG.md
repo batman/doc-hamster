@@ -88,3 +88,15 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done / next step: **Lead:** follow-up PR for the Manager's critical review of #2 (P0-15: DB backup method, D-016 rewritten as the Revolut module behind `BankConnector` per D-021, B12 benchmark criteria, D-002 rule) and Q-11. D-022 still says "we publish the Dockerfile" – obsolete since D-010 (no Docker), Lead fixes it when deciding D-022 (P0-11).
 - Watch out: PR #2 was merged while the Manager's review said "changes requested"; the open points are tracked in P0-15. D-020 now means egress control (Lead), D-021 the Revolut module (PO).
 - Branch/PR: `manager/D-020-bank-csv` (#1)
+
+## 2026-10-29 · Manager · P0-14 follow-up, WORKFLOW
+- Done: New Manager session (MANAGER-KICKOFF.md). Found PR #2 merged and PR #1 already updated by the Lead (renumbering D-020→D-021, D-021→D-022, Q-9→Q-11, main merged) – my own parallel merge with a different numbering was dropped, the Lead's version stays. On top: WORKFLOW §1/§5/§6/§7 aligned with the current roles – the **Lead writes decisions directly into DECISIONS.md, the Manager keeps it tidy** without changing content (settles the §5 vs LEAD-KICKOFF contradiction the Lead raised) – plus a numbering rule against clashes (later-merged PR renumbers). TASKS: stale Docker wording removed from P0-17, P0-20, P1-1; work split: domain before P1-4, test server per D-010, open PO column of PLAN-REVIEW goes to the Lead (P0-1b).
+- PR #1 was squash-merged by the PO at 12:54, before this commit was pushed (12:57) – so this work moved to its own follow-up PR. PR #1 went in without the Lead's critical review (P0-16): the Lead reviews it after the fact, fixes come as a follow-up PR.
+- Next: **Lead:** review this follow-up PR (WORKFLOW changes), P0-16 post-merge review of #1, P0-15 rest, Q-11 (P0-12, now unblocked). **Manager:** P0-1c with the ✅ B-points (B11, B18, B19, B21); P0-5.
+- Watch out: PLAN.md still says SQLite/Docker in places – that is P0-1c, not this PR. Nobody else should push to a Manager branch while a Manager session runs on it; the Lead did on PO request, fine this time.
+- Branch/PR: manager/P0-14-workflow-followup
+
+## 2026-10-29 · Manager · merge-first rule, Lead's review of #4
+- Done: PO rule: **merge first, review after** – authors merge their own PRs (squash) as soon as CI is green, never wait for a review; the other agent reviews merged PRs when it has time, must-fix findings become an issue or follow-up PR (AGENTS "Who is who", WORKFLOW §1/§10, PR template). Worked in the Lead's review of this PR: "Docker" removed from WORKFLOW §1, §6 wording = AGENTS rule 6, §7 "not edited once merged to `main`", numbering check again right before merging, P0-13 reworded after D-022.
+- Next: merge #4, #7, #9 (CI green); Lead reviews them after the merge; Lead may merge its own PRs (#5) the same way.
+- Branch/PR: manager/P0-14-workflow-followup (#4)

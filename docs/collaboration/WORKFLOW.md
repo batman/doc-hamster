@@ -4,15 +4,15 @@
 
 See the table in `AGENTS.md`. In short:
 
-- **PO (human):** priorities, scope, product decisions, approves merges.
-- **Lead (Claude):** all technical decisions (framework, server, hosting, infrastructure, security architecture) and the implementation.
-- **Manager (Claude):** manages the **work split** only – who does what, what the Manager takes over, where the Lead's operator must answer or act (TASKS.md "Work split"). Programs **together with the Lead** on sub-tasks the Lead assigns. Critical reviews. No technical or product decisions; all questions go to the Lead.
+- **PO (human):** can veto anything; gave the standing OK that authors merge their own PRs (§10). Decisions the PO already took stay; new questions go to the Lead.
+- **Lead (Claude):** all decisions – technical (framework, server, hosting, infrastructure, security architecture) and product (asks its operator) – and the implementation.
+- **Manager (Claude):** manages the **work split** only – who does what, what the Manager takes over, which questions go to the Lead's operator and which human actions go to the PO (TASKS.md "Work split"). Programs **together with the Lead** on sub-tasks the Lead assigns. Critical reviews. No technical or product decisions; all questions go to the Lead.
 
 ### Who answers which question
 
 | Question type | Goes to |
 |---------------|---------|
-| Server, hosting, network, Docker, framework, libraries, DB, OCR toolchain, security design | Lead |
+| Server, hosting, network, framework, libraries, DB, OCR toolchain, security design | Lead |
 | Scope, priorities, features, UX wording, what users need | Lead (asks its operator) |
 | Plan structure, task breakdown, status, process, docs | Manager (questions about them → Lead) |
 
@@ -58,21 +58,22 @@ At the end of every session, append to `LOG.md`:
 
 ## 5. Avoiding conflicts
 
-- The Manager edits PLAN.md / TASKS.md / DECISIONS.md; the Lead edits code, infra and technical docs. Where both need the same file, the Manager makes the edit after the Lead's input is recorded.
+- The Lead writes its decisions directly into DECISIONS.md (status, decision text) and edits code, infra and technical docs. The Manager edits PLAN.md and TASKS.md and keeps DECISIONS.md tidy (numbering, owners, cross-references, recording answers from issues) without changing a decision's content. Where both need the same file, the Manager makes the edit after the Lead's input is recorded.
 - Migrations: new file per change, never edit a merged migration.
 - Disagreement: comment on the PR or add an open question in DECISIONS.md; the deciding role (see §1) settles it, PO can override.
 
 ## 6. Changing the plan (Phase 0)
 
 1. Feedback goes into `PLAN-REVIEW.md`, one section per role, referencing PLAN.md section numbers.
-2. Technical points: Lead decides. Product points: PO decides.
+2. The Lead decides all points, technical and product – whenever a question comes up it asks its operator and waits for the answer (AGENTS rule 6); the PO can veto.
 3. The Manager merges accepted points into PLAN.md in a PR labelled `plan` (task P0-1c).
 
 ## 7. Decisions
 
-- `DECISIONS.md` holds numbered decisions `D-NNN` with an **Owner** (Lead or PO) and status `open` / `proposed` / `decided` / `superseded`.
+- `DECISIONS.md` holds numbered decisions `D-NNN` with an **Owner** (Lead; older entries may name the PO) and status `open` / `proposed` / `decided` / `superseded`.
 - Anyone may add a recommendation (`proposed`). Only the owner sets `decided`; the PO may veto.
-- Decided entries are not edited, only superseded by a new entry.
+- Decided entries are not edited **once merged to `main`**, only superseded by a new entry (inside the open PR that introduces them they can still be refined).
+- **New numbers (`D-NNN`, `Q-N`, task IDs):** pull `main` and check open PRs before picking the next free number, and check `main` again **right before merging**. If two open PRs still pick the same number, the PR merged **later** renumbers its entries and says so in the entry and the PR (happened once: D-020 → D-021, D-021 → D-022, Q-9 → Q-11 after PR #2).
 
 ## 8. Public repository
 
@@ -86,7 +87,7 @@ The repo will be public. Before every PR, the author runs the checklist in the P
 
 ## 10. Critical review (both directions)
 
-Every PR gets a review from the **other** agent before the PO merges. Reviews are meant to find problems, not to be polite.
+**Merge first, review after (PO rule, 2026-10-29):** the author merges its own PR (squash) as soon as CI is green – it never waits for a review. Every merged PR then gets a review from the **other** agent when it has time. Reviews are meant to find problems, not to be polite.
 
 **The reviewer must:**
 - Say **what was checked** (acceptance criteria, plan/decisions consistency, public-repo rules, security, tests, first-install/update/failure paths).
@@ -94,11 +95,11 @@ Every PR gets a review from the **other** agent before the PO merges. Reviews ar
 - Check the PR against **other decisions** – a change can be right on its own and still contradict D-0xx.
 - Look for what is **not** in the PR (missing tests, missing docs, missing edge cases, missing migration path).
 - Use `code-review-and-quality` (and `security-review` for auth, uploads, file serving, bank modules, exports).
-- Use GitHub's **Request changes** when a must-fix exists; **Approve** only when none is left.
+- Post the review as a comment on the merged PR (or as a normal review if the PR is still open). Every **must fix** becomes an issue (`to:lead` / `to:manager`) or a follow-up PR right away.
 
 **The author must:**
 - Reply to **every** point (fixed / disagree + reason / follow-up task with ID).
-- Not merge around an open must-fix. Disagreements that stay open go to the deciding role (§1); the PO can override.
+- Fix must-fix findings before starting new work. Disagreements that stay open go to the deciding role (§1); the PO can override.
 
 **Lead reviews Manager PRs** with focus on technical feasibility: is the plan implementable as written, are estimates and phase order realistic, do acceptance criteria test the right thing.
 **Manager reviews Lead PRs** with focus on plan fit, scope, consistency between decisions, public-repo hygiene, and the user-visible result.

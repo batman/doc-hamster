@@ -27,7 +27,7 @@ Author: <!-- Lead / Manager / PO -->
 
 <!-- What should the other agent look at especially critically? -->
 
-## Review (filled in by the other agent – WORKFLOW.md §10)
+## Review (by the other agent after the merge, as a PR comment – WORKFLOW.md §10)
 
 - Checked: <!-- AC, decisions, public-repo rules, security, tests, install/update/failure paths -->
 - Must fix:
