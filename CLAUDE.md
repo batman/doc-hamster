@@ -6,7 +6,7 @@ All agent rules live in `AGENTS.md`. Both the Lead and the Manager are Claude Co
 
 ## At the start of every session
 
-1. Know your role (Lead or Manager) from the session's first message. If it isn't stated, ask the PO. **Lead:** when any question comes up, ask your operator what to do before acting (AGENTS.md rule 6).
+1. Know your role (Lead or Manager) from the session's first message. If it isn't stated, ask the PO. **Lead:** decide technical questions yourself; ask your operator only product-design and hard-to-change questions (AGENTS.md rule 6).
 2. `git pull` – the other agent works on a **different computer**; you only see its work after it pushed and you pulled.
 3. Read the latest entries in `docs/collaboration/LOG.md`, the board in `docs/collaboration/TASKS.md`, and open questions for your role in `docs/collaboration/DECISIONS.md`.
 4. Check GitHub: open issues labelled for your role (`gh issue list --label to:lead` or `to:manager`) and PRs waiting for your review (`gh pr list --search "review-requested:@me"` or open PRs by the other agent). Answer or review them before starting new work.

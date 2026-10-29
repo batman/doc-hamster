@@ -8,19 +8,18 @@ Task IDs match the work packages in `../PLAN.md` §14. Maintained by the Manager
 
 **Lead** – decides and answers all questions (technical + product), leads the implementation, assigns coding sub-tasks to the Manager.
 **Manager** – keeps this split and the board current, codes **together with the Lead** on assigned sub-tasks, reviews the Lead's PRs critically. Decides nothing.
-**Lead's operator** (the person running the Lead session) – gets **only questions** from the Lead (decisions, explained in detail, AGENTS rule 6), never tasks or to-dos.
+**Lead's operator** (the person running the Lead session) – gets only **product-design and hard-to-change questions** from the Lead, briefly and in plain words, each with a `Q-N` row (AGENTS rule 6), never tasks or to-dos.
 **PO** – can veto anything (authors merge their own PRs, reviews follow after the merge), and does what only a human can do (list below, issue `to:po`). Gets no questions.
 
 ### Questions for the Lead's operator (decisions only)
 
+Only product-design and hard-to-change questions (AGENTS rule 6, operator rule 2026-10-29); the Lead decides everything technical itself. Re-checked 2026-10-29: D-000, D-011, D-025, P0-1b, Q-2, Q-3, Q-4, Q-14…Q-16 decided by the Lead; Q-11, Q-12 stay open as technical work of the Lead (no operator question).
+
 | Question | Decision / task |
 |----------|-----------------|
-| Project name: keep "DocHamster"? | D-000 |
-| v1 scope: single household or teams? | D-011 |
-| When does the repo go public? | D-014 |
-| How should the receipt pack look? (after the layout draft P0-5) | D-018 |
-| Open PO column in PLAN-REVIEW B1–B21 (accept / change each point) | P0-1b |
-| First bank export formats, typical first users | Q-2, Q-4 |
+| From which milestone should the repo be public? | Q-17 → D-014 |
+| iPhone camera: 3 taps OK, or 2 taps a must? (after the device test) | Q-18 → B5 |
+| How should the receipt pack look? (asked with the layout draft P0-5) | Q-19 → D-018 |
 
 ### Needs a human – PO (actions, issue `to:po`)
 
@@ -32,6 +31,7 @@ Task IDs match the work packages in `../PLAN.md` §14. Maintained by the Manager
 | Create a Revolut Business **sandbox** account and keep its keys private | Account sign-up | D-016, P3-4b |
 | Run the device tests on a real iPhone and Android phone | Owns the phones | P0-22 (spikes B5, B14) |
 | Supply a few anonymised real bank exports, if the synthetic generator isn't enough | Has real exports | P0-4, P0-21 |
+| Enable GitHub secret scanning + push protection; later switch the repo to public once the Lead reports the D-014 criteria met | Repo admin rights | D-014, P0-8 |
 
 Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 
@@ -51,10 +51,10 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | ID | Task | Owner | Status | Depends on | Notes |
 |----|------|-------|--------|------------|-------|
 | P0-1a | Review PLAN.md v1 (technical) → PLAN-REVIEW.md | Lead | done | – | PR #2, merged 2026-10-29 |
-| P0-1b | Review PLAN.md v1 (product) → PLAN-REVIEW.md; mark the open PO column of PLAN-REVIEW B1–B21 | Lead | todo | – | Scope, priorities (asks operator if needed). B11, B18, B19, B21 already ✅ |
+| P0-1b | Review PLAN.md v1 (product) → PLAN-REVIEW.md; mark the open PO column of PLAN-REVIEW B1–B21 | Lead | in review | – | `lead/P0-15-review-followups`: all B and A points marked ✅ by the Lead (rule 6); Manager merges B3, B5, B7–B10, B12–B17 + A-points in P0-1c part 2 |
 | P0-1c | Merge accepted feedback into PLAN.md (v2) | Manager (for the Lead) | in progress | P0-1b | Lead decides what is accepted. Part 1 merged (PR #7): B1, B2, B4, B6, B11, B18–B21 + decided D-001…D-004, D-009, D-010, D-012, D-017, D-020. Part 2: B22 (backup, after PR #5) and the B-points still open |
 | P0-2a | Technical decisions D-001…D-010, D-012, D-016, D-017, D-019 (STT engine) | Lead | done | – | PR #2. All blocking decisions decided; D-005, D-006, D-007 (files), D-019 engine stay proposed until their phase |
-| P0-2b | Product decisions D-000, D-011, D-014, D-018 (receipt pack layout) | Lead | todo | – | D-015, D-019 decided by PO |
+| P0-2b | Product decisions D-000, D-011, D-014, D-018 (receipt pack layout) | Lead | in progress | – | D-000, D-011, D-014 decided (`lead/P0-15-review-followups`); D-018 waits for the layout draft P0-5. D-015, D-019 decided by PO |
 | P0-3 | Repo basics: README, LICENSE, AGENTS.md, workflow, templates | Manager | done | – | 2026-10-29 |
 | P0-4 | Synthetic/anonymised fixtures: ~30 receipt photos (EXIF stripped), 1 anonymised Revolut export, 2–3 other bank exports | Lead + Manager | todo | P0-21 | Lead (with operator) supplies, Manager checks anonymisation |
 | P0-5 | UI sketches: capture, matching, **receipt pack PDF layout**, list, detail, settings | Manager | todo | P0-1c | `docs/design/`, Lead signs off |
@@ -68,11 +68,11 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | ID | Task | Owner | Status | Depends on | Notes |
 |----|------|-------|--------|------------|-------|
 | P0-10 | Ask Revolut (business-partners@revolut.com) whether an open-source module for Revolut Business users and the descriptive name are fine | Lead | todo | – | Blocks P3-4b, not Phase 1. Record only the generic outcome here |
-| P0-11 | Decide license policy D-022 | Lead | todo | – | Manager proposal in DECISIONS.md |
-| P0-12 | Answer Q-11: `BankConnector` interface + module install mechanism; finalise D-010 yourself (PO leaves Q-8 to the Lead) | Lead | in progress | PR #1 merged | D-010 finalised in PR #2 (one minimum requirement, no Docker); `BankConnector`/module part open |
+| P0-11 | Decide license policy D-022 | Lead | in review | – | `lead/P0-15-review-followups` |
+| P0-12 | Answer Q-11: `BankConnector` interface + module install mechanism; finalise D-010 yourself (PO leaves Q-8 to the Lead) | Lead | in progress | PR #1 merged | D-010 finalised in PR #2 (one minimum requirement, no Docker); `BankConnector`/module part open; also update D-019/D-020 to "bank modules + SMTP" (PR #5 review point 10) |
 | P0-13 | Dependency license list `docs/DEPENDENCIES.md` + license column for add-on tools in the install docs (D-022: tools are installed by the admin, not shipped – no Ghostscript alternative needed) | Lead | todo | P0-11 | `docs/DEPENDENCIES.md` started in P1-1 (PR #9) |
 | P0-14 | Rebase PR #1 after PR #2 is merged; fill Q-8 row | Lead | done | PR #2 merged | Done by the Lead on PO request: renumbered D-020→D-021, D-021→D-022, Q-9→Q-11, merged main; Q-8 row filled in PR #2 |
-| P0-15 | Fix the must-fix points of the Manager's critical review on PR #2 (downloads for the offline worker, DNS-01, SQLite backups) and answer all points | Lead | in progress | – | Downloads + DNS-01 settled in PR #2 (D-010); SQLite moot (D-003 = MariaDB/MySQL). Open: DB backup method, D-016 → module wording (D-021), B12 benchmark criteria, D-002 rule |
+| P0-15 | Fix the must-fix points of the Manager's critical review on PR #2 (downloads for the offline worker, DNS-01, SQLite backups) and answer all points | Lead | in review | – | `lead/P0-15-review-followups`: backup = D-023 (PO requirement), D-016 as module, B12 criteria, D-002 rule; downloads + DNS-01 settled in PR #2 |
 | P0-16 | **Critical review of PR #1** (D-021, D-022, P3 split, collaboration rules) – technical feasibility | Lead | todo | – | WORKFLOW §10. PR #1 was merged by the PO before this review → review after merge, fixes as a follow-up PR |
 | P0-17 | Architecture overview `docs/architecture/OVERVIEW.md`: components, queues (`local`/`net`), data flow, add-on detection, module mechanism, where each decision lives | Lead | todo | P0-15 | Manager reviews |
 | P0-18 | Concrete data model: list of migrations/tables for P1–P4 incl. B7/B8/B16/B17 and generic transaction fields (D-021) | Lead | todo | PR #1 merged | Replaces PLAN §6 tables in P0-1c |

@@ -5,7 +5,7 @@
 See the table in `AGENTS.md`. In short:
 
 - **PO (human):** can veto anything; gave the standing OK that authors merge their own PRs (§10). Decisions the PO already took stay; new questions go to the Lead.
-- **Lead (Claude):** all decisions – technical (framework, server, hosting, infrastructure, security architecture) and product (asks its operator) – and the implementation.
+- **Lead (Claude):** all decisions – technical (framework, server, hosting, infrastructure, security architecture) and product (asks its operator only product-design and hard-to-change questions, AGENTS rule 6) – and the implementation.
 - **Manager (Claude):** manages the **work split** only – who does what, what the Manager takes over, which questions go to the Lead's operator and which human actions go to the PO (TASKS.md "Work split"). Programs **together with the Lead** on sub-tasks the Lead assigns. Critical reviews. No technical or product decisions; all questions go to the Lead.
 
 ### Who answers which question
@@ -13,7 +13,7 @@ See the table in `AGENTS.md`. In short:
 | Question type | Goes to |
 |---------------|---------|
 | Server, hosting, network, framework, libraries, DB, OCR toolchain, security design | Lead |
-| Scope, priorities, features, UX wording, what users need | Lead (asks its operator) |
+| Scope, priorities, features, UX wording, what users need | Lead (asks its operator if it is a product-design or hard-to-change question) |
 | Plan structure, task breakdown, status, process, docs | Manager (questions about them → Lead) |
 
 ## 2. The shared state lives in the repo
@@ -65,14 +65,14 @@ At the end of every session, append to `LOG.md`:
 ## 6. Changing the plan (Phase 0)
 
 1. Feedback goes into `PLAN-REVIEW.md`, one section per role, referencing PLAN.md section numbers.
-2. The Lead decides all points, technical and product – whenever a question comes up it asks its operator and waits for the answer (AGENTS rule 6); the PO can veto.
+2. The Lead decides all points, technical and product – technical points itself, product-design and hard-to-change points after asking its operator (AGENTS rule 6); the PO can veto.
 3. The Manager merges accepted points into PLAN.md in a PR labelled `plan` (task P0-1c).
 
 ## 7. Decisions
 
 - `DECISIONS.md` holds numbered decisions `D-NNN` with an **Owner** (Lead; older entries may name the PO) and status `open` / `proposed` / `decided` / `superseded`.
 - Anyone may add a recommendation (`proposed`). Only the owner sets `decided`; the PO may veto.
-- Decided entries are not edited **once merged to `main`**, only superseded by a new entry (inside the open PR that introduces them they can still be refined).
+- Decided entries are not edited **once merged to `main`**, only superseded by a new entry (inside the open PR that introduces them they can still be refined). Exception: a **clarification that keeps the content** (wording, a removed contradiction, a missing detail) may be added with a line `Changed YYYY-MM-DD (task): what and why` (Q-16). Anything that changes what was decided gets a new D-number.
 - **New numbers (`D-NNN`, `Q-N`, task IDs):** pull `main` and check open PRs before picking the next free number, and check `main` again **right before merging**. If two open PRs still pick the same number, the PR merged **later** renumbers its entries and says so in the entry and the PR (happened once: D-020 → D-021, D-021 → D-022, Q-9 → Q-11 after PR #2).
 
 ## 8. Public repository
