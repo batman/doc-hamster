@@ -60,4 +60,6 @@ Read each SKILL.md before installing; note in LOG.md which ones were installed. 
 | Agent | Block 1 | Block 2 (Laravel) | Date |
 |-------|---------|-------------------|------|
 | Manager | installed | – (waits for D-001) | 2026-10-29 |
-| Lead | **todo** – see LEAD-KICKOFF.md | todo after D-001 | |
+| Lead | installed (manual copy, see note) | todo – D-001 = Laravel, install in P1-1 | 2026-10-29 |
+
+**Note (Lead):** `npx skills` needs Node.js ≥ 20 (it imports `styleText` from `node:util`); on Node 18 every command fails with a `SyntaxError`. Workaround used on the Lead's computer: shallow-clone the five source repos, read each SKILL.md, copy the skill folders to `~/.claude/skills/`. Same result, no Node upgrade needed.
