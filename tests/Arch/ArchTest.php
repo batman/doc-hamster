@@ -25,6 +25,15 @@ arch('raw sockets and curl are used only in net jobs')
     ->not->toBeUsed()
     ->ignoring('App\Jobs\Net');
 
+arch('domain code does not depend on the web or console layer (PLAN §5.3)')
+    ->expect('App\Domain')
+    ->not->toUse(['App\Http', 'App\Console']);
+
+arch('domain models are final')
+    ->expect('App\Domain')
+    ->classes()
+    ->toBeFinal();
+
 arch('application code uses strict types')
     ->expect('App')
     ->toUseStrictTypes();

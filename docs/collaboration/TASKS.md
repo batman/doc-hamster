@@ -89,7 +89,7 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | ID | Task | Owner | Status | Depends on |
 |----|------|-------|--------|------------|
 | P1-1 | Project skeleton (Laravel, D-001), config, `.env.example`, `dochamster:doctor`/`setup` (no Docker, D-010), CI, gitleaks | Manager (PO override, issue #8) | done | PO go |
-| P1-2 | Migrations: identity & access tables | Lead | todo | P1-1 |
+| P1-2 | Migrations: identity & access tables | Lead | in progress | P1-1 |
 | P1-3 | Layout, CSS base, i18n, error pages | Lead | todo | P1-1 |
 | P1-4 | Setup CLI, invitations, pairing (link/QR), passkeys | Lead | todo | P1-2 |
 | P1-5 | Device token rotation, device list, revoke, step-up | Lead | todo | P1-4 |
