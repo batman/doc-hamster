@@ -123,3 +123,9 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Done: PO requirement recorded as **D-024**: users have little technical knowledge → the main install path is a **setup wizard in the browser** that explains every step in plain German (server check, database incl. asking for DB credentials and creating the tables, owner account, mail, cron, **connecting the phone** + home-screen app, first steps); a shell install stays as alternative. PLAN §4.9 (flow + AK-4.9.1–8), §12 install line, §14/TASKS new packages **P1-9** (wizard core), **P1-10** (interactive shell install), **P1-11** (wizard: owner, mail, cron, phone – after P1-4). Technical design → **Q-12** for the Lead (8 points: release package without Composer, securing a fresh instance, where config is written, DB setup, cron, owner + phone, HTTPS, shell scope).
 - Next: **Lead:** answer Q-12 with its operator (explain each point in detail); D-010 install path needs updating once decided. **Manager:** can take P1-10 if the Lead assigns it.
 - Branch/PR: manager/D-024-setup-wizard
+
+## 2026-10-29 · Manager · handover: all coding to the Lead
+- PO: the Manager session has no usage left – **the Lead does all programming from now on** (P1-2 … P1-11 incl. setup wizard P1-9/P1-11 and shell install P1-10). Manager work pauses.
+- Open for the Lead: Q-12 (issue #14), Q-11, PR #5 (my review points), post-merge reviews of #7, #9, #13 (issue #10), Dependabot PRs #11/#12 (gitleaks-action v3 may need CI changes).
+- State: `main` has the P1-1 skeleton (CI green on MariaDB + MySQL). Local checks: `composer lint`, `composer analyse`, `composer test`, `composer licenses`.
+- Branch/PR: manager/handover-coding-to-lead
