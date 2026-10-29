@@ -37,7 +37,7 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
 
 ### D-010 · Target hosting & network — Owner: Lead
 - **Status:** open
-- **Question:** Home server/NAS on the LAN, VPS, or shared hosting? Decides whether OCR tools can run on the server **and how a scanner can deliver files** (see D-015).
+- **Question:** Home server/NAS on the LAN, VPS, or shared hosting? Decides whether OCR tools can run on the server **and how the phone web app reaches it** (see D-017).
 - **Options:** A) VPS/home server with Docker · B) VPS without Docker · C) shared hosting (OCR likely impossible) · D) NAS.
 - **Note:** The concrete server (provider, domain, IP) is **not** recorded here – only the chosen variant.
 - **Decision:** _…_
@@ -47,19 +47,29 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
 - **Recommendation (Manager):** Multi-org in the data model from day one; member-role UI may move to v1.1.
 - **Decision:** _…_
 
-### D-015 · Primary capture channel: document scanner vs. phone — Owner: PO (product) + Lead (ingestion/network)
+### D-015 · Capture channel: phone web app, no hardware scanner — Owner: PO
+- **Status:** decided (PO, 2026-10-29)
+- **Decision:** The **phone web app (camera)** is the capture channel. No hardware document scanner. PDF upload from files stays.
+- **How the phone app delivers photos to the server** (upload protocol, offline queue, limits) is technical → Lead, see D-017.
+
+### D-016 · Revolut connection — Owner: Lead (technical), PO (account type)
+- **Status:** open
+- **Goal (PO):** For every Revolut payment, get the full transaction details (merchant, amount, currency, original amount + FX rate, fee, exact time, Revolut category, status, merchant location if available) and match them with the receipt photo.
+- **Ways to evaluate (Lead decides):** Revolut Business API (business accounts only) · Revolut statement export (CSV/Excel, works for personal and business, manual upload) · open-banking (PSD2 account information) provider for personal accounts.
+- **Constraints:** read-only access; credentials encrypted on the server, never in the repo; file import always available as fallback.
+- **Blocked by:** Q-7 (personal or business account).
+- **Decision:** _…_
+
+### D-017 · Capture time & location; phone → server delivery — Owner: Lead
+- **Status:** open
+- **Requirement (PO):** The web app records **when** the photo was taken and **where** (PLAN.md §4.1 "Aufnahme-Metadaten").
+- **For the Lead:** Geolocation API vs EXIF (EXIF GPS is often stripped by browsers/iOS); clock-skew handling; how coordinates are stored (encrypted? rounded?); how the place name (city) is resolved without sending locations to third parties (offline data vs. self-hosted vs. external service); upload protocol and offline queue between phone and server.
+- **Fixed by the PO:** location is opt-in, removable per receipt, and appears in the receipt pack only as a city name and only if switched on.
+- **Decision:** _…_
+
+### D-018 · Receipt pack layout ("Belegpaket") — Owner: PO
 - **Status:** proposed
-- **Context:** PO prefers connecting a document scanner over a phone app.
-- **Recommendation (Manager):** Make the **scanner the primary channel** for batches at home/office and keep a **minimal web upload** (works from phone browser too) as secondary, because receipts are often lost before reaching the scanner. Concretely:
-  - Generalise the *Capture* module into **Ingestion** with pluggable channels: (1) **consume folder** – scanner writes PDFs/images into a watched directory, worker imports them; (2) **web upload / API**; later (3) **mail-in** (IMAP mailbox the scanner or user sends to).
-  - Batch handling: one file per document (scanner setting), or split a batch PDF by **separator sheets** (blank page or barcode/patch-T page); blank-page removal; duplex.
-  - Scanner OCR output (searchable PDF) can be used directly; server OCR remains the fallback.
-  - The PWA "camera first" screen (PLAN.md §4.1) is downgraded to S (should) / or a simple upload page.
-- **Questions for the Lead (network/server):**
-  - How does the scanner reach the server? Same LAN (SMB/SFTP share) is easy; a public server needs SFTP or a small LAN bridge that pushes via the API with a device token – **never plain FTP/SMB over the internet**.
-  - Which delivery protocols do we support and document (SMB, SFTP, WebDAV, email)?
-  - Security of the consume folder: dedicated, non-web-readable directory; per-channel org mapping; size/type limits; quarantine for invalid files.
-- **Questions for the PO:** Which scanner (model or at least: ADF, duplex, which "scan to …" targets it supports)? Is phone capture still wanted at all for on-the-go receipts?
+- **Proposal (Manager):** PLAN.md §10.1 – cover page with key figures, overview table, one page per transaction with details + large receipt photo, list of missing receipts. Manager drafts the layout in P0-5; PO signs off. PDF technology → Lead.
 - **Decision:** _…_
 
 ## Decide before the relevant phase
@@ -72,7 +82,7 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
 | D-008 | Org in URL vs active org in session | Lead | Phase 1 | proposed | Active org in session |
 | D-009 | Device cookie SameSite Strict vs Lax | Lead | Phase 1 | open | Lax + CSRF tokens |
 | D-012 | Password+TOTP fallback or passkeys only? | Lead | Phase 1 | open | Keep fallback |
-| D-013 | AI provider for optional enrichment | Lead | Phase 8 | open | Interface only until Phase 8 |
+| D-013 | AI in the app | PO | – | **decided: no AI** (PO, 2026-10-29) | No AI features, no data sent to AI providers |
 | D-014 | When does the repo go public? | PO | anytime | open | After P0-8 history scan; suggested at v0.3 |
 
 ## Open questions
@@ -83,5 +93,6 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
 | Q-2 | Manager → PO | Which bank export formats should be supported first? (Answer generically, e.g. "Sparkasse CSV" – no account details.) | |
 | Q-3 | Manager → PO | Public right away, or later? → see D-014 | |
 | Q-4 | Manager → PO | Typical first users: household, freelancer, small business, club? | |
-| Q-5 | Manager → PO | Scanner details for D-015 (capabilities, not serial numbers or network data). | |
-| Q-6 | Manager → Lead | D-010 + D-015: how should a scanner deliver files securely to the chosen hosting variant? | |
+| Q-5 | Manager → PO | ~~Scanner details~~ | Obsolete – no scanner (D-015) |
+| Q-6 | Manager → Lead | D-010 + D-017: how does the phone web app deliver photos securely to the chosen hosting variant? | |
+| Q-7 | Manager → PO | Revolut **personal** or **business** account? Decides whether the Revolut Business API is possible (D-016). | |

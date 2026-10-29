@@ -34,5 +34,7 @@ _(write here)_
 | A2 | §9.1 | Bank templates must be built from real exports, not from memory. | Blocked on P0-4 fixtures. | |
 | A3 | §8.1 | Recognition target E3 (≥ 80 %) is a guess until the fixture benchmark exists. | Re-calibrate after P3-4. | |
 | A4 | §6 | `users.email` nullable for passkey-only users vs. needed for mail delivery of exports. | Decide in Phase 1: make email required? | |
-| A5 | §4.1, §5.4 | PO prefers a document scanner over the phone app (D-015). | After D-015: rename *Capture* → *Ingestion* with channels (consume folder, web upload, later mail-in); add batch splitting/separator sheets; downgrade PWA camera screen. | |
+| A5 | §4.1 | ~~Document scanner as primary channel~~ – withdrawn: PO chose the phone web app (D-015). | – | ❌ |
 | A6 | §11, §13 | Repo will be public. | Add a short "public repo" subsection to §11 pointing to AGENTS.md rules; gitleaks in CI (P1-1). | |
+| A7 | §14 | Phases reordered around the core flow (v1.1). | Lead: check technical ordering (worker in P3-1 parallel to P2). | |
+| A8 | §4.4, §9.0 | Revolut ways (API / file / open banking) listed as input only. | Lead decides, depends on Q-7. | |

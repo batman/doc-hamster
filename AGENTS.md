@@ -6,7 +6,7 @@ This file is the single source of truth for every AI agent on this repo. `CLAUDE
 
 ## Project in one paragraph
 
-DocHamster is an open-source (MIT) PHP web app for collecting receipts and documents: scan or snap, send, done. The server does OCR, tagging, categorisation, bank-statement matching and reports, and gives a read-only view to the user's tax advisor. It is **not** a tax or bookkeeping app. Full plan: [`docs/PLAN.md`](docs/PLAN.md).
+DocHamster is an open-source (MIT) PHP web app for collecting receipts: snap a photo with the phone, send, done. The server matches it to the Revolut transaction (by time, amount, merchant), does OCR, tagging and the receipt pack (PDF), and gives a read-only view to the user's tax advisor. It is **not** a tax or bookkeeping app and has **no AI features** (D-013). Full plan: [`docs/PLAN.md`](docs/PLAN.md).
 
 ## Current phase
 

@@ -1,6 +1,7 @@
 # DocHamster – Detaillierter Projektplan
 
-> **Status:** Planungsphase (v1-Entwurf, 2026-10-29). Noch kein Code.
+> **Status:** Planungsphase (v1.1-Entwurf, 2026-10-29). Noch kein Code.
+> **v1.1:** PO-Entscheidungen eingearbeitet – Handy-Web-App statt Scanner (D-015), Aufnahmezeit + Standort (D-017), Revolut-Anbindung (D-016), Belegpaket für den Steuerberater (D-018). Phasen neu geordnet um den Kernablauf (§14).
 > **Vorgänger:** [`archive/plan-v0-belegbox.md`](archive/plan-v0-belegbox.md) (Arbeitstitel „Belegbox“). Alles aus v0 ist hier enthalten und ausgearbeitet.
 > **Wer bearbeitet diesen Plan?** PO (Product Owner) plus zwei KI-Agenten. Regeln für Änderungen: [`collaboration/WORKFLOW.md`](collaboration/WORKFLOW.md). Offene und getroffene Entscheidungen: [`collaboration/DECISIONS.md`](collaboration/DECISIONS.md).
 
@@ -35,7 +36,21 @@ Lizenz: **MIT**. Code, Kommentare und Commits: **Englisch**. Oberfläche: **Deut
 
 **Problem:** Belege landen in Hosentaschen, Mail-Postfächern und Fotogalerien. Am Monats- oder Jahresende fehlt die Hälfte, und die Zuordnung zu Kontobuchungen ist mühsame Handarbeit.
 
-**Lösung:** Eine installierbare Web-App (PWA), die im Alltag genau eine Sache schnell macht (Erfassen), und auf dem Server alles Weitere erledigt (OCR, Tags, Kategorien, Abgleich mit Kontoauszügen, Berichte).
+**Lösung:** Eine installierbare Web-App (PWA), die im Alltag genau eine Sache schnell macht (Erfassen mit der Handykamera, inkl. Aufnahmezeit und Standort), und auf dem Server alles Weitere erledigt (Abgleich mit Revolut-Buchungen, OCR, Tags, Kategorien, Berichte).
+
+**Kernablauf (der wichtigste Weg durch die App):**
+
+```
+Bezahlen mit Revolut ─▶ Beleg mit Handy fotografieren ─▶ App speichert Foto + Zeit + Ort
+        │                                                        │
+        ▼                                                        ▼
+Revolut-Buchung (Händler, Betrag, Zeitpunkt) ──── Abgleich ───▶ Paar Buchung ↔ Foto
+                                                                 │
+                                                                 ▼
+                                    Monat/Quartal ─▶ „Belegpaket“ (PDF) ─▶ Steuerberater
+```
+
+Alles andere (Suche, Regeln, Teams) ist nachrangig gegenüber diesem Ablauf.
 
 **Erfolgskriterien (messbar):**
 
@@ -44,15 +59,18 @@ Lizenz: **MIT**. Code, Kommentare und Commits: **Englisch**. Oberfläche: **Deut
 | E1 | Zeit von „App öffnen“ bis „Gespeichert“ (1 Foto, gutes Netz) | ≤ 5 s, ≤ 2 Taps |
 | E2 | Upload ohne Netz geht nicht verloren | 100 % (Offline-Queue) |
 | E3 | Erkennung Datum + Betrag auf typischen deutschen Kassenbons | ≥ 80 % korrekt ohne KI |
-| E4 | Automatischer Abgleich Buchung ↔ Beleg (bei vorhandenem Beleg) | ≥ 70 % automatisch, Rest per 1 Klick |
+| E4 | Automatischer Abgleich Revolut-Buchung ↔ Foto (bei vorhandenem Foto) | ≥ 85 % automatisch, Rest per 1 Klick |
 | E5 | Installation auf frischem Server laut README | ≤ 30 min |
+| E6 | Belegpaket für einen Monat erstellen und versenden | ≤ 3 Klicks, ≤ 1 min |
 
 **Nicht-Ziele (bewusst ausgeschlossen):**
 
 - Keine Steuer-App: keine Steuerberechnung, keine Steuererklärung, keine USt-Voranmeldung.
 - Keine Buchhaltung: kein Kontenrahmen (SKR03/04), keine Buchungssätze, keine GoBD-Zertifizierung.
-- Kein Banking: kein Abruf per HBCI/FinTS/PSD2 in v1 (nur Datei-Import). Kann später als Erweiterung kommen.
+- Kein allgemeines Banking: kein HBCI/FinTS, keine Zahlungen, nur **Lesen** von Buchungen. Einzige Live-Anbindung in v1: **Revolut** (D-016). Andere Banken nur per Datei-Import.
 - Keine native App (iOS/Android); die PWA muss reichen.
+- Kein Hardware-Scanner als Eingangskanal (D-015, PO-Entscheidung). PDF-Upload aus Dateien bleibt möglich.
+- **Keine KI in der App** (D-013, PO-Entscheidung): keine KI-Kategorisierung, keine KI-Extraktion, keine Transkription, keine Weitergabe an KI-Anbieter. Erkennung läuft nur über OCR, Regeln und den Abgleich mit Buchungen.
 
 ---
 
@@ -94,7 +112,7 @@ Legende: ✅ erlaubt · ❌ verboten · ⚙️ per Org-Einstellung · 🔶 einge
 2. **Mobile first.** Daumen-bedienbar, große Ziele (≥ 48 px), Kamera zuerst.
 3. **Einmal koppeln, dann in Ruhe lassen.** Kein Passwort im Alltag, trotzdem sicher (Geräte-Token + Passkey).
 4. **Server macht die Arbeit.** OCR, Tags, Kategorien, Abgleich laufen asynchron.
-5. **KI-fähig, nicht KI-abhängig.** Alles funktioniert ohne KI. KI ist ein austauschbarer, abschaltbarer Provider – und standardmäßig **aus** (Datenschutz).
+5. **Ohne KI.** Keine KI-Funktionen, keine Daten an KI-Anbieter. Nachvollziehbare Regeln statt Black Box.
 6. **Originale sind heilig.** Hochgeladene Dateien werden nie verändert; abgeleitete Versionen sind separat.
 7. **Einfach zu hosten.** SQLite-Standard, Docker optional, keine externen Pflichtdienste.
 8. **Nachvollziehbar.** Jede automatische Entscheidung (Tag, Kategorie, Match) speichert Quelle und Konfidenz; manuelle Korrekturen gewinnen immer.
@@ -119,6 +137,12 @@ Ablauf:
    - Zahlungsart-Chips (Firmenkarte / privat / bar / Überweisung – konfigurierbar).
 4. Bestätigung „Gespeichert“ (bzw. „Wird gesendet, sobald du online bist“). App kann sofort geschlossen werden.
 
+**Aufnahme-Metadaten (D-017):** Beim Auslösen merkt sich die App automatisch:
+- **Aufnahmezeitpunkt** – Gerätezeit beim Auslösen inkl. Zeitzone (primär); EXIF `DateTimeOriginal` als Abgleich; Server-Empfangszeit als letzter Fallback. Abweichungen (z. B. falsche Geräteuhr) werden erkannt und markiert.
+- **Standort** – über die Geolocation-API des Browsers beim Auslösen (Breite, Länge, Genauigkeit). EXIF-GPS ist **nicht** verlässlich (Browser/iOS entfernen es beim Upload oft), daher nur Fallback.
+- Standort ist **Opt-in** pro Nutzer (Browser-Erlaubnis + Einstellung), kann jederzeit aus- und pro Beleg gelöscht werden. Ohne Standort funktioniert alles weiter.
+- Der Server ermittelt daraus einen Ortsnamen (Stadt/Land) für Anzeige, Abgleich und Belegpaket. Wie (lokal vs. Dienst) entscheidet der Lead (D-017).
+
 Akzeptanzkriterien:
 - [ ] AK-4.1.1: Ein Foto ist mit 2 Taps (Kamera, Senden) gespeichert.
 - [ ] AK-4.1.2: Bis zu 20 Seiten können zu einem Dokument gebündelt werden.
@@ -128,8 +152,12 @@ Akzeptanzkriterien:
 - [ ] AK-4.1.6: Erlaubte Formate: JPEG, PNG, HEIC/HEIF (Server-Konvertierung), WebP, PDF. Max. 25 MB pro Datei (konfigurierbar).
 - [ ] AK-4.1.7: Bilder werden vor dem Upload clientseitig auf max. 3000 px lange Kante verkleinert (konfigurierbar, Original optional).
 - [ ] AK-4.1.8: Teilen-Ziel: In der installierten PWA kann man aus anderen Apps „Teilen → DocHamster“ (Web Share Target, S).
+- [ ] AK-4.1.9: Jeder Beleg hat einen Aufnahmezeitpunkt mit Quelle (`device`/`exif`/`server`); Offline-Uploads behalten den Zeitpunkt der Aufnahme, nicht den des Sendens.
+- [ ] AK-4.1.10: Mit erteilter Erlaubnis wird der Standort beim Auslösen gespeichert (inkl. Genauigkeit); das Warten auf GPS verzögert das Speichern nicht (max. 3 s, sonst ohne Standort bzw. nachgereicht).
+- [ ] AK-4.1.11: Ortsname (Stadt, Land) ist in der Detailansicht sichtbar; Standort pro Beleg löschbar.
+- [ ] AK-4.1.12 (S): Ist die Revolut-Live-Anbindung aktiv, zeigt die App nach dem Speichern „Passt zu: *Händler* *Betrag* vor *n* min?“ zur 1-Tap-Bestätigung.
 
-**C – später:** Weitere Eingangskanäle: E-Mail-Postfach (Belege per Mail weiterleiten), Ordner-Watch/WebDAV.
+**C – später:** E-Mail-Postfach (Online-Rechnungen per Mail weiterleiten).
 
 ### 4.2 Verarbeitung auf dem Server – M
 
@@ -159,9 +187,23 @@ uploaded → processing → processed → reviewed
 - [ ] AK-4.3.5: „Prüfen“-Modus: Durchwischen aller `processed`-Belege, je Beleg bestätigen/korrigieren → `reviewed`.
 - [ ] AK-4.3.6: Suche liefert bei 10.000 Belegen Ergebnisse in < 1 s.
 
-### 4.4 Kontoauszug-Import & Abgleich – M
+### 4.4 Revolut-Anbindung, Kontoauszug-Import & Abgleich – M
 
 Details in [Kapitel 9](#9-kontoauszug-import--abgleich).
+
+**Revolut zuerst (D-016).** Ziel: zu jeder Revolut-Kartenzahlung die vollständigen Buchungsdetails – Händler, Betrag, Währung (inkl. Originalwährung und Kurs bei Fremdwährung), genauer Zeitpunkt, Revolut-Kategorie, Status, Händlerort falls verfügbar – und das passende Foto dazu.
+
+Mögliche Wege (technische Entscheidung beim Lead, abhängig von Konto-Typ Privat/Business):
+1. **Revolut Business API** – offizielle API mit Transaktionsabruf (nur Business-Konten). Automatischer, regelmäßiger Abruf.
+2. **Revolut-Kontoauszug als Datei** (CSV/Excel aus der App/Web) – funktioniert für Privat und Business, manueller Upload z. B. monatlich. **Immer als Fallback vorhanden.**
+3. **Open-Banking-Dienst (PSD2-Kontoinformation)** – für Privatkonten ohne eigene API; Drittanbieter sieht die Daten, Zugriff muss alle 90–180 Tage erneuert werden.
+
+- [ ] AK-4.4.R1: Revolut-Buchungen (Weg 1 oder 2) landen mit Zeitpunkt (Datum + Uhrzeit), Händler, Betrag, Währung, ggf. Originalbetrag/Kurs, Kategorie und Status in `transactions`.
+- [ ] AK-4.4.R2: Nur abgeschlossene Buchungen werden abgeglichen; ausstehende/zurückgebuchte werden angezeigt, aber nicht ins Belegpaket übernommen (Rückerstattungen als eigene Zeile).
+- [ ] AK-4.4.R3: Wiederholter Abruf/Import erzeugt keine Duplikate (Revolut-Transaktions-ID bzw. Fingerprint).
+- [ ] AK-4.4.R4: API-Zugangsdaten liegen verschlüsselt auf dem Server, nie im Repo; Verbindung in den Einstellungen trennbar.
+
+**Andere Banken (Datei-Import):**
 
 - [ ] AK-4.4.1: Import von CSV (beliebiges Trennzeichen, Encoding UTF-8/ISO-8859-1/Windows-1252) und XLSX.
 - [ ] AK-4.4.2: Spaltenzuordnung per Assistent, als Profil pro Bankkonto speicherbar; bekannte Banken als Vorlagen (S).
@@ -173,9 +215,18 @@ Details in [Kapitel 9](#9-kontoauszug-import--abgleich).
 
 **S – später:** Import von CAMT.053 (XML) und MT940.
 
-### 4.5 Berichte & Export – M
+### 4.5 Belegpaket für den Steuerberater, Berichte & Export – M
 
 Details in [Kapitel 10](#10-berichte--export).
+
+**User Story:** Als Owner will ich für einen Monat/ein Quartal mit wenigen Klicks ein schönes, übersichtliches Dokument erzeugen, in dem jede Buchung mit ihrem Belegfoto steht, und es meinem Steuerberater schicken.
+
+- [ ] AK-4.5.B1: „Belegpaket erstellen“: Zeitraum + Konto wählen → Vorschau → PDF. Höchstens 3 Klicks (E6).
+- [ ] AK-4.5.B2: Das PDF enthält Deckblatt, Übersichtstabelle und pro Buchung eine Seite mit Buchungsdetails **und** dem Belegfoto (Aufbau §10.1).
+- [ ] AK-4.5.B3: Fehlende Belege sind deutlich markiert und am Ende gesammelt aufgelistet.
+- [ ] AK-4.5.B4: Standort erscheint im Paket nur, wenn der Owner es einschaltet, und dann nur als Ortsname (Stadt), nie als Koordinaten.
+- [ ] AK-4.5.B5: Versand: Download, E-Mail mit Link (Ablaufdatum) oder Ablage im Steuerberater-Zugang (§4.6).
+- [ ] AK-4.5.B6: Ein erstelltes Paket ist unveränderlich (Versionsnummer, Erstellzeitpunkt); Änderungen ergeben ein neues Paket.
 
 - [ ] AK-4.5.1: Bericht für Zeitraum + Konto(en): alle Buchungen mit verknüpften Belegen, fehlende Belege rot markiert, Summen.
 - [ ] AK-4.5.2: Export als PDF, CSV, XLSX und ZIP (Belegdateien, sortiert nach `JJJJ-MM/Kategorie/`, Dateiname `JJJJ-MM-TT_Händler_Betrag.ext`, plus `index.csv`).
@@ -189,11 +240,9 @@ Details in [Kapitel 10](#10-berichte--export).
 - [ ] AK-4.6.3: Einladung per Link/QR-Code mit Rolle, einmalig nutzbar, Ablauf 7 Tage.
 - [ ] AK-4.6.4: Steuerberater-Zugang: Einladung mit Freigabe-Umfang (Zeitraum, Konten, Kategorien), optional Ablaufdatum, jederzeit widerrufbar. Widerruf wirkt sofort (laufende Sitzungen enden).
 
-### 4.7 Sprachnotizen & KI – S/C
+### 4.7 Sprachnotizen – S
 
-- S: Sprachnotiz aufnehmen (MediaRecorder, Opus/WebM bzw. AAC/MP4 auf iOS), abspielen.
-- C: Transkription über Provider-Schnittstelle (lokales Whisper / whisper.cpp oder API).
-- C: KI-Kategorisierung/Extraktion über Provider-Schnittstelle (`AiProvider`), pro Organisation aktivierbar, mit klarer Datenschutz-Info („Belegtext wird an X gesendet“). Ergebnis wird wie eine Regel-Quelle behandelt (`source = ai`, Konfidenz).
+- S: Sprachnotiz aufnehmen (MediaRecorder, Opus/WebM bzw. AAC/MP4 auf iOS), abspielen. Keine automatische Transkription (keine KI, D-013).
 
 ### 4.8 Einstellungen – M
 
@@ -220,7 +269,8 @@ Details in [Kapitel 10](#10-berichte--export).
                           │ Worker (CLI, Cron/Supervisor)│
                           │ - Bild-Normalisierung        │ ──▶ tesseract, ocrmypdf,
                           │ - OCR, Extraktion, Tags      │     pdftotext, imagemagick/
-                          │ - Abgleich, Exporte, Mails   │     vips, (whisper)
+                          │ - Revolut-Abruf, Abgleich,   │     vips
+                          │   Belegpaket, Mails          │
                           └─────────────────────────────┘
 ```
 
@@ -249,7 +299,7 @@ Details in [Kapitel 10](#10-berichte--export).
   /Domain       Documents, Imports, Matching, Reports, Sharing, Users (Entities, Services, Policies)
   /Http         Controller, Middleware (Auth, Org-Scope, CSRF, RateLimit)
   /Jobs         ProcessDocument, RunOcr, ExtractFields, ApplyRules, MatchTransactions, BuildExport, SendMail
-  /Infrastructure  Storage, Ocr (TesseractOcr), Ai (AiProvider + NullProvider), Crypto
+  /Infrastructure  Storage, Ocr (TesseractOcr), Banking (Revolut-Anbindung), Geo (Ortsnamen), Crypto
 /config
 /database/migrations
 /public          index.php, manifest.webmanifest, sw.js, assets/ (einziger Webroot!)
@@ -270,13 +320,12 @@ Details in [Kapitel 10](#10-berichte--export).
 | `Core` | Gerüst, Config, DB, Migrations, i18n, Layout | – |
 | `Auth` | Gerätekopplung, Passkeys, Sitzungen, Einladungen | Core |
 | `Org` | Organisationen, Mitgliedschaften, Rollen, Policies | Core, Auth |
-| `Capture` | PWA, Upload-API, Offline-Queue, Storage | Core, Auth, Org |
-| `Processing` | Job-Queue, OCR, Extraktion, Regeln, Duplikate | Core, Capture |
+| `Capture` | PWA, Kamera, Aufnahmezeit/Standort, Upload-API, Offline-Queue, Storage | Core, Auth, Org |
+| `Processing` | Job-Queue, OCR, Extraktion, Regeln, Duplikate, Ortsnamen | Core, Capture |
 | `Search` | Volltext, Filter, Detailansicht, Prüfen-Modus | Processing |
-| `Banking` | Import-Profile, Parser, Transaktionen, Matching | Core, Org |
-| `Reports` | Berichte, Exporte, Mail | Search, Banking |
+| `Banking` | Revolut-Anbindung, Import-Profile, Parser, Transaktionen, Matching | Core, Org |
+| `Reports` | Belegpaket, Berichte, Exporte, Mail | Banking, Capture |
 | `Sharing` | Steuerberater-Freigaben, Audit-Log | Org, Reports |
-| `Ai` | Provider-Schnittstelle, Transkription | Processing |
 
 Module kommunizieren nur über Services/Interfaces und Domain-Events (z. B. `DocumentUploaded`, `DocumentProcessed`, `TransactionsImported`), nicht über fremde Tabellen direkt.
 
@@ -303,9 +352,10 @@ Konventionen: IDs als ULID (Text, sortierbar, nicht ratbar) für öffentlich sic
 | Tabelle | Felder (Auszug) | Hinweise |
 |---------|-----------------|----------|
 | `documents` | id, org_id, uploaded_by, client_upload_id (unique pro org), status, title, doc_date, amount_minor, currency, merchant_id, merchant_raw, category_id, payment_method_id, note, ocr_text, language, duplicate_of_id, reviewed_at, reviewed_by, deleted_at, created_at | Kern |
-| `document_fields` | id, document_id, field (`doc_date`/`amount`/`merchant`/`category`…), value, source (`ocr`/`rule`/`ai`/`user`), confidence (0–1), created_at | Nachvollziehbarkeit jeder Erkennung |
+| `document_captures` | document_id, captured_at (UTC), captured_tz, captured_at_source (`device`/`exif`/`server`), lat, lon, accuracy_m, location_source (`geolocation`/`exif`), place_name, place_country, location_deleted_at | Aufnahme-Metadaten (D-017); Koordinaten verschlüsselt speichern (Lead) |
+| `document_fields` | id, document_id, field (`doc_date`/`amount`/`merchant`/`category`…), value, source (`ocr`/`rule`/`transaction`/`user`), confidence (0–1), created_at | Nachvollziehbarkeit jeder Erkennung; `transaction` = aus der abgeglichenen Buchung übernommen |
 | `document_files` | id, document_id, kind (`original`/`normalized`/`thumbnail`/`searchable_pdf`), page_no, path, mime, size, sha256, width, height, encrypted (bool) | Originale unverändert |
-| `audio_notes` | id, document_id, path, mime, duration_s, transcript, transcript_source | S/C |
+| `audio_notes` | id, document_id, path, mime, duration_s | S |
 | `merchants` | id, org_id, name, normalized_name, default_category_id | Lernt aus Korrekturen |
 | `categories` | id, org_id, name, color, icon, sort, archived | |
 | `payment_methods` | id, org_id, name, sort | Chips |
@@ -318,10 +368,11 @@ Konventionen: IDs als ULID (Text, sortierbar, nicht ratbar) für öffentlich sic
 
 | Tabelle | Felder (Auszug) | Hinweise |
 |---------|-----------------|----------|
-| `bank_accounts` | id, org_id, name, iban_masked, currency, import_profile_id | IBAN nur maskiert speichern |
+| `bank_accounts` | id, org_id, name, provider (`revolut`/`file`), iban_masked, currency, import_profile_id | IBAN nur maskiert speichern |
+| `bank_connections` | id, org_id, bank_account_id, provider, method (`api`/`aggregator`), credentials_enc, scopes, last_sync_at, expires_at, status | Revolut-Live-Anbindung (D-016); Zugangsdaten nur verschlüsselt |
 | `import_profiles` | id, org_id, name, file_type, encoding, delimiter, decimal_sep, thousands_sep, date_format, header_row, column_map_json, sign_convention | Speicherbar, Vorlagen |
 | `imports` | id, org_id, bank_account_id, file_path, file_sha256, rows_total, rows_new, rows_duplicate, rows_error, created_by, created_at | Protokoll |
-| `transactions` | id, org_id, bank_account_id, import_id, booking_date, value_date, amount_minor, currency, counterparty, purpose, raw_json, fingerprint (unique pro Konto), no_receipt_reason | Fingerprint gegen Doppelimport |
+| `transactions` | id, org_id, bank_account_id, import_id, external_id (z. B. Revolut-ID), booking_date, booked_at (Zeitpunkt, falls bekannt), value_date, amount_minor, currency, original_amount_minor, original_currency, fx_rate, fee_minor, counterparty, merchant_city, merchant_country, provider_category, state (`completed`/`pending`/`reverted`), purpose, raw_json, fingerprint (unique pro Konto), no_receipt_reason | `external_id` bzw. Fingerprint gegen Doppelimport |
 | `matches` | id, org_id, transaction_id, document_id, score, reasons_json, status (`suggested`/`auto`/`confirmed`/`rejected`), decided_by, decided_at | n:m möglich |
 
 ### 6.4 System
@@ -329,7 +380,7 @@ Konventionen: IDs als ULID (Text, sortierbar, nicht ratbar) für öffentlich sic
 | Tabelle | Felder (Auszug) |
 |---------|-----------------|
 | `jobs` | id, queue, type, payload_json, attempts, max_attempts, available_at, reserved_at, failed_at, error | (bzw. Framework-Queue) |
-| `exports` | id, org_id, type, params_json, status, file_path, expires_at, created_by |
+| `exports` | id, org_id, type (`receipt_pack`/`csv`/`xlsx`/`zip`…), params_json, version, status, file_path, sha256, expires_at, created_by |
 | `download_links` | id, export_id, token_hash, expires_at, downloads, max_downloads |
 | `audit_log` | id, org_id, user_id, device_id, action, subject_type, subject_id, meta_json, ip_hash, created_at (append-only) |
 
@@ -367,16 +418,14 @@ API-Konventionen: JSON, Fehler als `{ "error": { "code": "...", "message": "..."
 
 Job-Kette pro Dokument (jeder Schritt idempotent, einzeln wiederholbar):
 
-1. **`NormalizeFiles`** – MIME per Magic Bytes prüfen; HEIC→JPEG; Bilder neu kodieren (entfernt Schadcode/EXIF-GPS), Ausrichtung korrigieren, Thumbnails (320 px) erzeugen; PDFs: Seitenanzahl, Text-Layer prüfen.
+1. **`NormalizeFiles`** – MIME per Magic Bytes prüfen; **EXIF-Zeit/-GPS zuerst auslesen** (als Fallback für `document_captures`), dann HEIC→JPEG; abgeleitete Bilder neu kodieren (entfernt Schadcode und alle EXIF-Daten), Ausrichtung korrigieren, Thumbnails (320 px) erzeugen; PDFs: Seitenanzahl, Text-Layer prüfen. Ortsnamen zum Standort ermitteln (D-017).
 2. **`RunOcr`** – Bilder: Tesseract (`deu+eng`, PSM 4/6 je nach Seitenverhältnis), Vorverarbeitung (Graustufen, Kontrast, Deskew). PDFs: `pdftotext`; wenn kein Text-Layer → `ocrmypdf` (erzeugt zusätzlich durchsuchbares PDF). Ergebnis: `ocr_text` + Sprache.
 3. **`ExtractFields`** – Heuristiken (siehe unten) → `document_fields` mit Konfidenz; bester Wert pro Feld wird in `documents` übernommen, sofern kein `user`-Wert existiert.
 4. **`ApplyRules`** – Regeln nach Priorität; Händler-Standardkategorie; Hashtags aus Notiz (`#reise`) und Schlüsselwort-Listen.
 5. **`DetectDuplicates`** – Hash-Gleichheit, dann Fuzzy (Betrag gleich, Datum ±1 Tag, Händler-Ähnlichkeit ≥ 0,8).
 6. **`IndexDocument`** – Volltextindex aktualisieren.
 7. **`MatchDocument`** – gegen offene Buchungen abgleichen (Kapitel 9).
-8. (optional) **`AiEnrich`**, **`TranscribeAudio`**.
-
-Danach Status `processed`; Event `DocumentProcessed`.
+Danach Status `processed`; Event `DocumentProcessed`. Nach einem bestätigten Abgleich übernimmt der Beleg fehlende Felder (Händler, Betrag, Datum) aus der Buchung (`source = transaction`).
 
 ### 8.1 Extraktions-Heuristiken (deutsch zuerst)
 
@@ -392,23 +441,17 @@ Danach Status `processed`; Event `DocumentProcessed`.
 - Aktionen: Kategorie setzen, Tags hinzufügen, Zahlungsart setzen.
 - Lernen: Bei manueller Kategorie-Änderung Angebot „Belege von *Händler* immer als *Kategorie*?“ → Regel bzw. `merchants.default_category_id`.
 
-### 8.3 KI-Schnittstelle (vorbereitet, standardmäßig aus)
-
-```php
-interface AiProvider {
-    /** @return FieldSuggestion[] */
-    public function suggestFields(string $ocrText, array $context): array;
-    public function transcribe(string $audioPath, string $language): ?string;
-}
-```
-
-Implementierungen: `NullAiProvider` (Standard), später z. B. lokales Modell oder API-Anbieter. Vorschläge landen in `document_fields` mit `source = ai` und überschreiben nie `user`-Werte.
-
 ---
 
 ## 9. Kontoauszug-Import & Abgleich
 
-### 9.1 Import
+### 9.0 Revolut
+
+- **Live (Weg 1/3 aus §4.4):** Worker ruft neue Buchungen regelmäßig ab (z. B. alle 15–60 min, Lead entscheidet) und zusätzlich nach jedem Foto-Upload, damit der Abgleich schnell passiert. Token-Erneuerung und Ablauf werden überwacht; der Owner wird vor Ablauf benachrichtigt.
+- **Datei (Weg 2):** fertiges Import-Profil „Revolut“ (Spalten mit Datum **und Uhrzeit**, Betrag, Gebühr, Währung, Status, Beschreibung). Profil **anhand einer echten, anonymisierten Exportdatei bauen**, nicht aus dem Gedächtnis.
+- Gebühren und Fremdwährungsumrechnung werden getrennt gespeichert, damit Beleg-Betrag (Originalwährung) und Kontobetrag (EUR) beide abgleichbar sind.
+
+### 9.1 Import (andere Banken)
 
 1. Datei hochladen (CSV/XLSX, max. 10 MB).
 2. Erkennung: Encoding (BOM, Heuristik), Trennzeichen, Kopfzeile; Vorschau der ersten 20 Zeilen.
@@ -419,16 +462,21 @@ Implementierungen: `NullAiProvider` (Standard), später z. B. lokales Modell ode
 
 ### 9.2 Abgleich-Score (0–100)
 
+Mit Revolut ist der **Zeitpunkt** das stärkste Signal: Das Foto entsteht typischerweise Sekunden bis Minuten nach der Zahlung. Der Betrag aus der OCR ist eine Bestätigung, aber nicht nötig.
+
 | Kriterium | Punkte |
 |-----------|--------|
-| Betrag exakt gleich (Vorzeichen beachtet) | 50 |
-| Betrag ±1 % (Trinkgeld, Fremdwährung) | 25 |
-| Datum gleich | 20; ±1–3 Tage: 15; ±4–7: 8; ±8–14: 3 |
-| Händler-Ähnlichkeit (Gegenpartei/Zweck ↔ Händler, Trigram/Jaro-Winkler) | bis 25 |
-| Zahlungsart passt zum Konto (z. B. Firmenkarte ↔ Firmenkonto) | 5 |
+| Zeitnähe Aufnahme ↔ Zahlungszeitpunkt (nur wenn beide Uhrzeiten bekannt) | ≤ 15 min: 35 · ≤ 2 h: 25 · gleicher Tag: 15 |
+| Nur Datum bekannt (andere Banken) | gleicher Tag: 15 · ±1–3 Tage: 8 · ±4–7: 3 |
+| Betrag exakt gleich (Beleg vs. Buchung, auch Originalwährung) | 40 |
+| Betrag ±1 % (Trinkgeld, Rundung, Kurs) | 20 |
+| Händler-Ähnlichkeit (Revolut-Händler/Gegenpartei ↔ OCR-Händler, Trigram/Jaro-Winkler) | bis 20 |
+| Ort passt (Händlerort ↔ Ortsname der Aufnahme) | 5 |
 
-- Score ≥ 85 und eindeutig (zweitbester ≥ 15 Punkte darunter) → `auto`.
-- 50–84 → `suggested`.
+Maximal 100. Beispiele: Foto 2 min nach Zahlung + Betrag erkannt → 75 + Händler → `auto`. Foto 2 min nach Zahlung, OCR unlesbar, aber einzige Zahlung in der Zeit → 35 + Ort 5 + Händler … → `suggested`, 1-Tap-Bestätigung.
+
+- Score ≥ 80 und eindeutig (zweitbester ≥ 15 Punkte darunter) → `auto`.
+- 40–79 → `suggested`.
 - Konkurrenz um denselben Beleg → beste Paarung gewinnt (greedy nach Score), Rest bleibt Vorschlag.
 - Jede Entscheidung speichert `reasons_json` (welche Kriterien wie viele Punkte), damit die UI „Warum?“ zeigen kann.
 - Abgleich läuft nach jedem Import und nach jeder Belegverarbeitung inkrementell.
@@ -437,6 +485,20 @@ Implementierungen: `NullAiProvider` (Standard), später z. B. lokales Modell ode
 ---
 
 ## 10. Berichte & Export
+
+### 10.1 Belegpaket (Hauptbericht für den Steuerberater, D-018)
+
+Ein PDF pro Zeitraum und Konto, schön und ruhig gestaltet (klare Typografie, viel Weißraum, A4 hoch, druckbar, auch am Bildschirm gut lesbar):
+
+1. **Deckblatt:** Titel „Belegpaket“, Name der Organisation, Zeitraum, Konto (IBAN maskiert), Erstellt am, Version; Kennzahlen: Anzahl Buchungen, Summe Ausgaben/Einnahmen, Anzahl mit Beleg / **fehlend**.
+2. **Übersicht:** Tabelle aller Buchungen – Nr. · Datum/Uhrzeit · Händler · Kategorie · Betrag (EUR, ggf. Originalbetrag) · Beleg ✓/✗ · Seite.
+3. **Pro Buchung eine Seite:** oben die Buchungsdetails (Datum + Uhrzeit, Händler, Betrag, Originalwährung + Kurs, Gebühr, Revolut-Kategorie, eigene Kategorie, Notiz, Beleg-Nr., optional Ort), darunter das **Belegfoto groß** (bei mehrseitigen Belegen Folgeseiten). Verweis auf die Originaldatei im ZIP.
+4. **Fehlende Belege:** Liste zum Nachreichen; optional (C) Vorlage für einen Eigenbeleg.
+5. **Fußzeile jeder Seite:** Seitenzahl, Paket-Version, Hinweis „Zusammenstellung aus DocHamster – kein steuerliches Dokument“.
+
+Zusätzlich auf Wunsch: ZIP mit Originalfotos + `index.csv` + PDF, und CSV/XLSX der Übersicht. Seitenaufbau und Gestaltung werden in P0-5 skizziert und vom PO abgenommen; die PDF-Technik wählt der Lead (§5.2).
+
+### 10.2 Weitere Berichte
 
 - **Bericht „Belegübersicht“** (Zeitraum, Konten): Tabelle Buchungsdatum · Gegenpartei · Zweck · Betrag · Beleg (Link/Nr.) · Kategorie · Status; Kopf mit Summen, Anzahl fehlender Belege; Fußzeile mit Erstellzeitpunkt und Hinweis „kein steuerliches Dokument“.
 - **Bericht „Belege ohne Buchung“** (z. B. Barzahlungen).
@@ -471,12 +533,14 @@ Implementierungen: `NullAiProvider` (Standard), später z. B. lokales Modell ode
 | CSRF | Token + SameSite-Cookies |
 | Brute Force auf Login/Einladungen | Rate Limiting pro IP und Konto, lange zufällige Tokens |
 | Shell-Injection in OCR-Aufrufen | Prozesse nur mit Argument-Arrays (`proc_open`/Symfony Process), keine Shell-Strings |
-| Datenabfluss an KI-Anbieter | KI standardmäßig aus, Opt-in pro Org mit klarer Info |
+| Standortdaten verraten Bewegungsprofil | Opt-in, Koordinaten verschlüsselt, nach außen nur Ortsname, pro Beleg löschbar, nie in Logs; Ortsnamen-Ermittlung ohne Weitergabe an Dritte bevorzugt (D-017) |
+| Diebstahl der Revolut-Zugangsdaten | nur Lesezugriff anfordern, verschlüsselt speichern, Widerruf in den Einstellungen, Audit-Log je Abruf |
 | Verlust der Daten | dokumentierte Backups (DB + Storage), Restore-Test |
 
 ### 11.3 Weitere Maßnahmen
 
-- Nur HTTPS, HSTS, sichere Header (CSP, Referrer-Policy, Permissions-Policy mit `camera=(self)`).
+- Nur HTTPS, HSTS, sichere Header (CSP, Referrer-Policy, Permissions-Policy mit `camera=(self), geolocation=(self)`).
+- **Öffentliches Repo:** Regeln in `AGENTS.md` („Public repository rules“). Testfotos ohne EXIF-Daten (keine echten GPS-Koordinaten!), keine echten Revolut-Exporte, keine Zugangsdaten.
 - Verschlüsselung at rest: mindestens Volume-Verschlüsselung (Doku); optional App-seitig mit libsodium und Schlüssel aus `.env`/Secret-Datei (D-007). Schlüsselverlust = Datenverlust → Doku!
 - Audit-Log append-only: Login, Kopplung, Upload, Ansicht durch Steuerberater, Änderungen, Exporte, Downloads, Rechteänderungen.
 - DSGVO: Datenexport, Löschung (Papierkorb → endgültig), konfigurierbare Aufbewahrung; Hinweis, dass gesetzliche Aufbewahrungsfristen (z. B. 6/8/10 Jahre) in der Verantwortung der Nutzer liegen; IP-Adressen nur gehasht.
@@ -532,7 +596,7 @@ Jede Phase endet mit einem **lauffähigen Stand**, einem Git-Tag (`v0.N.0`) und 
 | P0-2 | Entscheidungen D-001…D-010 treffen | DECISIONS.md: alle „Must-before-code“ entschieden |
 | P0-3 | Repo-Grundlagen: README, LICENSE, AGENTS.md, Workflow, Templates | ✅ angelegt (2026-10-29) |
 | P0-4 | Beispiel-Fixtures sammeln: 30 anonymisierte Belege, 3–5 echte Kontoauszug-CSV/XLSX (anonymisiert) | `tests/fixtures/` (durch PO) |
-| P0-5 | UI-Skizzen der 6 Hauptscreens (Erfassen, Liste, Detail, Abgleich, Bericht, Einstellungen) | `docs/design/` |
+| P0-5 | UI-Skizzen der Hauptscreens (Erfassen, Abgleich, Belegpaket-Layout, Liste, Detail, Einstellungen) | `docs/design/` |
 
 ### Phase 1 – Fundament (v0.1)
 
@@ -549,89 +613,96 @@ Jede Phase endet mit einem **lauffähigen Stand**, einem Git-Tag (`v0.N.0`) und 
 
 **Testliste v0.1:** Instanz aufsetzen · Owner koppeln per Passkey · zweites Gerät per QR koppeln · Gerät sperren → ausgesperrt · Mitglied einladen · Mitglied sieht andere Org nicht.
 
-### Phase 2 – Erfassen (v0.2)
+### Phase 2 – Erfassen mit Zeit & Ort (v0.2)
 
 | AP | Inhalt | Abh. | Parallel |
 |----|--------|------|----------|
 | P2-1 | Storage-Service (außerhalb Webroot, Pfadschema, optional Verschlüsselung), `document_files` | P1 | mit P2-2 |
 | P2-2 | PWA: Manifest, Service Worker, Installierbarkeit, Kamera-Screen, Mehrseiten-Bündelung | P1-3 | mit P2-1 |
-| P2-3 | Upload-API, idempotent (`client_upload_id`), Validierung, Limits | P2-1 | – |
+| P2-3 | Upload-API, idempotent (`client_upload_id`), Validierung, Limits – **Weg Handy → Server: Lead** | P2-1 | – |
 | P2-4 | Offline-Queue (IndexedDB), Background Sync, Fortsetzen, Badge | P2-2, P2-3 | – |
-| P2-5 | Zusatz-Schritt: Notiz, Kategorie-/Zahlungsart-Chips; Kategorien/Zahlungsarten-Stammdaten | P2-3 | ja |
-| P2-6 | Geschützte Datei-Auslieferung (`/files/{id}`), Thumbnails (synchron einfach, später Job) | P2-1 | ja |
-| P2-7 | Sprachnotiz (S) | P2-3 | ja |
+| P2-5 | Aufnahmezeit + Standort (Geolocation, Opt-in, EXIF-Fallback), `document_captures`, Ortsnamen (D-017) | P2-3 | mit P2-6 |
+| P2-6 | Zusatz-Schritt: Notiz, Kategorie-/Zahlungsart-Chips; Stammdaten | P2-3 | mit P2-5 |
+| P2-7 | Geschützte Datei-Auslieferung (`/files/{id}`), Thumbnails, Ausrichtung | P2-1 | ja |
+| P2-8 | Sprachnotiz (S, ohne Transkription) | P2-3 | ja |
 
-**Testliste v0.2:** Foto in ≤ 2 Taps · Flugmodus → 3 Belege → online → alle da, keine Duplikate · PDF aus Dateien · Mehrseitig · fremde Datei-ID → 403/404.
+**Testliste v0.2:** Foto in ≤ 2 Taps · Zeit + Ort gespeichert, Ort abschaltbar · Flugmodus → 3 Belege → online → alle da, Aufnahmezeit korrekt, keine Duplikate · PDF aus Dateien · fremde Datei-ID → 403/404.
 
-### Phase 3 – Verarbeitung (v0.3)
+### Phase 3 – Revolut & Abgleich (v0.3)
 
-| AP | Inhalt | Abh. | Parallel |
-|----|--------|------|----------|
-| P3-1 | Job-Queue + Worker (Daemon & Cron-Modus), Retry, Fehlerstatus, Jobs-Übersicht für Owner | P2 | – |
-| P3-2 | NormalizeFiles (HEIC, Re-Encode, EXIF, Thumbnails) | P3-1 | mit P3-3 |
-| P3-3 | RunOcr (Tesseract, pdftotext, ocrmypdf) mit Ressourcenlimits | P3-1 | mit P3-2 |
-| P3-4 | ExtractFields + `document_fields` + Fixture-Benchmark in CI | P3-3 | – |
-| P3-5 | Regel-Engine, Händler-Stammdaten, Hashtags | P3-4 | mit P3-6 |
-| P3-6 | Volltextindex (FTS5 / FULLTEXT) | P3-3 | mit P3-5 |
-| P3-7 | Duplikaterkennung | P3-4 | ja |
-
-**Testliste v0.3:** Supermarktbon → Datum/Betrag/Händler korrekt · Rechnungs-PDF → Text da · kaputtes Bild → `failed` + Retry · Benchmark ≥ 80 %.
-
-### Phase 4 – Wiederfinden (v0.4)
+Der Weg zu Revolut (API, Datei, Open Banking) und alle Server-Fragen dazu liegen beim **Lead** (D-016).
 
 | AP | Inhalt | Abh. | Parallel |
 |----|--------|------|----------|
-| P4-1 | Liste (Kacheln/Tabelle), Paginierung | P3 | mit P4-2 |
-| P4-2 | Suche + Filter | P3-6 | mit P4-1 |
-| P4-3 | Detailansicht mit Viewer, Bearbeiten, Verlauf | P4-1 | – |
-| P4-4 | Prüfen-Modus, „Immer so zuordnen?“-Lernen | P4-3, P3-5 | – |
-| P4-5 | Papierkorb, Wiederherstellen, endgültig löschen (Step-up) | P4-3 | ja |
+| P3-1 | Job-Queue + Worker (Daemon & Cron-Modus), Retry, Fehlerstatus | P1 | mit P2 |
+| P3-2 | Bankkonten, `transactions`-Modell inkl. Zeitpunkt, Originalwährung, Gebühr, Status | P1 | mit P3-1 |
+| P3-3 | Revolut-Anbindung nach Lead-Entscheidung (live und/oder Datei-Profil), Duplikatschutz über `external_id` | P3-1, P3-2 | – |
+| P3-4 | Allgemeiner CSV/XLSX-Import mit Profilen (andere Banken) | P3-2 | mit P3-3 |
+| P3-5 | Matching-Engine mit Zeitnähe-Score + Gründen, Kalibrierung mit Testdaten | P3-3, P2-5 | – |
+| P3-6 | Abgleich-UI (Buchungen ohne Beleg · Belege ohne Buchung · Paare, 1-Tap-Bestätigung, „kein Beleg nötig“) | P3-5 | – |
+| P3-7 | (S) „Passt zu …?“ direkt nach dem Foto | P3-5 | ja |
 
-### Phase 5 – Konto-Import & Abgleich (v0.5)
+**Testliste v0.3:** Kartenzahlung → Foto 2 min später → automatisch verknüpft · Fremdwährung korrekt · erneuter Abruf ohne Duplikate · Rückerstattung als eigene Zeile.
 
-| AP | Inhalt | Abh. | Parallel |
-|----|--------|------|----------|
-| P5-1 | Bankkonten, Import-Profile, Parser CSV (Encoding/Trenner/Formate) | P1 | **parallel zu Phase 3/4 möglich** |
-| P5-2 | XLSX-Parser, Bank-Vorlagen anhand Fixtures | P5-1 | – |
-| P5-3 | Import-Assistent (Upload, Vorschau, Zuordnung, Protokoll), Fingerprint | P5-1 | – |
-| P5-4 | Matching-Engine mit Score + Gründen, Kalibrierung | P5-3, P3-4 | – |
-| P5-5 | Abgleich-UI (3 Ansichten, manuell zuordnen, „kein Beleg nötig“) | P5-4 | – |
-
-### Phase 6 – Berichte & Export (v0.6)
+### Phase 4 – Belegpaket für den Steuerberater (v0.4 = Kernablauf fertig)
 
 | AP | Inhalt | Abh. | Parallel |
 |----|--------|------|----------|
-| P6-1 | Belegnummern, Bericht-Abfragen | P5 | – |
-| P6-2 | PDF-Bericht | P6-1 | mit P6-3 |
-| P6-3 | CSV/XLSX-Export, ZIP-Export (asynchron), Download-Links | P6-1 | mit P6-2 |
-| P6-4 | SMTP-Versand, Benachrichtigungen | P6-3 | ja |
+| P4-1 | Belegnummern, Abfragen für Zeitraum/Konto | P3 | – |
+| P4-2 | Belegpaket-PDF nach §10.1 (Gestaltung aus P0-5, PO-Abnahme) | P4-1 | mit P4-3 |
+| P4-3 | ZIP (Originale + `index.csv`), CSV/XLSX-Übersicht, asynchron, Download-Links | P4-1 | mit P4-2 |
+| P4-4 | Versand per E-Mail-Link, Benachrichtigung | P4-3 | ja |
+
+**Testliste v0.4:** Monat wählen → Paket in ≤ 3 Klicks · jede Buchung mit Foto · fehlende Belege markiert · Ort nur wenn eingeschaltet, nur Stadt · Link läuft ab.
+
+### Phase 5 – Texterkennung & Ordnung (v0.5)
+
+OCR ist jetzt Unterstützung, nicht Voraussetzung: Sie liefert Betrag/Händler als Bestätigung für den Abgleich, Belege ohne Kartenzahlung (bar, andere Banken) und die Volltextsuche.
+
+| AP | Inhalt | Abh. | Parallel |
+|----|--------|------|----------|
+| P5-1 | NormalizeFiles (HEIC, Re-Encode, EXIF entfernen in abgeleiteten Dateien) | P3-1 | mit P5-2 |
+| P5-2 | RunOcr (Tesseract, pdftotext, ocrmypdf) mit Ressourcenlimits | P3-1 | mit P5-1 |
+| P5-3 | ExtractFields + `document_fields` + Fixture-Benchmark in CI; Betrag fließt in den Score | P5-2 | – |
+| P5-4 | Regel-Engine, Händler-Stammdaten, Hashtags | P5-3 | mit P5-5 |
+| P5-5 | Volltextindex (FTS5 / FULLTEXT) | P5-2 | mit P5-4 |
+| P5-6 | Duplikaterkennung | P5-3 | ja |
+
+### Phase 6 – Wiederfinden (v0.6)
+
+| AP | Inhalt | Abh. | Parallel |
+|----|--------|------|----------|
+| P6-1 | Liste (Kacheln/Tabelle), Paginierung | P2 | mit P6-2 |
+| P6-2 | Suche + Filter | P5-5 | mit P6-1 |
+| P6-3 | Detailansicht mit Viewer, Bearbeiten, Verlauf, Ort | P6-1 | – |
+| P6-4 | Prüfen-Modus, „Immer so zuordnen?“-Lernen | P6-3, P5-4 | – |
+| P6-5 | Papierkorb, Wiederherstellen, endgültig löschen (Step-up) | P6-3 | ja |
 
 ### Phase 7 – Steuerberater-Zugang (v0.7)
 
 | AP | Inhalt | Abh. | Parallel |
 |----|--------|------|----------|
-| P7-1 | Freigaben (`shares`) mit Umfang + Ablauf, Einladung | P1-6, P6 | – |
-| P7-2 | Read-only-Oberfläche (Liste, Detail, Berichte, Download), alle Schreibwege gesperrt | P7-1 | – |
+| P7-1 | Freigaben (`shares`) mit Umfang + Ablauf, Einladung | P1-6, P4 | – |
+| P7-2 | Read-only-Oberfläche (Belegpakete, Liste, Detail, Download), alle Schreibwege gesperrt | P7-1 | – |
 | P7-3 | Widerruf sofort wirksam, Audit-Ansicht für Owner | P7-1 | ja |
-| P7-4 | Security-Review der gesamten Rechte-Matrix (zweite KI als Reviewer) | P7-2 | – |
+| P7-4 | Review der gesamten Rechte-Matrix (Manager prüft gegen Plan, Lead technisch) | P7-2 | – |
 
-### Phase 8 – KI-Option, Feinschliff, Release (v1.0)
+### Phase 8 – Feinschliff & Release (v1.0)
 
 | AP | Inhalt |
 |----|--------|
-| P8-1 | AiProvider-Schnittstelle + eine Referenz-Implementierung (opt-in) |
-| P8-2 | Transkription (C) |
-| P8-3 | Performance-Test 10.000 Belege, Optimierungen |
-| P8-4 | Barrierefreiheit-/UX-Review, Texte |
-| P8-5 | Doku komplett (Nutzer, Betrieb, Entwicklung), CHANGELOG, Release v1.0 |
+| P8-1 | Performance-Test 10.000 Belege, Optimierungen |
+| P8-2 | Barrierefreiheit-/UX-Review, Texte |
+| P8-3 | Sicherheits-Check vor Veröffentlichung, History-Scan (P0-8) |
+| P8-4 | Doku komplett (Nutzer, Betrieb, Entwicklung), CHANGELOG, Release v1.0 |
 
-### Grobe Reihenfolge & Parallelität
+### Grobe Reihenfolge
 
 ```
-P0 ─▶ P1 ─▶ P2 ─▶ P3 ─▶ P4 ─┐
-              └──────▶ P5 ──┴▶ P6 ─▶ P7 ─▶ P8
+P0 ─▶ P1 ─▶ P2 ─▶ P3 ─▶ P4  ══ Kernablauf fertig (v0.4) ══▶ P5 ─▶ P6 ─▶ P7 ─▶ P8
+            └─ P3-1/P3-2 können parallel zu P2 starten
 ```
-Phase 5 (Banking) hängt fachlich kaum an OCR und eignet sich gut als **paralleler Strang für die zweite KI**, sobald Phase 1 steht.
+Ab v0.4 ist der wichtigste Weg nutzbar: fotografieren → Revolut-Abgleich → Belegpaket an den Steuerberater.
 
 ---
 
@@ -639,7 +710,9 @@ Phase 5 (Banking) hängt fachlich kaum an OCR und eignet sich gut als **parallel
 
 | Risiko | Wahrscheinl. | Auswirkung | Gegenmaßnahme |
 |--------|:-:|:-:|---------------|
-| OCR-Qualität bei zerknitterten Thermobons schlecht | hoch | mittel | Vorverarbeitung, Konfidenz anzeigen, manuelle Korrektur schnell machen; KI optional |
+| OCR-Qualität bei zerknitterten Thermobons schlecht | hoch | mittel | Abgleich primär über Zeitpunkt + Revolut-Daten statt OCR; Vorverarbeitung; schnelle manuelle Korrektur |
+| Revolut-Zugang nicht oder nur eingeschränkt per API möglich (z. B. Privatkonto) | mittel | hoch | Datei-Import als immer verfügbarer Fallback; Lead klärt Weg früh (D-016) |
+| Geräteuhr falsch / Standort ungenau | mittel | mittel | EXIF- und Server-Zeit gegenprüfen, Zeitfenster großzügig, 1-Tap-Bestätigung |
 | Hosting ohne Tesseract | mittel | hoch | Docker als Standardweg; externer OCR-Provider als Option |
 | iOS-PWA-Einschränkungen (Background Sync fehlt, Speicher-Eviction) | hoch | mittel | Fallback: Queue beim Öffnen senden; deutlicher Hinweis bei ausstehenden Uploads |
 | Bank-CSV-Formate ändern sich / sind uneinheitlich | hoch | mittel | Profile frei konfigurierbar, Vorlagen nur als Startpunkt |
