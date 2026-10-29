@@ -52,7 +52,7 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 |----|------|-------|--------|------------|-------|
 | P0-1a | Review PLAN.md v1 (technical) → PLAN-REVIEW.md | Lead | done | – | PR #2, merged 2026-10-29 |
 | P0-1b | Review PLAN.md v1 (product) → PLAN-REVIEW.md; mark the open PO column of PLAN-REVIEW B1–B21 | Lead | todo | – | Scope, priorities (asks operator if needed). B11, B18, B19, B21 already ✅ |
-| P0-1c | Merge accepted feedback into PLAN.md (v2) | Manager (for the Lead) | todo | P0-1b | Lead decides what is accepted; the ✅ points B11, B18, B19, B21 can go in first |
+| P0-1c | Merge accepted feedback into PLAN.md (v2) | Manager (for the Lead) | in progress | P0-1b | Lead decides what is accepted. Part 1 merged (PR #7): B1, B2, B4, B6, B11, B18–B21 + decided D-001…D-004, D-009, D-010, D-012, D-017, D-020. Part 2: B22 (backup, after PR #5) and the B-points still open |
 | P0-2a | Technical decisions D-001…D-010, D-012, D-016, D-017, D-019 (STT engine) | Lead | done | – | PR #2. All blocking decisions decided; D-005, D-006, D-007 (files), D-019 engine stay proposed until their phase |
 | P0-2b | Product decisions D-000, D-011, D-014, D-018 (receipt pack layout) | Lead | todo | – | D-015, D-019 decided by PO |
 | P0-3 | Repo basics: README, LICENSE, AGENTS.md, workflow, templates | Manager | done | – | 2026-10-29 |

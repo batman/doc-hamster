@@ -1,6 +1,7 @@
 # DocHamster – Detaillierter Projektplan
 
-> **Status:** Planungsphase (v1.1-Entwurf, 2026-10-29). Noch kein Code.
+> **Status:** Planungsphase (v2-Entwurf in Arbeit, 2026-10-29). Noch kein Code.
+> **v2, Teil 1 (P0-1c):** eingearbeitet, was bereits freigegeben ist – PLAN-REVIEW B11 (MariaDB/MySQL), B18 (Anmeldung nach Rolle), B19 (Händlerkategorie/MCC, Status), B21 + B1 (ohne Docker, Mindestanforderungen, feste Domain) sowie die entschiedenen D-001, D-002, D-004, D-009, D-010, D-012, D-017 (B4, B6, B20) und D-020 (B2). Offen für Teil 2: Punkte, die noch auf eine Entscheidung warten (u. a. B3, B5, B7–B9, B12–B16).
 > **v1.1:** PO-Entscheidungen eingearbeitet – Handy-Web-App statt Scanner (D-015), Aufnahmezeit + Standort (D-017), CSV-Import für jede Bank im Kern + Revolut Business als nachinstallierbares Modul mit einfacher Einrichtung (D-016, D-021); Lizenzregel für Fremdsoftware vorgeschlagen (D-022), Belegpaket für den Steuerberater (D-018), alles lokal ohne Cloud-KI inkl. lokaler Spracherkennung (D-019). Phasen neu geordnet um den Kernablauf (§14).
 > **Vorgänger:** [`archive/plan-v0-belegbox.md`](archive/plan-v0-belegbox.md) (Arbeitstitel „Belegbox“). Alles aus v0 ist hier enthalten und ausgearbeitet.
 > **Wer bearbeitet diesen Plan?** PO (Product Owner) plus zwei KI-Agenten. Regeln für Änderungen: [`collaboration/WORKFLOW.md`](collaboration/WORKFLOW.md). Offene und getroffene Entscheidungen: [`collaboration/DECISIONS.md`](collaboration/DECISIONS.md).
@@ -96,7 +97,7 @@ Alles andere (Suche, Regeln, Teams) ist nachrangig gegenüber diesem Ablauf.
 | Kontoauszug importieren / Abgleich | ✅ | ❌ | ❌ |
 | Berichte erstellen | ✅ | ❌ | 🔶 für freigegebene Zeiträume |
 | Export (ZIP/PDF/CSV) | ✅ (mit Bestätigung) | ❌ | 🔶 freigegeben |
-| Mitglieder/Steuerberater einladen/entziehen | ✅ (mit Bestätigung) | ❌ | ❌ |
+| Mitglieder einladen, Steuerberater-Konto anlegen, Zugänge entziehen | ✅ (mit Bestätigung) | ❌ | ❌ |
 | Kategorien/Regeln verwalten | ✅ | ❌ | ❌ |
 | Audit-Log sehen | ✅ | ❌ | ❌ |
 
@@ -110,11 +111,11 @@ Legende: ✅ erlaubt · ❌ verboten · ⚙️ per Org-Einstellung · 🔶 einge
 
 1. **Geschwindigkeit vor Vollständigkeit.** Upload ohne Pflichtfelder, ohne Rückfragen. Alles Weitere ist optional und nachträglich möglich.
 2. **Mobile first.** Daumen-bedienbar, große Ziele (≥ 48 px), Kamera zuerst.
-3. **Einmal koppeln, dann in Ruhe lassen.** Kein Passwort im Alltag, trotzdem sicher (Geräte-Token + Passkey).
+3. **Einmal koppeln, dann in Ruhe lassen.** Kein Passwort im Alltag, trotzdem sicher (Geräte-Token + Passkey). Ausnahme: der Steuerberater meldet sich mit Benutzername + Passwort an, ohne etwas zu installieren (D-012).
 4. **Server macht die Arbeit.** OCR, Tags, Kategorien, Abgleich laufen asynchron.
 5. **Privat: alles lokal.** Spracherkennung, Texterkennung und Vorschläge laufen auf dem eigenen Server. Keine Daten an Cloud- oder KI-Anbieter. Einzige ausgehende Verbindungen: Revolut-API und E-Mail-Versand.
 6. **Originale sind heilig.** Hochgeladene Dateien werden nie verändert; abgeleitete Versionen sind separat.
-7. **Einfach zu hosten.** SQLite-Standard, Docker optional, keine externen Pflichtdienste.
+7. **Einfach zu hosten.** Läuft auf jedem Server oder Webhosting mit PHP 8.4 + MariaDB/MySQL, ohne Docker; Zusatzfunktionen (Texterkennung, Spracherkennung, HEIC) je nach Umgebung; keine externen Pflichtdienste (D-010).
 8. **Nachvollziehbar.** Jede automatische Entscheidung (Tag, Kategorie, Match) speichert Quelle und Konfidenz; manuelle Korrekturen gewinnen immer.
 
 ---
@@ -138,19 +139,20 @@ Ablauf:
 4. Bestätigung „Gespeichert“ (bzw. „Wird gesendet, sobald du online bist“). App kann sofort geschlossen werden.
 
 **Aufnahme-Metadaten (D-017):** Beim Auslösen merkt sich die App automatisch:
-- **Aufnahmezeitpunkt** – Gerätezeit beim Auslösen inkl. Zeitzone (primär); EXIF `DateTimeOriginal` als Abgleich; Server-Empfangszeit als letzter Fallback. Abweichungen (z. B. falsche Geräteuhr) werden erkannt und markiert.
+- **Aufnahmezeitpunkt** – Gerätezeit beim Auslösen inkl. Zeitzone (primär); EXIF `DateTimeOriginal` als Abgleich – die App liest es **im Browser vor dem Verkleinern**, weil beim Verkleinern alle EXIF-Daten verloren gehen; Server-Empfangszeit als letzter Fallback.
+- **Falsche Geräteuhr** – beim Senden schickt die App zusätzlich die aktuelle Gerätezeit (`client_sent_at`). Der Server berechnet daraus die Abweichung der Geräteuhr (funktioniert auch bei Offline-Uploads), speichert Roh- und korrigierten Zeitpunkt und markiert Abweichungen > 2 min (D-017).
 - **Standort** – über die Geolocation-API des Browsers beim Auslösen (Breite, Länge, Genauigkeit). EXIF-GPS ist **nicht** verlässlich (Browser/iOS entfernen es beim Upload oft), daher nur Fallback.
 - Standort ist **Opt-in** pro Nutzer (Browser-Erlaubnis + Einstellung), kann jederzeit aus- und pro Beleg gelöscht werden. Ohne Standort funktioniert alles weiter.
-- Der Server ermittelt daraus einen Ortsnamen (Stadt/Land) für Anzeige, Abgleich und Belegpaket. Wie (lokal vs. Dienst) entscheidet der Lead (D-017).
+- Der Server ermittelt daraus einen Ortsnamen (Stadt/Land) für Anzeige, Abgleich und Belegpaket – **offline** aus dem GeoNames-Datensatz `cities1000` (CC BY 4.0, Quellenangabe in der App), ohne externen Dienst (D-017).
 
 Akzeptanzkriterien:
 - [ ] AK-4.1.1: Ein Foto ist mit 2 Taps (Kamera, Senden) gespeichert.
 - [ ] AK-4.1.2: Bis zu 20 Seiten können zu einem Dokument gebündelt werden.
 - [ ] AK-4.1.3: Ohne Netz wird der Upload in IndexedDB gepuffert und automatisch gesendet, sobald Netz da ist (Background Sync, Fallback: beim nächsten Öffnen). Die Warteschlange ist sichtbar (Badge mit Anzahl).
-- [ ] AK-4.1.4: Ein abgebrochener Upload (App geschlossen) wird beim nächsten Öffnen fortgesetzt.
+- [ ] AK-4.1.4: Ein abgebrochener Upload (App geschlossen) wird beim nächsten Öffnen fortgesetzt. Hochgeladen wird **pro Datei/Seite**; bereits übertragene Seiten werden nicht erneut gesendet (D-017).
 - [ ] AK-4.1.5: Doppeltes Senden desselben Uploads erzeugt kein Duplikat (Client-seitige Upload-UUID, Server idempotent).
-- [ ] AK-4.1.6: Erlaubte Formate: JPEG, PNG, HEIC/HEIF (Server-Konvertierung), WebP, PDF. Max. 25 MB pro Datei (konfigurierbar).
-- [ ] AK-4.1.7: Bilder werden vor dem Upload clientseitig auf max. 3000 px lange Kante verkleinert (konfigurierbar, Original optional).
+- [ ] AK-4.1.6: Erlaubte Formate: JPEG, PNG, HEIC/HEIF (Server-Konvertierung als Zusatzfunktion, nur wenn die Umgebung sie hat – D-010), WebP, PDF. Max. 25 MB pro Datei (konfigurierbar).
+- [ ] AK-4.1.7: Bilder werden vor dem Upload clientseitig auf max. 3000 px lange Kante verkleinert (konfigurierbar, Original optional); EXIF-Zeit (und GPS, falls vorhanden) wird vorher ausgelesen und als Aufnahme-Metadaten mitgeschickt.
 - [ ] AK-4.1.8: Teilen-Ziel: In der installierten PWA kann man aus anderen Apps „Teilen → DocHamster“ (Web Share Target, S).
 - [ ] AK-4.1.9: Jeder Beleg hat einen Aufnahmezeitpunkt mit Quelle (`device`/`exif`/`server`); Offline-Uploads behalten den Zeitpunkt der Aufnahme, nicht den des Sendens.
 - [ ] AK-4.1.10: Mit erteilter Erlaubnis wird der Standort beim Auslösen gespeichert (inkl. Genauigkeit); das Warten auf GPS verzögert das Speichern nicht (max. 3 s, sonst ohne Standort bzw. nachgereicht).
@@ -201,15 +203,15 @@ Details in [Kapitel 9](#9-kontoauszug-import--abgleich).
 
 DocHamster muss **ohne** Revolut-Modul vollständig funktionieren: fotografieren → CSV einer beliebigen Bank importieren → abgleichen → Belegpaket. Der Kern enthält keinen Revolut-Code. Im Code stehen nirgends Zugangsdaten; jede Installation speichert ihre eigenen Revolut-Schlüssel verschlüsselt auf ihrem Server.
 
-**Revolut live (nachinstallierbares Modul, D-016/D-021).** Ziel: zu jeder Revolut-Kartenzahlung die vollständigen Buchungsdetails – Händler, Betrag, Währung (inkl. Originalwährung und Kurs bei Fremdwährung), genauer Zeitpunkt, Revolut-Kategorie, Status, Händlerort falls verfügbar – und das passende Foto dazu.
+**Revolut live (nachinstallierbares Modul, D-016/D-021).** Ziel: zu jeder Revolut-Kartenzahlung die vollständigen Buchungsdetails – Händler, Betrag, Währung (inkl. Originalwährung und Kurs bei Fremdwährung), genauer Zeitpunkt, Händlerkategorie (MCC, als deutscher Text), Status, Händlerort falls verfügbar – und das passende Foto dazu.
 
 Ziel-Kontotyp: **Revolut Business** (PO, Q-7) → die offizielle Business API ist der erwartete Hauptweg. Technische Umsetzung entscheidet der Lead:
 1. **Revolut Business API** – offizielle API mit Transaktionsabruf (nur Business-Konten). Automatischer, regelmäßiger Abruf.
 2. **Revolut-Kontoauszug als Datei** (CSV/Excel aus der App/Web) – funktioniert für Privat und Business, manueller Upload z. B. monatlich. **Immer als Fallback vorhanden.**
 3. ~~Open-Banking-Dienst für Privatkonten~~ – in v1 nicht nötig (Business-Konto).
 
-- [ ] AK-4.4.R1: Revolut-Buchungen (Weg 1 oder 2) landen mit Zeitpunkt (Datum + Uhrzeit), Händler, Betrag, Währung, ggf. Originalbetrag/Kurs, Kategorie und Status in `transactions`.
-- [ ] AK-4.4.R2: Nur abgeschlossene Buchungen werden abgeglichen; ausstehende/zurückgebuchte werden angezeigt, aber nicht ins Belegpaket übernommen (Rückerstattungen als eigene Zeile).
+- [ ] AK-4.4.R1: Revolut-Buchungen (Weg 1 oder 2) landen mit Zeitpunkt (Datum + Uhrzeit), Händler, Betrag, Währung, ggf. Originalbetrag/Kurs, Händlerkategorie (MCC – die Revolut-API liefert keine eigene Ausgabenkategorie) und Status in `transactions`. Die MCC wird über eine Tabelle MCC → deutscher Text angezeigt (z. B. „Tankstelle“, „Restaurant“).
+- [ ] AK-4.4.R2: Nur abgeschlossene Buchungen werden abgeglichen; ausstehende/zurückgebuchte werden angezeigt, aber nicht ins Belegpaket übernommen (Rückerstattungen als eigene Zeile); abgelehnte/fehlgeschlagene (`declined`/`failed`) werden nie abgeglichen und nie ins Belegpaket übernommen.
 - [ ] AK-4.4.R3: Wiederholter Abruf/Import erzeugt keine Duplikate (Revolut-Transaktions-ID bzw. Fingerprint).
 - [ ] AK-4.4.R4: API-Zugangsdaten liegen verschlüsselt auf dem Server, nie im Repo; Verbindung in den Einstellungen trennbar.
 - [ ] AK-4.4.R5: **Einfache Einrichtung:** Ein Assistent führt Schritt für Schritt durch die Verbindung (Zertifikat erzeugen → in Revolut Business eintragen → Client-ID einfügen → Zustimmung → Verbindung testen → erster Import). Ziel: in ≤ 10 min ohne Doku, verständliche deutsche Texte und Fehlermeldungen.
@@ -253,7 +255,7 @@ Details in [Kapitel 10](#10-berichte--export).
 - [ ] AK-4.6.1: Eine Instanz hat mehrere Organisationen; jede Person kann Mitglied mehrerer Organisationen sein (Org-Wechsler).
 - [ ] AK-4.6.2: Daten sind strikt pro Organisation getrennt (jede Abfrage ist org-gefiltert; automatisierter Test pro Repository/Endpoint).
 - [ ] AK-4.6.3: Einladung per Link/QR-Code mit Rolle, einmalig nutzbar, Ablauf 7 Tage.
-- [ ] AK-4.6.4: Steuerberater-Zugang: Einladung mit Freigabe-Umfang (Zeitraum, Konten, Kategorien), optional Ablaufdatum, jederzeit widerrufbar. Widerruf wirkt sofort (laufende Sitzungen enden).
+- [ ] AK-4.6.4: Steuerberater-Zugang: Der Owner legt das Konto an (Benutzername, Freigabe-Umfang: Zeitraum, Konten, Kategorien, optional Ablaufdatum). Die App erzeugt ein starkes Zufallspasswort (≥ 20 Zeichen) und zeigt es dem Owner **einmal** zum Weitergeben. Keine Selbstregistrierung. Passwort jederzeit zurücksetzbar, Zugang jederzeit widerrufbar; beides wirkt sofort (laufende Sitzungen enden) (D-012).
 
 ### 4.7 Sprachnotizen & Spracherkennung (lokal) – S
 
@@ -280,38 +282,43 @@ Akzeptanzkriterien:
 
 ```
 ┌──────────────┐  HTTPS   ┌─────────────────────────────┐      ┌──────────────┐
-│ PWA (Browser)│ ───────▶ │ PHP-App (Web)                │ ───▶ │ DB (SQLite/  │
-│ - Kamera     │          │ - Routing, Auth, Rechte      │      │  MariaDB)    │
+│ PWA (Browser)│ ───────▶ │ PHP-App (Web)                │ ───▶ │ DB (MariaDB/ │
+│ - Kamera     │          │ - Routing, Auth, Rechte      │      │  MySQL)      │
 │ - Offline-   │ ◀─────── │ - Upload-Annahme             │      └──────────────┘
 │   Queue (IDB)│          │ - Suche, Berichte, Admin-UI  │      ┌──────────────┐
 │ - Service    │          └──────────────┬──────────────┘ ───▶ │ Datei-Storage│
 │   Worker     │                         │ Jobs (DB-Queue)      │ (außerhalb   │
 └──────────────┘                         ▼                      │  Webroot)    │
                           ┌─────────────────────────────┐ ───▶ └──────────────┘
-                          │ Worker (CLI, Cron/Supervisor)│
-                          │ - Bild-Normalisierung        │ ──▶ tesseract, ocrmypdf,
-                          │ - OCR, Extraktion, Tags      │     pdftotext, imagemagick/
-                          │ - Spracherkennung (lokal)    │     vips, Speech-to-Text-Engine (lokal)
-                          │ - Revolut-Abruf, Abgleich,   │
-                          │   Belegpaket, Mails          │
+                          │ Queue `local` (offline)     │ ──▶ Zusatz-Tools, falls vorhanden
+                          │ - Bild-Normalisierung       │     (D-010): tesseract, ocrmypdf,
+                          │ - OCR, Extraktion, Tags     │     vips, whisper.cpp, ffmpeg
+                          │ - Spracherkennung, Ortsnamen│
+                          │ - Abgleich, Belegpaket      │
+                          ├─────────────────────────────┤
+                          │ Queue `net` (nach außen)    │ ──▶ Bank-Modul (z. B. Revolut-API),
+                          │ - Bank-Abruf, alle Mails    │     SMTP
                           └─────────────────────────────┘
+                           Worker per Cron jede Minute, Dauer-Worker optional
 ```
 
-### 5.2 Technik-Stack (Vorschlag; Entscheidungen in DECISIONS.md)
+**Hintergrundjobs (D-020, D-010):** zwei Queues. `local` (Normalisierung, OCR, Spracherkennung, Ortsnamen, Abgleich, Belegpaket-PDF) hat keinen Internetzugang; `net` (Bank-Abruf, alle Mails) ist der **einzige** Weg nach außen. Web-Requests machen selbst keine ausgehenden Aufrufe (Mails immer über die Queue). Durchgesetzt per Architektur-Tests; in CI laufen die `local`-Jobs ohne Netzwerk; auf eigenen Servern optional zusätzlich per Firewall-Regel pro Worker-Benutzer. Gestartet werden die Worker per Cron (`schedule:run` jede Minute, kurze `queue:work`-Läufe); ein Dauer-Worker (systemd/Supervisor) ist optional. Lange Jobs werden pro Seite/Datei aufgeteilt, damit sie in Zeitlimits von Webhosting passen.
+
+### 5.2 Technik-Stack (Entscheidungen in DECISIONS.md)
 
 | Bereich | Vorschlag | Alternative | Entscheidung |
 |---------|-----------|-------------|--------------|
-| Sprache | PHP 8.3+ (8.2 minimal) | – | D-002 |
-| Framework | **Laravel** (Queue, Migrations, Mail, Storage, Tests, Policies „gratis“) | Slim 4 + Einzelpakete (schlanker, mehr Eigenbau) | **D-001 offen** |
-| DB | SQLite (Standard, FTS5 für Volltext) | MariaDB/MySQL (FULLTEXT) über gleiche Abstraktion | D-003 |
-| Frontend | Server-gerendertes HTML + kleines Vanilla-JS (ES-Module), kein Build-Zwang | htmx/Alpine.js als leichte Helfer | D-004 |
-| CSS | Eigenes kleines CSS mit Custom Properties (Light/Dark) | Pico.css | D-004 |
-| OCR | Tesseract 5 (`deu+eng`), `ocrmypdf` für PDFs | API-OCR als Provider | D-005 |
+| Sprache | **PHP 8.4** (Minimum) | – | D-002 ✅ |
+| Framework | **Laravel**, aktuelle stabile Version, in `composer.json` festgelegt; Blade-Templates; kein Livewire/Inertia/SPA, keine Laravel-Cloud-Dienste, kein Sanctum/Passport (eigene Geräte-Token-Anmeldung) | – | D-001 ✅ |
+| DB | **MariaDB 10.11+ und MySQL 8.4+**, beide ab v1; nur gemeinsamer Funktionsumfang (InnoDB, `utf8mb4`, Query Builder); Volltext per `FULLTEXT` hinter einer `SearchIndex`-Schnittstelle | PostgreSQL später möglich; **kein SQLite** in v1 | D-003 ✅ |
+| Frontend | Blade + Vanilla-JS (ES-Module) ohne Build-Schritt; strikte CSP ohne Inline-Skripte | htmx nur, wenn ein Screen es braucht (lokal eingebunden, kein CDN) | D-004 ✅ |
+| CSS | Eigenes kleines CSS mit Custom Properties (Light/Dark) | – | D-004 ✅ |
+| OCR | Tesseract 5 (`deu+eng`), `ocrmypdf` für PDFs – **Zusatzfunktion**, nur wenn auf dem Server vorhanden (D-010) | – (kein Cloud-OCR, D-019) | D-005 |
 | Bildverarbeitung | libvips (`php-vips`) oder Imagick; HEIC über libheif | – | D-005 |
 | XLSX | PhpSpreadsheet (Import & Export) | OpenSpout (schneller, streaming) | – |
 | PDF-Erzeugung | Dompdf | wkhtmltopdf/Chromium headless | – |
 | Passkeys | `web-auth/webauthn-lib` | `lbuchs/WebAuthn` | D-006 |
-| Verschlüsselung | Volume-Verschlüsselung (Pflicht-Empfehlung) + optional libsodium (`secretstream`) pro Datei | – | D-007 |
+| Verschlüsselung | Geheimnisse und personenbezogene Felder (Bank-Zugangsdaten, Koordinaten) **immer** verschlüsselt (Laravel encrypted casts); Dateien: Volume-Verschlüsselung (dringend empfohlen) + optional libsodium (`secretstream`) pro Datei | – | D-007 (Felder ✅, Dateien offen) |
 | Tests | PHPUnit/Pest, Playwright (E2E) | – | – |
 | Qualität | PHPStan (Level 8), PHP-CS-Fixer/Pint, ESLint | – | – |
 
@@ -333,7 +340,6 @@ Akzeptanzkriterien:
 /storage         (außerhalb Webroot) originals/, derived/, exports/, tmp/
 /tests           Unit/, Feature/, E2E/, fixtures/ (anonymisierte Beispielbelege, Beispiel-CSVs)
 /docs            Plan, Entscheidungen, Betriebsdoku
-/docker          Dockerfile, compose.yaml
 ```
 
 ### 5.4 Modul-Schnitt (wichtig für parallele Arbeit zweier KIs)
@@ -363,12 +369,12 @@ Konventionen: IDs als ULID (Text, sortierbar, nicht ratbar) für öffentlich sic
 
 | Tabelle | Felder (Auszug) | Hinweise |
 |---------|-----------------|----------|
-| `users` | id, email (unique, nullable für reine Passkey-Nutzer?), display_name, locale, password_hash (nullable), totp_secret_enc (nullable), created_at | Passwort nur als Fallback |
+| `users` | id, username (unique, nullable – nur Steuerberater), email (unique, nullable), display_name, locale, password_hash (nullable – nur Steuerberater), created_at | Owner/Mitglied: nur Passkeys + Geräte-Token; Steuerberater: Benutzername + Passwort (Argon2id), D-012 |
 | `passkeys` | id, user_id, credential_id (unique), public_key, sign_count, transports, name, last_used_at | WebAuthn |
 | `devices` | id, user_id, name, user_agent, token_hash, token_family, last_used_at, last_ip_hash, revoked_at, created_at | Langlebiges Geräte-Token, Rotation |
 | `organizations` | id, name, settings_json, retention_days, trash_days | |
 | `memberships` | id, org_id, user_id, role (`owner`/`member`/`accountant`), created_at, revoked_at | unique(org_id,user_id) |
-| `invitations` | id, org_id, role, token_hash, email (optional), share_scope_json, expires_at, used_at, created_by | Einmal-Link/QR |
+| `invitations` | id, org_id, role, token_hash, email (optional), expires_at, used_at, created_by | Einmal-Link/QR für Mitglieder; Steuerberater-Konten legt der Owner direkt an (D-012) |
 | `shares` | id, org_id, membership_id, date_from, date_to, bank_account_ids_json, category_ids_json, expires_at, revoked_at | Umfang für Steuerberater |
 
 ### 6.2 Dokumente
@@ -376,7 +382,7 @@ Konventionen: IDs als ULID (Text, sortierbar, nicht ratbar) für öffentlich sic
 | Tabelle | Felder (Auszug) | Hinweise |
 |---------|-----------------|----------|
 | `documents` | id, org_id, uploaded_by, client_upload_id (unique pro org), status, title, doc_date, amount_minor, currency, merchant_id, merchant_raw, category_id, payment_method_id, note, ocr_text, language, duplicate_of_id, reviewed_at, reviewed_by, deleted_at, created_at | Kern |
-| `document_captures` | document_id, captured_at (UTC), captured_tz, captured_at_source (`device`/`exif`/`server`), lat, lon, accuracy_m, location_source (`geolocation`/`exif`), place_name, place_country, location_deleted_at | Aufnahme-Metadaten (D-017); Koordinaten verschlüsselt speichern (Lead) |
+| `document_captures` | document_id, captured_at (UTC, korrigiert), captured_at_raw, captured_tz, captured_at_source (`device`/`exif`/`server`), client_sent_at, received_at, clock_skew_ms, lat, lon, accuracy_m, location_source (`geolocation`/`exif`), place_name, place_country, location_deleted_at | Aufnahme-Metadaten (D-017); lat/lon/accuracy verschlüsselt (D-007), nie in Logs; Abweichung > 2 min wird markiert |
 | `document_fields` | id, document_id, field (`doc_date`/`amount`/`merchant`/`category`…), value, source (`ocr`/`rule`/`transaction`/`local_model`/`user`), confidence (0–1), created_at | Nachvollziehbarkeit jeder Erkennung; `transaction` = aus der abgeglichenen Buchung übernommen |
 | `document_files` | id, document_id, kind (`original`/`normalized`/`thumbnail`/`searchable_pdf`), page_no, path, mime, size, sha256, width, height, encrypted (bool) | Originale unverändert |
 | `audio_notes` | id, document_id, path, mime, duration_s, transcript, transcript_engine, transcript_status, transcribed_at | S; Transkript lokal erzeugt |
@@ -386,7 +392,7 @@ Konventionen: IDs als ULID (Text, sortierbar, nicht ratbar) für öffentlich sic
 | `tags` | id, org_id, name (`#reise`) | |
 | `document_tags` | document_id, tag_id, source, confidence | |
 | `rules` | id, org_id, priority, match_type (`merchant`/`text_contains`/`regex`/`amount_range`), match_value, action_category_id, action_tags_json, action_payment_method_id, created_from_document_id, enabled | Regel-Engine |
-| `documents_fts` | Volltextindex (SQLite FTS5 bzw. MySQL FULLTEXT) über ocr_text, note, merchant, tags | |
+| Volltextindex | `FULLTEXT`-Index (MariaDB/MySQL, `MATCH … AGAINST`) über ocr_text, note, merchant, tags; Tabellenzuschnitt im Datenmodell (P0-18) | hinter der `SearchIndex`-Schnittstelle (D-003); keine deutsche Wortstamm-Bildung in der DB – falls nötig, Normalisierung in PHP vor dem Indexieren |
 
 ### 6.3 Banking
 
@@ -396,7 +402,7 @@ Konventionen: IDs als ULID (Text, sortierbar, nicht ratbar) für öffentlich sic
 | `bank_connections` | id, org_id, bank_account_id, provider, method (`api`/`aggregator`), credentials_enc, scopes, last_sync_at, expires_at, status | Revolut-Live-Anbindung (D-016); Zugangsdaten nur verschlüsselt |
 | `import_profiles` | id, org_id, name, file_type, encoding, delimiter, decimal_sep, thousands_sep, date_format, header_row, column_map_json, sign_convention | Speicherbar, Vorlagen |
 | `imports` | id, org_id, bank_account_id, file_path, file_sha256, rows_total, rows_new, rows_duplicate, rows_error, created_by, created_at | Protokoll |
-| `transactions` | id, org_id, bank_account_id, import_id, external_id (z. B. Revolut-ID), booking_date, booked_at (Zeitpunkt, falls bekannt), value_date, amount_minor, currency, original_amount_minor, original_currency, fx_rate, fee_minor, counterparty, merchant_city, merchant_country, provider_category, state (`completed`/`pending`/`reverted`), purpose, raw_json, fingerprint (unique pro Konto), no_receipt_reason | `external_id` bzw. Fingerprint gegen Doppelimport |
+| `transactions` | id, org_id, bank_account_id, import_id, external_id (z. B. Revolut-ID), booking_date, booked_at (Zeitpunkt, falls bekannt), value_date, amount_minor, currency, original_amount_minor, original_currency, fx_rate, fee_minor, counterparty, merchant_city, merchant_country, provider_category, state (`completed`/`pending`/`reverted`/`declined`/`failed`), purpose, raw_json, fingerprint (unique pro Konto), no_receipt_reason | `external_id` bzw. Fingerprint gegen Doppelimport; `provider_category` = Händlerkategorie (MCC), angezeigt als deutscher Text; `declined`/`failed` nie abgeglichen, nie im Belegpaket |
 | `matches` | id, org_id, transaction_id, document_id, score, reasons_json, status (`suggested`/`auto`/`confirmed`/`rejected`), decided_by, decided_at | n:m möglich |
 
 ### 6.4 System
@@ -417,7 +423,8 @@ Web-Oberfläche serverseitig gerendert; zusätzlich eine kleine JSON-API für di
 | Methode | Pfad | Zweck | Rolle |
 |---------|------|-------|-------|
 | GET | `/` | Erfassen-Screen | owner, member |
-| POST | `/api/documents` | Upload (multipart, `client_upload_id`, Seiten), idempotent | owner, member |
+| PUT | `/api/uploads/{client_upload_id}/files/{n}` | eine Seite/Datei (Rohdaten + Content-Type); idempotent pro (`org_id`, `client_upload_id`, `n`), Wiederholung mit gleichem SHA-256 → 200 | owner, member |
+| POST | `/api/uploads/{client_upload_id}/complete` | Abschluss: Seitenzahl, Aufnahme-Metadaten, `client_sent_at`; legt das Dokument an (201), Wiederholung liefert das bestehende (200) | owner, member |
 | PATCH | `/api/documents/{id}` | Notiz, Kategorie, Zahlungsart, Felder | owner, member (eigene) |
 | POST | `/api/documents/{id}/audio` | Sprachnotiz | owner, member |
 | GET | `/api/documents/{id}/status` | Verarbeitungsstatus (Polling) | |
@@ -434,15 +441,15 @@ Web-Oberfläche serverseitig gerendert; zusätzlich eine kleine JSON-API für di
 | GET/POST | `/settings/...` | Profil, Geräte, Org, Regeln, Mitglieder, Freigaben | je nach Bereich |
 | GET/POST | `/pair/{token}`, `/login`, `/webauthn/*` | Kopplung & Anmeldung | öffentlich |
 
-API-Konventionen: JSON, Fehler als `{ "error": { "code": "...", "message": "..." } }`, CSRF-Token auch für API (gleiche Herkunft), Versionierung nicht nötig (nur eigener Client).
+API-Konventionen: JSON, Fehler als `{ "error": { "code": "...", "message": "..." } }`, Versionierung nicht nötig (nur eigener Client). `client_upload_id` ist eine ULID vom Handy; unfertige Uploads werden nach 7 Tagen gelöscht. **CSRF:** `/api/*` nutzt **kein** Session-CSRF-Token (Uploads aus der Offline-Queue kommen oft erst, wenn es abgelaufen ist), sondern verlangt gleiche Herkunft (`Origin`, `Sec-Fetch-Site: same-origin`) plus den eigenen Header `X-DocHamster-Client: 1`; HTML-Formulare behalten das normale CSRF-Token (D-017).
 
 ---
 
 ## 8. Verarbeitungs-Pipeline (OCR, Extraktion, Tags)
 
-Job-Kette pro Dokument (jeder Schritt idempotent, einzeln wiederholbar):
+Job-Kette pro Dokument (jeder Schritt idempotent, einzeln wiederholbar). Alle Schritte laufen in der Queue `local` ohne Internetzugang (D-020). OCR, HEIC-Konvertierung und Spracherkennung sind Zusatzfunktionen und werden übersprungen, wenn die Umgebung sie nicht hat (D-010):
 
-1. **`NormalizeFiles`** – MIME per Magic Bytes prüfen; **EXIF-Zeit/-GPS zuerst auslesen** (als Fallback für `document_captures`), dann HEIC→JPEG; abgeleitete Bilder neu kodieren (entfernt Schadcode und alle EXIF-Daten), Ausrichtung korrigieren, Thumbnails (320 px) erzeugen; PDFs: Seitenanzahl, Text-Layer prüfen. Ortsnamen zum Standort ermitteln (D-017).
+1. **`NormalizeFiles`** – MIME per Magic Bytes prüfen; bei unverkleinert hochgeladenen Dateien **EXIF-Zeit/-GPS zuerst auslesen** (als Fallback für `document_captures`; Kamerafotos kommen ohne EXIF an, die App schickt die EXIF-Zeit vorher mit, §4.1), dann HEIC→JPEG (Zusatzfunktion); abgeleitete Bilder neu kodieren (entfernt Schadcode und alle EXIF-Daten), Ausrichtung korrigieren, Thumbnails (320 px) erzeugen; PDFs: Seitenanzahl, Text-Layer prüfen. Ortsnamen zum Standort offline ermitteln (GeoNames, D-017).
 2. **`RunOcr`** – Bilder: Tesseract (`deu+eng`, PSM 4/6 je nach Seitenverhältnis), Vorverarbeitung (Graustufen, Kontrast, Deskew). PDFs: `pdftotext`; wenn kein Text-Layer → `ocrmypdf` (erzeugt zusätzlich durchsuchbares PDF). Ergebnis: `ocr_text` + Sprache.
 3. **`ExtractFields`** – Heuristiken (siehe unten) → `document_fields` mit Konfidenz; bester Wert pro Feld wird in `documents` übernommen, sofern kein `user`-Wert existiert.
 4. **`ApplyRules`** – Regeln nach Priorität; Händler-Standardkategorie; Hashtags aus Notiz (`#reise`) und Schlüsselwort-Listen.
@@ -518,7 +525,7 @@ Ein PDF pro Zeitraum und Konto, schön und ruhig gestaltet (klare Typografie, vi
 
 1. **Deckblatt:** Titel „Belegpaket“, Name der Organisation, Zeitraum, Konto (IBAN maskiert), Erstellt am, Version; Kennzahlen: Anzahl Buchungen, Summe Ausgaben/Einnahmen, Anzahl mit Beleg / **fehlend**.
 2. **Übersicht:** Tabelle aller Buchungen – Nr. · Datum/Uhrzeit · Händler · Kategorie · Betrag (EUR, ggf. Originalbetrag) · Beleg ✓/✗ · Seite.
-3. **Pro Buchung eine Seite:** oben die Buchungsdetails (Datum + Uhrzeit, Händler, Betrag, Originalwährung + Kurs, Gebühr, Revolut-Kategorie, eigene Kategorie, Notiz, Beleg-Nr., optional Ort), darunter das **Belegfoto groß** (bei mehrseitigen Belegen Folgeseiten). Verweis auf die Originaldatei im ZIP.
+3. **Pro Buchung eine Seite:** oben die Buchungsdetails (Datum + Uhrzeit, Händler, Betrag, Originalwährung + Kurs, Gebühr, Händlerkategorie (MCC als Text), eigene Kategorie, Notiz, Beleg-Nr., optional Ort), darunter das **Belegfoto groß** (bei mehrseitigen Belegen Folgeseiten). Verweis auf die Originaldatei im ZIP.
 4. **Fehlende Belege:** Liste zum Nachreichen; optional (C) Vorlage für einen Eigenbeleg.
 5. **Fußzeile jeder Seite:** Seitenzahl, Paket-Version, Hinweis „Zusammenstellung aus DocHamster – kein steuerliches Dokument“.
 
@@ -540,13 +547,13 @@ Zusätzlich auf Wunsch: ZIP mit Originalfotos + `index.csv` + PDF, und CSV/XLSX 
 ### 11.1 Anmeldung & Gerätekopplung
 
 1. **Erstes Gerät / Instanz-Setup:** CLI-Befehl erzeugt Owner + Einmal-Link (`php artisan dochamster:setup` o. ä.).
-2. **Kopplung:** Einladungslink oder QR-Code (auf bereits angemeldetem Gerät angezeigt, 10 min gültig) → auf dem neuen Gerät **Passkey anlegen** (WebAuthn, bevorzugt) **oder** Passwort + TOTP (Fallback, z. B. für alte Geräte).
-3. **Danach:** langlebiges Geräte-Token (256 bit zufällig, nur Hash in DB) als Cookie `__Host-dh_device` (HttpOnly, Secure, SameSite=Lax wegen QR/Link-Einstieg – **Strict prüfen**, D-009), Laufzeit 180 Tage gleitend.
+2. **Kopplung:** Einladungslink oder QR-Code (auf bereits angemeldetem Gerät angezeigt, 10 min gültig) → auf dem neuen Gerät **Passkey anlegen** (WebAuthn). Für Owner und Mitglieder gibt es **kein** Passwort und kein TOTP (D-012). Passkey verloren → der Owner erzeugt einen neuen Kopplungslink; für den Owner selbst gibt es den Setup-CLI-Befehl.
+3. **Danach:** langlebiges Geräte-Token (256 bit zufällig, nur Hash in DB) als Cookie `__Host-dh_device` (HttpOnly, Secure, SameSite=Lax – Strict würde das Cookie beim Öffnen aus Mail/QR-Link weglassen und wie eine Abmeldung wirken, D-009), Laufzeit 180 Tage gleitend.
 4. **Rotation:** Token wird periodisch (z. B. alle 24 h) erneuert; Wiederverwendung eines alten Tokens derselben Familie → ganze Familie sperren (Diebstahlerkennung).
 5. **Sitzung:** kurzlebige Session (z. B. 12 h) wird aus gültigem Geräte-Token stillschweigend erneuert.
-6. **Step-up:** Sensible Aktionen (Export, Rollen, Einladungen, endgültig löschen, Geräte sperren) erfordern frische Bestätigung per Passkey/TOTP (≤ 5 min alt).
+6. **Step-up:** Sensible Aktionen (Export, Rollen, Einladungen, endgültig löschen, Geräte sperren) erfordern frische Bestätigung per Passkey (≤ 5 min alt). Der Steuerberater hat keine solchen Aktionen.
 7. **Geräteliste:** sichtbar, einzeln sperrbar; „Alle anderen Geräte abmelden“.
-8. **Steuerberater:** gleicher Mechanismus, aber eigene Rolle; Widerruf der Freigabe/Mitgliedschaft beendet alle Geräte-Tokens dieser Mitgliedschaft.
+8. **Steuerberater:** meldet sich mit **Benutzername + Passwort** an – keine App, kein Handy, nichts zu installieren. Der Owner legt das Konto an (AK-4.6.4); Passwort zufällig erzeugt (≥ 20 Zeichen), einmal angezeigt, jederzeit zurücksetzbar (alte Sitzungen enden), vom Steuerberater änderbar. Argon2id-Hash, Rate Limit + vorübergehende Sperre nach Fehlversuchen, Sitzung 8 h **ohne** langlebiges Geräte-Token, Anmeldungen im Audit-Log. Widerruf der Freigabe/Mitgliedschaft beendet alle Sitzungen sofort. TOTP für den Steuerberater optional später (C) (D-012).
 
 ### 11.2 Bedrohungsmodell (Kurzfassung)
 
@@ -556,10 +563,10 @@ Zusätzlich auf Wunsch: ZIP mit Originalfotos + `index.csv` + PDF, und CSV/XLSX 
 | Fremde Org-Daten lesen (IDOR) | Org-Scope-Middleware, Policies pro Ressource, ULIDs, Tests für jeden Endpoint |
 | Bösartige Uploads (Polyglot, ZIP-Bombe, PDF-JS) | Magic-Bytes-Prüfung, Neukodierung von Bildern, Größen-/Seitenlimit, OCR-Tools im Worker mit Ressourcenlimits (timeout, ulimit), nie aus Webroot ausliefern, `Content-Disposition` + `X-Content-Type-Options: nosniff` |
 | XSS über OCR-Text/Notizen | konsequentes Escaping in Templates, strikte CSP (kein inline-JS) |
-| CSRF | Token + SameSite-Cookies |
-| Brute Force auf Login/Einladungen | Rate Limiting pro IP und Konto, lange zufällige Tokens |
+| CSRF | Token für HTML-Formulare; `/api/*` gleiche Herkunft + eigener Header (D-017); Cookies SameSite=Lax (D-009) |
+| Brute Force auf Login/Einladungen | Rate Limiting pro IP und Konto, vorübergehende Sperre nach Fehlversuchen beim Steuerberater-Login, lange zufällige Tokens und Passwörter |
 | Shell-Injection in OCR-Aufrufen | Prozesse nur mit Argument-Arrays (`proc_open`/Symfony Process), keine Shell-Strings |
-| Datenabfluss an Cloud-/KI-Dienste | Alle Verarbeitung lokal; Worker ohne ausgehenden Internetzugang außer Revolut-API und SMTP (Egress-Regel, Lead); Test, dass Transkription/OCR offline laufen |
+| Datenabfluss an Cloud-/KI-Dienste | Alle Verarbeitung lokal; nur Jobs der Queue `net` dürfen nach außen (Bank-Modul, SMTP); Architektur-Tests + CI-Lauf der `local`-Jobs ohne Netzwerk; auf eigenen Servern optional Firewall pro Worker-Benutzer (D-020) |
 | Standortdaten verraten Bewegungsprofil | Opt-in, Koordinaten verschlüsselt, nach außen nur Ortsname, pro Beleg löschbar, nie in Logs; Ortsnamen-Ermittlung ohne Weitergabe an Dritte bevorzugt (D-017) |
 | Diebstahl der Revolut-Zugangsdaten | nur Lesezugriff anfordern, verschlüsselt speichern, Widerruf in den Einstellungen, Audit-Log je Abruf |
 | Verlust der Daten | dokumentierte Backups (DB + Storage), Restore-Test |
@@ -577,20 +584,34 @@ Zusätzlich auf Wunsch: ZIP mit Originalfotos + `index.csv` + PDF, und CSV/XLSX 
 
 ## 12. Betrieb & Deployment
 
-**Kernfrage D-010:** Wo läuft DocHamster? OCR braucht Kommandozeilen-Tools (Tesseract, ocrmypdf) → auf klassischem Shared Hosting oft **nicht** verfügbar.
+**Eine App, eine Mindestanforderung (D-010).** DocHamster läuft überall, wo die Mindestanforderungen unten erfüllt sind – eigener Server (VPS, Homeserver, NAS) oder Webhosting. Es gibt keine „Server-“ und „Hosting-Edition“ und **kein Docker** in v1 (ein Docker-Setup kann später als Komfort kommen, nie als Pflicht).
 
-| Variante | Eignung | Hinweise |
-|----------|---------|----------|
-| **A: VPS/Homeserver mit Docker Compose** (empfohlen) | ✅ voll | Images: `app` (PHP-FPM + nginx/Caddy), `worker` (gleiches Image, CLI), optional `mariadb`; Caddy für automatisches HTTPS |
-| B: VPS ohne Docker | ✅ | Installationsanleitung Debian/Ubuntu, systemd-Unit für Worker |
-| C: Shared Hosting | ⚠️ eingeschränkt | Nur wenn `exec` + Tesseract vorhanden; sonst OCR per externem Provider oder separatem Worker |
-| D: NAS (Synology/Unraid) | ✅ via Docker | wie A |
+**Pflicht:** eine **feste Domain** mit öffentlich vertrauenswürdigem TLS-Zertifikat, aus dem Internet per HTTPS erreichbar. Grund: Passkeys hängen an der Domain (ein späterer Wechsel macht alle Passkeys ungültig), PWA/Service Worker brauchen einen sicheren Kontext, und das Handy sendet von überall. Die Domain wird vor P1-4 festgelegt und steht nie im Repo.
+
+**Mindestanforderungen** – im README veröffentlicht, geprüft von `dochamster:doctor`:
+
+| Bereich | Minimum | Für Zusatzfunktionen / empfohlen |
+|---------|---------|-----------------------------------|
+| Server | Linux-Server oder Webhosting mit SSH und Cron (jede Minute) | eigener Server für Texterkennung/Spracherkennung |
+| CPU / RAM | 2 Kerne, 2 GB RAM (ohne DB) | 4 Kerne, 6 GB für lokale Spracherkennung |
+| Speicher | 10 GB + Belege (≈ 2 MB pro Beleg) | SSD |
+| PHP | 8.4 mit `pdo_mysql`, `mbstring`, `intl`, `sodium`, `fileinfo`, `exif`, `zip`, `gd`; `memory_limit` ≥ 256 MB; `upload_max_filesize`/`post_max_size` ≥ 26 MB | `vips`-Erweiterung; `proc_open` erlaubt (nötig für alle Zusatzfunktionen) |
+| Datenbank | MariaDB 10.11 oder MySQL 8.4 (D-003) | neueste LTS |
+| Netzwerk | eigene Domain, vertrauenswürdiges TLS, eingehend HTTPS; ausgehend HTTPS zur Bank-API (falls Modul), SMTP | – |
+| Zusatz-Tools | – | Tesseract 5, ocrmypdf, ffmpeg, whisper.cpp, libheif |
+| Handy | aktuelles iOS Safari / Android Chrome (letzte 2 Hauptversionen) | als Home-Bildschirm-App installiert |
+
+Werte sind Schätzungen und werden in Phase 1 auf dem Testserver des PO geprüft (dessen Details bleiben außerhalb des Repos).
+
+**Kern und Zusatzfunktionen:** Der Kern läuft immer: Erfassen + Offline-Queue, Zeit/Ort, Bank-Import und Abgleich, Belegpaket-PDF (reines PHP), Suche, Steuerberater-Zugang, Mail. Zusatzfunktionen nur, wenn die Umgebung sie hat: Texterkennung (Tesseract + ocrmypdf), lokale Spracherkennung (whisper.cpp + ffmpeg, D-019), HEIC-Konvertierung (libheif/vips), schnellere Bildverarbeitung (vips statt GD). `dochamster:doctor` (bei der Einrichtung, nach Updates und auf der Admin-Seite) prüft PHP-Version und -Erweiterungen, DB-Version, Cron-Lebenszeichen, HTTPS, Upload-Limits, `proc_open` und die Zusatz-Tools; fehlt etwas, wird die Zusatzfunktion nicht angeboten bzw. ausgegraut mit Grund („Texterkennung braucht Tesseract – auf diesem Server nicht vorhanden“).
+
+**Datendateien:** GeoNames-Ortsnamen (D-017) lädt der Setup-/Update-Befehl (feste Version + Prüfsumme), Tesseract-Sprachdaten und das Whisper-Modell der Installationsschritt der Zusatzfunktion. Während der Verarbeitung von Belegen wird nichts heruntergeladen.
 
 Betriebsthemen (alle in `docs/operations/` zu dokumentieren):
-- Installation: `composer install`, `.env`, `migrate`, Setup-Befehl, Worker/Cron.
-- Worker: Daemon (Supervisor/systemd/Docker) oder Cron jede Minute (`--stop-when-empty`).
+- Installation: Code hochladen/klonen, `composer install`, `.env`, `php artisan dochamster:setup`, Cron-Eintrag. Anleitungen für einen normalen Linux-Server (Debian/Ubuntu) und für typisches Webhosting.
+- Worker: Cron jede Minute (`schedule:run` startet kurze `queue:work --stop-when-empty`-Läufe); Dauer-Worker (systemd/Supervisor) optional auf eigenen Servern.
 - Backups: DB-Dump + Storage-Ordner; Restore-Anleitung; Hinweis auf Schlüssel.
-- Updates: `git pull`/neues Image → `migrate`; Migrationen immer vorwärtskompatibel.
+- Updates: `git pull` bzw. neue Version hochladen → `composer install` → `migrate` → `dochamster:doctor`; Migrationen immer vorwärtskompatibel.
 - Monitoring: Health-Endpoint (`/health` – DB, Storage schreibbar, Queue-Länge, letzte Worker-Aktivität).
 - Logs: strukturiert, ohne personenbezogene Inhalte (kein OCR-Text in Logs).
 
@@ -605,7 +626,7 @@ Betriebsthemen (alle in `docs/operations/` zu dokumentieren):
   - Feature/Integration: Rechte-Matrix (jede Rolle × jede Route), Org-Isolation, Upload-Idempotenz, Import ohne Duplikate, Export-Inhalte.
   - E2E (Playwright): Erfassen inkl. Offline-Queue, Kopplung mit virtuellem WebAuthn-Authenticator, Abgleich-Flow, Steuerberater-Sicht.
   - Ziel-Abdeckung ≥ 80 % für `Domain/`.
-- **CI (GitHub Actions):** Lint, PHPStan, Tests (SQLite + MariaDB-Matrix), Composer-Audit, Erkennungsquote-Report.
+- **CI (GitHub Actions):** Lint, PHPStan, Tests auf **MariaDB 10.11 und MySQL 8.4** (D-003), Architektur-Tests für die Egress-Regel und `local`-Jobs ohne Netzwerk (D-020), Composer-Audit, Erkennungsquote-Report.
 - **Definition of Done (pro Arbeitspaket):** Akzeptanzkriterien erfüllt · Tests grün · keine neuen PHPStan-Fehler · UI-Texte über i18n · Doku/CHANGELOG aktualisiert · Review durch die jeweils andere KI oder PO · Eintrag in `docs/collaboration/LOG.md`.
 - **UX-Regeln:** Texte kurz und aus Nutzersicht („Beleg gespeichert“, nicht „HTTP 201“); Barrierefreiheit (Kontraste, Labels, Tastatur), Dark Mode, Touch-Ziele ≥ 48 px.
 
@@ -629,14 +650,14 @@ Jede Phase endet mit einem **lauffähigen Stand**, einem Git-Tag (`v0.N.0`) und 
 
 | AP | Inhalt | Abh. | Parallel |
 |----|--------|------|----------|
-| P1-1 | Projektgerüst, Config, `.env.example`, Docker-Compose, CI-Grundgerüst | – | – |
+| P1-1 | Projektgerüst (Laravel), Config, `.env.example`, Setup-Befehl (ohne Docker, D-010), CI-Grundgerüst | – | – |
 | P1-2 | Migrationen: users, organizations, memberships, devices, passkeys, invitations, audit_log | P1-1 | mit P1-3 |
 | P1-3 | Layout, CSS-Basis (Light/Dark), i18n-Mechanismus, Fehlerseiten | P1-1 | mit P1-2 |
 | P1-4 | Setup-CLI, Einladung, Kopplung per Link/QR, Passkey-Registrierung/Login | P1-2 | – |
 | P1-5 | Geräte-Token mit Rotation, Geräteliste, Sperren, Step-up | P1-4 | – |
 | P1-6 | Org-Scope-Middleware, Rollen/Policies, Rechte-Matrix-Testgerüst | P1-2 | mit P1-4 |
 | P1-7 | Security-Header, CSRF, Rate Limiting, Health-Endpoint | P1-1 | mit P1-2…6 |
-| P1-8 | README-Installation, HTTPS-Doku (Caddy), Backup-Doku v1 | P1-1 | ja |
+| P1-8 | README-Installation mit Mindestanforderungen (D-010), HTTPS-Doku (feste Domain + öffentlich vertrauenswürdiges Zertifikat), Backup-Doku v1 | P1-1 | ja |
 
 **Testliste v0.1:** Instanz aufsetzen · Owner koppeln per Passkey · zweites Gerät per QR koppeln · Gerät sperren → ausgesperrt · Mitglied einladen · Mitglied sieht andere Org nicht.
 
@@ -646,7 +667,7 @@ Jede Phase endet mit einem **lauffähigen Stand**, einem Git-Tag (`v0.N.0`) und 
 |----|--------|------|----------|
 | P2-1 | Storage-Service (außerhalb Webroot, Pfadschema, optional Verschlüsselung), `document_files` | P1 | mit P2-2 |
 | P2-2 | PWA: Manifest, Service Worker, Installierbarkeit, Kamera-Screen, Mehrseiten-Bündelung | P1-3 | mit P2-1 |
-| P2-3 | Upload-API, idempotent (`client_upload_id`), Validierung, Limits – **Weg Handy → Server: Lead** | P2-1 | – |
+| P2-3 | Upload-API pro Datei + Abschluss (§7, D-017), idempotent (`client_upload_id`), Validierung, Limits | P2-1 | – |
 | P2-4 | Offline-Queue (IndexedDB), Background Sync, Fortsetzen, Badge | P2-2, P2-3 | – |
 | P2-5 | Aufnahmezeit + Standort (Geolocation, Opt-in, EXIF-Fallback), `document_captures`, Ortsnamen (D-017) | P2-3 | mit P2-6 |
 | P2-6 | Zusatz-Schritt: Notiz, Kategorie-/Zahlungsart-Chips; Stammdaten | P2-3 | mit P2-5 |
@@ -693,7 +714,7 @@ OCR ist jetzt Unterstützung, nicht Voraussetzung: Sie liefert Betrag/Händler a
 | P5-2 | RunOcr (Tesseract, pdftotext, ocrmypdf) mit Ressourcenlimits | P3-1 | mit P5-1 |
 | P5-3 | ExtractFields + `document_fields` + Fixture-Benchmark in CI; Betrag fließt in den Score | P5-2 | – |
 | P5-4 | Regel-Engine, Händler-Stammdaten, Hashtags | P5-3 | mit P5-5 |
-| P5-5 | Volltextindex (FTS5 / FULLTEXT) | P5-2 | mit P5-4 |
+| P5-5 | Volltextindex (MariaDB/MySQL `FULLTEXT` hinter `SearchIndex`, D-003) | P5-2 | mit P5-4 |
 | P5-6 | Duplikaterkennung | P5-3 | ja |
 | P5-7 | Speech-to-Text lokal (Engine nach Lead-Entscheidung D-019), Transkript in Suche | P3-1, P2-8 | ja |
 
@@ -711,7 +732,7 @@ OCR ist jetzt Unterstützung, nicht Voraussetzung: Sie liefert Betrag/Händler a
 
 | AP | Inhalt | Abh. | Parallel |
 |----|--------|------|----------|
-| P7-1 | Freigaben (`shares`) mit Umfang + Ablauf, Einladung | P1-6, P4 | – |
+| P7-1 | Freigaben (`shares`) mit Umfang + Ablauf; Steuerberater-Konto mit Benutzername + Passwort, vom Owner angelegt (D-012) | P1-6, P4 | – |
 | P7-2 | Read-only-Oberfläche (Belegpakete, Liste, Detail, Download), alle Schreibwege gesperrt | P7-1 | – |
 | P7-3 | Widerruf sofort wirksam, Audit-Ansicht für Owner | P7-1 | ja |
 | P7-4 | Review der gesamten Rechte-Matrix (Manager prüft gegen Plan, Lead technisch) | P7-2 | – |
@@ -743,10 +764,11 @@ Ab v0.4 ist der wichtigste Weg nutzbar: fotografieren → Revolut-Abgleich → B
 | OCR-Qualität bei zerknitterten Thermobons schlecht | hoch | mittel | Abgleich primär über Zeitpunkt + Revolut-Daten statt OCR; Vorverarbeitung; schnelle manuelle Korrektur |
 | Revolut-Zugang nicht oder nur eingeschränkt per API möglich (z. B. Privatkonto) | mittel | hoch | Datei-Import als immer verfügbarer Fallback; Lead klärt Weg früh (D-016) |
 | Geräteuhr falsch / Standort ungenau | mittel | mittel | EXIF- und Server-Zeit gegenprüfen, Zeitfenster großzügig, 1-Tap-Bestätigung |
-| Hosting ohne Tesseract | mittel | hoch | Docker als Standardweg; externer OCR-Provider als Option |
+| Hosting ohne Tesseract | mittel | hoch | Texterkennung ist Zusatzfunktion; der Kernablauf (Foto → Abgleich → Belegpaket) läuft ohne; `dochamster:doctor` zeigt, was fehlt (D-010) |
+| Domain wird nach dem Start geändert | niedrig | hoch | Passkeys hängen an der Domain → feste Domain mit vertrauenswürdigem Zertifikat ist Mindestanforderung, vor P1-4 festlegen (D-010) |
 | iOS-PWA-Einschränkungen (Background Sync fehlt, Speicher-Eviction) | hoch | mittel | Fallback: Queue beim Öffnen senden; deutlicher Hinweis bei ausstehenden Uploads |
 | Bank-CSV-Formate ändern sich / sind uneinheitlich | hoch | mittel | Profile frei konfigurierbar, Vorlagen nur als Startpunkt |
-| Passkey-UX verwirrt Nutzer | mittel | mittel | Passwort+TOTP-Fallback, klare Texte, Testpersonen |
+| Passkey-UX verwirrt Nutzer | mittel | mittel | Owner erzeugt neuen Kopplungslink; Steuerberater ist nicht betroffen (Benutzername + Passwort, D-012); klare Texte, Testpersonen |
 | Zwei KIs erzeugen widersprüchlichen Code/Stil | mittel | mittel | AGENTS.md, Modul-Schnitt, Task-Locks, Reviews, CI-Linter |
 | Scope Creep Richtung Buchhaltung | mittel | hoch | Nicht-Ziele, Entscheidungen nur über DECISIONS.md |
 | Verlust des Verschlüsselungsschlüssels | niedrig | sehr hoch | Doku, Setup-Assistent zeigt Backup-Hinweis |

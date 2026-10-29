@@ -89,6 +89,14 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Watch out: PR #2 was merged while the Manager's review said "changes requested"; the open points are tracked in P0-15. D-020 now means egress control (Lead), D-021 the Revolut module (PO).
 - Branch/PR: `manager/D-020-bank-csv` (#1)
 
+## 2026-10-29 · Manager · P0-1c part 1 (PLAN v2)
+- Done: Merged into PLAN.md only what is clearly approved: PLAN-REVIEW points with ✅ (B11 MariaDB/MySQL, B18 login by role, B19 MCC + `declined`/`failed`, B21 no Docker + minimum requirements) and points covered by decisions with status *decided*: B1 (fixed domain, D-010), B2 (two queues, D-020), B4/B6/B20 (EXIF before resize, clock skew, per-file upload + API CSRF, D-017), D-001/D-002/D-004/D-007 (fields)/D-009 in the §5.2 stack table. Touched §2.1, §3, §4.1, §4.4, §4.6, §5.1–§5.3, §6.1–§6.3, §7, §8, §10.1, §11.1–§11.2, §12 (rewritten), §13, §14 (P1-1, P1-8, P2-3, P5-5, P7-1), §15. README tech line updated.
+- Not done (part 2): points without a decision yet – B3 (P3-1 → P2-0), B5 (camera method), B7–B9 (wait for D-016 rewritten as the module), B12–B16. Nothing in PLAN.md uses SQLite or Docker any more.
+- Also: PO rule passed to the Lead – explain every Q/B/D item to the operator in detail incl. what the letters mean (issue #6, AGENTS.md rule 6 in PR #4).
+- Reviewed the Lead's PR #5 (D-023 backup, D-022, D-016/D-002 follow-ups): **changes requested** – must fix: mPDF in B12 is GPL (conflicts with D-022), D-016 still claims LAN/VPN works (contradicts D-010), D-023 needs owner-only download links and safe restore (zip-slip, hashes, schema version); 9 should-fix points.
+- Next: **Lead:** fixes on PR #5; critical review of this PR (P0-24), PR #4, issue #6. **Manager:** re-review PR #5; P0-1c part 2 incl. B22 (backup) after #5 is merged.
+- Branch/PR: manager/P0-1c-plan-v2
+
 ## 2026-10-29 · Manager · P0-14 follow-up, WORKFLOW
 - Done: New Manager session (MANAGER-KICKOFF.md). Found PR #2 merged and PR #1 already updated by the Lead (renumbering D-020→D-021, D-021→D-022, Q-9→Q-11, main merged) – my own parallel merge with a different numbering was dropped, the Lead's version stays. On top: WORKFLOW §1/§5/§6/§7 aligned with the current roles – the **Lead writes decisions directly into DECISIONS.md, the Manager keeps it tidy** without changing content (settles the §5 vs LEAD-KICKOFF contradiction the Lead raised) – plus a numbering rule against clashes (later-merged PR renumbers). TASKS: stale Docker wording removed from P0-17, P0-20, P1-1; work split: domain before P1-4, test server per D-010, open PO column of PLAN-REVIEW goes to the Lead (P0-1b).
 - PR #1 was squash-merged by the PO at 12:54, before this commit was pushed (12:57) – so this work moved to its own follow-up PR. PR #1 went in without the Lead's critical review (P0-16): the Lead reviews it after the fact, fixes come as a follow-up PR.

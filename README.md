@@ -19,7 +19,7 @@ DocHamster is **not** a tax or bookkeeping app, and it uses **no cloud AI**: spe
 
 ## Tech (planned)
 
-PHP 8.3+, SQLite (MariaDB optional), server-rendered HTML + small vanilla JS PWA, Tesseract/ocrmypdf, Docker Compose. Final choices: [`docs/collaboration/DECISIONS.md`](docs/collaboration/DECISIONS.md).
+PHP 8.4, Laravel, MariaDB 10.11+ or MySQL 8.4+, Blade + small vanilla JS PWA (no build step). No Docker needed: runs on any Linux server or web hosting that meets the minimum requirements; optional extras (OCR with Tesseract/ocrmypdf, local speech-to-text) only where the server has them. Final choices: [`docs/collaboration/DECISIONS.md`](docs/collaboration/DECISIONS.md).
 
 ## Contributing
 
