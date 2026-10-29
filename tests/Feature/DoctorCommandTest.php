@@ -25,7 +25,7 @@ it('exits with an error when a minimum requirement is not met', function (): voi
 
 it('stops setup before touching the database when requirements fail', function (): void {
     $probe = new FakeSystemProbe;
-    $probe->databaseVersion = null;
+    $probe->phpVersion = '8.3.14';
     $this->app->instance(SystemProbe::class, $probe);
 
     $this->artisan('dochamster:setup')

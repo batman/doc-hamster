@@ -8,6 +8,11 @@ return [
     'migrate_failed' => 'Setup stopped: the database could not be set up.',
     'done' => 'DocHamster is set up.',
     'cron_hint' => 'Still needed if not present – cron entry: :command',
+    'env_not_writable' => 'Setup stopped: :path can’t be written. Please grant write access.',
+    'ask_url' => 'Under which address is DocHamster reachable? (fixed domain with https://, don’t change it later)',
+    'url_not_https' => 'Warning: without https:// passkeys and the phone app don’t work (only for testing on your own machine).',
+    'ask_db_intro' => 'The database can’t be reached yet. Please enter the credentials (MariaDB 10.11+ or MySQL 8.4+):',
+    'db_failed' => 'Setup stopped: no database connection. Check the credentials and run the command again.',
 
     // Setup wizard in the browser (D-024)
     'wizard' => [

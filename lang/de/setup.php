@@ -8,6 +8,11 @@ return [
     'migrate_failed' => 'Einrichtung abgebrochen: Die Datenbank konnte nicht eingerichtet werden.',
     'done' => 'DocHamster ist eingerichtet.',
     'cron_hint' => 'Noch nötig, falls nicht vorhanden – Cron-Eintrag: :command',
+    'env_not_writable' => 'Einrichtung abgebrochen: :path kann nicht geschrieben werden. Bitte Schreibrechte geben.',
+    'ask_url' => 'Unter welcher Adresse ist DocHamster erreichbar? (feste Domain mit https://, später nicht mehr ändern)',
+    'url_not_https' => 'Achtung: Ohne https:// funktionieren Passkeys und die Handy-App nicht (nur zum Testen auf dem eigenen Rechner).',
+    'ask_db_intro' => 'Die Datenbank ist noch nicht erreichbar. Bitte die Zugangsdaten eingeben (MariaDB 10.11+ oder MySQL 8.4+):',
+    'db_failed' => 'Einrichtung abgebrochen: keine Verbindung zur Datenbank. Zugangsdaten prüfen und den Befehl erneut starten.',
 
     // Setup-Assistent im Browser (D-024)
     'wizard' => [
