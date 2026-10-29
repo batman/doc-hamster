@@ -8,4 +8,6 @@ parameters:
         - app
         - routes
         - database
+        # Test doubles and fixtures, e.g. the only user of BelongsToOrg until Phase 2.
+        - tests/Support
     tmpDir: .phpstan-cache

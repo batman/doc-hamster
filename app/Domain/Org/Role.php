@@ -28,4 +28,25 @@ enum Role: string
     {
         return $this === self::Accountant;
     }
+
+    /**
+     * The permission matrix of PLAN §2.1, one column per role.
+     */
+    public function access(Permission $permission): Access
+    {
+        return match ($this) {
+            self::Owner => Access::Allow,
+            self::Member => match ($permission) {
+                Permission::UploadDocuments, Permission::ManageOwnDocuments => Access::Allow,
+                Permission::ViewAllDocuments => Access::OrgSetting,
+                Permission::EditDocuments => Access::OwnOnly,
+                Permission::TrashDocuments => Access::OwnOnlyIfOrgSetting,
+                default => Access::Deny,
+            },
+            self::Accountant => match ($permission) {
+                Permission::ViewAllDocuments, Permission::CreateReports, Permission::Export => Access::ShareOnly,
+                default => Access::Deny,
+            },
+        };
+    }
 }
