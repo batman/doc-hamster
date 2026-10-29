@@ -2,7 +2,7 @@
 
 Found with the skills registry (`npx skills find …`, [skills.sh](https://skills.sh/)) on 2026-10-29. **Nothing is installed yet** – install only what we agree on, ideally after D-001 (framework) is decided. Install counts are from that date.
 
-## Already available in Agent A's (Claude Code) environment
+## Already available in the Claude Code environment (both sessions)
 
 | Skill | Use in DocHamster |
 |-------|-------------------|
@@ -11,7 +11,7 @@ Found with the skills registry (`npx skills find …`, [skills.sh](https://skill
 | `everything-claude-code:security-review` / `security-review` | Reviews of auth, uploads, file serving, exports |
 | `everything-claude-code:backend-patterns` | API / service design |
 | `everything-claude-code:e2e` | Playwright E2E (capture flow, offline queue, pairing) |
-| `code-review` | Reviewing Agent B's PRs |
+| `code-review` | Manager reviews of Lead PRs |
 | `anthropic-skills:pdf`, `anthropic-skills:xlsx` | Generating/inspecting test PDFs and bank XLSX fixtures |
 | `anthropic-skills:apple-design` | UI review of the PWA (mobile-first, HIG lens) |
 
@@ -34,6 +34,6 @@ Not found / weak results: WebAuthn/passkeys (only tiny or vendor-specific skills
 
 Before installing any third-party skill: read its SKILL.md, check the source repo (stars, maintainer) – skills run with the agent's permissions.
 
-## For Agent B
+## For the Lead
 
-Skills are tool-specific (Claude Code, Codex and others each have their own mechanism). Agent B: list the equivalents you use here so both agents follow the same conventions.
+Both sessions are Claude Code, so installed skills apply to both. The Lead decides which framework-specific skills to install after D-001.

@@ -1,69 +1,87 @@
 # Decisions (ADR-lite) & open questions
 
-Status: `open` → `proposed` (agent recommendation) → `decided` (PO only) → later maybe `superseded by D-NNN`.
+Status: `open` → `proposed` (recommendation) → `decided` (by the **owner**; PO may veto) → later maybe `superseded by D-NNN`.
+Owner = who decides: **Lead** for technical/server topics, **PO** for product/scope (see WORKFLOW.md §1).
 The original v0 plan referred to questions "F1–F4 in chat"; that chat is not in the repo, so they are reconstructed below as D-001, D-003, D-010 and D-011. **PO: if your F1–F4 answers differ, just write them in.**
+
+> Public repo: write decisions generically. No server names, IPs, providers, personal bank or advisor details here.
 
 ## Must decide before code (blocks Phase 1)
 
-### D-000 · Project name
+### D-000 · Project name — Owner: PO
 - **Status:** proposed
 - **Question:** v0 used the working title "Belegbox"; the repo is "DocHamster".
-- **Recommendation:** Use **DocHamster** everywhere (repo, code namespace `DocHamster\`, UI name). "Belegbox" is retired.
+- **Recommendation (Manager):** Use **DocHamster** everywhere (repo, namespace `DocHamster\`, UI). "Belegbox" retired.
 - **Decision:** _…_
 
-### D-001 · PHP framework: Laravel vs Slim
+### D-001 · PHP framework: Laravel vs Slim — Owner: Lead
 - **Status:** open
-- **Options:**
-  - **Laravel** – queue, migrations, mail, storage, policies, rate limiting, testing built in; huge ecosystem; both AI agents know it very well, which reduces style drift. Heavier, more "magic".
-  - **Slim 4 + packages** – lean and explicit; every piece (DI, migrations, queue, mail, validation) chosen and wired by hand → more code to write and keep consistent.
-- **Recommendation (Agent A):** Laravel. The features DocHamster needs (queue, mail, file storage, policies, migrations, tests) are exactly what Laravel ships, and conventions help two agents produce consistent code. Frontend stays light (Blade + small vanilla JS), so "no heavy framework" still holds for the PWA.
+- **Options:** **Laravel** (queue, migrations, mail, storage, policies, rate limiting, tests built in; strong conventions) · **Slim 4 + packages** (lean, explicit, more wiring by hand).
+- **Input (Manager):** Laravel's built-ins cover most of PLAN.md §5.2 and the best registry skills found are Laravel-specific (`docs/SKILLS.md`). Lead decides.
 - **Decision:** _…_
 
-### D-002 · Minimum PHP version
+### D-002 · Minimum PHP version — Owner: Lead
 - **Status:** proposed
-- **Recommendation:** PHP 8.3+ (8.2 leaves security support end of 2026). Follow whatever the chosen framework version requires.
+- **Input:** PHP 8.3+ (8.2 security support ends 2026-12-31), or whatever the chosen framework requires.
 - **Decision:** _…_
 
-### D-003 · Database default
+### D-003 · Database default — Owner: Lead
 - **Status:** proposed
-- **Recommendation:** SQLite as default (FTS5 for search, zero setup), MariaDB/MySQL supported and tested in CI. No DB-specific SQL outside the search adapter.
+- **Input:** SQLite default (FTS5), MariaDB/MySQL supported; no DB-specific SQL outside the search adapter.
 - **Decision:** _…_
 
-### D-004 · Frontend approach
+### D-004 · Frontend approach — Owner: Lead
 - **Status:** proposed
-- **Recommendation:** Server-rendered templates + small ES-module vanilla JS, no build step required. Allow htmx (≈14 kB) for partial updates if it saves code. No React/Vue.
+- **Input:** Server-rendered templates + small vanilla ES modules, optional htmx; no SPA framework.
 - **Decision:** _…_
 
-### D-010 · Target hosting
+### D-010 · Target hosting & network — Owner: Lead
 - **Status:** open
-- **Question:** Where will PO (and typical users) run it? This decides whether OCR can rely on Tesseract/ocrmypdf on the server.
-- **Options:** A) VPS/home server with Docker (recommended) · B) VPS without Docker · C) shared hosting (OCR likely impossible → external provider) · D) NAS.
+- **Question:** Home server/NAS on the LAN, VPS, or shared hosting? Decides whether OCR tools can run on the server **and how a scanner can deliver files** (see D-015).
+- **Options:** A) VPS/home server with Docker · B) VPS without Docker · C) shared hosting (OCR likely impossible) · D) NAS.
+- **Note:** The concrete server (provider, domain, IP) is **not** recorded here – only the chosen variant.
 - **Decision:** _…_
 
-### D-011 · Scope of v1.0: single user/household or teams?
+### D-011 · Scope of v1.0: single household or teams? — Owner: PO
 - **Status:** open
-- **Question:** Are multiple organisations and the "member" role needed in v1.0, or only owner + tax advisor?
-- **Recommendation:** Keep multi-org in the data model from day one (cheap now, expensive later), but the member role UI could move to v1.1 if time is short.
+- **Recommendation (Manager):** Multi-org in the data model from day one; member-role UI may move to v1.1.
+- **Decision:** _…_
+
+### D-015 · Primary capture channel: document scanner vs. phone — Owner: PO (product) + Lead (ingestion/network)
+- **Status:** proposed
+- **Context:** PO prefers connecting a document scanner over a phone app.
+- **Recommendation (Manager):** Make the **scanner the primary channel** for batches at home/office and keep a **minimal web upload** (works from phone browser too) as secondary, because receipts are often lost before reaching the scanner. Concretely:
+  - Generalise the *Capture* module into **Ingestion** with pluggable channels: (1) **consume folder** – scanner writes PDFs/images into a watched directory, worker imports them; (2) **web upload / API**; later (3) **mail-in** (IMAP mailbox the scanner or user sends to).
+  - Batch handling: one file per document (scanner setting), or split a batch PDF by **separator sheets** (blank page or barcode/patch-T page); blank-page removal; duplex.
+  - Scanner OCR output (searchable PDF) can be used directly; server OCR remains the fallback.
+  - The PWA "camera first" screen (PLAN.md §4.1) is downgraded to S (should) / or a simple upload page.
+- **Questions for the Lead (network/server):**
+  - How does the scanner reach the server? Same LAN (SMB/SFTP share) is easy; a public server needs SFTP or a small LAN bridge that pushes via the API with a device token – **never plain FTP/SMB over the internet**.
+  - Which delivery protocols do we support and document (SMB, SFTP, WebDAV, email)?
+  - Security of the consume folder: dedicated, non-web-readable directory; per-channel org mapping; size/type limits; quarantine for invalid files.
+- **Questions for the PO:** Which scanner (model or at least: ADF, duplex, which "scan to …" targets it supports)? Is phone capture still wanted at all for on-the-go receipts?
 - **Decision:** _…_
 
 ## Decide before the relevant phase
 
-| ID | Topic | Needed by | Status | Recommendation |
-|----|-------|-----------|--------|----------------|
-| D-005 | OCR/image toolchain (Tesseract 5 + ocrmypdf + libvips vs Imagick) | Phase 3 | proposed | Tesseract + ocrmypdf + libvips |
-| D-006 | WebAuthn library | Phase 1 (P1-4) | open | `web-auth/webauthn-lib` (or framework-native if Laravel: `laragear/webauthn`) |
-| D-007 | App-level file encryption (libsodium) on by default? | Phase 2 | open | Volume encryption documented as required; app-level opt-in |
-| D-008 | Org in URL (`/o/{org}/…`) vs active org in session | Phase 1 | proposed | Active org in session, shorter URLs, explicit switcher |
-| D-009 | Device cookie SameSite=Strict vs Lax | Phase 1 | open | Lax (pairing via link/QR breaks with Strict); CSRF tokens cover the rest |
-| D-012 | Password+TOTP fallback in v1 or passkeys only? | Phase 1 | open | Keep fallback (older devices, tax advisors) |
-| D-013 | AI provider for optional enrichment/transcription | Phase 8 | open | Interface only until Phase 8 |
-| D-014 | Hosting of the public repo: stays private until v0.x? | anytime | open | Private until v0.3, then public |
+| ID | Topic | Owner | Needed by | Status | Input |
+|----|-------|-------|-----------|--------|-------|
+| D-005 | OCR/image toolchain | Lead | Phase 3 | proposed | Tesseract + ocrmypdf + libvips |
+| D-006 | WebAuthn library | Lead | P1-4 | open | `web-auth/webauthn-lib` or framework-native |
+| D-007 | App-level file encryption on by default? | Lead | Phase 2 | open | Volume encryption required; app-level opt-in |
+| D-008 | Org in URL vs active org in session | Lead | Phase 1 | proposed | Active org in session |
+| D-009 | Device cookie SameSite Strict vs Lax | Lead | Phase 1 | open | Lax + CSRF tokens |
+| D-012 | Password+TOTP fallback or passkeys only? | Lead | Phase 1 | open | Keep fallback |
+| D-013 | AI provider for optional enrichment | Lead | Phase 8 | open | Interface only until Phase 8 |
+| D-014 | When does the repo go public? | PO | anytime | open | After P0-8 history scan; suggested at v0.3 |
 
-## Open questions (agents → PO)
+## Open questions
 
-| # | Asked by | Question | Answer |
-|---|----------|----------|--------|
-| Q-1 | Agent A | Which AI tool is Agent B (Codex, Gemini, ChatGPT, Cursor …)? Determines how it reads AGENTS.md and the branch prefix. | |
-| Q-2 | Agent A | Which banks do you actually use? Their export files decide which import templates come first. | |
-| Q-3 | Agent A | Is the repo meant to become public on GitHub (MIT) right away, or later? | |
-| Q-4 | Agent A | Who are the first real users besides you (household, small business, club)? | |
+| # | From → To | Question | Answer |
+|---|-----------|----------|--------|
+| Q-1 | Manager → PO | ~~Which AI is the second agent?~~ | Claude, as Lead (2026-10-29) |
+| Q-2 | Manager → PO | Which bank export formats should be supported first? (Answer generically, e.g. "Sparkasse CSV" – no account details.) | |
+| Q-3 | Manager → PO | Public right away, or later? → see D-014 | |
+| Q-4 | Manager → PO | Typical first users: household, freelancer, small business, club? | |
+| Q-5 | Manager → PO | Scanner details for D-015 (capabilities, not serial numbers or network data). | |
+| Q-6 | Manager → Lead | D-010 + D-015: how should a scanner deliver files securely to the chosen hosting variant? | |

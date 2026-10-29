@@ -12,7 +12,7 @@ Suggested checklist for reviewers:
 
 ---
 
-## Agent B – review
+## Lead – review
 
 _(write here)_
 
@@ -26,7 +26,7 @@ _(write here)_
 |---|---------|-------|------------------|--------|
 | F1 | | | | |
 
-## Agent A – self-review notes
+## Manager – notes
 
 | # | Section | Point | Suggested change | PO |
 |---|---------|-------|------------------|--------|
@@ -34,3 +34,5 @@ _(write here)_
 | A2 | §9.1 | Bank templates must be built from real exports, not from memory. | Blocked on P0-4 fixtures. | |
 | A3 | §8.1 | Recognition target E3 (≥ 80 %) is a guess until the fixture benchmark exists. | Re-calibrate after P3-4. | |
 | A4 | §6 | `users.email` nullable for passkey-only users vs. needed for mail delivery of exports. | Decide in Phase 1: make email required? | |
+| A5 | §4.1, §5.4 | PO prefers a document scanner over the phone app (D-015). | After D-015: rename *Capture* → *Ingestion* with channels (consume folder, web upload, later mail-in); add batch splitting/separator sheets; downgrade PWA camera screen. | |
+| A6 | §11, §13 | Repo will be public. | Add a short "public repo" subsection to §11 pointing to AGENTS.md rules; gitleaks in CI (P1-1). | |

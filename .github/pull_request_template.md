@@ -2,7 +2,7 @@
 
 <!-- Task ID from docs/collaboration/TASKS.md, e.g. P1-4 -->
 Task: 
-Author: <!-- Agent A (Claude Code) / Agent B / PO -->
+Author: <!-- Lead / Manager / PO -->
 
 ## What changed
 
@@ -19,7 +19,7 @@ Author: <!-- Agent A (Claude Code) / Agent B / PO -->
 - [ ] Tests added/updated and passing; CI green
 - [ ] UI strings via i18n, code/comments in English
 - [ ] Security: org scope, permissions, escaping, CSRF, file access checked (if relevant)
-- [ ] No secrets or real personal data
+- [ ] Public-repo rules (AGENTS.md): no personal data, real documents, server details or secrets – incl. screenshots, fixtures, logs
 - [ ] TASKS.md status updated, LOG.md entry added
 - [ ] Plan/decision changes? → label `plan`, PO approves
 

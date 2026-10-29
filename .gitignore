@@ -32,3 +32,12 @@ Thumbs.db
 
 # Agent-local settings
 .claude/settings.local.json
+
+# Private material – never commit (public repo!)
+/private/
+/tests/fixtures/private/
+/backups/
+*.sql
+*.sql.gz
+*.dump
+/deploy/*.local.*
