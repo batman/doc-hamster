@@ -21,3 +21,8 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done / next step: **Lead:** D-016 (how to connect Revolut), D-017 (location handling, phone → server delivery), D-001, D-010, review of the reordered phases (PLAN-REVIEW A7/A8). **PO:** Q-7 (Revolut personal or business). **Manager:** receipt pack layout sketch (P0-5).
 - Watch out: §4.4/§9.0 list Revolut options only as input – the Lead decides. Test photos must have EXIF stripped (no real GPS in the public repo).
 - Branch/PR: `main`, not pushed.
+
+## 2026-10-29 · Manager · Q-7
+- Done: PO answered Q-7: target is Revolut **Business** → Business API is the expected main way (D-016, PLAN.md §4.4, P3-3). Open banking for personal accounts dropped from v1.
+- Next: Lead decides the API details in D-016 (access setup, sync interval, available fields, sandbox).
+- Branch/PR: `main`, not pushed.

@@ -57,7 +57,8 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
 - **Goal (PO):** For every Revolut payment, get the full transaction details (merchant, amount, currency, original amount + FX rate, fee, exact time, Revolut category, status, merchant location if available) and match them with the receipt photo.
 - **Ways to evaluate (Lead decides):** Revolut Business API (business accounts only) · Revolut statement export (CSV/Excel, works for personal and business, manual upload) · open-banking (PSD2 account information) provider for personal accounts.
 - **Constraints:** read-only access; credentials encrypted on the server, never in the repo; file import always available as fallback.
-- **Blocked by:** Q-7 (personal or business account).
+- **Target account type (PO, 2026-10-29):** Revolut **Business** → the official Revolut Business API is available and is the expected primary way; file import stays as fallback. Open banking for personal accounts is out of scope for v1.
+- **Still for the Lead:** API access setup (certificates/tokens, refresh), sync interval, which fields the API really delivers (merchant location?), sandbox for tests.
 - **Decision:** _…_
 
 ### D-017 · Capture time & location; phone → server delivery — Owner: Lead
@@ -95,4 +96,4 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
 | Q-4 | Manager → PO | Typical first users: household, freelancer, small business, club? | |
 | Q-5 | Manager → PO | ~~Scanner details~~ | Obsolete – no scanner (D-015) |
 | Q-6 | Manager → Lead | D-010 + D-017: how does the phone web app deliver photos securely to the chosen hosting variant? | |
-| Q-7 | Manager → PO | Revolut **personal** or **business** account? Decides whether the Revolut Business API is possible (D-016). | |
+| Q-7 | Manager → PO | Revolut personal or business account? | **Business** (2026-10-29) → Business API possible, see D-016 |

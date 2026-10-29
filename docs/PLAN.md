@@ -193,10 +193,10 @@ Details in [Kapitel 9](#9-kontoauszug-import--abgleich).
 
 **Revolut zuerst (D-016).** Ziel: zu jeder Revolut-Kartenzahlung die vollständigen Buchungsdetails – Händler, Betrag, Währung (inkl. Originalwährung und Kurs bei Fremdwährung), genauer Zeitpunkt, Revolut-Kategorie, Status, Händlerort falls verfügbar – und das passende Foto dazu.
 
-Mögliche Wege (technische Entscheidung beim Lead, abhängig von Konto-Typ Privat/Business):
+Ziel-Kontotyp: **Revolut Business** (PO, Q-7) → die offizielle Business API ist der erwartete Hauptweg. Technische Umsetzung entscheidet der Lead:
 1. **Revolut Business API** – offizielle API mit Transaktionsabruf (nur Business-Konten). Automatischer, regelmäßiger Abruf.
 2. **Revolut-Kontoauszug als Datei** (CSV/Excel aus der App/Web) – funktioniert für Privat und Business, manueller Upload z. B. monatlich. **Immer als Fallback vorhanden.**
-3. **Open-Banking-Dienst (PSD2-Kontoinformation)** – für Privatkonten ohne eigene API; Drittanbieter sieht die Daten, Zugriff muss alle 90–180 Tage erneuert werden.
+3. ~~Open-Banking-Dienst für Privatkonten~~ – in v1 nicht nötig (Business-Konto).
 
 - [ ] AK-4.4.R1: Revolut-Buchungen (Weg 1 oder 2) landen mit Zeitpunkt (Datum + Uhrzeit), Händler, Betrag, Währung, ggf. Originalbetrag/Kurs, Kategorie und Status in `transactions`.
 - [ ] AK-4.4.R2: Nur abgeschlossene Buchungen werden abgeglichen; ausstehende/zurückgebuchte werden angezeigt, aber nicht ins Belegpaket übernommen (Rückerstattungen als eigene Zeile).
@@ -636,7 +636,7 @@ Der Weg zu Revolut (API, Datei, Open Banking) und alle Server-Fragen dazu liegen
 |----|--------|------|----------|
 | P3-1 | Job-Queue + Worker (Daemon & Cron-Modus), Retry, Fehlerstatus | P1 | mit P2 |
 | P3-2 | Bankkonten, `transactions`-Modell inkl. Zeitpunkt, Originalwährung, Gebühr, Status | P1 | mit P3-1 |
-| P3-3 | Revolut-Anbindung nach Lead-Entscheidung (live und/oder Datei-Profil), Duplikatschutz über `external_id` | P3-1, P3-2 | – |
+| P3-3 | Revolut-Business-API-Anbindung (Lead-Entscheidung zu Zugang/Abrufintervall) + Datei-Profil als Fallback, Duplikatschutz über `external_id`; Tests gegen Revolut-Sandbox | P3-1, P3-2 | – |
 | P3-4 | Allgemeiner CSV/XLSX-Import mit Profilen (andere Banken) | P3-2 | mit P3-3 |
 | P3-5 | Matching-Engine mit Zeitnähe-Score + Gründen, Kalibrierung mit Testdaten | P3-3, P2-5 | – |
 | P3-6 | Abgleich-UI (Buchungen ohne Beleg · Belege ohne Buchung · Paare, 1-Tap-Bestätigung, „kein Beleg nötig“) | P3-5 | – |
