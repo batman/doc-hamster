@@ -6,10 +6,8 @@ title = "DocHamster gitleaks config"
 useDefault = true
 
 [allowlist]
-description = "Third-party and generated code, never committed"
+description = "Third-party code, never committed. Generated caches and storage/ are NOT allowlisted: they are git-ignored, and if one is ever tracked it must be scanned."
 paths = [
     '''^vendor/''',
     '''^node_modules/''',
-    '''^\.phpstan-cache/''',
-    '''^storage/''',
 ]

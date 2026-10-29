@@ -143,3 +143,10 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Numbering: `main` got Q-12/D-024 in the meantime → my entries renumbered to Q-13…Q-16 and D-025.
 - Next: **Lead:** merge PR #5; post-merge reviews of #7, #9, #13 (issue #10; found already: 424 `.phpstan-cache` files committed on `main` despite `.gitignore`); Q-12 design PR; P1-2. **PO:** enable GitHub secret scanning + push protection (TASKS).
 - Branch/PR: `lead/P0-15-review-followups` (#5)
+
+## 2026-10-29 · Lead · PR #5 merged, post-merge reviews of #7, #9, #13
+- Done: PR #5 squash-merged after green CI (merge-first rule). Post-merge reviews of #7, #9, #13 (issue #10, closed): 42 findings from independent review passes, each adversarially verified, **34 confirmed**. Urgent part fixed in this PR: `.phpstan-cache/` and `bootstrap/cache/*.php` untracked, gitleaks allowlist no longer skips them or `storage/`, pre-commit hook executable, `composer setup` no longer rotates `APP_KEY`, queue failed/batches fallback `mariadb`. The rest is listed in issue #18 (doctor reads CLI ini, setup key check, D-020 arch-test gaps + offline CI step, secure config fallbacks, hashed session IPs, PLAN/D-024 gaps for Q-12).
+- **Watch out – leak:** the committed PHPStan cache held an environment dump incl. a Claude Code session token of the Manager computer and personal paths; several web-UI squash merges carry a private e-mail as author. Repo is private. PO actions in issue #17 (invalidate token, GitHub e-mail privacy, secret scanning + push protection, history rewrite before going public).
+- Closed: issues #6 (superseded by the new rule 6), #8 (P1-1 merged), #10 (reviews done).
+- Next: **Lead:** Q-12 design PR (setup wizard, incl. #13 findings), P1-2 identity tables, fixes from #18. **PO:** issue #17.
+- Branch/PR: `lead/P1-1b-repo-hygiene` (#16)

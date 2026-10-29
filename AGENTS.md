@@ -12,7 +12,7 @@ DocHamster is an open-source (MIT) PHP web app for collecting receipts: snap a p
 
 **Phase 1 – foundation (v0.1), started 2026-10-29 by PO go** (issue #8). Planning work (PLAN v2, open decisions) continues in parallel. Still open and needed before the packages that use them: D-000 (name), D-011 (v1 scope), D-018 (receipt-pack layout), Q-11 (`BankConnector`) – don't build on them until the Lead has decided.
 
-Local checks before every PR: `composer lint`, `composer analyse`, `composer test`, `composer licenses`. Enable the secret-scan hook once per clone: `composer hooks` (needs gitleaks).
+Local checks before every PR: `composer lint`, `composer analyse`, `composer test`, `composer check-licenses`. Enable the secret-scan hook once per clone: `composer hooks` (needs gitleaks).
 
 ## Who is who
 

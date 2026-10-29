@@ -3,7 +3,7 @@
 DocHamster is MIT-licensed. Rules for third-party software: **D-022** in [`collaboration/DECISIONS.md`](collaboration/DECISIONS.md).
 
 - Everything we ship (Composer/npm packages, vendored JS): permissive licenses only – MIT, BSD-2/3-Clause, Apache-2.0, ISC, 0BSD, public domain (CC0, Unlicense). LGPL/MPL only as an unmodified library, listed below with the reason. **No GPL/AGPL.** Packages with several licenses ("OR") count with the permissive one.
-- `composer licenses` (= `scripts/check-licenses.php`) checks all runtime packages; CI runs it on every push. Dev-only tools are not shipped and not checked.
+- `composer check-licenses` (= `scripts/check-licenses.php`) checks all runtime packages; CI runs it on every push. Dev-only tools are not shipped and not checked.
 - Every new **direct** dependency gets a row here in the same PR.
 
 ## Runtime (shipped)

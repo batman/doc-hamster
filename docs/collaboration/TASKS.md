@@ -51,7 +51,7 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | ID | Task | Owner | Status | Depends on | Notes |
 |----|------|-------|--------|------------|-------|
 | P0-1a | Review PLAN.md v1 (technical) → PLAN-REVIEW.md | Lead | done | – | PR #2, merged 2026-10-29 |
-| P0-1b | Review PLAN.md v1 (product) → PLAN-REVIEW.md; mark the open PO column of PLAN-REVIEW B1–B21 | Lead | in review | – | `lead/P0-15-review-followups`: all B and A points marked ✅ by the Lead (rule 6); Manager merges B3, B5, B7–B10, B12–B17 + A-points in P0-1c part 2 |
+| P0-1b | Review PLAN.md v1 (product) → PLAN-REVIEW.md; mark the open PO column of PLAN-REVIEW B1–B21 | Lead | done | – | PR #5: all open B/A points marked by the Lead (AGENTS rule 6); B5 tap count → Q-18. Manager (paused) or Lead merges B3, B5, B7–B10, B12–B17 + A-points into PLAN in P0-1c part 2 |
 | P0-1c | Merge accepted feedback into PLAN.md (v2) | Manager (for the Lead) | in progress | P0-1b | Lead decides what is accepted. Part 1 merged (PR #7): B1, B2, B4, B6, B11, B18–B21 + decided D-001…D-004, D-009, D-010, D-012, D-017, D-020. Part 2: B22 (backup, after PR #5) and the B-points still open |
 | P0-2a | Technical decisions D-001…D-010, D-012, D-016, D-017, D-019 (STT engine) | Lead | done | – | PR #2. All blocking decisions decided; D-005, D-006, D-007 (files), D-019 engine stay proposed until their phase |
 | P0-2b | Product decisions D-000, D-011, D-014, D-018 (receipt pack layout) | Lead | in progress | – | D-000, D-011, D-014 decided (`lead/P0-15-review-followups`); D-018 waits for the layout draft P0-5. D-015, D-019 decided by PO |
@@ -68,11 +68,11 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | ID | Task | Owner | Status | Depends on | Notes |
 |----|------|-------|--------|------------|-------|
 | P0-10 | Ask Revolut (business-partners@revolut.com) whether an open-source module for Revolut Business users and the descriptive name are fine | Lead | todo | – | Blocks P3-4b, not Phase 1. Record only the generic outcome here |
-| P0-11 | Decide license policy D-022 | Lead | in review | – | `lead/P0-15-review-followups` |
+| P0-11 | Decide license policy D-022 | Lead | done | – | D-022 decided, PR #5 merged 2026-10-29 |
 | P0-12 | Answer Q-11: `BankConnector` interface + module install mechanism; finalise D-010 yourself (PO leaves Q-8 to the Lead) | Lead | in progress | PR #1 merged | D-010 finalised in PR #2 (one minimum requirement, no Docker); `BankConnector`/module part open; also update D-019/D-020 to "bank modules + SMTP" (PR #5 review point 10) |
 | P0-13 | Dependency license list `docs/DEPENDENCIES.md` + license column for add-on tools in the install docs (D-022: tools are installed by the admin, not shipped – no Ghostscript alternative needed) | Lead | todo | P0-11 | `docs/DEPENDENCIES.md` started in P1-1 (PR #9) |
 | P0-14 | Rebase PR #1 after PR #2 is merged; fill Q-8 row | Lead | done | PR #2 merged | Done by the Lead on PO request: renumbered D-020→D-021, D-021→D-022, Q-9→Q-11, merged main; Q-8 row filled in PR #2 |
-| P0-15 | Fix the must-fix points of the Manager's critical review on PR #2 (downloads for the offline worker, DNS-01, SQLite backups) and answer all points | Lead | in review | – | `lead/P0-15-review-followups`: backup = D-023 (PO requirement), D-016 as module, B12 criteria, D-002 rule; downloads + DNS-01 settled in PR #2 |
+| P0-15 | Fix the must-fix points of the Manager's critical review on PR #2 (downloads for the offline worker, DNS-01, SQLite backups) and answer all points | Lead | done | – | PR #5 merged 2026-10-29: D-023 backup, D-016 as module, B12 criteria, D-025 PHP raise policy; all Manager review points answered |
 | P0-16 | **Critical review of PR #1** (D-021, D-022, P3 split, collaboration rules) – technical feasibility | Lead | todo | – | WORKFLOW §10. PR #1 was merged by the PO before this review → review after merge, fixes as a follow-up PR |
 | P0-17 | Architecture overview `docs/architecture/OVERVIEW.md`: components, queues (`local`/`net`), data flow, add-on detection, module mechanism, where each decision lives | Lead | todo | P0-15 | Manager reviews |
 | P0-18 | Concrete data model: list of migrations/tables for P1–P4 incl. B7/B8/B16/B17 and generic transaction fields (D-021) | Lead | todo | PR #1 merged | Replaces PLAN §6 tables in P0-1c |
@@ -81,7 +81,7 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | P0-21 | Synthetic fixture generator spec: fake receipts (images) and fake bank CSVs of several formats, no real data | Lead | todo | – | Reduces P0-4 for the PO |
 | P0-22 | Device test plan for the spikes B5 (camera method) and B14 (pairing inside installed PWA): devices, steps, pass criteria | Lead | todo | – | PO runs it on real phones |
 | P0-23 | Break P1-1…P1-8 into concrete sub-tasks with acceptance tests, order and rough size | Lead | todo | P0-15 | Manager reviews, then Phase 1 can start |
-| P0-24 | Critical review of the Manager's PLAN v2 PR (P0-1c) and receipt-pack layout (P0-5) | Lead | todo | P0-1c, P0-5 | |
+| P0-24 | Critical review of the Manager's PLAN v2 PR (P0-1c) and receipt-pack layout (P0-5) | Lead | in progress | P0-1c, P0-5 | Post-merge review of PR #7 done (findings in issue #18); P0-5 layout review open |
 | P0-25 | In P0-23: mark which Phase 1 sub-tasks the Manager codes **together with the Lead** (Lead assigns, Lead reviews) | Lead | todo | P0-23 | Manager never codes alone |
 
 ## Phase 1 – Foundation (v0.1) – started 2026-10-29 (PO go, issue #8)

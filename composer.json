@@ -43,7 +43,6 @@
         "setup": [
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
-            "@php artisan key:generate",
             "@php artisan dochamster:setup"
         ],
         "dev": [
@@ -76,7 +75,7 @@
         "analyse": [
             "@php vendor/bin/phpstan analyse --memory-limit=1G"
         ],
-        "licenses": [
+        "check-licenses": [
             "@php scripts/check-licenses.php"
         ],
         "hooks": [
