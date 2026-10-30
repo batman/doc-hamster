@@ -131,12 +131,131 @@ function removeTree(string $dir): void
 }
 
 /** Write $content to $path; an existing different file is kept as <name>.bak-<time>. */
-function placeFile(string $path, string $content): void
+function placeFile(string $path, string $content, bool $keepOld): void
 {
-    if (is_file($path) && (string) file_get_contents($path) !== $content) {
+    if ($keepOld && is_file($path) && (string) file_get_contents($path) !== $content) {
         rename($path, $path.'.bak-'.date('YmdHis'));
     }
     file_put_contents($path, $content);
+}
+
+/** Puts everything from public/ into the web root; index.php gets the path to the app. */
+function wireWebRoot(string $appDir, string $webRoot, bool $keepOld): void
+{
+    $copy = static function (string $from, string $to) use (&$copy, $keepOld): void {
+        @mkdir($to);
+        foreach (scandir($from) ?: [] as $entry) {
+            if (in_array($entry, ['.', '..', 'index.php', '.user.ini'], true)) {
+                continue;
+            }
+            is_dir($from.'/'.$entry)
+                ? $copy($from.'/'.$entry, $to.'/'.$entry)
+                : placeFile($to.'/'.$entry, (string) file_get_contents($from.'/'.$entry), $keepOld);
+        }
+    };
+    $copy($appDir.'/public', $webRoot);
+
+    $index = (string) file_get_contents($appDir.'/public/index.php');
+    placeFile($webRoot.'/index.php', str_replace("__DIR__.'/../", var_export($appDir.'/', true).".'", $index), $keepOld);
+}
+
+/** Downloads and checks the release, returns the unpacked folder. */
+function unpackRelease(array $release, string $tmpDir, string $zipFile): string
+{
+    removeTree($tmpDir);
+    http($release['url'], $zipFile);
+    if (! hash_equals((string) $release['sha256'], (string) hash_file('sha256', $zipFile))) {
+        throw new RuntimeException('Die heruntergeladene Datei ist beschädigt (Prüfsumme stimmt nicht). Bitte erneut versuchen.');
+    }
+
+    $zip = new ZipArchive;
+    if ($zip->open($zipFile) !== true) {
+        throw new RuntimeException('ZIP-Datei lässt sich nicht öffnen.');
+    }
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $name = (string) $zip->getNameIndex($i);
+        if (strpos($name, 'dochamster/') !== 0 || strpos($name, '..') !== false) {
+            throw new RuntimeException('Unerwarteter Inhalt im Paket.');
+        }
+    }
+    if (! $zip->extractTo($tmpDir)) {
+        throw new RuntimeException('Entpacken fehlgeschlagen (Speicherplatz?).');
+    }
+    $zip->close();
+    @unlink($zipFile);
+
+    return $tmpDir.'/dochamster';
+}
+
+/** Swaps the program files; .env and storage/ (receipts) move into the new version unchanged. */
+function swapApp(string $appDir, string $new): void
+{
+    removeTree($new.'/storage');
+    if (! rename($appDir.'/storage', $new.'/storage')) {
+        throw new RuntimeException('Der Datenordner konnte nicht übernommen werden. Es wurde nichts verändert.');
+    }
+    if (! rename($appDir.'/.env', $new.'/.env')) {
+        rename($new.'/storage', $appDir.'/storage');
+        throw new RuntimeException('Die Einstellungen konnten nicht übernommen werden. Es wurde nichts verändert.');
+    }
+    $old = $appDir.'.old';
+    removeTree($old);
+    if (! rename($appDir, $old) || ! rename($new, $appDir)) {
+        if (is_dir($old)) {
+            rename($old, $appDir);
+        }
+        rename($new.'/.env', $appDir.'/.env');
+        rename($new.'/storage', $appDir.'/storage');
+        throw new RuntimeException('Die neue Version konnte nicht an ihren Platz verschoben werden. Es wurde nichts verändert.');
+    }
+    removeTree($old);
+    if (function_exists('opcache_reset')) {
+        @opcache_reset();
+    }
+}
+
+/** Runs the database migrations of the new version in this PHP process (no shell on simple hosting). */
+function migrate(string $appDir): void
+{
+    require $appDir.'/vendor/autoload.php';
+    $app = require $appDir.'/bootstrap/app.php';
+    $kernel = $app->make('Illuminate\Contracts\Console\Kernel');
+    $kernel->bootstrap();
+    if ($kernel->call('migrate', ['--force' => true]) !== 0) {
+        throw new RuntimeException('Die Datenbank konnte nicht angepasst werden.');
+    }
+}
+
+/** @return array<string, string> */
+function readEnv(string $file): array
+{
+    $values = [];
+    foreach (file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
+        if (preg_match('/^([A-Z][A-Z0-9_]*)=(.*)$/', $line, $m) === 1) {
+            $value = trim($m[2]);
+            $quoted = strlen($value) >= 2 && $value[0] === '"' && substr($value, -1) === '"';
+            $values[$m[1]] = $quoted ? (string) preg_replace('/\\\\(.)/s', '$1', substr($value, 1, -1)) : $value;
+        }
+    }
+
+    return $values;
+}
+
+/** Drops all tables of the instance's database – only for "fresh install", after the user confirmed it. */
+function wipeDatabase(string $envFile): void
+{
+    $env = readEnv($envFile);
+    $pdo = new PDO(
+        'mysql:host='.($env['DB_HOST'] ?? '127.0.0.1').';port='.($env['DB_PORT'] ?? '3306').';dbname='.($env['DB_DATABASE'] ?? '').';charset=utf8mb4',
+        $env['DB_USERNAME'] ?? '',
+        $env['DB_PASSWORD'] ?? '',
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 5],
+    );
+    $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
+    foreach ($pdo->query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'")->fetchAll(PDO::FETCH_NUM) as $row) {
+        $pdo->exec('DROP TABLE `'.str_replace('`', '``', (string) $row[0]).'`');
+    }
+    $pdo->exec('SET FOREIGN_KEY_CHECKS=1');
 }
 
 // The installer stays usable for two hours after its first run (not after upload: FTP clients may keep old file dates).
@@ -144,11 +263,9 @@ $codeFile = codeFile($webRoot, $outside);
 if (is_file($codeFile) && time() - (int) filemtime($codeFile) > DH_MAX_AGE_SECONDS) {
     page('Abgelaufen', '<p class="fail">Diese Installation wurde vor mehr als zwei Stunden begonnen und ist aus Sicherheitsgründen gesperrt. Bitte löschen Sie die Datei <code>'.h($codeFile).'</code> und laden Sie install.php neu.</p>');
 }
-// A set-up instance holds receipts: never touched. An unfinished copy can be overwritten after the code step.
+// An existing copy: what happens to it is decided after the code step. "Finished" means it holds real data.
 $existing = is_file($appDir.'/artisan');
-if ($existing && preg_match('/^DOCHAMSTER_INSTALLED=true/m', (string) @file_get_contents($appDir.'/.env')) === 1) {
-    page('Bereits eingerichtet', '<p>In <code>'.h($appDir).'</code> läuft schon ein eingerichtetes DocHamster mit Ihren Daten. Dieses wird nicht überschrieben. Bitte löschen Sie install.php per FTP.</p>');
-}
+$finished = $existing && preg_match('/^DOCHAMSTER_INSTALLED=true/m', (string) @file_get_contents($appDir.'/.env')) === 1;
 if (! is_file($codeFile)) {
     $code = strtoupper(substr(bin2hex(random_bytes(10)), 0, 16));
     if (@file_put_contents($codeFile, implode('-', str_split($code, 4))."\n") === false) {
@@ -184,18 +301,9 @@ if (empty($_SESSION['unlocked'])) {
         .'<p><code>'.h($codeFile).'</code></p>'.$error.'<form method="post">'.$csrf.'<input name="code" autocomplete="off" required autofocus><button>Weiter</button></form>');
 }
 
-if ($existing) {
-    // Never delete the folder this script is served from.
-    if (strpos($webRoot.'/', $appDir.'/') === 0) {
-        page('Bereits installiert', '<p class="fail">Ihr Webordner liegt in <code>'.h($appDir).'</code>. Bitte richten Sie die Domain auf einen eigenen Webordner aus und starten Sie install.php dort.</p>');
-    }
-    if (! $posted || ! isset($_POST['overwrite'])) {
-        page('Installation gefunden', '<p>In <code>'.h($appDir).'</code> liegt schon eine DocHamster-Kopie, deren Einrichtung nie abgeschlossen wurde.</p><p>Soll ich sie löschen und neu installieren?</p>'
-            .'<form method="post">'.$csrf.'<input type="hidden" name="overwrite" value="1"><button>Ja, überschreiben</button></form>');
-    }
-    removeTree($appDir);
-    header('Location: '.basename(__FILE__));
-    exit;
+// Never touch the folder this script is served from.
+if ($existing && strpos($webRoot.'/', $appDir.'/') === 0) {
+    page('Bereits installiert', '<p class="fail">Ihr Webordner liegt in <code>'.h($appDir).'</code>. Bitte richten Sie die Domain auf einen eigenen Webordner aus und starten Sie install.php dort.</p>');
 }
 
 // Step 2: check the server and pick the release (once; the same one is installed).
@@ -213,6 +321,77 @@ if (empty($_SESSION['release']) && extension_loaded('curl')) {
 }
 $release = $_SESSION['release'] ?? null;
 $allOk = $release !== null && ! in_array(false, $checks, true);
+$tmpDir = dirname($appDir).'/dochamster-install-tmp';
+$zipFile = dirname($appDir).'/dochamster-download.zip';
+
+// Step 2b: an existing copy – the user decides: update (data stays) or fresh install (data gone).
+if ($existing) {
+    $action = $posted ? (string) ($_POST['action'] ?? '') : '';
+
+    if ($action === '') {
+        $installed = is_file($appDir.'/VERSION') ? trim((string) file_get_contents($appDir.'/VERSION')) : 'unbekannt';
+        $available = $release ? '<p>Installierte Version: <strong>'.h($installed).'</strong> · Verfügbar: <strong>'.h($release['version']).'</strong></p>' : '';
+        $blocked = '<p class="fail">Der Server erfüllt gerade nicht alle Voraussetzungen'.($release ? '' : ' oder die neue Version ist nicht erreichbar').'. Bitte laden Sie die Seite später neu.</p>';
+        if (! $finished) {
+            page('Installation gefunden', '<p>In <code>'.h($appDir).'</code> liegt schon eine DocHamster-Kopie, deren Einrichtung nie abgeschlossen wurde.</p><p>Soll ich sie löschen und neu installieren?</p>'
+                .($allOk ? '<form method="post">'.$csrf.'<input type="hidden" name="action" value="fresh"><button>Ja, überschreiben</button></form>' : $blocked));
+        }
+        page('DocHamster ist bereits installiert', '<p>In <code>'.h($appDir).'</code> läuft DocHamster mit Ihren Daten.</p>'.$available.(! $allOk ? $blocked
+            : '<h2>Aktualisieren</h2><p>Alle Belege, Konten und Einstellungen bleiben erhalten.</p>'
+            .'<form method="post">'.$csrf.'<input type="hidden" name="action" value="update"><button>Jetzt aktualisieren</button></form>'
+            .'<h2>Neu installieren</h2><p class="fail"><strong>Achtung: Dabei gehen alle Daten unwiderruflich verloren</strong> – alle Belege, Konten und Einstellungen. Das lässt sich nicht rückgängig machen.</p>'
+            .'<form method="post">'.$csrf.'<input type="hidden" name="action" value="fresh"><label for="confirm">Tippen Sie zur Bestätigung LÖSCHEN ein:</label>'
+            .'<input id="confirm" name="confirm" autocomplete="off"><button>Alles löschen und neu installieren</button></form>'));
+    }
+
+    @set_time_limit(300);
+    if (! $allOk) {
+        page('Abgebrochen', '<p class="fail">Der Server erfüllt nicht alle Voraussetzungen. Es wurde nichts verändert.</p>');
+    }
+
+    if ($action === 'fresh') {
+        if ($finished && mb_strtoupper(trim((string) ($_POST['confirm'] ?? ''))) !== 'LÖSCHEN') {
+            page('Nicht bestätigt', '<p>Sie haben nicht LÖSCHEN eingetippt, es wurde nichts verändert.</p><a class="button" href="'.h(basename(__FILE__)).'">Zurück</a>');
+        }
+        try {
+            if ($finished) {
+                wipeDatabase($appDir.'/.env');
+            }
+        } catch (Throwable $e) {
+            page('Fehler', '<p class="fail">Die Datenbank konnte nicht geleert werden, deshalb wurde nichts gelöscht. Stimmen die Zugangsdaten noch?</p>');
+        }
+        removeTree($appDir);
+        header('Location: '.basename(__FILE__));
+        exit;
+    }
+
+    if ($action !== 'update' || ! $finished) {
+        page('Abgebrochen', '<p class="fail">Unbekannte Auswahl, es wurde nichts verändert.</p>');
+    }
+
+    try {
+        swapApp($appDir, unpackRelease($release, $tmpDir, $zipFile));
+        removeTree($tmpDir);
+        if ($outside) {
+            wireWebRoot($appDir, $webRoot, false);
+        } else {
+            file_put_contents($appDir.'/public/.user.ini', DH_USER_INI);
+            file_put_contents($appDir.'/.htaccess', "Require all denied\n");
+            file_put_contents($appDir.'/public/.htaccess', "Require all granted\n".(string) file_get_contents($appDir.'/public/.htaccess'));
+        }
+        migrate($appDir);
+    } catch (Throwable $e) {
+        @unlink($zipFile);
+        removeTree($tmpDir);
+        page('Fehler beim Aktualisieren', '<p class="fail">'.h($e->getMessage()).'</p><p>Ihre Belege und Einstellungen sind nicht betroffen. Laden Sie die Seite neu, um es noch einmal zu versuchen.</p>');
+    }
+
+    @unlink($codeFile);
+    @unlink(__FILE__);
+    session_destroy();
+    page('Aktualisiert', '<p class="ok">DocHamster ist jetzt auf Version '.h($release['version']).'. Ihre Daten sind erhalten geblieben. install.php hat sich selbst gelöscht'
+        .(is_file(__FILE__) ? ' <strong class="fail">– das hat nicht geklappt, bitte löschen Sie install.php per FTP!</strong>' : '').'.</p><a class="button" href="/">Zu DocHamster</a>');
+}
 
 if (! $posted || ! isset($_POST['install'])) {
     $list = '';
@@ -231,31 +410,8 @@ if (! $posted || ! isset($_POST['install'])) {
 if (! $allOk) {
     page('Abgebrochen', '<p class="fail">Der Server erfüllt nicht alle Voraussetzungen.</p>');
 }
-$tmpDir = dirname($appDir).'/dochamster-install-tmp';
-$zipFile = dirname($appDir).'/dochamster-download.zip';
 try {
-    removeTree($tmpDir);
-    http($release['url'], $zipFile);
-    if (! hash_equals((string) $release['sha256'], (string) hash_file('sha256', $zipFile))) {
-        throw new RuntimeException('Die heruntergeladene Datei ist beschädigt (Prüfsumme stimmt nicht). Bitte erneut versuchen.');
-    }
-
-    $zip = new ZipArchive;
-    if ($zip->open($zipFile) !== true) {
-        throw new RuntimeException('ZIP-Datei lässt sich nicht öffnen.');
-    }
-    for ($i = 0; $i < $zip->numFiles; $i++) {
-        $name = (string) $zip->getNameIndex($i);
-        if (strpos($name, 'dochamster/') !== 0 || strpos($name, '..') !== false) {
-            throw new RuntimeException('Unerwarteter Inhalt im Paket.');
-        }
-    }
-    if (! $zip->extractTo($tmpDir)) {
-        throw new RuntimeException('Entpacken fehlgeschlagen (Speicherplatz?).');
-    }
-    $zip->close();
-    @unlink($zipFile);
-    if (! rename($tmpDir.'/dochamster', $appDir)) {
+    if (! rename(unpackRelease($release, $tmpDir, $zipFile), $appDir)) {
         throw new RuntimeException('Der Ordner konnte nicht an seinen Platz verschoben werden.');
     }
     removeTree($tmpDir);
@@ -270,15 +426,7 @@ try {
                 rename($webRoot.'/'.$default, $webRoot.'/'.$default.'.bak-'.date('YmdHis'));
             }
         }
-        foreach (['.htaccess', 'favicon.ico', 'robots.txt'] as $file) {
-            placeFile($webRoot.'/'.$file, (string) file_get_contents($appDir.'/public/'.$file));
-        }
-        @mkdir($webRoot.'/css');
-        foreach (glob($appDir.'/public/css/*') ?: [] as $css) {
-            placeFile($webRoot.'/css/'.basename($css), (string) file_get_contents($css));
-        }
-        $index = (string) file_get_contents($appDir.'/public/index.php');
-        placeFile($webRoot.'/index.php', str_replace("__DIR__.'/../", var_export($appDir.'/', true).".'", $index));
+        wireWebRoot($appDir, $webRoot, true);
     } else {
         // Inside the web root: block direct access to everything but public/ (Apache), and no setup code yet –
         // the wizard creates its own once the document root points to public/.
