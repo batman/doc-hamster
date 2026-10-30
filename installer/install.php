@@ -28,7 +28,11 @@ header('Cache-Control: no-store');
 
 $webRoot = __DIR__;
 $outside = @is_writable(dirname($webRoot));
+// The web folder itself may be called "dochamster" (e.g. a subdomain) – never use it as the app folder.
 $appDir = ($outside ? dirname($webRoot) : $webRoot).'/dochamster';
+if ($appDir === $webRoot) {
+    $appDir .= '-app';
+}
 
 function h(string $s): string
 {
@@ -139,7 +143,7 @@ if (is_file($codeFile) && time() - (int) filemtime($codeFile) > DH_MAX_AGE_SECON
     page('Abgelaufen', '<p class="fail">Diese Installation wurde vor mehr als zwei Stunden begonnen und ist aus Sicherheitsgründen gesperrt. Bitte löschen Sie die Datei <code>'.h($codeFile).'</code> und laden Sie install.php neu.</p>');
 }
 // The app folder only appears after a complete unpack (rename at the end), so it marks a finished install.
-if (is_dir($appDir)) {
+if (is_file($appDir.'/artisan')) {
     page('Bereits installiert', '<p>DocHamster liegt schon in <code>'.h($appDir).'</code>. Bitte löschen Sie install.php per FTP und öffnen Sie <code>/setup</code>.</p>');
 }
 if (! is_file($codeFile)) {
