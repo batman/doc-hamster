@@ -15,17 +15,17 @@ it('reports success in German when all requirements are met', function (): void 
 
 it('exits with an error when a minimum requirement is not met', function (): void {
     $probe = new FakeSystemProbe;
-    $probe->phpVersion = '8.3.14';
+    $probe->phpVersion = '8.2.29';
     $this->app->instance(SystemProbe::class, $probe);
 
     $this->artisan('dochamster:doctor')
-        ->expectsOutputToContain('8.3.14 ist zu alt')
+        ->expectsOutputToContain('8.2.29 ist zu alt')
         ->assertExitCode(1);
 });
 
 it('stops setup before touching the database when requirements fail', function (): void {
     $probe = new FakeSystemProbe;
-    $probe->phpVersion = '8.3.14';
+    $probe->phpVersion = '8.2.29';
     $this->app->instance(SystemProbe::class, $probe);
 
     $this->artisan('dochamster:setup')

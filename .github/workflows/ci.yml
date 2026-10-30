@@ -26,7 +26,7 @@ jobs:
 
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.3'
           extensions: ${{ env.PHP_EXTENSIONS }}
           ini-values: ${{ env.PHP_INI }}
           coverage: none
@@ -87,7 +87,7 @@ jobs:
 
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.3'
           extensions: ${{ env.PHP_EXTENSIONS }}
           ini-values: ${{ env.PHP_INI }}
           coverage: none

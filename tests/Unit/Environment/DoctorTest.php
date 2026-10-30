@@ -27,9 +27,9 @@ it('passes everything on a server that meets the minimum requirements', function
         ->each->toBe(CheckStatus::Ok);
 });
 
-it('fails on PHP older than 8.4', function (): void {
+it('fails on PHP older than 8.3', function (): void {
     $probe = new FakeSystemProbe;
-    $probe->phpVersion = '8.3.14';
+    $probe->phpVersion = '8.2.29';
 
     expect(check($probe, 'php_version'))
         ->status->toBe(CheckStatus::Fail)

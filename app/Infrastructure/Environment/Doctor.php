@@ -13,7 +13,7 @@ use Throwable;
  */
 final class Doctor
 {
-    public const string MIN_PHP = '8.4.0';
+    public const string MIN_PHP = '8.3.0';
 
     public const string MIN_MARIADB = '10.11.0';
 
