@@ -15,6 +15,10 @@
         <a class="brand" href="{{ url('/') }}">{{ config('app.name') }}</a>
         @yield('header')
         @auth
+            <a href="{{ url('/') }}">{{ __('documents.title') }}</a>
+            @can('exports.create')
+                <a href="{{ route('exports.form') }}">{{ __('exports.title') }}</a>
+            @endcan
             <form class="logout" method="post" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit">{{ __('auth.logout') }}</button>
