@@ -209,6 +209,11 @@ function swapApp(string $appDir, string $new): void
         throw new RuntimeException('Die neue Version konnte nicht an ihren Platz verschoben werden. Es wurde nichts verändert.');
     }
     removeTree($old);
+    // Compiled pages live in storage/ and would survive. Unpacked files keep the ZIP's date,
+    // so Laravel could take the old pages for newer than the new templates.
+    foreach (glob($appDir.'/storage/framework/views/*.php') ?: [] as $compiled) {
+        @unlink($compiled);
+    }
     if (function_exists('opcache_reset')) {
         @opcache_reset();
     }
