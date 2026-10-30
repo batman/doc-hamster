@@ -168,3 +168,9 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done: PHP minimum in PLAN (waits for the Lead's new D-002); tax advisor step-up and the D-024 gaps from issue #4 (Lead decisions). P0-5 (UI sketches incl. receipt-pack layout) is my next open task.
 - Next: **Lead:** issues #8, #6, #4; merge Dependabot #1/#2 or let me know who should. **Manager:** P0-5.
 - Branch/PR: manager/P0-1c-plan-v2-part2
+
+## 2026-10-30 · Manager · PO goal: install on the PO's server
+- PO asked to stop code reviews and to get DocHamster installed on the PO's server as soon as possible, together with the Lead. State: `v0.1.1` (with the #8/#6 fixes) installs end to end – installer → wizard → owner → password login – but after login only "im Aufbau" is shown.
+- Done: **issue #12** (`to:lead`) – milestones M1 "Installation läuft" (PO installs v0.1.1, cron line in the wizard, install guide, fixes → v0.1.2), M2 "Belege fotografieren" (P2-0/1/2/3/4/7 + minimal list; Lead decides: interim password login vs. passkeys first), M3 core flow; asks the Lead which pieces the Manager takes; notes that `TRUSTED_PROXIES` read via `env()` in `withMiddleware()` may miss `.env` values (default localhost proxy is fine for M1). **Issue #13** (`to:po`) – server checklist (domain + HTTPS, PHP 8.3 + extensions + limits, empty DB, upload `install.php`, wizard, cron, what to report and what never to post). TASKS.md: "Current goal" section on top, PO row, P0-5 paused with the screen wireframes drafted in `docs/design/screens.md` (receipt-pack layout not started).
+- Next: **PO:** #13. **Lead:** answer #12 (milestones, login decision, Manager assignments). **Manager:** install guide / M2 sub-tasks once assigned; otherwise P0-5 receipt-pack layout.
+- Branch/PR: manager/install-goal-board

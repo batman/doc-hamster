@@ -6,6 +6,16 @@ Task IDs match the work packages in `../PLAN.md` §14. Maintained by the Manager
 
 > **Issue/PR numbers:** the project moved to a fresh GitHub repository on 2026-10-30 (history rewrite for the leak, see LOG.md). Numbers written before that date (e.g. "PR #19", "issue #18") refer to the **previous** repository; new numbers start again at #1. Open items were re-created: old issue #18 → #4.
 
+## Current goal (PO, 2026-10-30): install on the PO's server as soon as possible
+
+Goes before other Phase 0/1 work. Plan and split in **issue #12** (Lead confirms), PO checklist in **issue #13**.
+
+| Milestone | What | Who | Status |
+|-----------|------|-----|--------|
+| M1 – Installation läuft | PO installs `v0.1.1` (installer → wizard → owner → login) and reports; Lead fixes findings → `v0.1.2`; cron line in the wizard; short install guide | PO (#13), Lead, Manager (guide, if assigned) | in progress |
+| M2 – Belege fotografieren | P2-0, P2-1, P2-2, P2-3, P2-4, P2-7 + minimal list; login decision (interim password vs. passkeys first) | Lead, Manager (sub-tasks the Lead marks in #12) | todo |
+| M3 – Kernablauf | bank CSV import, matching, receipt pack (Phase 3/4) | Lead + Manager | todo |
+
 ## Work split (maintained by the Manager)
 
 **Lead** – decides and answers all questions (technical + product), leads the implementation, assigns coding sub-tasks to the Manager.
@@ -29,6 +39,7 @@ Only product-design and hard-to-change questions (AGENTS rule 6, operator rule 2
 |------|-------------|-----------------|
 | Email Revolut about the open-source module and name | Sends mail from a real account | P0-10 |
 | Pick and register the domain **before P1-4** (never changes later, passkeys bind to it; stays out of the repo) | Owns/buys the domain | B1, D-010 |
+| Install `v0.1.1` on the own server and report back (fixes the domain at the same time) | Owns the server | #13, M1 |
 | Provide the test server that meets the D-010 minimum requirements (details stay out of the repo) | Owns the machine/contract | D-010 |
 | Create a Revolut Business **sandbox** account and keep its keys private | Account sign-up | D-016, P3-4b |
 | Run the device tests on a real iPhone and Android phone | Owns the phones | P0-22 (spikes B5, B14) |
@@ -59,7 +70,7 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | P0-2b | Product decisions D-000, D-011, D-014, D-018 (receipt pack layout) | Lead | in progress | – | D-000, D-011, D-014 decided (`lead/P0-15-review-followups`); D-018 waits for the layout draft P0-5. D-015, D-019 decided by PO |
 | P0-3 | Repo basics: README, LICENSE, AGENTS.md, workflow, templates | Manager | done | – | 2026-10-29 |
 | P0-4 | Synthetic/anonymised fixtures: ~30 receipt photos (EXIF stripped), 1 anonymised Revolut export, 2–3 other bank exports | Lead + Manager | todo | P0-21 | Lead (with operator) supplies, Manager checks anonymisation |
-| P0-5 | UI sketches: capture, matching, **receipt pack PDF layout**, list, detail, settings | Manager | todo | P0-1c | `docs/design/`, Lead signs off |
+| P0-5 | UI sketches: capture, matching, **receipt pack PDF layout**, list, detail, settings | Manager | in progress | P0-1c | Screen wireframes drafted in `docs/design/screens.md` (2026-10-30); receipt-pack layout not started. **Paused** for the install goal (#12); Lead signs off |
 | P0-6 | Roles set: Lead + Manager (both Claude) | PO | done | – | 2026-10-29 |
 | P0-7 | Public-repo hardening: SECURITY.md, rules, `.gitignore` | Manager | done | – | 2026-10-29 |
 | P0-8 | Full history & content scan before going public | Manager | done | before D-014 | 2026-10-30, after the repo was already public: gitleaks over all 31 commits/all refs clean; manual scan of authors, e-mails, IPs, hostnames, IBAN/phone patterns, binary files, issue/PR texts – nothing personal or secret (only composer.lock maintainer e-mails, RFC 5737 IPs, example.com). Repeat before v1.0 (P8-3) |
