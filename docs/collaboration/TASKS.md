@@ -117,5 +117,6 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | MVP-PEOPLE | Owner adds employees and tax advisors, resets passwords, removes access (D-012) | Lead (install session) | done | P1-6 | PR #25, #27; tax advisors read-only on everything until shares (Q-20). Also: owner-triggered update, PR #26 |
 | MVP-ROLES | Roles the Admin creates and names, checkboxes per role; Admin fixed, Mitarbeiter + Steuerberater pre-installed | – | todo | MVP-PEOPLE | Agreed spec in the issue "MVP-ROLES"; builder open |
 | MVP-FRONTEND | Own CSS/JS framework and frontend layer | Operator + Lead (install session) | todo, reserved | – | Issue #31. Fits D-004. Not started |
+| MVP-TAGS | Tags on receipts: pick at upload, filter in the list, managed by Admin and "Tags bearbeiten" | – | todo | MVP-ROLES (checkbox) | Issue #32. Not started |
 
 Phases 2–8: see PLAN.md §14 (reordered in v1.1: 2 capture with time/location → 3 Revolut & matching → 4 receipt pack = core flow done → 5 OCR → 6 search → 7 tax advisor access → 8 release). The Manager adds rows when the previous phase is in review.
