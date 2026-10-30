@@ -54,7 +54,7 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 |----|------|-------|--------|------------|-------|
 | P0-1a | Review PLAN.md v1 (technical) → PLAN-REVIEW.md | Lead | done | – | PR #2, merged 2026-10-29 |
 | P0-1b | Review PLAN.md v1 (product) → PLAN-REVIEW.md; mark the open PO column of PLAN-REVIEW B1–B21 | Lead | done | – | PR #5: all open B/A points marked by the Lead (AGENTS rule 6); B5 tap count → Q-18. Manager (paused) or Lead merges B3, B5, B7–B10, B12–B17 + A-points into PLAN in P0-1c part 2 |
-| P0-1c | Merge accepted feedback into PLAN.md (v2) | Manager (for the Lead) | in progress | P0-1b | Lead decides what is accepted. Part 1 merged (PR #7): B1, B2, B4, B6, B11, B18–B21 + decided D-001…D-004, D-009, D-010, D-012, D-017, D-020. Part 2: B22 (backup, after PR #5) and the B-points still open |
+| P0-1c | Merge accepted feedback into PLAN.md (v2) | Manager (for the Lead) | done | P0-1b | Part 1: old repo PR #7. Part 2 (2026-10-30, `manager/P0-1c-plan-v2-part2`): B3, B5 (technical), B7–B9, B12, B14, B15/A1, B17, B22 + issue #4 doc items for D-008/D-010/D-017. Left for the Lead (issue #4): tax advisor step-up (§11.1), D-024/Q-12 gaps; PHP minimum waits for the new D-002 |
 | P0-2a | Technical decisions D-001…D-010, D-012, D-016, D-017, D-019 (STT engine) | Lead | done | – | PR #2. All blocking decisions decided; D-005, D-006, D-007 (files), D-019 engine stay proposed until their phase |
 | P0-2b | Product decisions D-000, D-011, D-014, D-018 (receipt pack layout) | Lead | in progress | – | D-000, D-011, D-014 decided (`lead/P0-15-review-followups`); D-018 waits for the layout draft P0-5. D-015, D-019 decided by PO |
 | P0-3 | Repo basics: README, LICENSE, AGENTS.md, workflow, templates | Manager | done | – | 2026-10-29 |
@@ -62,7 +62,7 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | P0-5 | UI sketches: capture, matching, **receipt pack PDF layout**, list, detail, settings | Manager | todo | P0-1c | `docs/design/`, Lead signs off |
 | P0-6 | Roles set: Lead + Manager (both Claude) | PO | done | – | 2026-10-29 |
 | P0-7 | Public-repo hardening: SECURITY.md, rules, `.gitignore` | Manager | done | – | 2026-10-29 |
-| P0-8 | Full history & content scan before going public | Manager | todo | before D-014 | gitleaks + manual review |
+| P0-8 | Full history & content scan before going public | Manager | done | before D-014 | 2026-10-30, after the repo was already public: gitleaks over all 31 commits/all refs clean; manual scan of authors, e-mails, IPs, hostnames, IBAN/phone patterns, binary files, issue/PR texts – nothing personal or secret (only composer.lock maintainer e-mails, RFC 5737 IPs, example.com). Repeat before v1.0 (P8-3) |
 | P0-9 | Install required skills (docs/SKILLS.md block 1) on own computer | Lead | done | – | Manager + Lead: done 2026-10-29 |
 
 ### Phase 0 – added 2026-10-29
