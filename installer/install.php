@@ -284,11 +284,13 @@ $httpsWarning = $https ? '' : '<p class="fail">Achtung: Diese Seite läuft ohne 
 // Step 1: prove access to the web space with the code from the file.
 if (empty($_SESSION['unlocked'])) {
     $error = '';
-    if ($posted && isset($_POST['code'])) {
+    // The app's own update button links here with the code it just wrote.
+    $given = $posted ? ($_POST['code'] ?? null) : ($_GET['code'] ?? null);
+    if (is_string($given)) {
         $norm = static function (string $s): string {
             return strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', $s));
         };
-        if (hash_equals($norm((string) file_get_contents($codeFile)), $norm((string) $_POST['code']))) {
+        if (hash_equals($norm((string) file_get_contents($codeFile)), $norm($given))) {
             session_regenerate_id(true);
             $_SESSION['unlocked'] = true;
             header('Location: '.basename(__FILE__));

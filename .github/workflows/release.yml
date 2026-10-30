@@ -37,9 +37,10 @@ jobs:
           zip -qr "dochamster-${VERSION}.zip" dochamster
           SHA=$(sha256sum "dochamster-${VERSION}.zip" | cut -d' ' -f1)
           PHP_MIN=$(php -r '$c=json_decode(file_get_contents("dochamster/composer.json"),true); preg_match("/(\d+\.\d+)/",$c["require"]["php"],$m); echo $m[1].".0";')
-          printf '{"version":"%s","php":"%s","zip":"dochamster-%s.zip","sha256":"%s"}\n' "$VERSION" "$PHP_MIN" "$VERSION" "$SHA" > manifest.json
           sed "s/const DH_INSTALLER_VERSION = 'dev';/const DH_INSTALLER_VERSION = '${VERSION}';/" ../installer/install.php > install.php
           grep -q "DH_INSTALLER_VERSION = '${VERSION}'" install.php
+          INSTALLER_SHA=$(sha256sum install.php | cut -d' ' -f1)
+          printf '{"version":"%s","php":"%s","zip":"dochamster-%s.zip","sha256":"%s","installer_sha256":"%s"}\n' "$VERSION" "$PHP_MIN" "$VERSION" "$SHA" "$INSTALLER_SHA" > manifest.json
           cat manifest.json
 
       - name: Publish release

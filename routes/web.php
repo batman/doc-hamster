@@ -7,6 +7,7 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\SetupController;
+use App\Http\Controllers\UpdateController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'org'])->group(function (): void {
@@ -19,6 +20,12 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('members', [MemberController::class, 'store'])->name('members.store');
         Route::post('members/{id}/reset', [MemberController::class, 'resetPassword'])->name('members.reset');
         Route::post('members/{id}/revoke', [MemberController::class, 'revoke'])->name('members.revoke');
+    });
+
+    Route::middleware('can:settings.manage')->group(function (): void {
+        Route::get('update', [UpdateController::class, 'show'])->name('updates.show');
+        Route::post('update/check', [UpdateController::class, 'check'])->middleware('throttle:10,1')->name('updates.check');
+        Route::post('update/install', [UpdateController::class, 'install'])->middleware('throttle:10,1')->name('updates.install');
     });
 
     Route::middleware('can:exports.create')->group(function (): void {
