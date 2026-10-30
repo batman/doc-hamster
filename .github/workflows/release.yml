@@ -1,0 +1,49 @@
+name: Release
+
+# Builds the upload package for a version tag (v1.2.3): production
+# dependencies included, no dev files. installer/install.php picks the newest
+# release whose manifest.json fits the server's PHP and checks the SHA-256.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring, intl, sodium, fileinfo, exif, zip, gd
+          coverage: none
+          tools: composer:v2
+
+      - name: Build package
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p build
+          git archive HEAD | tar -x -C build --one-top-level=dochamster
+          cd build/dochamster
+          rm -rf tests .github .githooks docs scripts installer phpunit.xml phpstan.neon pint.json .gitleaks.toml AGENTS.md CLAUDE.md
+          composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+          cd ..
+          zip -qr "dochamster-${VERSION}.zip" dochamster
+          SHA=$(sha256sum "dochamster-${VERSION}.zip" | cut -d' ' -f1)
+          PHP_MIN=$(php -r '$c=json_decode(file_get_contents("dochamster/composer.json"),true); preg_match("/(\d+\.\d+)/",$c["require"]["php"],$m); echo $m[1].".0";')
+          printf '{"version":"%s","php":"%s","zip":"dochamster-%s.zip","sha256":"%s"}\n' "$VERSION" "$PHP_MIN" "$VERSION" "$SHA" > manifest.json
+          cp ../installer/install.php install.php
+          cat manifest.json
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" --title "DocHamster ${VERSION}" --generate-notes \
+            "build/dochamster-${VERSION}.zip" build/manifest.json build/install.php
