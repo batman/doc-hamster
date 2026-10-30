@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\MemberController;
 use App\Http\Controllers\SetupController;
 use Illuminate\Support\Facades\Route;
 
@@ -12,6 +13,13 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::get('/', [DocumentController::class, 'index'])->name('documents.index');
     Route::post('documents', [DocumentController::class, 'store'])->middleware('can:documents.upload')->name('documents.store');
     Route::get('files/{id}', [DocumentController::class, 'file'])->name('documents.file');
+
+    Route::middleware('can:members.manage')->group(function (): void {
+        Route::get('members', [MemberController::class, 'index'])->name('members.index');
+        Route::post('members', [MemberController::class, 'store'])->name('members.store');
+        Route::post('members/{id}/reset', [MemberController::class, 'resetPassword'])->name('members.reset');
+        Route::post('members/{id}/revoke', [MemberController::class, 'revoke'])->name('members.revoke');
+    });
 
     Route::middleware('can:exports.create')->group(function (): void {
         Route::get('export', [ExportController::class, 'form'])->name('exports.form');

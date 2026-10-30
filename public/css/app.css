@@ -79,6 +79,9 @@ button, .button {
 .check-fail { color: var(--error); }
 code { word-break: break-all; background: var(--surface); padding: .1rem .3rem; border-radius: 4px; }
 
+/* One-time information, e.g. a new password */
+.notice { background: var(--surface); border-left: 4px solid var(--accent); padding: .5rem var(--space); border-radius: var(--radius); }
+
 /* Header logout */
 .logout { margin-left: auto; }
 .logout button { margin-top: 0; background: none; color: var(--accent); }
