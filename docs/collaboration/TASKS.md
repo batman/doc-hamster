@@ -115,6 +115,6 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | MVP-CSV | Bank CSV import + manual match (MVP) | Lead (this PC) | in progress | P1-6 | Install/setup stays with the other PC (Q-14) |
 | MVP-ZIP | ZIP export per period (MVP) | Lead (install session) | done | P1-6 | PR #24; transactions join the index once MVP-CSV is merged |
 | MVP-PEOPLE | Owner adds employees and tax advisors, resets passwords, removes access (D-012) | Lead (install session) | done | P1-6 | PR #25, #27; tax advisors read-only on everything until shares (Q-20). Also: owner-triggered update, PR #26 |
-| MVP-ROLES | Roles the owner creates and names, permissions as checkboxes; Admin fixed, defaults employee + tax advisor | – | idea | MVP-PEOPLE | Being collected with the operator, not started; replaces the fixed member/accountant matrix |
+| MVP-ROLES | Roles the Admin creates and names, checkboxes per role; Admin fixed, Mitarbeiter + Steuerberater pre-installed | – | todo | MVP-PEOPLE | Agreed spec in the issue "MVP-ROLES"; builder open |
 
 Phases 2–8: see PLAN.md §14 (reordered in v1.1: 2 capture with time/location → 3 Revolut & matching → 4 receipt pack = core flow done → 5 OCR → 6 search → 7 tax advisor access → 8 release). The Manager adds rows when the previous phase is in review.
