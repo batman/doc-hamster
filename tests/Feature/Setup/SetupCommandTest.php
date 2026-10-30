@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Domain\Auth\User;
+use App\Domain\Org\Organization;
 use App\Infrastructure\Environment\SystemProbe;
 use App\Setup\EnvFile;
 use Dotenv\Dotenv;
@@ -45,12 +47,21 @@ it('asks for address and database credentials, then finishes the installation', 
         ->expectsQuestion(__('setup.wizard.db_name'), $real['database'])
         ->expectsQuestion(__('setup.wizard.db_user'), $real['username'])
         ->expectsQuestion(__('setup.wizard.db_password'), (string) $real['password'])
+        ->expectsQuestion(__('auth.owner.org'), 'Haushalt Shell')
+        ->expectsQuestion(__('auth.username'), 'inhaber-shell')
+        ->expectsQuestion(__('auth.password'), 'ein-langes-test-passwort')
+        ->expectsQuestion(__('setup.wizard.password_repeat'), 'ein-langes-test-passwort')
         ->expectsOutputToContain(__('setup.done'))
         ->assertExitCode(0);
 
     $stored = Dotenv::parse((string) file_get_contents($this->envPath));
+    $owner = User::query()->where('username', 'inhaber-shell')->firstOrFail();
 
     expect($stored['APP_URL'])->toBe('https://belege.example.com')
         ->and($stored['DB_HOST'])->toBe($real['host'])
         ->and($stored['DOCHAMSTER_INSTALLED'])->toBe('true');
+
+    // No RefreshDatabase (the command purges the connection) – clean up by hand.
+    Organization::query()->whereKey($owner->memberships()->pluck('org_id'))->delete();
+    $owner->delete();
 })->group('db');

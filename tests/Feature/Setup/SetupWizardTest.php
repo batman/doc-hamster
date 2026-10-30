@@ -49,7 +49,7 @@ it('sends every page to the wizard until installed, then hides the wizard', func
 
 it('unlocks only with the code from the file and then stores the address as APP_URL', function (): void {
     $this->get('/setup')->assertOk()->assertSee('setup-code-');
-    $this->get('/setup/server')->assertForbidden();
+    $this->get('/setup/server')->assertRedirect(route('setup.welcome'));
 
     $this->post('/setup/unlock', ['code' => 'AAAAA-BBBBB-CCCCC-DDDDD'])->assertSessionHasErrors('code');
 

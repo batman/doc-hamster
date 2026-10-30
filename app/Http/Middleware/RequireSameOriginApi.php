@@ -25,7 +25,7 @@ final class RequireSameOriginApi
             $fetchSite = $request->headers->get('Sec-Fetch-Site');
 
             abort_unless(
-                $origin === $request->getSchemeAndHttpHost()
+                $origin === self::origin((string) config('app.url'))
                     && ($fetchSite === null || $fetchSite === 'same-origin')
                     && $request->headers->get(self::HEADER) === '1',
                 403,
@@ -33,5 +33,14 @@ final class RequireSameOriginApi
         }
 
         return $next($request);
+    }
+
+    /** "https://host[:port]" of the configured address – behind a proxy the request host may differ. */
+    private static function origin(string $url): string
+    {
+        $parts = parse_url($url);
+        $port = isset($parts['port']) ? ':'.$parts['port'] : '';
+
+        return ($parts['scheme'] ?? 'https').'://'.($parts['host'] ?? '').$port;
     }
 }

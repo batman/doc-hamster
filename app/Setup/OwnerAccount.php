@@ -18,7 +18,7 @@ final class OwnerAccount
 {
     public static function exists(): bool
     {
-        return Membership::query()->where('role', Role::Owner->value)->exists();
+        return Membership::query()->where('role', Role::Owner->value)->whereNull('revoked_at')->exists();
     }
 
     public static function create(string $org, string $username, string $password): User

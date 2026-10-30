@@ -9,6 +9,8 @@ use App\Infrastructure\Environment\CheckResult;
 use App\Infrastructure\Environment\Doctor;
 use App\Setup\DatabaseConnector;
 use App\Setup\EnvFile;
+use App\Setup\OwnerAccount;
+use App\Setup\SetupCode;
 use Illuminate\Console\Command;
 use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +33,7 @@ final class SetupCommand extends Command
 
     protected $description = 'Set up DocHamster on this server: requirements, app key, address, database';
 
-    public function handle(Doctor $doctor, EnvFile $env, DatabaseConnector $connector): int
+    public function handle(Doctor $doctor, EnvFile $env, DatabaseConnector $connector, SetupCode $code): int
     {
         $this->info(__('setup.checking'));
         // Database and cron are set up below / afterwards.
@@ -77,8 +79,16 @@ final class SetupCommand extends Command
             return self::FAILURE;
         }
 
+        // Without an owner nobody could log in after the wizard is locked.
+        if (! OwnerAccount::exists() && ! $this->askForOwner()) {
+            $this->warn(__('setup.owner_missing', ['command' => 'php artisan dochamster:owner']));
+
+            return self::FAILURE;
+        }
+
         // Same end as the browser wizard: the wizard is locked from now on (D-024).
         $env->set(['DOCHAMSTER_INSTALLED' => 'true']);
+        $code->delete();
 
         $this->info(__('setup.done'));
         $this->line(__('setup.cron_hint', [
@@ -86,6 +96,31 @@ final class SetupCommand extends Command
         ]));
 
         return self::SUCCESS;
+    }
+
+    private function askForOwner(): bool
+    {
+        if (! $this->input->isInteractive()) {
+            return false;
+        }
+
+        for ($attempt = 1; $attempt <= self::MAX_DB_ATTEMPTS; $attempt++) {
+            $org = trim((string) $this->ask(__('auth.owner.org')));
+            $username = trim((string) $this->ask(__('auth.username')));
+            $password = (string) $this->secret(__('auth.password'));
+            $repeat = (string) $this->secret(__('setup.wizard.password_repeat'));
+
+            if ($org !== '' && preg_match('/^[A-Za-z0-9._-]{1,64}$/', $username) === 1
+                && mb_strlen($password) >= 12 && $password === $repeat) {
+                OwnerAccount::create($org, $username, $password);
+
+                return true;
+            }
+
+            $this->error(__('auth.owner.invalid'));
+        }
+
+        return false;
     }
 
     /**

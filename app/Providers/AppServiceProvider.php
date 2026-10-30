@@ -69,6 +69,7 @@ class AppServiceProvider extends ServiceProvider
             return [
                 Limit::perMinute(5)->by('login:'.$username.'|'.$ip),
                 Limit::perMinute(20)->by('login-ip:'.$ip),
+                Limit::perHour(30)->by('login-user:'.$username),
             ];
         });
         RateLimiter::for('pairing', static fn (Request $request): Limit => Limit::perMinute(10)

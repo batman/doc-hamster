@@ -12,6 +12,7 @@ use App\Setup\OwnerAccount;
 use App\Setup\SetupCode;
 use App\Setup\SetupMode;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -170,7 +171,10 @@ final class SetupController
 
     private function requireUnlocked(Request $request): void
     {
-        abort_unless($request->session()->get(self::UNLOCKED) === true, 403);
+        // Expired or never unlocked: back to the code prompt instead of an error page.
+        if ($request->session()->get(self::UNLOCKED) !== true) {
+            throw new HttpResponseException(redirect()->route('setup.welcome'));
+        }
     }
 
     private function databaseReady(): bool

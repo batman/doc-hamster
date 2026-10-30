@@ -117,4 +117,7 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    // Failed logins take at least this long (µs), so the Argon2id check doesn't reveal which usernames exist.
+    'timebox_duration' => 500000,
+
 ];

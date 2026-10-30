@@ -13,6 +13,7 @@ return [
     'url_not_https' => 'Achtung: Ohne https:// funktionieren Passkeys und die Handy-App nicht (nur zum Testen auf dem eigenen Rechner).',
     'ask_db_intro' => 'Die Datenbank ist noch nicht erreichbar. Bitte die Zugangsdaten eingeben (MariaDB 10.11+ oder MySQL 8.4+):',
     'db_failed' => 'Einrichtung abgebrochen: keine Verbindung zur Datenbank. Zugangsdaten prüfen und den Befehl erneut starten.',
+    'owner_missing' => 'Noch kein Inhaber-Konto – ohne kann sich niemand anmelden. Bitte anlegen mit: :command – danach den Befehl erneut starten.',
 
     // Setup-Assistent im Browser (D-024)
     'wizard' => [

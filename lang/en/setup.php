@@ -13,6 +13,7 @@ return [
     'url_not_https' => 'Warning: without https:// passkeys and the phone app don’t work (only for testing on your own machine).',
     'ask_db_intro' => 'The database can’t be reached yet. Please enter the credentials (MariaDB 10.11+ or MySQL 8.4+):',
     'db_failed' => 'Setup stopped: no database connection. Check the credentials and run the command again.',
+    'owner_missing' => 'No owner account yet – nobody could log in. Please create one with: :command – then run this command again.',
 
     // Setup wizard in the browser (D-024)
     'wizard' => [
