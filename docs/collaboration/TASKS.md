@@ -113,6 +113,6 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | P1-10 | Interactive shell install: same steps in the terminal, asks for DB credentials (D-024, AK-4.9.7) | Lead | done | P1-1, Q-12 | Old repo PR #23; must-fix: ends without an owner account (issue #6) |
 | P1-11 | Setup wizard: owner account, mail, cron check, connect the phone + home-screen app, first steps | Lead | todo | P1-4, P1-9 | Part done: owner step (old repo PR #28); mail, cron, phone open |
 | MVP-CSV | Bank CSV import + manual match (MVP) | Lead (this PC) | in progress | P1-6 | Install/setup stays with the other PC (Q-14) |
-| MVP-ZIP | ZIP export per period (MVP) | Lead (install session) | in progress | P1-6 | Receipts + index.csv; transactions join once MVP-CSV is merged |
+| MVP-ZIP | ZIP export per period (MVP) | Lead (install session) | done | P1-6 | PR #24; transactions join the index once MVP-CSV is merged |
 
 Phases 2–8: see PLAN.md §14 (reordered in v1.1: 2 capture with time/location → 3 Revolut & matching → 4 receipt pack = core flow done → 5 OCR → 6 search → 7 tax advisor access → 8 release). The Manager adds rows when the previous phase is in review.
