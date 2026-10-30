@@ -1,6 +1,7 @@
 # DocHamster – Detaillierter Projektplan
 
-> **Status:** Planungsphase (v2-Entwurf in Arbeit, 2026-10-29). Noch kein Code.
+> **Status:** Phase 1 (Fundament) läuft seit 2026-10-29; v2 des Plans mit Teil 2 abgeschlossen (2026-10-30).
+> **v2, Teil 2 (P0-1c):** die übrigen vom Lead freigegebenen Punkte aus PLAN-REVIEW – B3 (Job-Queue als P2-0 nach Phase 2), B5 (Kamera-Methode, technischer Teil; Anzahl Taps → Q-18), B7–B9 (Revolut: Zeitpunkt, Datensparsamkeit, nur Lesezugriff), B12 (PDF-Benchmark), B14 (Kopplung in der installierten App), B15 + A1 (Offline-Queue auf iOS), B17 (keine räumlichen SQL-Abfragen), B22 (Backup, D-023) – sowie Folgen aus D-008 (§7 ohne `/o/{org}`), D-010 (Bildverarbeitung GD + Zusatzfunktionen) und D-017 (ULID). B10, B13, B16 und A6 brauchten keine Änderung. Die PHP-Mindestversion (§3, §5.2, §12) bleibt hier unverändert, bis der Lead D-002 nach der Umstellung auf PHP 8.3 neu festhält.
 > **v2, Teil 1 (P0-1c):** eingearbeitet, was bereits freigegeben ist – PLAN-REVIEW B11 (MariaDB/MySQL), B18 (Anmeldung nach Rolle), B19 (Händlerkategorie/MCC, Status), B21 + B1 (ohne Docker, Mindestanforderungen, feste Domain) sowie die entschiedenen D-001, D-002, D-004, D-009, D-010, D-012, D-017 (B4, B6, B20) und D-020 (B2). Offen für Teil 2: Punkte, die noch auf eine Entscheidung warten (u. a. B3, B5, B7–B9, B12–B16).
 > **v1.1:** PO-Entscheidungen eingearbeitet – Handy-Web-App statt Scanner (D-015), Aufnahmezeit + Standort (D-017), CSV-Import für jede Bank im Kern + Revolut Business als nachinstallierbares Modul mit einfacher Einrichtung (D-016, D-021); Lizenzregel für Fremdsoftware vorgeschlagen (D-022), Belegpaket für den Steuerberater (D-018), alles lokal ohne Cloud-KI inkl. lokaler Spracherkennung (D-019). Phasen neu geordnet um den Kernablauf (§14).
 > **Vorgänger:** [`archive/plan-v0-belegbox.md`](archive/plan-v0-belegbox.md) (Arbeitstitel „Belegbox“). Alles aus v0 ist hier enthalten und ausgearbeitet.
@@ -146,11 +147,11 @@ Ablauf:
 - Der Server ermittelt daraus einen Ortsnamen (Stadt/Land) für Anzeige, Abgleich und Belegpaket – **offline** aus dem GeoNames-Datensatz `cities1000` (CC BY 4.0, Quellenangabe in der App), ohne externen Dienst (D-017).
 
 Akzeptanzkriterien:
-- [ ] AK-4.1.1: Ein Foto ist mit 2 Taps (Kamera, Senden) gespeichert.
+- [ ] AK-4.1.1: Ein Foto ist mit 2 Taps (Kamera, Senden) gespeichert. Die Kamera-Methode – native Kamera (`<input type="file" capture>`, beste Bildqualität, auf iOS mit Bestätigung „Foto verwenden“) oder Kamera in der Seite (`getUserMedia`, Auslöser + Senden, auf iOS geringere Auflösung) – wird in P2-2 auf einem echten iPhone und Android-Handy verglichen (Taps, Bildqualität für die Texterkennung); die bessere wird Standard, die andere bleibt Fallback (B5). Ob auf dem iPhone 3 Taps reichen, wird nach dem Gerätetest entschieden (Q-18).
 - [ ] AK-4.1.2: Bis zu 20 Seiten können zu einem Dokument gebündelt werden.
-- [ ] AK-4.1.3: Ohne Netz wird der Upload in IndexedDB gepuffert und automatisch gesendet, sobald Netz da ist (Background Sync, Fallback: beim nächsten Öffnen). Die Warteschlange ist sichtbar (Badge mit Anzahl).
+- [ ] AK-4.1.3: Ohne Netz wird der Upload in IndexedDB gepuffert und automatisch gesendet, sobald Netz da ist: beim Öffnen der App, beim Ereignis `online` und bei `visibilitychange` – auf iOS ist das der Hauptweg, weil Safari kein Background Sync kennt; Background Sync nur als Zusatz auf Chromium (A1, B15). Die App fordert dauerhaften Speicher an (`navigator.storage.persist()`) und empfiehlt die Installation auf dem Home-Bildschirm (Safari kann Daten nicht installierter Seiten nach 7 Tagen ohne Nutzung löschen). Die Warteschlange ist sichtbar (Badge mit Anzahl).
 - [ ] AK-4.1.4: Ein abgebrochener Upload (App geschlossen) wird beim nächsten Öffnen fortgesetzt. Hochgeladen wird **pro Datei/Seite**; bereits übertragene Seiten werden nicht erneut gesendet (D-017).
-- [ ] AK-4.1.5: Doppeltes Senden desselben Uploads erzeugt kein Duplikat (Client-seitige Upload-UUID, Server idempotent).
+- [ ] AK-4.1.5: Doppeltes Senden desselben Uploads erzeugt kein Duplikat (Client-seitige `client_upload_id` als ULID, Server idempotent – D-017).
 - [ ] AK-4.1.6: Erlaubte Formate: JPEG, PNG, HEIC/HEIF (Server-Konvertierung als Zusatzfunktion, nur wenn die Umgebung sie hat – D-010), WebP, PDF. Max. 25 MB pro Datei (konfigurierbar).
 - [ ] AK-4.1.7: Bilder werden vor dem Upload clientseitig auf max. 3000 px lange Kante verkleinert (konfigurierbar, Original optional); EXIF-Zeit (und GPS, falls vorhanden) wird vorher ausgelesen und als Aufnahme-Metadaten mitgeschickt.
 - [ ] AK-4.1.8: Teilen-Ziel: In der installierten PWA kann man aus anderen Apps „Teilen → DocHamster“ (Web Share Target, S).
@@ -213,7 +214,7 @@ Ziel-Kontotyp: **Revolut Business** (PO, Q-7) → die offizielle Business API is
 - [ ] AK-4.4.R1: Revolut-Buchungen (Weg 1 oder 2) landen mit Zeitpunkt (Datum + Uhrzeit), Händler, Betrag, Währung, ggf. Originalbetrag/Kurs, Händlerkategorie (MCC – die Revolut-API liefert keine eigene Ausgabenkategorie) und Status in `transactions`. Die MCC wird über eine Tabelle MCC → deutscher Text angezeigt (z. B. „Tankstelle“, „Restaurant“).
 - [ ] AK-4.4.R2: Nur abgeschlossene Buchungen werden abgeglichen; ausstehende/zurückgebuchte werden angezeigt, aber nicht ins Belegpaket übernommen (Rückerstattungen als eigene Zeile); abgelehnte/fehlgeschlagene (`declined`/`failed`) werden nie abgeglichen und nie ins Belegpaket übernommen.
 - [ ] AK-4.4.R3: Wiederholter Abruf/Import erzeugt keine Duplikate (Revolut-Transaktions-ID bzw. Fingerprint).
-- [ ] AK-4.4.R4: API-Zugangsdaten liegen verschlüsselt auf dem Server, nie im Repo; Verbindung in den Einstellungen trennbar.
+- [ ] AK-4.4.R4: Das Modul fordert nur Lesezugriff an (`scope=READ`, B9). API-Zugangsdaten (Refresh-Token, privater Schlüssel) liegen verschlüsselt auf dem Server, nie im Repo; Verbindung in den Einstellungen trennbar.
 - [ ] AK-4.4.R5: **Einfache Einrichtung:** Ein Assistent führt Schritt für Schritt durch die Verbindung (Zertifikat erzeugen → in Revolut Business eintragen → Client-ID einfügen → Zustimmung → Verbindung testen → erster Import). Ziel: in ≤ 10 min ohne Doku, verständliche deutsche Texte und Fehlermeldungen.
 - [ ] AK-4.4.R6: Das Modul wird mit **einem** Befehl installiert (nicht über die Web-Oberfläche) und lässt sich danach in den Einstellungen ein- und ausschalten; nicht installiert oder ausgeschaltet hat es keinerlei Wirkung (keine Jobs, keine Netzwerkverbindungen).
 - [ ] AK-4.4.R7: Kein Revolut-Logo, keine Revolut-Farben, keine kopierten Revolut-Texte; Hinweis „nicht mit Revolut verbunden“ im Modul.
@@ -272,7 +273,17 @@ Akzeptanzkriterien:
 
 - Profil, Geräte (Liste, Name, zuletzt genutzt, sperren), Passkeys verwalten.
 - Organisation: Name, Kategorien, Zahlungsarten, Regeln, Mitglieder, Freigaben, Aufbewahrung, Papierkorb-Dauer.
-- Datenexport (DSGVO Art. 20) und Konto löschen.
+- **Backup herunterladen** (deckt auch den Datenexport nach DSGVO Art. 20 ab, D-023) und Konto löschen.
+
+**Backup herunterladen (D-023, B22):** Einstellungen → Organisation → „Backup herunterladen“, nur für den Owner dieser Organisation.
+
+- [ ] AK-4.8.1: Nur Owner der Organisation sehen den Button; Start erfordert eine frische Passkey-Bestätigung (Step-up) und steht im Audit-Log. Der Instanz-Admin bekommt keinen Export über Organisationen hinweg (dafür `dochamster:backup`, §12).
+- [ ] AK-4.8.2: Auswahl „Alles“ (Standard) oder Zeitraum von/bis; Schalter „Originale + abgeleitete Dateien“ (Standard: nur Originale); Kästchen – alle standardmäßig angehakt – für genaue Aufnahmeorte (GPS), Papierkorb und Protokoll (Audit-Log), jeweils mit Erklärung, was nach einer Wiederherstellung fehlt. Ohne GPS-Haken stehen nur Ortsnamen im Backup und die exportierten Dateikopien enthalten keine GPS-Daten mehr.
+- [ ] AK-4.8.3: Die erwartete Größe wird vor dem Start angezeigt und bei Änderung des Zeitraums aktualisiert (Abweichung ≤ 5 %).
+- [ ] AK-4.8.4: Bis 500 MB (einstellbar) startet der Download sofort als Stream; darüber baut ein Hintergrund-Job das ZIP mit Fortschritt, der Owner wird benachrichtigt, die Datei ist 24 h abrufbar und wird danach gelöscht. Der Download ist kein Link mit Token, sondern nur für den angemeldeten Owner abrufbar, der das Backup gestartet hat.
+- [ ] AK-4.8.5: Optional mit Passwort geschützt (AES-256, mind. 12 Zeichen, nie gespeichert – auch nicht in der Queue); Dateinamen sind im geschützten ZIP nicht lesbar. Ohne Passwort warnt der Dialog.
+- [ ] AK-4.8.6: Im ZIP stehen nie Passwörter/Hashes, Passkey-Schlüssel, Geräte-Token, Bank-Zugangsdaten oder der App-Schlüssel.
+- [ ] AK-4.8.7: Ein Voll-Backup („Alles“) lässt sich mit `dochamster:restore` in eine **leere** Instanz einspielen; das ZIP wird dabei als nicht vertrauenswürdig behandelt (Pfade, Prüfsummen, Inhalt, Größenlimits, Schema-Version – Einzelheiten in D-023).
 
 ### 4.9 Einrichtung mit Setup-Assistent – M
 
@@ -340,9 +351,9 @@ Akzeptanzkriterien:
 | Frontend | Blade + Vanilla-JS (ES-Module) ohne Build-Schritt; strikte CSP ohne Inline-Skripte | htmx nur, wenn ein Screen es braucht (lokal eingebunden, kein CDN) | D-004 ✅ |
 | CSS | Eigenes kleines CSS mit Custom Properties (Light/Dark) | – | D-004 ✅ |
 | OCR | Tesseract 5 (`deu+eng`), `ocrmypdf` für PDFs – **Zusatzfunktion**, nur wenn auf dem Server vorhanden (D-010) | – (kein Cloud-OCR, D-019) | D-005 |
-| Bildverarbeitung | libvips (`php-vips`) oder Imagick; HEIC über libheif | – | D-005 |
+| Bildverarbeitung | GD (Kern, immer vorhanden); libvips (`php-vips`) schneller als **Zusatzfunktion**; HEIC über libheif als Zusatzfunktion (D-010) | – | D-005 |
 | XLSX | PhpSpreadsheet (Import & Export) | OpenSpout (schneller, streaming) | – |
-| PDF-Erzeugung | Dompdf | wkhtmltopdf/Chromium headless | – |
+| PDF-Erzeugung | **Dompdf**; Fotos vorher in einem `local`-Job auf ca. 1600 px, JPEG-Qualität 80 verkleinert. Benchmark in P4-2 mit einem synthetischen Paket von 150 Seiten: bestanden = ≤ 60 s und ≤ 256 MB PHP-Speicher auf der Mindest-Hardware (D-010), PDF ≤ 50 MB (B12) | nur wenn der Benchmark scheitert: eine andere reine PHP-Bibliothek mit erlaubter Lizenz (D-022, z. B. TCPDF; mPDF ist GPL und ausgeschlossen); **kein** headless Chromium | B12 ✅ |
 | Passkeys | `web-auth/webauthn-lib` | `lbuchs/WebAuthn` | D-006 |
 | Verschlüsselung | Geheimnisse und personenbezogene Felder (Bank-Zugangsdaten, Koordinaten) **immer** verschlüsselt (Laravel encrypted casts); Dateien: Volume-Verschlüsselung (dringend empfohlen) + optional libsodium (`secretstream`) pro Datei | – | D-007 (Felder ✅, Dateien offen) |
 | Tests | PHPUnit/Pest, Playwright (E2E) | – | – |
@@ -408,7 +419,7 @@ Konventionen: IDs als ULID (Text, sortierbar, nicht ratbar) für öffentlich sic
 | Tabelle | Felder (Auszug) | Hinweise |
 |---------|-----------------|----------|
 | `documents` | id, org_id, uploaded_by, client_upload_id (unique pro org), status, title, doc_date, amount_minor, currency, merchant_id, merchant_raw, category_id, payment_method_id, note, ocr_text, language, duplicate_of_id, reviewed_at, reviewed_by, deleted_at, created_at | Kern |
-| `document_captures` | document_id, captured_at (UTC, korrigiert), captured_at_raw, captured_tz, captured_at_source (`device`/`exif`/`server`), client_sent_at, received_at, clock_skew_ms, lat, lon, accuracy_m, location_source (`geolocation`/`exif`), place_name, place_country, location_deleted_at | Aufnahme-Metadaten (D-017); lat/lon/accuracy verschlüsselt (D-007), nie in Logs; Abweichung > 2 min wird markiert |
+| `document_captures` | document_id, captured_at (UTC, korrigiert), captured_at_raw, captured_tz, captured_at_source (`device`/`exif`/`server`), client_sent_at, received_at, clock_skew_ms, lat, lon, accuracy_m, location_source (`geolocation`/`exif`), place_name, place_country, location_deleted_at | Aufnahme-Metadaten (D-017); lat/lon/accuracy verschlüsselt (D-007), nie in Logs; Abweichung > 2 min wird markiert. Folge der Verschlüsselung: keine räumlichen Abfragen in SQL – der Ortsname wird einmal beim Eingang ermittelt und im Klartext gespeichert, der Abgleich nutzt ihn (B17) |
 | `document_fields` | id, document_id, field (`doc_date`/`amount`/`merchant`/`category`…), value, source (`ocr`/`rule`/`transaction`/`local_model`/`user`), confidence (0–1), created_at | Nachvollziehbarkeit jeder Erkennung; `transaction` = aus der abgeglichenen Buchung übernommen |
 | `document_files` | id, document_id, kind (`original`/`normalized`/`thumbnail`/`searchable_pdf`), page_no, path, mime, size, sha256, width, height, encrypted (bool) | Originale unverändert |
 | `audio_notes` | id, document_id, path, mime, duration_s, transcript, transcript_engine, transcript_status, transcribed_at | S; Transkript lokal erzeugt |
@@ -428,7 +439,7 @@ Konventionen: IDs als ULID (Text, sortierbar, nicht ratbar) für öffentlich sic
 | `bank_connections` | id, org_id, bank_account_id, provider, method (`api`/`aggregator`), credentials_enc, scopes, last_sync_at, expires_at, status | Revolut-Live-Anbindung (D-016); Zugangsdaten nur verschlüsselt |
 | `import_profiles` | id, org_id, name, file_type, encoding, delimiter, decimal_sep, thousands_sep, date_format, header_row, column_map_json, sign_convention | Speicherbar, Vorlagen |
 | `imports` | id, org_id, bank_account_id, file_path, file_sha256, rows_total, rows_new, rows_duplicate, rows_error, created_by, created_at | Protokoll |
-| `transactions` | id, org_id, bank_account_id, import_id, external_id (z. B. Revolut-ID), booking_date, booked_at (Zeitpunkt, falls bekannt), value_date, amount_minor, currency, original_amount_minor, original_currency, fx_rate, fee_minor, counterparty, merchant_city, merchant_country, provider_category, state (`completed`/`pending`/`reverted`/`declined`/`failed`), purpose, raw_json, fingerprint (unique pro Konto), no_receipt_reason | `external_id` bzw. Fingerprint gegen Doppelimport; `provider_category` = Händlerkategorie (MCC), angezeigt als deutscher Text; `declined`/`failed` nie abgeglichen, nie im Belegpaket |
+| `transactions` | id, org_id, bank_account_id, import_id, external_id (z. B. Revolut-ID), booking_date, booked_at (Zeitpunkt, falls bekannt), value_date, amount_minor, currency, original_amount_minor, original_currency, fx_rate, fee_minor, counterparty, merchant_city, merchant_country, provider_category, state (`completed`/`pending`/`reverted`/`declined`/`failed`), purpose, raw_json, fingerprint (unique pro Konto), no_receipt_reason | `external_id` bzw. Fingerprint gegen Doppelimport; `provider_category` = Händlerkategorie (MCC), angezeigt als deutscher Text; `declined`/`failed` nie abgeglichen, nie im Belegpaket; `booked_at` bei Kartenzahlungen = Zeitpunkt der Autorisierung an der Kasse, nicht der Abrechnung (B7); `raw_json` ohne Name/Telefon des Karteninhabers (B8) |
 | `matches` | id, org_id, transaction_id, document_id, score, reasons_json, status (`suggested`/`auto`/`confirmed`/`rejected`), decided_by, decided_at | n:m möglich |
 
 ### 6.4 System
@@ -444,7 +455,7 @@ Konventionen: IDs als ULID (Text, sortierbar, nicht ratbar) für öffentlich sic
 
 ## 7. HTTP-Schnittstelle (Routen & API)
 
-Web-Oberfläche serverseitig gerendert; zusätzlich eine kleine JSON-API für die PWA (Upload, Queue, Status). Alle Routen außer Login/Einladung erfordern Sitzung; alle fachlichen Routen sind org-gebunden (`/o/{org}/…` oder aktive Org in Sitzung – **D-008**).
+Web-Oberfläche serverseitig gerendert; zusätzlich eine kleine JSON-API für die PWA (Upload, Queue, Status). Alle Routen außer Login/Einladung erfordern Sitzung; alle fachlichen Routen gelten für die **aktive Organisation in der Sitzung** (D-008, Org-Wechsler); es gibt keine `/o/{org}/…`-Adressen.
 
 | Methode | Pfad | Zweck | Rolle |
 |---------|------|-------|-------|
@@ -509,6 +520,9 @@ Danach Status `processed`; Event `DocumentProcessed`. Nach einem bestätigten Ab
 - **Live (Weg 1/3 aus §4.4):** Worker ruft neue Buchungen regelmäßig ab (z. B. alle 15–60 min, Lead entscheidet) und zusätzlich nach jedem Foto-Upload, damit der Abgleich schnell passiert. Token-Erneuerung und Ablauf werden überwacht; der Owner wird vor Ablauf benachrichtigt.
 - **Datei (Weg 2):** fertiges Import-Profil „Revolut“ (Spalten mit Datum **und Uhrzeit**, Betrag, Gebühr, Währung, Status, Beschreibung). Profil **anhand einer echten, anonymisierten Exportdatei bauen**, nicht aus dem Gedächtnis.
 - Gebühren und Fremdwährungsumrechnung werden getrennt gespeichert, damit Beleg-Betrag (Originalwährung) und Kontobetrag (EUR) beide abgleichbar sind.
+- **Zeitpunkt (B7):** Kartenzahlungen haben `created_at` (Autorisierung an der Kasse) und `completed_at` (Abrechnung, oft am Folgetag). Nur `created_at` liegt nah am Foto – es wird als `booked_at` gespeichert und für die Zeitnähe genutzt. Der Abruf liest Buchungen erneut, bis sie einen Endstatus haben (`completed`/`declined`/`failed`/`reverted`).
+- **Datensparsamkeit (B8):** Revolut liefert bei Kartenzahlungen Name und Telefonnummer des Karteninhabers. In `raw_json` wird `card` auf `id` und die maskierte Kartennummer gekürzt; diese Daten werden nie gespeichert. Testdaten nur synthetisch.
+- **Zugriff (B9):** Zustimmung nur mit `scope=READ` (der Zugang könnte sonst Zahlungen auslösen); Refresh-Token und privater Schlüssel verschlüsselt; für jede Token-Erneuerung wird ein frisches, kurzlebiges JWT signiert (D-016).
 
 ### 9.1 Import (jede Bank, öffentlicher Kern)
 
@@ -525,7 +539,7 @@ Mit Revolut ist der **Zeitpunkt** das stärkste Signal: Das Foto entsteht typisc
 
 | Kriterium | Punkte |
 |-----------|--------|
-| Zeitnähe Aufnahme ↔ Zahlungszeitpunkt (nur wenn beide Uhrzeiten bekannt) | ≤ 15 min: 35 · ≤ 2 h: 25 · gleicher Tag: 15 |
+| Zeitnähe Aufnahme ↔ Zahlungszeitpunkt `booked_at` (bei Karten die Autorisierung, B7; nur wenn beide Uhrzeiten bekannt) | ≤ 15 min: 35 · ≤ 2 h: 25 · gleicher Tag: 15 |
 | Nur Datum bekannt (andere Banken) | gleicher Tag: 15 · ±1–3 Tage: 8 · ±4–7: 3 |
 | Betrag exakt gleich (Beleg vs. Buchung, auch Originalwährung) | 40 |
 | Betrag ±1 % (Trinkgeld, Rundung, Kurs) | 20 |
@@ -573,7 +587,7 @@ Zusätzlich auf Wunsch: ZIP mit Originalfotos + `index.csv` + PDF, und CSV/XLSX 
 ### 11.1 Anmeldung & Gerätekopplung
 
 1. **Erstes Gerät / Instanz-Setup:** CLI-Befehl erzeugt Owner + Einmal-Link (`php artisan dochamster:setup` o. ä.).
-2. **Kopplung:** Einladungslink oder QR-Code (auf bereits angemeldetem Gerät angezeigt, 10 min gültig) → auf dem neuen Gerät **Passkey anlegen** (WebAuthn). Für Owner und Mitglieder gibt es **kein** Passwort und kein TOTP (D-012). Passkey verloren → der Owner erzeugt einen neuen Kopplungslink; für den Owner selbst gibt es den Setup-CLI-Befehl.
+2. **Kopplung:** Einladungslink oder QR-Code (auf bereits angemeldetem Gerät angezeigt, 10 min gültig) → auf dem neuen Gerät **Passkey anlegen** (WebAuthn). Für Owner und Mitglieder gibt es **kein** Passwort und kein TOTP (D-012). Passkey verloren → der Owner erzeugt einen neuen Kopplungslink; für den Owner selbst gibt es den Setup-CLI-Befehl. Die Kopplung muss **in der installierten Home-Bildschirm-App** abschließbar sein (App öffnen → kurzen Kopplungscode eintippen, den das andere Gerät anzeigt): Auf iOS kann die installierte App einen eigenen Cookie-Speicher haben, eine Kopplung in Safari käme dort nicht an (B14, Gerätetest P0-22).
 3. **Danach:** langlebiges Geräte-Token (256 bit zufällig, nur Hash in DB) als Cookie `__Host-dh_device` (HttpOnly, Secure, SameSite=Lax – Strict würde das Cookie beim Öffnen aus Mail/QR-Link weglassen und wie eine Abmeldung wirken, D-009), Laufzeit 180 Tage gleitend.
 4. **Rotation:** Token wird periodisch (z. B. alle 24 h) erneuert; Wiederverwendung eines alten Tokens derselben Familie → ganze Familie sperren (Diebstahlerkennung).
 5. **Sitzung:** kurzlebige Session (z. B. 12 h) wird aus gültigem Geräte-Token stillschweigend erneuert.
@@ -636,7 +650,7 @@ Werte sind Schätzungen und werden in Phase 1 auf dem Testserver des PO geprüft
 Betriebsthemen (alle in `docs/operations/` zu dokumentieren):
 - Installation: **Standard ist der Setup-Assistent im Browser** (D-024, §4.9) – Dateien hochladen, Adresse öffnen, Schritt für Schritt einrichten. Alternativ über die Shell: Code klonen, `composer setup` bzw. `php artisan dochamster:setup` (fragt dieselben Dinge ab), Cron-Eintrag. Anleitungen für einen normalen Linux-Server (Debian/Ubuntu) und für typisches Webhosting.
 - Worker: Cron jede Minute (`schedule:run` startet kurze `queue:work --stop-when-empty`-Läufe); Dauer-Worker (systemd/Supervisor) optional auf eigenen Servern.
-- Backups: DB-Dump + Storage-Ordner; Restore-Anleitung; Hinweis auf Schlüssel.
+- Backups (D-023): für Nutzer „Backup herunterladen“ in den Einstellungen (§4.8, funktioniert überall); für Betreiber `php artisan dochamster:backup` – konsistenter DB-Dump (`--single-transaction`, ohne Ausfallzeit) + Storage-Ordner, per Cron planbar, braucht `proc_open` und das Dump-Programm (fehlt es, zeigt `dochamster:doctor` „Server-Backup nicht verfügbar – nutze die Datenbank-Sicherung deines Hosters“). Wiederherstellung eines Voll-Backups mit `dochamster:restore` in eine leere Instanz. Hinweis: der App-Schlüssel (`.env`) muss getrennt aufbewahrt werden, ohne ihn sind verschlüsselte Felder unlesbar.
 - Updates: `git pull` bzw. neue Version hochladen → `composer install` → `migrate` → `dochamster:doctor`; Migrationen immer vorwärtskompatibel.
 - Monitoring: Health-Endpoint (`/health` – DB, Storage schreibbar, Queue-Länge, letzte Worker-Aktivität).
 - Logs: strukturiert, ohne personenbezogene Inhalte (kein OCR-Text in Logs).
@@ -679,7 +693,7 @@ Jede Phase endet mit einem **lauffähigen Stand**, einem Git-Tag (`v0.N.0`) und 
 | P1-1 | Projektgerüst (Laravel), Config, `.env.example`, Setup-Befehl (ohne Docker, D-010), CI-Grundgerüst | – | – |
 | P1-2 | Migrationen: users, organizations, memberships, devices, passkeys, invitations, audit_log | P1-1 | mit P1-3 |
 | P1-3 | Layout, CSS-Basis (Light/Dark), i18n-Mechanismus, Fehlerseiten | P1-1 | mit P1-2 |
-| P1-4 | Setup-CLI, Einladung, Kopplung per Link/QR, Passkey-Registrierung/Login | P1-2 | – |
+| P1-4 | Setup-CLI, Einladung, Kopplung per Link/QR **und per Kopplungscode in der installierten App** (B14), Passkey-Registrierung/Login | P1-2 | – |
 | P1-5 | Geräte-Token mit Rotation, Geräteliste, Sperren, Step-up | P1-4 | – |
 | P1-6 | Org-Scope-Middleware, Rollen/Policies, Rechte-Matrix-Testgerüst | P1-2 | mit P1-4 |
 | P1-7 | Security-Header, CSRF, Rate Limiting, Health-Endpoint | P1-1 | mit P1-2…6 |
@@ -694,13 +708,14 @@ Jede Phase endet mit einem **lauffähigen Stand**, einem Git-Tag (`v0.N.0`) und 
 
 | AP | Inhalt | Abh. | Parallel |
 |----|--------|------|----------|
+| P2-0 | Job-Queue + Worker (Cron-Modus, Dauer-Worker optional), Queues `local`/`net` (D-020), Retry, Fehlerstatus (Grundlage – Queue-Namen und Cron-Worker – schon in P1-1) – früher P3-1, vorgezogen, weil Thumbnails (P2-7) und Ortsnamen (P2-5) schon Hintergrund-Jobs brauchen (B3) | P1 | mit P2-1, P2-2 |
 | P2-1 | Storage-Service (außerhalb Webroot, Pfadschema, optional Verschlüsselung), `document_files` | P1 | mit P2-2 |
-| P2-2 | PWA: Manifest, Service Worker, Installierbarkeit, Kamera-Screen, Mehrseiten-Bündelung | P1-3 | mit P2-1 |
+| P2-2 | PWA: Manifest, Service Worker, Installierbarkeit, Kamera-Screen, Mehrseiten-Bündelung; Vergleich der Kamera-Methoden auf echten Geräten (B5) | P1-3 | mit P2-1 |
 | P2-3 | Upload-API pro Datei + Abschluss (§7, D-017), idempotent (`client_upload_id`), Validierung, Limits | P2-1 | – |
-| P2-4 | Offline-Queue (IndexedDB), Background Sync, Fortsetzen, Badge | P2-2, P2-3 | – |
-| P2-5 | Aufnahmezeit + Standort (Geolocation, Opt-in, EXIF-Fallback), `document_captures`, Ortsnamen (D-017) | P2-3 | mit P2-6 |
+| P2-4 | Offline-Queue (IndexedDB), Senden beim Öffnen/`online`/`visibilitychange`, Background Sync als Zusatz, `storage.persist()`, Fortsetzen, Badge (B15) | P2-2, P2-3 | – |
+| P2-5 | Aufnahmezeit + Standort (Geolocation, Opt-in, EXIF-Fallback), `document_captures`, Ortsnamen (D-017) | P2-0, P2-3 | mit P2-6 |
 | P2-6 | Zusatz-Schritt: Notiz, Kategorie-/Zahlungsart-Chips; Stammdaten | P2-3 | mit P2-5 |
-| P2-7 | Geschützte Datei-Auslieferung (`/files/{id}`), Thumbnails, Ausrichtung | P2-1 | ja |
+| P2-7 | Geschützte Datei-Auslieferung (`/files/{id}`), Thumbnails, Ausrichtung | P2-0, P2-1 | ja |
 | P2-8 | Sprachnotiz aufnehmen und abspielen (S) | P2-3 | ja |
 
 **Testliste v0.2:** Foto in ≤ 2 Taps · Zeit + Ort gespeichert, Ort abschaltbar · Flugmodus → 3 Belege → online → alle da, Aufnahmezeit korrekt, keine Duplikate · PDF aus Dateien · fremde Datei-ID → 403/404.
@@ -711,11 +726,11 @@ Der CSV-Import für jede Bank ist Kern und kommt zuerst. Die Revolut-Live-Anbind
 
 | AP | Inhalt | Abh. | Parallel |
 |----|--------|------|----------|
-| P3-1 | Job-Queue + Worker (Daemon & Cron-Modus), Retry, Fehlerstatus | P1 | mit P2 |
-| P3-2 | Bankkonten, `transactions`-Modell inkl. Zeitpunkt, Originalwährung, Gebühr, Status | P1 | mit P3-1 |
+| P3-1 | *entfällt – als P2-0 nach Phase 2 vorgezogen (B3)* | – | – |
+| P3-2 | Bankkonten, `transactions`-Modell inkl. Zeitpunkt, Originalwährung, Gebühr, Status | P1 | mit P2 |
 | P3-3 | CSV/XLSX-Import für **jede Bank** mit Import-Assistent und Profilen, Duplikatschutz per Fingerprint; Test mit Exporten von ≥ 5 Banken | P3-2 | mit P3-4 |
-| P3-4a | `BankConnector`-Schnittstelle + Modul-Mechanismus (installieren mit einem Befehl, ein-/ausschalten) im Kern | P3-1, P3-2 | mit P3-3 |
-| P3-4b | Revolut-Business-Modul im eigenen Repo (D-016/D-021): Einrichtungs-Assistent (AK-4.4.R5), Duplikatschutz über `external_id`, Tests gegen Revolut-Sandbox | P3-4a, P0-10 | – |
+| P3-4a | `BankConnector`-Schnittstelle + Modul-Mechanismus (installieren mit einem Befehl, ein-/ausschalten) im Kern | P2-0, P3-2 | mit P3-3 |
+| P3-4b | Revolut-Business-Modul im eigenen Repo (D-016/D-021): Einrichtungs-Assistent (AK-4.4.R5), Duplikatschutz über `external_id`, `booked_at` aus `created_at` + erneuter Abruf bis zum Endstatus (B7), `raw_json` ohne Karteninhaber-Daten (B8), nur `scope=READ` (B9), Tests gegen Revolut-Sandbox | P3-4a, P0-10 | – |
 | P3-5 | Matching-Engine mit Zeitnähe-Score + Gründen, Kalibrierung mit Testdaten | P3-3, P2-5 | – |
 | P3-6 | Abgleich-UI (Buchungen ohne Beleg · Belege ohne Buchung · Paare, 1-Tap-Bestätigung, „kein Beleg nötig“) | P3-5 | – |
 | P3-7 | (S) „Passt zu …?“ direkt nach dem Foto | P3-5 | ja |
@@ -727,9 +742,10 @@ Der CSV-Import für jede Bank ist Kern und kommt zuerst. Die Revolut-Live-Anbind
 | AP | Inhalt | Abh. | Parallel |
 |----|--------|------|----------|
 | P4-1 | Belegnummern, Abfragen für Zeitraum/Konto | P3 | – |
-| P4-2 | Belegpaket-PDF nach §10.1 (Gestaltung aus P0-5, PO-Abnahme) | P4-1 | mit P4-3 |
+| P4-2 | Belegpaket-PDF nach §10.1 (Gestaltung aus P0-5, PO-Abnahme), Fotos vorverkleinert; Benchmark mit 150 Seiten nach B12 (§5.2) | P4-1 | mit P4-3 |
 | P4-3 | ZIP (Originale + `index.csv`), CSV/XLSX-Übersicht, asynchron, Download-Links | P4-1 | mit P4-2 |
 | P4-4 | Versand per E-Mail-Link, Benachrichtigung | P4-3 | ja |
+| P4-5 | „Backup herunterladen“ (§4.8, D-023): Auswahl, Größenschätzung, Stream bis 500 MB bzw. Hintergrund-Job, optional mit Passwort; nutzt den ZIP-Code aus P4-3 | P4-3 | mit P4-4 |
 
 **Testliste v0.4:** Monat wählen → Paket in ≤ 3 Klicks · jede Buchung mit Foto · fehlende Belege markiert · Ort nur wenn eingeschaltet, nur Stadt · Link läuft ab.
 
@@ -739,13 +755,13 @@ OCR ist jetzt Unterstützung, nicht Voraussetzung: Sie liefert Betrag/Händler a
 
 | AP | Inhalt | Abh. | Parallel |
 |----|--------|------|----------|
-| P5-1 | NormalizeFiles (HEIC, Re-Encode, EXIF entfernen in abgeleiteten Dateien) | P3-1 | mit P5-2 |
-| P5-2 | RunOcr (Tesseract, pdftotext, ocrmypdf) mit Ressourcenlimits | P3-1 | mit P5-1 |
+| P5-1 | NormalizeFiles (HEIC, Re-Encode, EXIF entfernen in abgeleiteten Dateien) | P2-0 | mit P5-2 |
+| P5-2 | RunOcr (Tesseract, pdftotext, ocrmypdf) mit Ressourcenlimits | P2-0 | mit P5-1 |
 | P5-3 | ExtractFields + `document_fields` + Fixture-Benchmark in CI; Betrag fließt in den Score | P5-2 | – |
 | P5-4 | Regel-Engine, Händler-Stammdaten, Hashtags | P5-3 | mit P5-5 |
 | P5-5 | Volltextindex (MariaDB/MySQL `FULLTEXT` hinter `SearchIndex`, D-003) | P5-2 | mit P5-4 |
 | P5-6 | Duplikaterkennung | P5-3 | ja |
-| P5-7 | Speech-to-Text lokal (Engine nach Lead-Entscheidung D-019), Transkript in Suche | P3-1, P2-8 | ja |
+| P5-7 | Speech-to-Text lokal (Engine nach Lead-Entscheidung D-019), Transkript in Suche | P2-0, P2-8 | ja |
 
 ### Phase 6 – Wiederfinden (v0.6)
 
@@ -775,12 +791,13 @@ OCR ist jetzt Unterstützung, nicht Voraussetzung: Sie liefert Betrag/Händler a
 | P8-2 | Barrierefreiheit-/UX-Review, Texte |
 | P8-3 | Sicherheits-Check vor Veröffentlichung, History-Scan (P0-8), Lizenz-Check aller Abhängigkeiten (D-022), Revolut-Details aus den Kern-Docs ins Modul-Repo (D-021) |
 | P8-4 | Doku komplett (Nutzer, Betrieb, Entwicklung), CHANGELOG, Release v1.0 |
+| P8-5 | Wiederherstellen eines Voll-Backups (`dochamster:restore`, ZIP als nicht vertrauenswürdig geprüft) und Server-Backup `dochamster:backup` (D-023) |
 
 ### Grobe Reihenfolge
 
 ```
 P0 ─▶ P1 ─▶ P2 ─▶ P3 ─▶ P4  ══ Kernablauf fertig (v0.4) ══▶ P5 ─▶ P6 ─▶ P7 ─▶ P8
-            └─ P3-1/P3-2 können parallel zu P2 starten
+            └─ P3-2 kann parallel zu P2 starten (die Job-Queue ist P2-0, B3)
 ```
 Ab v0.4 ist der wichtigste Weg nutzbar: fotografieren → Revolut-Abgleich → Belegpaket an den Steuerberater.
 
@@ -795,7 +812,7 @@ Ab v0.4 ist der wichtigste Weg nutzbar: fotografieren → Revolut-Abgleich → B
 | Geräteuhr falsch / Standort ungenau | mittel | mittel | EXIF- und Server-Zeit gegenprüfen, Zeitfenster großzügig, 1-Tap-Bestätigung |
 | Hosting ohne Tesseract | mittel | hoch | Texterkennung ist Zusatzfunktion; der Kernablauf (Foto → Abgleich → Belegpaket) läuft ohne; `dochamster:doctor` zeigt, was fehlt (D-010) |
 | Domain wird nach dem Start geändert | niedrig | hoch | Passkeys hängen an der Domain → feste Domain mit vertrauenswürdigem Zertifikat ist Mindestanforderung, vor P1-4 festlegen (D-010) |
-| iOS-PWA-Einschränkungen (Background Sync fehlt, Speicher-Eviction) | hoch | mittel | Fallback: Queue beim Öffnen senden; deutlicher Hinweis bei ausstehenden Uploads |
+| iOS-PWA-Einschränkungen (Background Sync fehlt, Speicher-Eviction, eigener Cookie-Speicher der installierten App) | hoch | mittel | Queue beim Öffnen/`online`/`visibilitychange` senden, `storage.persist()`, Installation empfehlen (B15); Kopplung per Code in der installierten App (B14); deutlicher Hinweis bei ausstehenden Uploads |
 | Bank-CSV-Formate ändern sich / sind uneinheitlich | hoch | mittel | Profile frei konfigurierbar, Vorlagen nur als Startpunkt |
 | Passkey-UX verwirrt Nutzer | mittel | mittel | Owner erzeugt neuen Kopplungslink; Steuerberater ist nicht betroffen (Benutzername + Passwort, D-012); klare Texte, Testpersonen |
 | Zwei KIs erzeugen widersprüchlichen Code/Stil | mittel | mittel | AGENTS.md, Modul-Schnitt, Task-Locks, Reviews, CI-Linter |

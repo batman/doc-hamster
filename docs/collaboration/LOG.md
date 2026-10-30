@@ -162,3 +162,9 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not reviewed: P1-3 layout/CSS, the PHP 8.3 change, Dependabot PRs #1/#2.
 - Next: **Lead:** fix PR #5 points 1–3 before the first `v*` tag (the release job publishes `install.php`); issue #6; issue #4; record Q-12; record that the repo is public (Q-17/D-014). **PO:** nothing new.
 - Branch/PR: manager/board-update-2026-10-30
+
+## 2026-10-30 · Manager · P0-8 scan, P0-1c part 2, more reviews
+- Done: **Issue #8** – PR #5 findings as a checklist (merged before my review; `v0.1.0` with that `install.php` is already published, asked the Lead to mark it pre-release until fixes 1–3 ship). **P0-8 history & content scan** of the public repo: gitleaks over all refs clean; manual scan of authors, e-mails, IPs, hostnames, IBAN/phone patterns, binaries, issue/PR texts – nothing personal or secret. **Reviews:** Dependabot #1 (checkout v7) and #2 (gitleaks-action v3) OK to merge (comments on the PRs; `release.yml` still on checkout v5); PHP 8.3 change and P1-3 → addendum on issue #6 (D-002/D-025 and PLAN still say 8.4 – Lead to record; CI only on 8.3; warning colour fails WCAG AA). **P0-1c part 2** – PLAN.md: B3 (queue → P2-0, dependencies of P2-5/P2-7/P3-4a/P5-1/P5-2/P5-7 moved), B5 technical part, B7–B9 in §9.0/§6.3/§9.2/AK-4.4.R4/P3-4b, B12 in §5.2/P4-2, B14 in §11.1/P1-4, B15/A1 in AK-4.1.3/P2-4/§15, B17 in §6.2, B22 as §4.8 AK-4.8.1–7 + §12 + P4-5/P8-5; from issue #4: §5.2 image row (GD + add-ons), §7 without `/o/{org}`, AK-4.1.5 ULID.
+- Not done: PHP minimum in PLAN (waits for the Lead's new D-002); tax advisor step-up and the D-024 gaps from issue #4 (Lead decisions). P0-5 (UI sketches incl. receipt-pack layout) is my next open task.
+- Next: **Lead:** issues #8, #6, #4; merge Dependabot #1/#2 or let me know who should. **Manager:** P0-5.
+- Branch/PR: manager/P0-1c-plan-v2-part2
