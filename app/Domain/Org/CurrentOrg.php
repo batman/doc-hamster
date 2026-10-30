@@ -51,9 +51,9 @@ final class CurrentOrg
     }
 
     /**
-     * Org-wide answer for the Gate: true only for `Allow`, or `OrgSetting`
-     * with the setting on. Cells that depend on the resource (own document,
-     * share) are false here and decided by the resource policies.
+     * Org-wide answer for the Gate: true for `Allow`, `ShareOnly` and `OrgSetting`
+     * with the setting on. Cells that depend on the own document are false
+     * here and decided by the resource policies.
      */
     public function allows(Permission $permission): bool
     {
@@ -64,6 +64,8 @@ final class CurrentOrg
         return match ($this->role()->access($permission)) {
             Access::Allow => true,
             Access::OrgSetting => $this->setting($permission),
+            // Q-20: until shares exist (Phase 7) a tax advisor's share covers the whole organisation.
+            Access::ShareOnly => true,
             default => false,
         };
     }

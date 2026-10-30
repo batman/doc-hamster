@@ -135,13 +135,12 @@ it('lets members see all documents only when the organisation switches it on', f
     expect(Gate::forUser($member->user)->allows(Permission::ViewAllDocuments->value))->toBeTrue();
 });
 
-it('gives tax advisors nothing org-wide – only shares (Phase 7) will', function (): void {
+it('lets tax advisors read and export everything, but change nothing (Q-20)', function (): void {
     $advisor = Membership::factory()->accountant()->create();
     app(CurrentOrg::class)->set($advisor);
 
-    foreach (Permission::cases() as $permission) {
-        expect(Gate::forUser($advisor->user)->allows($permission->value))->toBeFalse();
-    }
+    $allowed = array_filter(Permission::cases(), fn (Permission $p): bool => Gate::forUser($advisor->user)->allows($p->value));
 
-    expect(Invitation::count())->toBe(0); // identity tables stay unscoped
+    expect(array_values($allowed))->toBe([Permission::ViewAllDocuments, Permission::CreateReports, Permission::Export])
+        ->and(Invitation::count())->toBe(0); // identity tables stay unscoped
 });

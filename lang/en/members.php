@@ -10,7 +10,7 @@ return [
     'create' => 'Create account',
     'roles' => ['owner' => 'Owner', 'member' => 'Employee', 'accountant' => 'Tax advisor'],
     'member_hint' => 'uploads receipts, sees only their own',
-    'accountant_hint' => 'can only look, changes nothing',
+    'accountant_hint' => 'sees and exports all receipts, changes nothing',
     'password_once' => 'Access for :name: Please note this down now and pass it on. This password is shown only this once.',
     'reset' => 'New password',
     'revoke' => 'Remove access',
