@@ -14,6 +14,7 @@ declare(strict_types=1);
  */
 
 const DH_REPO = 'batman/doc-hamster';
+const DH_INSTALLER_VERSION = 'dev'; // set by .github/workflows/release.yml
 const DH_MAX_AGE_SECONDS = 7200;
 const DH_USER_INI = "memory_limit = 256M\nupload_max_filesize = 32M\npost_max_size = 32M\n";
 const DH_EXTENSIONS = ['pdo_mysql', 'mbstring', 'intl', 'sodium', 'fileinfo', 'exif', 'zip', 'gd', 'curl'];
@@ -48,7 +49,7 @@ function page(string $title, string $body): void
         .'input{width:100%;padding:.6rem;font:inherit;box-sizing:border-box}button,.button{display:inline-block;margin-top:1rem;padding:.7rem 1.4rem;'
         .'border:0;border-radius:6px;background:#2b6cb0;color:#fff;font:inherit;text-decoration:none;cursor:pointer}'
         .'.ok{color:#2f855a}.fail{color:#c53030}code{background:#eee;padding:.1rem .3rem;word-break:break-all}</style></head><body>'
-        .'<p>DocHamster · Installation</p><h1>'.h($title).'</h1>'.$body.'</body></html>';
+        .'<p>DocHamster · Installation · Version '.h(DH_INSTALLER_VERSION).'</p><h1>'.h($title).'</h1>'.$body.'</body></html>';
     exit;
 }
 
