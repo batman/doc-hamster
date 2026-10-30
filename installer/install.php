@@ -142,9 +142,10 @@ $codeFile = codeFile($webRoot, $outside);
 if (is_file($codeFile) && time() - (int) filemtime($codeFile) > DH_MAX_AGE_SECONDS) {
     page('Abgelaufen', '<p class="fail">Diese Installation wurde vor mehr als zwei Stunden begonnen und ist aus Sicherheitsgründen gesperrt. Bitte löschen Sie die Datei <code>'.h($codeFile).'</code> und laden Sie install.php neu.</p>');
 }
-// The app folder only appears after a complete unpack (rename at the end), so it marks a finished install.
-if (is_file($appDir.'/artisan')) {
-    page('Bereits installiert', '<p>DocHamster liegt schon in <code>'.h($appDir).'</code>. Bitte löschen Sie install.php per FTP und öffnen Sie <code>/setup</code>.</p>');
+// A set-up instance holds receipts: never touched. An unfinished copy can be overwritten after the code step.
+$existing = is_file($appDir.'/artisan');
+if ($existing && preg_match('/^DOCHAMSTER_INSTALLED=true/m', (string) @file_get_contents($appDir.'/.env')) === 1) {
+    page('Bereits eingerichtet', '<p>In <code>'.h($appDir).'</code> läuft schon ein eingerichtetes DocHamster mit Ihren Daten. Dieses wird nicht überschrieben. Bitte löschen Sie install.php per FTP.</p>');
 }
 if (! is_file($codeFile)) {
     $code = strtoupper(substr(bin2hex(random_bytes(10)), 0, 16));
@@ -175,6 +176,20 @@ if (empty($_SESSION['unlocked'])) {
     }
     page('Willkommen', $httpsWarning.'<p>Zuerst zeigen Sie, dass Ihnen dieser Webspace gehört. Öffnen Sie mit Ihrem FTP-Programm oder dem Dateimanager Ihres Webhosters diese Datei und tippen Sie den Code ein:</p>'
         .'<p><code>'.h($codeFile).'</code></p>'.$error.'<form method="post">'.$csrf.'<input name="code" autocomplete="off" required autofocus><button>Weiter</button></form>');
+}
+
+if ($existing) {
+    // Never delete the folder this script is served from.
+    if (strpos($webRoot.'/', $appDir.'/') === 0) {
+        page('Bereits installiert', '<p class="fail">Ihr Webordner liegt in <code>'.h($appDir).'</code>. Bitte richten Sie die Domain auf einen eigenen Webordner aus und starten Sie install.php dort.</p>');
+    }
+    if (! $posted || ! isset($_POST['overwrite'])) {
+        page('Installation gefunden', '<p>In <code>'.h($appDir).'</code> liegt schon eine DocHamster-Kopie, deren Einrichtung nie abgeschlossen wurde.</p><p>Soll ich sie löschen und neu installieren?</p>'
+            .'<form method="post">'.$csrf.'<input type="hidden" name="overwrite" value="1"><button>Ja, überschreiben</button></form>');
+    }
+    removeTree($appDir);
+    header('Location: '.basename(__FILE__));
+    exit;
 }
 
 // Step 2: check the server and pick the release (once; the same one is installed).
