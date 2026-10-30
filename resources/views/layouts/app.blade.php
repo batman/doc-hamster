@@ -7,6 +7,7 @@
     <meta name="color-scheme" content="light dark">
     <title>@hasSection('title')@yield('title') – @endif{{ config('app.name') }}</title>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    @stack('head')
 </head>
 <body>
     <a class="skip-link" href="#main">{{ __('app.skip_to_content') }}</a>

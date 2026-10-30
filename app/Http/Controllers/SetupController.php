@@ -43,6 +43,12 @@ final class SetupController
             return redirect()->route('setup.server');
         }
 
+        // The web installer links here with the code the user already entered there.
+        $code = $request->query('code');
+        if (is_string($code) && $this->code->matches($code)) {
+            return $this->grantAccess($request);
+        }
+
         return view('setup.welcome', ['codeReady' => $this->code->ensure(), 'codePath' => $this->code->displayPath()]);
     }
 
@@ -54,6 +60,11 @@ final class SetupController
             return back()->withErrors(['code' => __('setup.wizard.code_wrong')]);
         }
 
+        return $this->grantAccess($request);
+    }
+
+    private function grantAccess(Request $request): RedirectResponse
+    {
         $request->session()->regenerate();
         $request->session()->put(self::UNLOCKED, true);
         // The address the installer uses is the fixed domain (D-010, passkeys bind to it).
@@ -72,14 +83,31 @@ final class SetupController
             static fn (CheckResult $result): bool => ! in_array($result->key, ['database', 'cron'], true),
         ));
 
-        $limitFailed = array_filter($results, static fn (CheckResult $result): bool => $result->status === CheckStatus::Fail
-            && in_array($result->key, ['memory_limit', 'upload_max_filesize', 'post_max_size'], true));
+        $failed = array_filter($results, static fn (CheckResult $result): bool => $result->status === CheckStatus::Fail);
+        $limitFailed = array_filter($failed, static fn (CheckResult $result): bool => in_array($result->key, ['memory_limit', 'upload_max_filesize', 'post_max_size'], true));
 
         return view('setup.server', [
             'results' => $results,
-            'canContinue' => ! Doctor::hasFailures($results),
+            'canContinue' => $failed === [],
             'canFixLimits' => $limitFailed !== [],
+            // Only limits are red and PHP just hasn't picked up `.user.ini` yet: wait instead of showing errors.
+            'limitsPending' => $limitFailed !== [] && count($limitFailed) === count($failed) && $this->limitsFilePending($request),
         ]);
+    }
+
+    private function limitsFile(Request $request): string
+    {
+        return dirname($request->server->getString('SCRIPT_FILENAME')).'/.user.ini';
+    }
+
+    private function limitsFilePending(Request $request): bool
+    {
+        $file = $this->limitsFile($request);
+        $reloadSeconds = (int) ini_get('user_ini.cache_ttl');
+
+        return ini_get('user_ini.filename') !== '' && is_file($file)
+            && str_contains((string) file_get_contents($file), 'memory_limit = 256M')
+            && time() - (int) filemtime($file) <= $reloadSeconds + 60;
     }
 
     /**
@@ -90,7 +118,7 @@ final class SetupController
     {
         $this->requireUnlocked($request);
 
-        $file = dirname($request->server->getString('SCRIPT_FILENAME')).'/.user.ini';
+        $file = $this->limitsFile($request);
         $kept = is_file($file) ? (string) preg_replace('/^(memory_limit|upload_max_filesize|post_max_size)\s*=.*\R?/m', '', (string) file_get_contents($file)) : '';
 
         if (@file_put_contents($file, $kept."memory_limit = 256M\nupload_max_filesize = 32M\npost_max_size = 32M\n") === false) {

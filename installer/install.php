@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 const DH_REPO = 'batman/doc-hamster';
 const DH_MAX_AGE_SECONDS = 7200;
+const DH_USER_INI = "memory_limit = 256M\nupload_max_filesize = 32M\npost_max_size = 32M\n";
 const DH_EXTENSIONS = ['pdo_mysql', 'mbstring', 'intl', 'sodium', 'fileinfo', 'exif', 'zip', 'gd', 'curl'];
 
 $https = (! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
@@ -152,6 +153,10 @@ if (! is_file($codeFile)) {
     if (@file_put_contents($codeFile, implode('-', str_split($code, 4))."\n") === false) {
         page('Keine Schreibrechte', '<p class="fail">install.php darf in diesem Ordner keine Dateien anlegen. Bitte geben Sie dem Webserver Schreibrechte und laden Sie die Seite neu.</p>');
     }
+    // PHP limits for receipts. PHP re-reads .user.ini only every few minutes, so write it now, not at the end.
+    if ($outside && ! is_file($webRoot.'/.user.ini')) {
+        @file_put_contents($webRoot.'/.user.ini', DH_USER_INI);
+    }
 }
 $_SESSION['csrf'] = $_SESSION['csrf'] ?? bin2hex(random_bytes(16));
 $csrf = '<input type="hidden" name="csrf" value="'.h($_SESSION['csrf']).'">';
@@ -267,10 +272,6 @@ try {
         foreach (['.htaccess', 'favicon.ico', 'robots.txt'] as $file) {
             placeFile($webRoot.'/'.$file, (string) file_get_contents($appDir.'/public/'.$file));
         }
-        // PHP limits for receipts; the wizard's server check reads them (FPM/CGI hosting).
-        if (! is_file($webRoot.'/.user.ini')) {
-            file_put_contents($webRoot.'/.user.ini', "memory_limit = 256M\nupload_max_filesize = 32M\npost_max_size = 32M\n");
-        }
         @mkdir($webRoot.'/css');
         foreach (glob($appDir.'/public/css/*') ?: [] as $css) {
             placeFile($webRoot.'/css/'.basename($css), (string) file_get_contents($css));
@@ -280,6 +281,7 @@ try {
     } else {
         // Inside the web root: block direct access to everything but public/ (Apache), and no setup code yet –
         // the wizard creates its own once the document root points to public/.
+        file_put_contents($appDir.'/public/.user.ini', DH_USER_INI);
         file_put_contents($appDir.'/.htaccess', "Require all denied\n");
         file_put_contents($appDir.'/public/.htaccess', "Require all granted\n".(string) file_get_contents($appDir.'/public/.htaccess'));
     }
@@ -295,7 +297,7 @@ try {
 }
 
 $next = $outside
-    ? '<p>Im nächsten Schritt fragt der Assistent noch einmal nach dem Code. Er lautet: <code>'.h($code).'</code></p><a class="button" href="/setup">Weiter zur Einrichtung</a>'
+    ? '<a class="button" href="/setup?code='.rawurlencode($code).'">Weiter zur Einrichtung</a>'
     : '<p class="fail">Setzen Sie jetzt in der Verwaltung Ihres Webhosters den Dokumentenstamm (Zielverzeichnis der Domain) auf <code>'.h($appDir.'/public').'</code>. Erst danach <code>/setup</code> öffnen – der Assistent zeigt Ihnen dann, wo sein Code liegt.</p>';
 page('Dateien installiert', '<p class="ok">DocHamster '.h($release['version']).' ist entpackt. install.php hat sich selbst gelöscht'
     .(is_file(__FILE__) ? ' <strong class="fail">– das hat nicht geklappt, bitte löschen Sie install.php per FTP!</strong>' : '').'.</p>'.$next);

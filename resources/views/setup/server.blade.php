@@ -2,6 +2,13 @@
 
 @section('content')
     <h1>{{ __('setup.wizard.server_title') }}</h1>
+
+    @if ($limitsPending)
+        @push('head')
+            <meta http-equiv="refresh" content="20">
+        @endpush
+        <p>{{ __('setup.wizard.limits_pending') }}</p>
+    @else
     <p>{{ __('setup.wizard.server_text') }}</p>
 
     <ul class="checks">
@@ -12,14 +19,14 @@
             </li>
         @endforeach
     </ul>
+    @endif
 
-    @if ($canContinue)
+    @if ($limitsPending)
+    @elseif ($canContinue)
         <a class="button" href="{{ route('setup.database') }}">{{ __('setup.wizard.next') }}</a>
     @else
         <p class="error">{{ __('setup.wizard.server_failed') }}</p>
-        @if (session('limits') === 'written')
-            <p>{{ __('setup.wizard.limits_written') }}</p>
-        @elseif (session('limits') === 'failed')
+        @if (session('limits') === 'failed')
             <p class="error">{{ __('setup.wizard.limits_failed') }}</p>
         @endif
         @if ($canFixLimits)

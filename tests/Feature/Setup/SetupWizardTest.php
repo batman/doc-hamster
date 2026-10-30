@@ -5,9 +5,11 @@ declare(strict_types=1);
 use App\Domain\Auth\User;
 use App\Domain\Org\Organization;
 use App\Domain\Org\Role;
+use App\Infrastructure\Environment\SystemProbe;
 use App\Setup\EnvFile;
 use App\Setup\SetupCode;
 use Dotenv\Dotenv;
+use Tests\Support\FakeSystemProbe;
 
 /*
 | P1-9: setup wizard (D-024). `.env` and the code file are temp files here.
@@ -119,4 +121,33 @@ it('writes the PHP limits to .user.ini and keeps other settings', function (): v
         ->toContain('memory_limit = 256M')
         ->toContain('post_max_size = 32M')
         ->not->toContain('64M');
+});
+
+it('lets the web installer hand over the code by link', function (): void {
+    $this->get('/setup')->assertOk();
+    $code = trim((string) file_get_contents($this->codePath));
+
+    $this->get('/setup?code='.rawurlencode($code))->assertRedirect(route('setup.server'));
+    $this->get('/setup?code=wrong')->assertRedirect(route('setup.server'));
+});
+
+it('waits instead of showing errors while PHP picks up the limits', function (): void {
+    $probe = new FakeSystemProbe;
+    $probe->ini['memory_limit'] = 128 * 1024 * 1024;
+    $this->app->instance(SystemProbe::class, $probe);
+    unlockWizard($this);
+
+    $dir = sys_get_temp_dir().'/dh-wait-'.uniqid();
+    mkdir($dir);
+    file_put_contents($dir.'/.user.ini', "memory_limit = 256M\n");
+
+    $page = $this->withServerVariables(['SCRIPT_FILENAME' => $dir.'/index.php'])->get('/setup/server');
+
+    @unlink($dir.'/.user.ini');
+    @rmdir($dir);
+
+    $page->assertOk()
+        ->assertSee(__('setup.wizard.limits_pending'))
+        ->assertSee('http-equiv="refresh"', false)
+        ->assertDontSee('zu wenig');
 });
