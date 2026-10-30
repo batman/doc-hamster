@@ -150,3 +150,9 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Closed: issues #6 (superseded by the new rule 6), #8 (P1-1 merged), #10 (reviews done).
 - Next: **Lead:** Q-12 design PR (setup wizard, incl. #13 findings), P1-2 identity tables, fixes from #18. **PO:** issue #17.
 - Branch/PR: `lead/P1-1b-repo-hygiene` (#16)
+
+## 2026-10-30 · Manager · History rewrite for the leak (#17)
+- Done (PO go): rewrote the history of all 21 branches with `git filter-repo` and force-pushed. Removed `.phpstan-cache/`, `.phpunit.cache/` and `bootstrap/cache/*.php` from every commit; private author e-mail → noreply, real-name author → login. `main`'s tree is unchanged. Verified: 0 hits for the token, personal name, private address or profile paths. The cache files came from my commits in #7/#9 – from now on I check the staged file list before every commit.
+- **Watch out – all hashes changed:** the Lead must re-clone or hard-reset before pushing again (issue #29). Pushing an old branch brings the leak back.
+- Still open (PO, issue #17): restart the Claude app on the Manager computer (token); GitHub e-mail privacy; secret scanning + push protection; **old commits are still reachable on GitHub via `refs/pull/*`** → GitHub Support purge or a fresh repo before going public.
+- Branch/PR: `manager/P0-8-history-rewrite-log`
