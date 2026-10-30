@@ -100,3 +100,23 @@ it('sets up the database, then locks itself on finish', function (): void {
     Organization::query()->whereKey($owner->memberships()->pluck('org_id'))->delete();
     $owner->delete();
 })->group('db');
+
+it('writes the PHP limits to .user.ini and keeps other settings', function (): void {
+    unlockWizard($this);
+    $dir = sys_get_temp_dir().'/dh-limits-'.uniqid();
+    mkdir($dir);
+    file_put_contents($dir.'/.user.ini', "memory_limit = 64M\ndisplay_errors = Off\n");
+
+    $this->withServerVariables(['SCRIPT_FILENAME' => $dir.'/index.php'])
+        ->post('/setup/limits')
+        ->assertSessionHas('limits', 'written');
+
+    $ini = (string) file_get_contents($dir.'/.user.ini');
+    @unlink($dir.'/.user.ini');
+    @rmdir($dir);
+
+    expect($ini)->toContain('display_errors = Off')
+        ->toContain('memory_limit = 256M')
+        ->toContain('post_max_size = 32M')
+        ->not->toContain('64M');
+});

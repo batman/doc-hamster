@@ -267,6 +267,10 @@ try {
         foreach (['.htaccess', 'favicon.ico', 'robots.txt'] as $file) {
             placeFile($webRoot.'/'.$file, (string) file_get_contents($appDir.'/public/'.$file));
         }
+        // PHP limits for receipts; the wizard's server check reads them (FPM/CGI hosting).
+        if (! is_file($webRoot.'/.user.ini')) {
+            file_put_contents($webRoot.'/.user.ini', "memory_limit = 256M\nupload_max_filesize = 32M\npost_max_size = 32M\n");
+        }
         @mkdir($webRoot.'/css');
         foreach (glob($appDir.'/public/css/*') ?: [] as $css) {
             placeFile($webRoot.'/css/'.basename($css), (string) file_get_contents($css));

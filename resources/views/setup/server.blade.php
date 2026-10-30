@@ -17,5 +17,16 @@
         <a class="button" href="{{ route('setup.database') }}">{{ __('setup.wizard.next') }}</a>
     @else
         <p class="error">{{ __('setup.wizard.server_failed') }}</p>
+        @if (session('limits') === 'written')
+            <p>{{ __('setup.wizard.limits_written') }}</p>
+        @elseif (session('limits') === 'failed')
+            <p class="error">{{ __('setup.wizard.limits_failed') }}</p>
+        @endif
+        @if ($canFixLimits)
+            <form method="post" action="{{ route('setup.limits') }}">
+                @csrf
+                <button type="submit">{{ __('setup.wizard.limits_fix') }}</button>
+            </form>
+        @endif
     @endif
 @endsection

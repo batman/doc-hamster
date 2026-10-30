@@ -13,6 +13,7 @@ Route::prefix('setup')->name('setup.')->controller(SetupController::class)->grou
     Route::get('/', 'welcome')->name('welcome');
     Route::post('unlock', 'unlock')->middleware('throttle:setup')->name('unlock');
     Route::get('server', 'server')->name('server');
+    Route::post('limits', 'fixLimits')->name('limits');
     Route::get('database', 'databaseForm')->name('database');
     Route::post('database', 'database')->name('database.save');
     Route::get('finish', 'finishPage')->name('finish');

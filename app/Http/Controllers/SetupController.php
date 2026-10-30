@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Infrastructure\Environment\CheckResult;
+use App\Infrastructure\Environment\CheckStatus;
 use App\Infrastructure\Environment\Doctor;
 use App\Setup\DatabaseConnector;
 use App\Setup\EnvFile;
@@ -71,7 +72,32 @@ final class SetupController
             static fn (CheckResult $result): bool => ! in_array($result->key, ['database', 'cron'], true),
         ));
 
-        return view('setup.server', ['results' => $results, 'canContinue' => ! Doctor::hasFailures($results)]);
+        $limitFailed = array_filter($results, static fn (CheckResult $result): bool => $result->status === CheckStatus::Fail
+            && in_array($result->key, ['memory_limit', 'upload_max_filesize', 'post_max_size'], true));
+
+        return view('setup.server', [
+            'results' => $results,
+            'canContinue' => ! Doctor::hasFailures($results),
+            'canFixLimits' => $limitFailed !== [],
+        ]);
+    }
+
+    /**
+     * Hosting panels can't be changed from here, but PHP reads per-folder values from `.user.ini` in
+     * the web root (FPM/CGI; picked up within user_ini.cache_ttl, by default 5 minutes).
+     */
+    public function fixLimits(Request $request): RedirectResponse
+    {
+        $this->requireUnlocked($request);
+
+        $file = dirname($request->server->getString('SCRIPT_FILENAME')).'/.user.ini';
+        $kept = is_file($file) ? (string) preg_replace('/^(memory_limit|upload_max_filesize|post_max_size)\s*=.*\R?/m', '', (string) file_get_contents($file)) : '';
+
+        if (@file_put_contents($file, $kept."memory_limit = 256M\nupload_max_filesize = 32M\npost_max_size = 32M\n") === false) {
+            return back()->with('limits', 'failed');
+        }
+
+        return back()->with('limits', 'written');
     }
 
     public function databaseForm(Request $request): View
