@@ -174,3 +174,8 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Done: **issue #12** (`to:lead`) – milestones M1 "Installation läuft" (PO installs v0.1.1, cron line in the wizard, install guide, fixes → v0.1.2), M2 "Belege fotografieren" (P2-0/1/2/3/4/7 + minimal list; Lead decides: interim password login vs. passkeys first), M3 core flow; asks the Lead which pieces the Manager takes; notes that `TRUSTED_PROXIES` read via `env()` in `withMiddleware()` may miss `.env` values (default localhost proxy is fine for M1). **Issue #13** (`to:po`) – server checklist (domain + HTTPS, PHP 8.3 + extensions + limits, empty DB, upload `install.php`, wizard, cron, what to report and what never to post). TASKS.md: "Current goal" section on top, PO row, P0-5 paused with the screen wireframes drafted in `docs/design/screens.md` (receipt-pack layout not started).
 - Next: **PO:** #13. **Lead:** answer #12 (milestones, login decision, Manager assignments). **Manager:** install guide / M2 sub-tasks once assigned; otherwise P0-5 receipt-pack layout.
 - Branch/PR: manager/install-goal-board
+
+## 2026-10-30 · Manager · P0-5 receipt-pack layout
+- Done while waiting for the Lead's answer on #12: receipt-pack layout draft `docs/design/receipt-pack.html` (cover with key figures, overview, one page per transaction with large photo, missing receipts; Dompdf-friendly CSS, synthetic data) + `docs/design/receipt-pack.md` (choices and 4 questions for Q-19). P0-5 → in review.
+- Next: **Lead:** #12 first (install goal), then sign off P0-5 and ask Q-19. **PO:** #13.
+- Branch/PR: manager/P0-5-receipt-pack

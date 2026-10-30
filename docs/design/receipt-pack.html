@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Belegpaket – Layout-Entwurf (P0-5)</title>
+<!--
+  Layout draft for the receipt pack PDF (PLAN.md §10.1, D-018, P0-5).
+  Static mock-up: open in a browser, print preview shows the A4 pages.
+  All data is made up. Receipt "photos" are drawn with CSS, no real images.
+  Only shows structure and look – the PDF technology is Dompdf (B12), so the
+  real template will use simple CSS that Dompdf supports (tables, no grid/flex).
+-->
+<style>
+  :root { --ink:#1a202c; --muted:#5a6578; --line:#d5dbe3; --soft:#f4f6f8; --accent:#2b6cb0; --miss:#b42318; --ok:#276749; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #e9ecef; font: 10pt/1.45 "Helvetica Neue", Arial, sans-serif; color: var(--ink); }
+  .note { max-width: 210mm; margin: 16px auto; padding: 0 4px; font-size: 11pt; color: var(--muted); }
+  .page { width: 210mm; min-height: 297mm; margin: 16px auto; background: #fff; padding: 18mm 18mm 22mm; position: relative; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+  .foot { position: absolute; left: 18mm; right: 18mm; bottom: 10mm; font-size: 7.5pt; color: var(--muted); border-top: 1px solid var(--line); padding-top: 3mm; display: table; width: calc(100% - 36mm); }
+  .foot span { display: table-cell; }
+  .foot span:last-child { text-align: right; }
+  h1 { font-size: 26pt; font-weight: 300; margin: 0 0 2mm; letter-spacing: -.5px; }
+  h2 { font-size: 13pt; margin: 0 0 4mm; }
+  .sub { color: var(--muted); font-size: 11pt; margin: 0 0 12mm; }
+  .meta { width: 100%; border-collapse: collapse; margin-bottom: 12mm; }
+  .meta td { padding: 1.6mm 0; border-bottom: 1px solid var(--line); }
+  .meta td:first-child { color: var(--muted); width: 38%; }
+  .kpis { width: 100%; border-collapse: separate; border-spacing: 3mm 0; margin: 0 -3mm 10mm; }
+  .kpis td { background: var(--soft); padding: 5mm; width: 25%; vertical-align: top; }
+  .kpis b { display: block; font-size: 16pt; font-weight: 400; margin-top: 1mm; white-space: nowrap; }
+  .kpis .miss b { color: var(--miss); }
+  .hint { font-size: 8.5pt; color: var(--muted); }
+  table.list { width: 100%; border-collapse: collapse; font-size: 8.8pt; }
+  table.list th { text-align: left; font-weight: 600; color: var(--muted); border-bottom: 1.5px solid var(--ink); padding: 1.5mm 1.5mm; }
+  table.list td { border-bottom: 1px solid var(--line); padding: 1.6mm 1.5mm; vertical-align: top; }
+  table.list .num, table.list .amt { text-align: right; white-space: nowrap; }
+  table.list tr.missing td { background: #fdf2f1; }
+  .yes { color: var(--ok); font-weight: 600; }
+  .no { color: var(--miss); font-weight: 600; }
+  table.list tfoot td { border-top: 1.5px solid var(--ink); border-bottom: 0; font-weight: 600; }
+  .head { display: table; width: 100%; margin-bottom: 6mm; }
+  .head > div { display: table-cell; vertical-align: top; }
+  .head .nr { text-align: right; color: var(--muted); }
+  .head .nr b { display: block; color: var(--ink); font-size: 14pt; font-weight: 400; }
+  .details { width: 100%; border-collapse: collapse; margin-bottom: 6mm; font-size: 9.5pt; }
+  .details td { padding: 1.3mm 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .details td.k { color: var(--muted); width: 22%; }
+  .details td.v { width: 28%; padding-right: 4mm; }
+  .amount-big { font-size: 20pt; font-weight: 300; }
+  .photo { border: 1px solid var(--line); background: var(--soft); height: 168mm; text-align: center; padding: 8mm 0; }
+  .receipt { display: inline-block; width: 70mm; height: 150mm; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); padding: 7mm 6mm; font: 8pt/1.6 "Courier New", monospace; text-align: left; transform: rotate(-1.2deg); }
+  .receipt .c { text-align: center; }
+  .receipt hr { border: 0; border-top: 1px dashed #999; }
+  .caption { font-size: 8pt; color: var(--muted); margin-top: 2mm; }
+  .missing-box { border: 1.5px dashed var(--miss); color: var(--miss); padding: 10mm; text-align: center; margin-top: 6mm; }
+  @media print { body { background: #fff; } .note { display: none; } .page { margin: 0; box-shadow: none; page-break-after: always; } @page { size: A4; margin: 0; } }
+</style>
+</head>
+<body>
+
+<p class="note"><strong>Belegpaket – Layout-Entwurf (P0-5, D-018).</strong> Vier Beispielseiten: Deckblatt, Übersicht, eine Buchung mit Beleg, Liste fehlender Belege. Alle Daten sind erfunden. Offene Fragen stehen in <code>receipt-pack.md</code>.</p>
+
+<!-- 1. Deckblatt -->
+<section class="page">
+  <h1>Belegpaket</h1>
+  <p class="sub">Oktober 2026 · Firmenkonto</p>
+
+  <table class="meta">
+    <tr><td>Organisation</td><td>Mustermann GmbH</td></tr>
+    <tr><td>Zeitraum</td><td>01.10.2026 – 31.10.2026</td></tr>
+    <tr><td>Konto</td><td>Firmenkonto · DE00 •••• •••• •••• •••• 00</td></tr>
+    <tr><td>Erstellt am</td><td>02.11.2026, 09:12 Uhr, von Max Mustermann</td></tr>
+    <tr><td>Version</td><td>2 (ersetzt Version 1 vom 01.11.2026)</td></tr>
+  </table>
+
+  <table class="kpis">
+    <tr>
+      <td>Buchungen<b>55</b></td>
+      <td>Ausgaben<b>3.214,57 €</b></td>
+      <td>Einnahmen<b>2.400,00 €</b></td>
+      <td class="miss">Beleg fehlt<b>4</b><span class="hint">Liste auf Seite 58</span></td>
+    </tr>
+  </table>
+
+  <p class="hint">Zu jeder Buchung folgt eine Seite mit den Buchungsdetails und dem Belegfoto. Die Originaldateien liegen im ZIP zu diesem Paket (Ordner nach Belegnummer). Buchungen, die keinen Beleg brauchen (z. B. Gehalt), sind in der Übersicht mit Grund aufgeführt und haben keine eigene Seite.</p>
+
+  <div class="foot"><span>Zusammenstellung aus DocHamster – kein steuerliches Dokument</span><span>Belegpaket Okt 2026 · v2 · Seite 1 von 58</span></div>
+</section>
+
+<!-- 2. Übersicht -->
+<section class="page">
+  <h2>Übersicht</h2>
+  <table class="list">
+    <thead><tr><th class="num">Nr.</th><th>Datum / Uhrzeit</th><th>Händler</th><th>Kategorie</th><th class="amt">Betrag</th><th>Beleg</th><th class="num">Seite</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td>01.10. 07:52</td><td>Bäckerei Beispiel</td><td>Bewirtung</td><td class="amt">−8,90 €</td><td class="yes">✓ 2026-0031</td><td class="num">3</td></tr>
+      <tr><td class="num">2</td><td>02.10. 13:15</td><td>Bürobedarf Beispiel</td><td>Büro</td><td class="amt">−23,99 €</td><td class="yes">✓ 2026-0032</td><td class="num">4</td></tr>
+      <tr><td class="num">3</td><td>03.10. —</td><td>Software Beispiel GmbH</td><td>Software</td><td class="amt">−29,00 €</td><td class="yes">✓ 2026-0033</td><td class="num">5</td></tr>
+      <tr class="missing"><td class="num">4</td><td>05.10. 19:44</td><td>Restaurant Musterhaus</td><td>Bewirtung</td><td class="amt">−86,50 €</td><td class="no">✗ fehlt</td><td class="num">58</td></tr>
+      <tr><td class="num">5</td><td>07.10. 10:02</td><td>Hotel Beispielstadt</td><td>Reise</td><td class="amt">−189,00 €<br><span class="hint">−205,20 CHF</span></td><td class="yes">✓ 2026-0035</td><td class="num">6</td></tr>
+      <tr><td class="num">6</td><td>15.10. —</td><td>Gehalt Oktober</td><td>—</td><td class="amt">+2.400,00 €</td><td class="hint">kein Beleg nötig: Gehalt</td><td class="num">—</td></tr>
+      <tr><td class="num">…</td><td colspan="6" class="hint">…</td></tr>
+      <tr><td class="num">27</td><td>27.10. 17:38</td><td>Tankstelle Musterstadt</td><td>Tanken</td><td class="amt">−68,02 €</td><td class="yes">✓ 2026-0042</td><td class="num">29</td></tr>
+      <tr><td class="num">…</td><td colspan="6" class="hint">…</td></tr>
+    </tbody>
+    <tfoot><tr><td></td><td colspan="3">Summe (55 Buchungen)</td><td class="amt">−814,57 €</td><td colspan="2">51 ✓ · 4 ✗</td></tr></tfoot>
+  </table>
+  <p class="hint" style="margin-top:4mm">„—“ bei der Uhrzeit: die Bank liefert nur das Datum. Fremdwährung: Kontobetrag in EUR, Originalbetrag darunter.</p>
+  <div class="foot"><span>Zusammenstellung aus DocHamster – kein steuerliches Dokument</span><span>Belegpaket Okt 2026 · v2 · Seite 2 von 58</span></div>
+</section>
+
+<!-- 3. Eine Buchung mit Beleg -->
+<section class="page">
+  <div class="head">
+    <div><h2 style="margin:0">Tankstelle Musterstadt</h2><span class="amount-big">−68,02 €</span></div>
+    <div class="nr">Buchung 27 von 55<b>Beleg 2026-0042</b></div>
+  </div>
+
+  <table class="details">
+    <tr><td class="k">Zahlung</td><td class="v">27.10.2026, 17:38 Uhr</td><td class="k">Beleg fotografiert</td><td class="v">27.10.2026, 17:40 Uhr</td></tr>
+    <tr><td class="k">Händlerkategorie</td><td class="v">Tankstelle (MCC 5541)</td><td class="k">Eigene Kategorie</td><td class="v">Tanken</td></tr>
+    <tr><td class="k">Zahlungsart</td><td class="v">Firmenkarte</td><td class="k">Ort</td><td class="v">Musterstadt <span class="hint">(nur wenn eingeschaltet)</span></td></tr>
+    <tr><td class="k">Gebühr</td><td class="v">—</td><td class="k">Zuordnung</td><td class="v">automatisch, bestätigt</td></tr>
+    <tr><td class="k">Notiz</td><td class="v" colspan="3">Dienstfahrt Kunde Beispiel AG</td></tr>
+  </table>
+
+  <div class="photo">
+    <div class="receipt">
+      <div class="c"><b>TANKSTELLE MUSTERSTADT</b><br>Musterstraße 1<br>12345 Musterstadt</div>
+      <hr>
+      Super E10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;38,47 l<br>
+      1,769 €/l&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;68,02 €<br>
+      <hr>
+      <b>SUMME&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;68,02 €</b><br>
+      MwSt 19 %&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;10,86 €<br>
+      Karte&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;68,02 €<br>
+      <hr>
+      <div class="c">27.10.2026 17:38<br>Beleg-Nr. 0000<br><br>Vielen Dank!</div>
+    </div>
+  </div>
+  <p class="caption">Belegfoto, Seite 1 von 1 · Originaldatei im ZIP: <code>2026-10/2026-0042_Tankstelle-Musterstadt_68,02EUR/</code></p>
+
+  <div class="foot"><span>Zusammenstellung aus DocHamster – kein steuerliches Dokument</span><span>Belegpaket Okt 2026 · v2 · Seite 29 von 58</span></div>
+</section>
+
+<!-- 4. Fehlende Belege -->
+<section class="page">
+  <h2>Fehlende Belege (4)</h2>
+  <p class="hint">Diese Buchungen haben noch keinen Beleg. Nachgereichte Belege erscheinen in einer neuen Version dieses Pakets.</p>
+  <table class="list">
+    <thead><tr><th class="num">Nr.</th><th>Datum / Uhrzeit</th><th>Händler / Gegenpartei</th><th>Verwendungszweck</th><th class="amt">Betrag</th></tr></thead>
+    <tbody>
+      <tr class="missing"><td class="num">4</td><td>05.10. 19:44</td><td>Restaurant Musterhaus</td><td>Kartenzahlung</td><td class="amt">−86,50 €</td></tr>
+      <tr class="missing"><td class="num">19</td><td>18.10. —</td><td>Online-Shop Beispiel</td><td>Bestellung 0000-0000</td><td class="amt">−42,90 €</td></tr>
+      <tr class="missing"><td class="num">33</td><td>22.10. 08:05</td><td>Parkhaus Beispielplatz</td><td>Kartenzahlung</td><td class="amt">−6,00 €</td></tr>
+      <tr class="missing"><td class="num">48</td><td>29.10. —</td><td>Verlag Beispiel</td><td>Abo 10/2026</td><td class="amt">−12,99 €</td></tr>
+    </tbody>
+    <tfoot><tr><td></td><td colspan="3">Summe ohne Beleg</td><td class="amt">−148,39 €</td></tr></tfoot>
+  </table>
+  <div class="missing-box">(C – später) Vorlage für einen Eigenbeleg, falls ein Beleg verloren ist.</div>
+  <div class="foot"><span>Zusammenstellung aus DocHamster – kein steuerliches Dokument</span><span>Belegpaket Okt 2026 · v2 · Seite 58 von 58</span></div>
+</section>
+
+</body>
+</html>
