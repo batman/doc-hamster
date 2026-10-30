@@ -46,7 +46,7 @@ it('sends every page to the wizard until installed, then hides the wizard', func
     config(['dochamster.installed' => true]);
 
     $this->get('/setup')->assertNotFound();
-    $this->get('/')->assertOk();
+    $this->get('/')->assertRedirect(route('login'));
 });
 
 it('unlocks only with the code from the file and then stores the address as APP_URL', function (): void {

@@ -14,6 +14,12 @@
     <header class="site-header">
         <a class="brand" href="{{ url('/') }}">{{ config('app.name') }}</a>
         @yield('header')
+        @auth
+            <form class="logout" method="post" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit">{{ __('auth.logout') }}</button>
+            </form>
+        @endauth
     </header>
     <main id="main" class="page">
         @yield('content')

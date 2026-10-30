@@ -79,6 +79,16 @@ button, .button {
 .check-fail { color: var(--error); }
 code { word-break: break-all; background: var(--surface); padding: .1rem .3rem; border-radius: 4px; }
 
+/* Header logout */
+.logout { margin-left: auto; }
+.logout button { margin-top: 0; background: none; color: var(--accent); }
+
+/* Receipts */
+.documents { list-style: none; padding: 0; margin-top: 2rem; }
+.documents li { padding: .75rem 0; border-top: 1px solid var(--border); }
+.documents a { display: block; word-break: break-word; }
+.documents img { display: block; max-width: 100%; max-height: 12rem; border-radius: var(--radius); margin-bottom: .25rem; }
+
 /* Error pages */
 .error-page { text-align: center; padding-top: 3rem; }
 .error-code { font-size: 3rem; font-weight: 700; color: var(--muted); margin: 0; }

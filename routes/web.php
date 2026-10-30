@@ -3,10 +3,15 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\SetupController;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome');
+Route::middleware(['auth', 'org'])->group(function (): void {
+    Route::get('/', [DocumentController::class, 'index'])->name('documents.index');
+    Route::post('documents', [DocumentController::class, 'store'])->middleware('can:documents.upload')->name('documents.store');
+    Route::get('files/{id}', [DocumentController::class, 'file'])->name('documents.file');
+});
 
 // Setup wizard (D-024); RedirectToSetup sends everyone here until installed, then returns 404.
 Route::prefix('setup')->name('setup.')->controller(SetupController::class)->group(function (): void {

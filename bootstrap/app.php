@@ -31,7 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
             array_filter(array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', '')))),
         ));
         $middleware->append(SecurityHeaders::class);
-        $middleware->web(append: [SetLocale::class, RedirectToSetup::class]);
+        $middleware->web(prepend: [RedirectToSetup::class], append: [SetLocale::class]);
         $middleware->alias([
             'org' => ResolveCurrentOrg::class,
             'api.same-origin' => RequireSameOriginApi::class,
