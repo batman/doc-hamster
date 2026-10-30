@@ -17,6 +17,11 @@ const DH_REPO = 'batman/doc-hamster';
 const DH_INSTALLER_VERSION = 'dev'; // set by .github/workflows/release.yml
 const DH_MAX_AGE_SECONDS = 7200;
 const DH_USER_INI = "memory_limit = 256M\nupload_max_filesize = 32M\npost_max_size = 32M\n";
+const DH_WIPE_GROUPS = [
+    'documents' => ['label' => 'Belege (alle Fotos und PDFs)', 'tables' => ['matches', 'document_files', 'documents']],
+    'people' => ['label' => 'Benutzer und Rollen (danach legen Sie ein neues Inhaber-Konto an)', 'tables' => ['sessions', 'invitations', 'passkeys', 'devices', 'memberships', 'users']],
+    'banking' => ['label' => 'Bankdaten (Konten, Buchungen, Verknüpfungen mit Belegen)', 'tables' => ['matches', 'transactions', 'imports', 'import_profiles', 'bank_accounts']],
+];
 const DH_EXTENSIONS = ['pdo_mysql', 'mbstring', 'intl', 'sodium', 'fileinfo', 'exif', 'zip', 'gd', 'curl'];
 
 $https = (! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
@@ -46,7 +51,7 @@ function page(string $title, string $body): void
     echo '<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
         .'<meta name="robots" content="noindex"><title>'.h($title).' – DocHamster</title><style>'
         .'body{font:16px/1.5 system-ui,sans-serif;max-width:40rem;margin:2rem auto;padding:0 1rem}'
-        .'input{width:100%;padding:.6rem;font:inherit;box-sizing:border-box}button,.button{display:inline-block;margin-top:1rem;padding:.7rem 1.4rem;'
+        .'input{width:100%;padding:.6rem;font:inherit;box-sizing:border-box}input[type=checkbox]{width:auto}button,.button{display:inline-block;margin-top:1rem;padding:.7rem 1.4rem;'
         .'border:0;border-radius:6px;background:#2b6cb0;color:#fff;font:inherit;text-decoration:none;cursor:pointer}'
         .'.ok{color:#2f855a}.fail{color:#c53030}code{background:#eee;padding:.1rem .3rem;word-break:break-all}</style></head><body>'
         .'<p>DocHamster · Installation · Version '.h(DH_INSTALLER_VERSION).'</p><h1>'.h($title).'</h1>'.$body.'</body></html>';
@@ -246,21 +251,47 @@ function readEnv(string $file): array
     return $values;
 }
 
-/** Drops all tables of the instance's database – only for "fresh install", after the user confirmed it. */
-function wipeDatabase(string $envFile): void
+/**
+ * Empties the chosen groups, after the user ticked them and typed LÖSCHEN. Tables stay, the database access
+ * in .env is never touched. Tables that don't exist yet are skipped. All groups = the organisation goes too.
+ *
+ * @param  list<string>  $groups
+ */
+function wipeSelected(string $appDir, array $groups): void
 {
-    $env = readEnv($envFile);
+    $env = readEnv($appDir.'/.env');
     $pdo = new PDO(
         'mysql:host='.($env['DB_HOST'] ?? '127.0.0.1').';port='.($env['DB_PORT'] ?? '3306').';dbname='.($env['DB_DATABASE'] ?? '').';charset=utf8mb4',
         $env['DB_USERNAME'] ?? '',
         $env['DB_PASSWORD'] ?? '',
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 5],
     );
+    $existing = $pdo->query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'")->fetchAll(PDO::FETCH_COLUMN);
+
+    $tables = [];
+    foreach ($groups as $group) {
+        $tables = array_merge($tables, DH_WIPE_GROUPS[$group]['tables']);
+    }
+    if (count($groups) === count(DH_WIPE_GROUPS)) {
+        $tables = array_merge($tables, ['organizations', 'audit_log']);
+    }
+
     $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
-    foreach ($pdo->query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'")->fetchAll(PDO::FETCH_NUM) as $row) {
-        $pdo->exec('DROP TABLE `'.str_replace('`', '``', (string) $row[0]).'`');
+    foreach (array_unique($tables) as $table) {
+        if (in_array($table, $existing, true)) {
+            $pdo->exec('DELETE FROM `'.$table.'`');
+        }
     }
     $pdo->exec('SET FOREIGN_KEY_CHECKS=1');
+
+    if (in_array('documents', $groups, true)) {
+        // Receipts live in one folder per organisation, named by its ULID.
+        foreach (glob($appDir.'/storage/app/private/*', GLOB_ONLYDIR) ?: [] as $dir) {
+            if (preg_match('/^[0-9a-z]{26}$/', basename($dir)) === 1 || basename($dir) === 'exports') {
+                removeTree($dir);
+            }
+        }
+    }
 }
 
 // The installer stays usable for two hours after its first run (not after upload: FTP clients may keep old file dates).
@@ -343,12 +374,17 @@ if ($existing) {
             page('Installation gefunden', '<p>In <code>'.h($appDir).'</code> liegt schon eine DocHamster-Kopie, deren Einrichtung nie abgeschlossen wurde.</p><p>Soll ich sie löschen und neu installieren?</p>'
                 .($allOk ? '<form method="post">'.$csrf.'<input type="hidden" name="action" value="fresh"><button>Ja, überschreiben</button></form>' : $blocked));
         }
+        $boxes = '';
+        foreach (DH_WIPE_GROUPS as $key => $group) {
+            $boxes .= '<p><label><input type="checkbox" name="wipe[]" value="'.h($key).'"> '.h($group['label']).'</label></p>';
+        }
         page('DocHamster ist bereits installiert', '<p>In <code>'.h($appDir).'</code> läuft DocHamster mit Ihren Daten.</p>'.$available.(! $allOk ? $blocked
             : '<h2>Aktualisieren</h2><p>Alle Belege, Konten und Einstellungen bleiben erhalten.</p>'
             .'<form method="post">'.$csrf.'<input type="hidden" name="action" value="update"><button>Jetzt aktualisieren</button></form>'
-            .'<h2>Neu installieren</h2><p class="fail"><strong>Achtung: Dabei gehen alle Daten unwiderruflich verloren</strong> – alle Belege, Konten und Einstellungen. Das lässt sich nicht rückgängig machen.</p>'
-            .'<form method="post">'.$csrf.'<input type="hidden" name="action" value="fresh"><label for="confirm">Tippen Sie zur Bestätigung LÖSCHEN ein:</label>'
-            .'<input id="confirm" name="confirm" autocomplete="off"><button>Alles löschen und neu installieren</button></form>'));
+            .'<h2>Neu installieren</h2><p>Das Programm wird frisch installiert. Die Zugangsdaten zur Datenbank bleiben immer erhalten.</p>'
+            .'<p class="fail"><strong>Haken Sie an, was gelöscht werden soll.</strong> Das lässt sich nicht rückgängig machen. Alles ohne Haken bleibt erhalten.</p>'
+            .'<form method="post">'.$csrf.'<input type="hidden" name="action" value="fresh">'.$boxes.'<label for="confirm">Tippen Sie zur Bestätigung LÖSCHEN ein:</label>'
+            .'<input id="confirm" name="confirm" autocomplete="off"><button>Neu installieren</button></form>'));
     }
 
     @set_time_limit(300);
@@ -356,24 +392,29 @@ if ($existing) {
         page('Abgebrochen', '<p class="fail">Der Server erfüllt nicht alle Voraussetzungen. Es wurde nichts verändert.</p>');
     }
 
-    if ($action === 'fresh') {
-        if ($finished && mb_strtoupper(trim((string) ($_POST['confirm'] ?? ''))) !== 'LÖSCHEN') {
-            page('Nicht bestätigt', '<p>Sie haben nicht LÖSCHEN eingetippt, es wurde nichts verändert.</p><a class="button" href="'.h(basename(__FILE__)).'">Zurück</a>');
-        }
-        try {
-            if ($finished) {
-                wipeDatabase($appDir.'/.env');
-            }
-        } catch (Throwable $e) {
-            page('Fehler', '<p class="fail">Die Datenbank konnte nicht geleert werden, deshalb wurde nichts gelöscht. Stimmen die Zugangsdaten noch?</p>');
-        }
+    // A copy that was never set up holds no data: replace it completely.
+    if ($action === 'fresh' && ! $finished) {
         removeTree($appDir);
         header('Location: '.basename(__FILE__));
         exit;
     }
 
-    if ($action !== 'update' || ! $finished) {
+    if (! in_array($action, ['update', 'fresh'], true)) {
         page('Abgebrochen', '<p class="fail">Unbekannte Auswahl, es wurde nichts verändert.</p>');
+    }
+
+    $wipe = [];
+    if ($action === 'fresh') {
+        $wipe = array_values(array_intersect(array_keys(DH_WIPE_GROUPS), (array) ($_POST['wipe'] ?? [])));
+        $back = '<a class="button" href="'.h(basename(__FILE__)).'">Zurück</a>';
+        if (mb_strtoupper(trim((string) ($_POST['confirm'] ?? ''))) !== 'LÖSCHEN') {
+            page('Nicht bestätigt', '<p>Sie haben nicht LÖSCHEN eingetippt, es wurde nichts verändert.</p>'.$back);
+        }
+        try {
+            wipeSelected($appDir, $wipe);
+        } catch (Throwable $e) {
+            page('Fehler', '<p class="fail">Die Datenbank konnte nicht erreicht werden, deshalb wurde nichts gelöscht. Stimmen die Zugangsdaten noch?</p>'.$back);
+        }
     }
 
     try {
@@ -387,17 +428,30 @@ if ($existing) {
             file_put_contents($appDir.'/public/.htaccess', "Require all granted\n".(string) file_get_contents($appDir.'/public/.htaccess'));
         }
         migrate($appDir);
+
+        // Without users nobody can log in: back to the wizard, which then only asks for the new owner.
+        $needsOwner = in_array('people', $wipe, true);
+        $code = trim((string) file_get_contents($codeFile));
+        if ($needsOwner) {
+            $env = (string) file_get_contents($appDir.'/.env');
+            file_put_contents($appDir.'/.env', (string) preg_replace('/^DOCHAMSTER_INSTALLED=.*$/m', 'DOCHAMSTER_INSTALLED=false', $env));
+            file_put_contents($appDir.'/storage/app/private/setup-code.txt', $code."\n");
+        }
     } catch (Throwable $e) {
         @unlink($zipFile);
         removeTree($tmpDir);
-        page('Fehler beim Aktualisieren', '<p class="fail">'.h($e->getMessage()).'</p><p>Ihre Belege und Einstellungen sind nicht betroffen. Laden Sie die Seite neu, um es noch einmal zu versuchen.</p>');
+        page('Fehler', '<p class="fail">'.h($e->getMessage()).'</p><p>Ihre Einstellungen sind erhalten. Laden Sie die Seite neu, um es noch einmal zu versuchen.</p>');
     }
 
     @unlink($codeFile);
     @unlink(__FILE__);
     session_destroy();
-    page('Aktualisiert', '<p class="ok">DocHamster ist jetzt auf Version '.h($release['version']).'. Ihre Daten sind erhalten geblieben. install.php hat sich selbst gelöscht'
-        .(is_file(__FILE__) ? ' <strong class="fail">– das hat nicht geklappt, bitte löschen Sie install.php per FTP!</strong>' : '').'.</p><a class="button" href="/">Zu DocHamster</a>');
+    $selfDeleted = is_file(__FILE__) ? ' <strong class="fail">install.php konnte sich nicht selbst löschen, bitte löschen Sie sie per FTP!</strong>' : '';
+    if ($needsOwner) {
+        page('Fast fertig', '<p class="ok">DocHamster '.h($release['version']).' ist installiert.'.$selfDeleted.'</p><p>Jetzt legen Sie noch Ihr Inhaber-Konto an.</p>'
+            .'<a class="button" href="/setup?code='.rawurlencode($code).'">Weiter</a>');
+    }
+    page($action === 'update' ? 'Aktualisiert' : 'Neu installiert', '<p class="ok">DocHamster ist jetzt auf Version '.h($release['version']).'.'.$selfDeleted.'</p><a class="button" href="/">Zu DocHamster</a>');
 }
 
 if (! $posted || ! isset($_POST['install'])) {

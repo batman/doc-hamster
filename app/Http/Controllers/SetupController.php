@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Domain\Org\Organization;
 use App\Infrastructure\Environment\CheckResult;
 use App\Infrastructure\Environment\CheckStatus;
 use App\Infrastructure\Environment\Doctor;
@@ -197,6 +198,7 @@ final class SetupController
         return $this->databaseReady()
             ? view('setup.finish', [
                 'needsOwner' => ! OwnerAccount::exists(),
+                'orgName' => Organization::query()->oldest()->value('name'),
                 'cronCommand' => CronLine::command(PHP_BINARY, base_path('artisan')),
             ])
             : redirect()->route('setup.database');

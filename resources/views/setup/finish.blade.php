@@ -11,7 +11,7 @@
         @if ($needsOwner)
             <p>{{ __('setup.wizard.owner_text') }}</p>
             <label for="org">{{ __('auth.owner.org') }}</label>
-            <input id="org" name="org" value="{{ old('org') }}" required>
+            <input id="org" name="org" value="{{ old('org', $orgName) }}" required>
             <label for="username">{{ __('auth.username') }}</label>
             <input id="username" name="username" value="{{ old('username') }}" autocomplete="username" required>
             <label for="password">{{ __('auth.password') }}</label>

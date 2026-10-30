@@ -24,7 +24,11 @@ final class OwnerAccount
     public static function create(string $org, string $username, string $password): User
     {
         return DB::transaction(static function () use ($org, $username, $password): User {
-            $organization = Organization::query()->create(['name' => $org]);
+            // After a reset that kept the receipts, the new owner takes over their organisation.
+            $kept = self::exists() ? null : Organization::query()->oldest()->first();
+            $organization = $kept ?? Organization::query()->create(['name' => $org]);
+            $organization->update(['name' => $org]);
+
             $user = User::query()->create([
                 'username' => mb_strtolower($username),
                 'display_name' => $username,
