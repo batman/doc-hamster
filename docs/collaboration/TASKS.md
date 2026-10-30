@@ -121,8 +121,8 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | MVP-TIMELINE | Receipt list as timeline, table and large icons; timeline by upload or document date | Operator + Lead (install session) | todo, reserved | MVP-FRONTEND | Issue #33. Not started |
 | PRINT | DocHamster as a printer, through the hamster first, Windows first | – | todo | HAMSTER | Issue #34, stage 4 of the roadmap #35 |
 | MAIL | Documents by e-mail: inbox with release, mail archive | – | todo | HAMSTER | Issue #38, stage 4 of the roadmap #35 |
-| PHONE | Website on the home screen: camera, photos, documents, device pairing; never a native app | – | todo | MVP-FRONTEND, MVP-TAGS | Issue #37, stage 2 of the roadmap #35 |
-| INBOX | Upload interface with a personal key per device | – | todo | MVP-ROLES | Issue #36, stage 3 of the roadmap #35 |
+| PHONE | Website on the home screen: camera, photos, documents, device pairing; never a native app | – | todo | – | Issue #37, steps 1 and 2 in stage 1 of the roadmap #35 |
+| INBOX | Upload interface with a personal key per device | – | todo | PHONE | Issue #36, stage 3 of the roadmap #35 |
 | HAMSTER | Desktop hamster: drop a file, it lands on the server; own repository, Tauri | – | todo | INBOX | Issue #36, stage 3 of the roadmap #35 |
 
 Phases 2–8: see PLAN.md §14 (reordered in v1.1: 2 capture with time/location → 3 Revolut & matching → 4 receipt pack = core flow done → 5 OCR → 6 search → 7 tax advisor access → 8 release). The Manager adds rows when the previous phase is in review.
