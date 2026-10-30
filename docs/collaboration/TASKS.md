@@ -4,6 +4,8 @@ Status values: `todo` · `in progress` · `in review` · `blocked` · `done`.
 Owner: `PO` · `Lead` · `Manager` · `–` (free).
 Task IDs match the work packages in `../PLAN.md` §14. Maintained by the Manager; claim a task by editing its row (see WORKFLOW.md §3).
 
+> **Issue/PR numbers:** the project moved to a fresh GitHub repository on 2026-10-30 (history rewrite for the leak, see LOG.md). Numbers written before that date (e.g. "PR #19", "issue #18") refer to the **previous** repository; new numbers start again at #1. Open items were re-created: old issue #18 → #4.
+
 ## Work split (maintained by the Manager)
 
 **Lead** – decides and answers all questions (technical + product), leads the implementation, assigns coding sub-tasks to the Manager.
@@ -31,7 +33,7 @@ Only product-design and hard-to-change questions (AGENTS rule 6, operator rule 2
 | Create a Revolut Business **sandbox** account and keep its keys private | Account sign-up | D-016, P3-4b |
 | Run the device tests on a real iPhone and Android phone | Owns the phones | P0-22 (spikes B5, B14) |
 | Supply a few anonymised real bank exports, if the synthetic generator isn't enough | Has real exports | P0-4, P0-21 |
-| Enable GitHub secret scanning + push protection; later switch the repo to public once the Lead reports the D-014 criteria met | Repo admin rights | D-014, P0-8 |
+| ~~Enable GitHub secret scanning + push protection~~ – done 2026-10-30 (issue #3). Note: the new repository is already **public** – the Lead records this against Q-17/D-014 | Repo admin rights | D-014, P0-8 |
 
 Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 
@@ -81,23 +83,23 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | P0-21 | Synthetic fixture generator spec: fake receipts (images) and fake bank CSVs of several formats, no real data | Lead | todo | – | Reduces P0-4 for the PO |
 | P0-22 | Device test plan for the spikes B5 (camera method) and B14 (pairing inside installed PWA): devices, steps, pass criteria | Lead | todo | – | PO runs it on real phones |
 | P0-23 | Break P1-1…P1-8 into concrete sub-tasks with acceptance tests, order and rough size | Lead | todo | P0-15 | Manager reviews, then Phase 1 can start |
-| P0-24 | Critical review of the Manager's PLAN v2 PR (P0-1c) and receipt-pack layout (P0-5) | Lead | in progress | P0-1c, P0-5 | Post-merge review of PR #7 done (findings in issue #18); P0-5 layout review open |
+| P0-24 | Critical review of the Manager's PLAN v2 PR (P0-1c) and receipt-pack layout (P0-5) | Lead | in progress | P0-1c, P0-5 | Post-merge review of PR #7 done (findings in old issue #18 → issue #4); P0-5 layout review open |
 | P0-25 | In P0-23: mark which Phase 1 sub-tasks the Manager codes **together with the Lead** (Lead assigns, Lead reviews) | Lead | todo | P0-23 | Manager never codes alone |
 
 ## Phase 1 – Foundation (v0.1) – started 2026-10-29 (PO go, issue #8)
 
-| ID | Task | Owner | Status | Depends on |
-|----|------|-------|--------|------------|
-| P1-1 | Project skeleton (Laravel, D-001), config, `.env.example`, `dochamster:doctor`/`setup` (no Docker, D-010), CI, gitleaks | Manager (PO override, issue #8) | done | PO go |
-| P1-2 | Migrations: identity & access tables | Lead | in progress | P1-1 |
-| P1-3 | Layout, CSS base, i18n, error pages | Lead | todo | P1-1 |
-| P1-4 | Setup CLI, invitations, pairing (link/QR), passkeys | Lead | todo | P1-2 |
-| P1-5 | Device token rotation, device list, revoke, step-up | Lead | todo | P1-4 |
-| P1-6 | Org scope middleware, roles/policies, permission-matrix tests | Lead | todo | P1-2 |
-| P1-7 | Security headers, CSRF, rate limiting, health endpoint | Lead | todo | P1-1 |
-| P1-8 | README install, HTTPS docs, backup docs v1 | Lead | todo | P1-1 |
-| P1-9 | Setup wizard in the browser, core (D-024): securing a fresh instance, server check, database setup, lock after finishing, resume; release package if decided | Lead | todo | P1-1, P1-7, Q-12 |
-| P1-10 | Interactive shell install: same steps in the terminal, asks for DB credentials (D-024, AK-4.9.7) | Lead | todo | P1-1, Q-12 |
-| P1-11 | Setup wizard: owner account, mail, cron check, connect the phone + home-screen app, first steps | Lead | todo | P1-4, P1-9 |
+| ID | Task | Owner | Status | Depends on | Notes |
+|----|------|-------|--------|------------|-------|
+| P1-1 | Project skeleton (Laravel, D-001), config, `.env.example`, `dochamster:doctor`/`setup` (no Docker, D-010), CI, gitleaks | Manager (PO override, issue #8) | done | PO go | Old repo PR #9; review findings in issue #4 |
+| P1-2 | Migrations: identity & access tables | Lead | done | P1-1 | Old repo PR #19 |
+| P1-3 | Layout, CSS base, i18n, error pages | Lead | done | P1-1 | Old repo PR #24 |
+| P1-4 | Setup CLI, invitations, pairing (link/QR), passkeys | Lead | todo | P1-2 | Interim: owner password login + `dochamster:owner` (old repo PR #27) until passkeys |
+| P1-5 | Device token rotation, device list, revoke, step-up | Lead | todo | P1-4 | |
+| P1-6 | Org scope middleware, roles/policies, permission-matrix tests | Lead | done | P1-2 | Old repo PR #20 |
+| P1-7 | Security headers, CSRF, rate limiting, health endpoint | Lead | done | P1-1 | Old repo PR #21; proxy/scheme finding in issue #6 |
+| P1-8 | README install, HTTPS docs, backup docs v1 | Lead | todo | P1-1 | |
+| P1-9 | Setup wizard in the browser, core (D-024): securing a fresh instance, server check, database setup, lock after finishing, resume; release package if decided | Lead | done | P1-1, P1-7, Q-12 | Old repo PR #22. Release package = web installer, PR #5 (Manager review there). Q-12 not yet recorded in DECISIONS.md (issue #6) |
+| P1-10 | Interactive shell install: same steps in the terminal, asks for DB credentials (D-024, AK-4.9.7) | Lead | done | P1-1, Q-12 | Old repo PR #23; must-fix: ends without an owner account (issue #6) |
+| P1-11 | Setup wizard: owner account, mail, cron check, connect the phone + home-screen app, first steps | Lead | todo | P1-4, P1-9 | Part done: owner step (old repo PR #28); mail, cron, phone open |
 
 Phases 2–8: see PLAN.md §14 (reordered in v1.1: 2 capture with time/location → 3 Revolut & matching → 4 receipt pack = core flow done → 5 OCR → 6 search → 7 tax advisor access → 8 release). The Manager adds rows when the previous phase is in review.
