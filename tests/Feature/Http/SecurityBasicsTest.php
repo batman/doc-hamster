@@ -22,6 +22,18 @@ it('sends the security headers, HSTS only over HTTPS', function (): void {
     $this->get('https://dochamster.example.com/')->assertHeader('Strict-Transport-Security', 'max-age=31536000');
 });
 
+it('trusts the HTTPS flag of a local proxy, not of strangers', function (): void {
+    $this->withServerVariables(['REMOTE_ADDR' => '127.0.0.1'])
+        ->withHeader('X-Forwarded-Proto', 'https')
+        ->get('http://dochamster.example.com/')
+        ->assertHeader('Strict-Transport-Security');
+
+    $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.10'])
+        ->withHeader('X-Forwarded-Proto', 'https')
+        ->get('http://dochamster.example.com/')
+        ->assertHeaderMissing('Strict-Transport-Security');
+});
+
 it('accepts state-changing API requests only from our origin with the client header', function (): void {
     Route::middleware('api.same-origin')->post('/api/_test', fn () => 'ok');
     $origin = 'https://dochamster.example.com';

@@ -17,6 +17,7 @@ use App\Setup\SetupMode;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Encryption\MissingAppKeyException;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
@@ -61,6 +62,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // A local reverse proxy (e.g. nginx in front of Apache on Plesk) terminates TLS; trust its X-Forwarded-*
+        // headers so scheme and host are right. Set here, not in bootstrap/app.php, where .env isn't loaded yet.
+        $proxies = config('dochamster.trusted_proxies');
+        TrustProxies::at(array_values(array_filter(array_merge(
+            ['127.0.0.1', '::1'],
+            array_map('trim', explode(',', is_string($proxies) ? $proxies : '')),
+        ))));
+
         // Brute-force protection (PLAN §11.2). Keys hold the IP only as HMAC, the cache stores them.
         RateLimiter::for('login', static function (Request $request): array {
             $ip = app(IpHasher::class)->hash((string) $request->ip());

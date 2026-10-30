@@ -54,6 +54,8 @@ return [
         ],
         'finish_title' => 'Almost done',
         'finish_text' => 'Server and database are set up. After finishing, this wizard is locked.',
+        'cron_title' => 'Background tasks',
+        'cron_text' => 'In your host’s control panel, create a scheduled task (cron job) that runs this command every minute. You can also do this later.',
         'finish_submit' => 'Finish setup',
         'owner_text' => 'Now create your owner account. You sign in with it afterwards.',
         'password_repeat' => 'Repeat password',

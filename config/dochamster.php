@@ -10,4 +10,9 @@ return [
     */
     'installed' => (bool) env('DOCHAMSTER_INSTALLED', false),
 
+    /*
+    | Reverse proxies besides the local one (comma-separated IPs).
+    */
+    'trusted_proxies' => env('TRUSTED_PROXIES', ''),
+
 ];

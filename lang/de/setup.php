@@ -54,6 +54,8 @@ return [
         ],
         'finish_title' => 'Fast geschafft',
         'finish_text' => 'Server und Datenbank sind eingerichtet. Nach dem Abschluss ist dieser Assistent gesperrt.',
+        'cron_title' => 'Hintergrundaufgaben',
+        'cron_text' => 'Legen Sie in der Verwaltung Ihres Webhosters eine geplante Aufgabe (Cronjob) an, die jede Minute diesen Befehl ausführt. Das können Sie auch später erledigen.',
         'finish_submit' => 'Einrichtung abschließen',
         'owner_text' => 'Legen Sie jetzt Ihr Konto als Inhaber an. Damit melden Sie sich danach an.',
         'password_repeat' => 'Passwort wiederholen',

@@ -3,6 +3,9 @@
 @section('content')
     <h1>{{ __('setup.wizard.finish_title') }}</h1>
     <p>{{ __('setup.wizard.finish_text') }}</p>
+    <h2>{{ __('setup.wizard.cron_title') }}</h2>
+    <p>{{ __('setup.wizard.cron_text') }}</p>
+    <p><code>{{ $cronCommand }}</code></p>
     <form method="post" action="{{ route('setup.finish.save') }}">
         @csrf
         @if ($needsOwner)

@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 use App\Console\Commands\Concerns\RendersDoctorResults;
 use App\Infrastructure\Environment\CheckResult;
 use App\Infrastructure\Environment\Doctor;
+use App\Setup\CronLine;
 use App\Setup\DatabaseConnector;
 use App\Setup\EnvFile;
 use App\Setup\OwnerAccount;
@@ -92,7 +93,7 @@ final class SetupCommand extends Command
 
         $this->info(__('setup.done'));
         $this->line(__('setup.cron_hint', [
-            'command' => '* * * * * '.escapeshellarg(PHP_BINARY).' '.escapeshellarg(base_path('artisan')).' schedule:run >/dev/null 2>&1',
+            'command' => '* * * * * '.CronLine::command(PHP_BINARY, base_path('artisan')).' >/dev/null 2>&1',
         ]));
 
         return self::SUCCESS;

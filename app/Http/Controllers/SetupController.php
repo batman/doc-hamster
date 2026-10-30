@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Infrastructure\Environment\CheckResult;
 use App\Infrastructure\Environment\CheckStatus;
 use App\Infrastructure\Environment\Doctor;
+use App\Setup\CronLine;
 use App\Setup\DatabaseConnector;
 use App\Setup\EnvFile;
 use App\Setup\OwnerAccount;
@@ -194,7 +195,10 @@ final class SetupController
         $this->requireUnlocked($request);
 
         return $this->databaseReady()
-            ? view('setup.finish', ['needsOwner' => ! OwnerAccount::exists()])
+            ? view('setup.finish', [
+                'needsOwner' => ! OwnerAccount::exists(),
+                'cronCommand' => CronLine::command(PHP_BINARY, base_path('artisan')),
+            ])
             : redirect()->route('setup.database');
     }
 

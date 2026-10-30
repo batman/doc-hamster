@@ -24,12 +24,6 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // A local reverse proxy (e.g. nginx in front of Apache on Plesk) terminates TLS; trust its
-        // X-Forwarded-* headers so scheme and host are right. More proxies via TRUSTED_PROXIES (comma-separated).
-        $middleware->trustProxies(at: array_merge(
-            ['127.0.0.1', '::1'],
-            array_filter(array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', '')))),
-        ));
         $middleware->append(SecurityHeaders::class);
         $middleware->web(prepend: [RedirectToSetup::class], append: [SetLocale::class]);
         $middleware->alias([

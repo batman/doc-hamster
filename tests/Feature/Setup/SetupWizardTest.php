@@ -83,6 +83,8 @@ it('sets up the database, then locks itself on finish', function (): void {
 
     expect(storedEnv($this->envPath)['DB_HOST'])->toBe($connection['host']);
 
+    $this->get('/setup/finish')->assertOk()->assertSee('schedule:run');
+
     $this->post('/setup/finish', ['org' => 'Haushalt Test', 'username' => 'inhaber-test', 'password' => 'kurz'])
         ->assertSessionHasErrors('password');
 
