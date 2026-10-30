@@ -120,7 +120,7 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | MVP-TAGS | Tags on receipts: pick at upload, filter in the list, managed by Admin and "Tags bearbeiten" | – | todo | MVP-ROLES (checkbox) | Issue #32. Not started |
 | MVP-TIMELINE | Receipt list as timeline, table and large icons; timeline by upload or document date | Operator + Lead (install session) | todo, reserved | MVP-FRONTEND | Issue #33. Not started |
 | PRINT | DocHamster as a printer, through the hamster first, Windows first | – | todo | HAMSTER | Issue #34, stage 4 of the roadmap #35 |
-| MAIL | Documents by e-mail, mail archive; do not work on this | – | on hold | Operator answers Q-24 and Q-26 | Issue #38, on hold by the operator |
+| MAIL | Documents by e-mail, mail archive; do not work on this | – | on hold | Operator answers Q-24 | Issue #38, on hold by the operator |
 | PHONE | Website on the home screen: camera, photos, documents, device pairing; never a native app | – | todo | MVP-FRONTEND, MVP-TAGS | Issue #37, stage 2 of the roadmap #35 |
 | INBOX | Upload interface with a personal key per device | – | todo | MVP-ROLES | Issue #36, stage 3 of the roadmap #35 |
 | HAMSTER | Desktop hamster: drop a file, it lands on the server; own repository, Tauri | – | todo | INBOX | Issue #36, stage 3 of the roadmap #35 |
