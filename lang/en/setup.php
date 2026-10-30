@@ -51,5 +51,7 @@ return [
         'finish_title' => 'Almost done',
         'finish_text' => 'Server and database are set up. After finishing, this wizard is locked.',
         'finish_submit' => 'Finish setup',
+        'owner_text' => 'Now create your owner account. You sign in with it afterwards.',
+        'password_repeat' => 'Repeat password',
     ],
 ];

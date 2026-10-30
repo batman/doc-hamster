@@ -8,6 +8,7 @@ use App\Infrastructure\Environment\CheckResult;
 use App\Infrastructure\Environment\Doctor;
 use App\Setup\DatabaseConnector;
 use App\Setup\EnvFile;
+use App\Setup\OwnerAccount;
 use App\Setup\SetupCode;
 use App\Setup\SetupMode;
 use Illuminate\Contracts\View\View;
@@ -137,7 +138,9 @@ final class SetupController
     {
         $this->requireUnlocked($request);
 
-        return $this->databaseReady() ? view('setup.finish') : redirect()->route('setup.database');
+        return $this->databaseReady()
+            ? view('setup.finish', ['needsOwner' => ! OwnerAccount::exists()])
+            : redirect()->route('setup.database');
     }
 
     public function finish(Request $request): RedirectResponse
@@ -148,11 +151,21 @@ final class SetupController
             return redirect()->route('setup.database');
         }
 
+        // Without a shell the owner can only be created here (FTP-only hosting).
+        if (! OwnerAccount::exists()) {
+            $data = $request->validate([
+                'org' => ['required', 'string', 'max:150'],
+                'username' => ['required', 'string', 'max:64', 'regex:/^[A-Za-z0-9._-]+$/'],
+                'password' => ['required', 'string', 'min:12', 'max:200', 'confirmed'],
+            ]);
+            OwnerAccount::create($data['org'], $data['username'], $data['password']);
+        }
+
         $this->env->set(['DOCHAMSTER_INSTALLED' => 'true']);
         $this->code->delete();
         $request->session()->invalidate();
 
-        return redirect('/');
+        return redirect()->route('login');
     }
 
     private function requireUnlocked(Request $request): void

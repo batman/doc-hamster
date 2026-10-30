@@ -51,5 +51,7 @@ return [
         'finish_title' => 'Fast geschafft',
         'finish_text' => 'Server und Datenbank sind eingerichtet. Nach dem Abschluss ist dieser Assistent gesperrt.',
         'finish_submit' => 'Einrichtung abschließen',
+        'owner_text' => 'Legen Sie jetzt Ihr Konto als Inhaber an. Damit melden Sie sich danach an.',
+        'password_repeat' => 'Passwort wiederholen',
     ],
 ];

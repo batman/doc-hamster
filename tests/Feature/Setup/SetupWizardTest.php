@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Domain\Auth\User;
+use App\Domain\Org\Organization;
+use App\Domain\Org\Role;
 use App\Setup\EnvFile;
 use App\Setup\SetupCode;
 use Dotenv\Dotenv;
@@ -78,8 +81,22 @@ it('sets up the database, then locks itself on finish', function (): void {
 
     expect(storedEnv($this->envPath)['DB_HOST'])->toBe($connection['host']);
 
-    $this->post('/setup/finish')->assertRedirect('/');
+    $this->post('/setup/finish', ['org' => 'Haushalt Test', 'username' => 'inhaber-test', 'password' => 'kurz'])
+        ->assertSessionHasErrors('password');
+
+    $password = 'ein-langes-test-passwort';
+    $this->post('/setup/finish', [
+        'org' => 'Haushalt Test', 'username' => 'inhaber-test',
+        'password' => $password, 'password_confirmation' => $password,
+    ])->assertRedirect(route('login'));
+
+    $owner = User::query()->where('username', 'inhaber-test')->firstOrFail();
 
     expect(storedEnv($this->envPath)['DOCHAMSTER_INSTALLED'])->toBe('true')
-        ->and(file_exists($this->codePath))->toBeFalse();
+        ->and(file_exists($this->codePath))->toBeFalse()
+        ->and($owner->memberships()->firstOrFail()->role)->toBe(Role::Owner);
+
+    // No RefreshDatabase here (the wizard purges the connection) – clean up by hand.
+    Organization::query()->whereKey($owner->memberships()->pluck('org_id'))->delete();
+    $owner->delete();
 })->group('db');
