@@ -10,6 +10,7 @@ use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
+use finfo;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -51,14 +52,16 @@ final class DocumentController
         $request->validate(['file' => ['required', 'file', 'max:25600']]);
 
         $upload = $request->file('file');
-        $extension = $upload instanceof UploadedFile ? (self::EXTENSIONS[(string) $upload->getMimeType()] ?? null) : null;
+        // From the file's bytes – client name and client MIME type can say anything.
+        $mime = $upload instanceof UploadedFile ? (string) (new finfo(FILEINFO_MIME_TYPE))->file($upload->getRealPath()) : '';
+        $extension = self::EXTENSIONS[$mime] ?? null;
 
         if (! $upload instanceof UploadedFile || $extension === null) {
             return back()->withErrors(['file' => __('documents.wrong_type')]);
         }
 
         $userId = $this->userId($request);
-        $document = DB::transaction(static function () use ($upload, $extension, $org, $userId): Document {
+        $document = DB::transaction(static function () use ($upload, $extension, $mime, $org, $userId): Document {
             $document = Document::query()->create([
                 'uploaded_by' => $userId,
                 'title' => Str::limit($upload->getClientOriginalName(), 250, ''),
@@ -68,7 +71,7 @@ final class DocumentController
             DocumentFile::query()->create([
                 'document_id' => $document->id,
                 'path' => (string) $path,
-                'mime' => (string) $upload->getMimeType(),
+                'mime' => $mime,
                 'size' => (int) $upload->getSize(),
                 'sha256' => (string) hash_file('sha256', $upload->getRealPath()),
             ]);
