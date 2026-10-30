@@ -92,3 +92,10 @@ code { word-break: break-all; background: var(--surface); padding: .1rem .3rem; 
 /* Error pages */
 .error-page { text-align: center; padding-top: 3rem; }
 .error-code { font-size: 3rem; font-weight: 700; color: var(--muted); margin: 0; }
+
+.site-footer {
+    max-width: 40rem;
+    margin: 2rem auto 0;
+    padding: 0 1rem 1rem;
+    text-align: center;
+}

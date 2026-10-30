@@ -24,5 +24,9 @@
     <main id="main" class="page">
         @yield('content')
     </main>
+    <footer class="site-footer">
+        <hr>
+        <small class="muted">{{ config('app.name') }} {{ __('app.version', ['version' => config('dochamster.version')]) }}</small>
+    </footer>
 </body>
 </html>
