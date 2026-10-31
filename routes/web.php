@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\BankController;
+use App\Http\Controllers\BankImportController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\MemberController;
@@ -44,6 +46,18 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('tags', [TagController::class, 'store'])->name('tags.store');
         Route::post('tags/{id}', [TagController::class, 'update'])->name('tags.update');
         Route::post('tags/{id}/delete', [TagController::class, 'destroy'])->name('tags.destroy');
+    });
+
+    Route::middleware('can:banking.import')->prefix('bank')->name('bank.')->group(function (): void {
+        Route::get('/', [BankController::class, 'index'])->name('index');
+        Route::get('import', [BankImportController::class, 'form'])->name('import');
+        Route::post('import', [BankImportController::class, 'upload'])->name('import.upload');
+        Route::get('import/columns', [BankImportController::class, 'columns'])->name('import.columns');
+        Route::post('import/columns', [BankImportController::class, 'run'])->name('import.run');
+        Route::post('accounts/{id}/delete', [BankImportController::class, 'destroyAccount'])->name('accounts.destroy');
+        Route::get('transactions/{id}', [BankController::class, 'show'])->name('show');
+        Route::post('transactions/{id}/match', [BankController::class, 'match'])->name('match');
+        Route::post('transactions/{id}/unmatch', [BankController::class, 'unmatch'])->name('unmatch');
     });
 
     Route::middleware('can:exports.create')->group(function (): void {

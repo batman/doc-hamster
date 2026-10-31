@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Documents;
 
+use App\Domain\Banking\TransactionMatch;
 use App\Domain\Org\BelongsToOrg;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -44,6 +45,14 @@ final class Document extends Model
     public function files(): HasMany
     {
         return $this->hasMany(DocumentFile::class);
+    }
+
+    /**
+     * @return HasMany<TransactionMatch, $this>
+     */
+    public function matches(): HasMany
+    {
+        return $this->hasMany(TransactionMatch::class);
     }
 
     /**

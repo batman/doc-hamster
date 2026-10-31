@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Documents;
 
+use App\Domain\Banking\TransactionMatch;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -32,7 +33,7 @@ final class ReceiptArchive
             throw new RuntimeException('Could not create the index.');
         }
         fwrite($index, "\xEF\xBB\xBF");
-        fputcsv($index, ['Datum', 'Titel', 'Datei', 'Typ', 'Größe (Bytes)', 'SHA-256', 'Tags'], ';', '"', '');
+        fputcsv($index, ['Datum', 'Titel', 'Datei', 'Typ', 'Größe (Bytes)', 'SHA-256', 'Tags', 'Buchung'], ';', '"', '');
 
         foreach ($documents as $document) {
             foreach ($document->files as $file) {
@@ -54,6 +55,7 @@ final class ReceiptArchive
                     (string) $file->size,
                     $file->sha256,
                     self::safeCell($document->tags->pluck('name')->implode(', ')),
+                    self::safeCell(self::bookings($document)),
                 ], ';', '"', '');
             }
         }
@@ -65,6 +67,19 @@ final class ReceiptArchive
         if (! $zip->close()) {
             throw new RuntimeException('Could not write the ZIP file.');
         }
+    }
+
+    /** The linked bank transactions, without the purpose: that can hold more than this receipt. */
+    private static function bookings(Document $document): string
+    {
+        return $document->matches
+            ->map(static fn (TransactionMatch $match): string => trim(sprintf(
+                '%s %s %s',
+                $match->transaction->booking_date->format('d.m.Y'),
+                $match->transaction->formattedAmount(),
+                $match->transaction->counterparty,
+            )))
+            ->implode(' / ');
     }
 
     private static function entryName(Document $document, DocumentFile $file): string

@@ -16,6 +16,9 @@
         @yield('header')
         @auth
             <a href="{{ url('/') }}">{{ __('documents.title') }}</a>
+            @can('banking.import')
+                <a href="{{ route('bank.index') }}">{{ __('bank.title') }}</a>
+            @endcan
             @can('exports.create')
                 <a href="{{ route('exports.form') }}">{{ __('exports.title') }}</a>
             @endcan
