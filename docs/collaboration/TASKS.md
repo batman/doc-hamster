@@ -117,7 +117,7 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | MVP-PEOPLE | Owner adds employees and tax advisors, resets passwords, removes access (D-012) | Lead (install session) | done | P1-6 | PR #25, #27; tax advisors read-only on everything until shares (Q-20). Also: owner-triggered update, PR #26 |
 | MVP-ROLES | Roles the Admin creates and names, checkboxes per role; Admin fixed, Mitarbeiter + Steuerberater pre-installed | Manager | done | MVP-PEOPLE | PR #40. PLAN §2.1 not updated while the docs pause lasts |
 | MVP-FRONTEND | Own CSS/JS framework and frontend layer | Operator + Lead (install session) | todo, reserved | – | Issue #31. Fits D-004. Not started |
-| MVP-TAGS | Tags on receipts: pick at upload, filter in the list, managed by Admin and "Tags bearbeiten" | Manager | in review | MVP-ROLES (checkbox) | Issue #32. Plain chips until MVP-FRONTEND |
+| MVP-TAGS | Tags on receipts: pick at upload, filter in the list, managed by Admin and "Tags bearbeiten" | Manager | done | MVP-ROLES (checkbox) | PR #41. Plain chips until MVP-FRONTEND |
 | MVP-TIMELINE | Receipt list as timeline, table and large icons; timeline by upload or document date | Operator + Lead (install session) | todo, reserved | MVP-FRONTEND | Issue #33. Not started |
 | PRINT | DocHamster as a printer, through the hamster first, Windows first | – | todo | HAMSTER | Issue #34, stage 4 of the roadmap #35 |
 | MAIL | Documents by e-mail: inbox with release, mail archive | – | todo | HAMSTER | Issue #38, stage 4 of the roadmap #35 |
