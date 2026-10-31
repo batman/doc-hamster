@@ -102,3 +102,13 @@ code { word-break: break-all; background: var(--surface); padding: .1rem .3rem; 
     padding: 0 1rem 1rem;
     text-align: center;
 }
+
+/* Phone probe (#37) */
+.phone-checks { padding-left: 1.2rem; }
+.phone-checks li { padding: .25rem 0; }
+.phone-checks small { display: block; word-break: break-word; }
+#camera { display: block; width: 100%; margin-top: 1rem; border-radius: var(--radius); }
+#camera[hidden] { display: none; }
+.file-button { display: block; margin-top: 1rem; }
+.file-button input { display: block; margin-top: .25rem; }
+.phone-qr { display: block; width: 18rem; max-width: 100%; }
