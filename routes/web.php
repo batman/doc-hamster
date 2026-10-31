@@ -7,6 +7,7 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PhoneCheckController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SetupController;
 use App\Http\Controllers\UpdateController;
 use Illuminate\Support\Facades\Route;
@@ -22,6 +23,12 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('members', [MemberController::class, 'store'])->name('members.store');
         Route::post('members/{id}/reset', [MemberController::class, 'resetPassword'])->name('members.reset');
         Route::post('members/{id}/revoke', [MemberController::class, 'revoke'])->name('members.revoke');
+        Route::post('members/{id}/role', [MemberController::class, 'changeRole'])->name('members.role');
+
+        Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
+        Route::post('roles', [RoleController::class, 'store'])->name('roles.store');
+        Route::post('roles/{id}', [RoleController::class, 'update'])->name('roles.update');
+        Route::post('roles/{id}/delete', [RoleController::class, 'destroy'])->name('roles.destroy');
     });
 
     Route::middleware('can:settings.manage')->group(function (): void {

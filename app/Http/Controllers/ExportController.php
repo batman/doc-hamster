@@ -9,10 +9,12 @@ use App\Domain\Auth\User;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\ReceiptArchive;
 use App\Domain\Org\CurrentOrg;
+use App\Domain\Org\Permission;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -41,7 +43,16 @@ final class ExportController
         $from = CarbonImmutable::parse($data['from'])->startOfDay();
         $to = CarbonImmutable::parse($data['to'])->endOfDay();
 
-        $documents = Document::query()->with('files')->whereBetween('created_at', [$from, $to])->oldest()->get();
+        $user = $request->user();
+        abort_unless($user instanceof User, 403);
+
+        // A role may have "Exportieren" without "Alle Belege sehen": then only the own ones (#30).
+        $documents = Document::query()
+            ->visibleTo($user->id, Gate::allows(Permission::ViewAllDocuments->value))
+            ->with('files')
+            ->whereBetween('created_at', [$from, $to])
+            ->oldest()
+            ->get();
 
         if ($documents->isEmpty()) {
             return back()->withInput($request->except('password'))->withErrors(['from' => __('exports.empty')]);
@@ -55,8 +66,7 @@ final class ExportController
         $target = $dir.'/'.Str::lower((string) Str::ulid()).'.zip';
         ReceiptArchive::write($documents, $target);
 
-        $user = $request->user();
-        $audit->record('export.created', orgId: $org->id(), userId: $user instanceof User ? $user->id : null, meta: [
+        $audit->record('export.created', orgId: $org->id(), userId: $user->id, meta: [
             'from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d'), 'documents' => $documents->count(),
         ], ip: $request->ip());
 

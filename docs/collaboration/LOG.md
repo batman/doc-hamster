@@ -179,3 +179,11 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Done while waiting for the Lead's answer on #12: receipt-pack layout draft `docs/design/receipt-pack.html` (cover with key figures, overview, one page per transaction with large photo, missing receipts; Dompdf-friendly CSS, synthetic data) + `docs/design/receipt-pack.md` (choices and 4 questions for Q-19). P0-5 → in review.
 - Next: **Lead:** #12 first (install goal), then sign off P0-5 and ask Q-19. **PO:** #13.
 - Branch/PR: manager/P0-5-receipt-pack
+
+## 2026-10-31 · Manager · MVP-ROLES
+- Done: Operator asked the Manager to code; took the next free task on roadmap #35 and said so in #30. `roles` table + `memberships.org_role_id`, checkboxes (`RoleRight`) replace the fixed matrix (`Role::access`, `Access`, the two org settings). Admin = `memberships.role = owner`, several allowed. New: role screen, change a person's role, permission `tags.manage` for MVP-TAGS. Existing organisations keep today's rights in the migration; only new ones get the wider defaults of #30.
+- Decided while building, for the Lead to veto: "Belege löschen" means the trash only, deleting forever stays with Admins. Editing and deleting are limited to what the person can see. Nobody can change or remove their own membership, so one Admin always remains.
+- Fixed on the way: the export ignored who may see what. With checkboxes that would have let "Exportieren" without "Alle Belege sehen" download everyone's receipts.
+- Not done: PLAN §2.1 (docs pause, #39). Screens only rendered in tests, not looked at in a browser.
+- Next: **Lead:** post-merge review; release when it suits. **Manager:** MVP-TAGS is next on the roadmap.
+- Branch/PR: manager/MVP-ROLES-custom-roles

@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $org_id
  * @property string $user_id
  * @property Role $role
+ * @property string|null $org_role_id null for Admins
  * @property CarbonImmutable|null $revoked_at
  */
 #[UseFactory(MembershipFactory::class)]
@@ -32,7 +33,7 @@ final class Membership extends Model
 
     use HasUlids;
 
-    protected $fillable = ['org_id', 'user_id', 'role', 'revoked_at'];
+    protected $fillable = ['org_id', 'user_id', 'role', 'org_role_id', 'revoked_at'];
 
     /**
      * @return array<string, string>
@@ -59,6 +60,36 @@ final class Membership extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Follows the foreign key; memberships are listed across organisations, so
+     * this can't depend on the active one.
+     *
+     * @return BelongsTo<OrgRole, $this>
+     */
+    public function orgRole(): BelongsTo
+    {
+        return $this->belongsTo(OrgRole::class, 'org_role_id')->withoutGlobalScope(OrgScope::class);
+    }
+
+    /**
+     * Admin with null, otherwise the given role. Tax advisors keep their own
+     * kind of membership for the sign-in (D-012).
+     */
+    public function assignRole(?OrgRole $orgRole): void
+    {
+        $this->role = match (true) {
+            $orgRole === null => Role::Owner,
+            $orgRole->system_key === Role::Accountant => Role::Accountant,
+            default => Role::Member,
+        };
+        $this->org_role_id = $orgRole?->id;
+    }
+
+    public function roleName(): string
+    {
+        return $this->orgRole->name ?? (string) __('members.roles.'.$this->role->value);
     }
 
     public function isActive(): bool

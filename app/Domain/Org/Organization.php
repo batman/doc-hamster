@@ -30,6 +30,11 @@ final class Organization extends Model
 
     protected $fillable = ['name', 'settings_json', 'retention_days', 'trash_days'];
 
+    protected static function booted(): void
+    {
+        self::created(static fn (self $organization) => OrgRole::ensureDefaults($organization));
+    }
+
     /**
      * @return array<string, string>
      */

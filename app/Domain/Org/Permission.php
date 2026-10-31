@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Domain\Org;
 
 /**
- * The rows of the permission matrix (PLAN §2.1). The values are the Gate
- * ability names, e.g. `Gate::allows('members.manage')`.
+ * What the app checks. The values are the Gate ability names, e.g.
+ * `Gate::allows('members.manage')`. People see the plain checkboxes of
+ * RoleRight instead (#30).
  */
 enum Permission: string
 {
@@ -19,22 +20,27 @@ enum Permission: string
     case ImportBanking = 'banking.import';
     case CreateReports = 'reports.create';
     case Export = 'exports.create';
+    case ManageTags = 'tags.manage';
     case ManageMembers = 'members.manage';
     case ManageSettings = 'settings.manage';
     case ViewAuditLog = 'audit.view';
 
     /**
-     * Organisation setting (key in `organizations.settings_json`) behind the
-     * ⚙️ cells, with its default.
-     *
-     * @return array{0: string, 1: bool}|null
+     * The checkbox that grants this permission; null means Admins only.
+     * Editing and trashing act on what the person can see, so resource checks
+     * stay limited by Document::visibleTo().
      */
-    public function orgSetting(): ?array
+    public function right(): ?RoleRight
     {
         return match ($this) {
-            self::ViewAllDocuments => ['members_see_all_documents', false],
-            self::TrashDocuments => ['members_may_trash_own_documents', true],
-            default => null,
+            self::UploadDocuments, self::ManageOwnDocuments => RoleRight::Upload,
+            self::ViewAllDocuments => RoleRight::ViewAll,
+            self::EditDocuments => RoleRight::Edit,
+            self::TrashDocuments => RoleRight::Delete,
+            self::ImportBanking => RoleRight::Banking,
+            self::CreateReports, self::Export => RoleRight::Export,
+            self::ManageTags => RoleRight::Tags,
+            self::DeleteDocumentsForever, self::ManageMembers, self::ManageSettings, self::ViewAuditLog => null,
         };
     }
 

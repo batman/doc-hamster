@@ -21,6 +21,7 @@
             @endcan
             @can('members.manage')
                 <a href="{{ route('members.index') }}">{{ __('members.title') }}</a>
+                <a href="{{ route('roles.index') }}">{{ __('roles.title') }}</a>
             @endcan
             @can('settings.manage')
                 <a href="{{ route('updates.show') }}">{{ __('updates.title') }}</a>

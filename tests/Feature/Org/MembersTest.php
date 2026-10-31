@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Domain\Auth\User;
 use App\Domain\Org\Membership;
+use App\Domain\Org\OrgRole;
+use App\Domain\Org\OrgScope;
 use App\Domain\Org\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -21,8 +23,11 @@ beforeEach(function (): void {
 });
 
 it('creates a tax advisor who can log in with the password shown once', function (): void {
+    $advisorRole = OrgRole::query()->withoutGlobalScope(OrgScope::class)
+        ->where('org_id', $this->ownership->org_id)->where('system_key', 'accountant')->firstOrFail();
+
     $response = $this->actingAs($this->owner)->post('/members', [
-        'display_name' => 'Kanzlei Muster', 'username' => 'Kanzlei', 'role' => 'accountant', 'password' => OWNER_PASSWORD,
+        'display_name' => 'Kanzlei Muster', 'username' => 'Kanzlei', 'role' => $advisorRole->id, 'password' => OWNER_PASSWORD,
     ]);
 
     $response->assertRedirect(route('members.index'));
@@ -43,16 +48,16 @@ it('creates a tax advisor who can log in with the password shown once', function
 
 it('needs the owner password and is closed to everyone else', function (): void {
     $this->actingAs($this->owner)
-        ->post('/members', ['display_name' => 'X', 'username' => 'x', 'role' => 'member', 'password' => 'falsch'])
+        ->post('/members', ['display_name' => 'X', 'username' => 'x', 'role' => 'owner', 'password' => 'falsch'])
         ->assertSessionHasErrors('password');
 
     $member = Membership::factory()->create(['org_id' => $this->ownership->org_id]);
     $this->actingAs($member->user)->get('/members')->assertForbidden();
 });
 
-it('cannot create a second owner or touch other organisations', function (): void {
+it('needs a known role and does not touch other organisations', function (): void {
     $this->actingAs($this->owner)
-        ->post('/members', ['display_name' => 'X', 'username' => 'x', 'role' => 'owner', 'password' => OWNER_PASSWORD])
+        ->post('/members', ['display_name' => 'X', 'username' => 'x', 'role' => 'member', 'password' => OWNER_PASSWORD])
         ->assertSessionHasErrors('role');
 
     $foreign = Membership::factory()->create();

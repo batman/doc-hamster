@@ -19,7 +19,7 @@ const DH_MAX_AGE_SECONDS = 7200;
 const DH_USER_INI = "memory_limit = 256M\nupload_max_filesize = 32M\npost_max_size = 32M\n";
 const DH_WIPE_GROUPS = [
     'documents' => ['label' => 'Belege (alle Fotos und PDFs)', 'tables' => ['matches', 'document_files', 'documents']],
-    'people' => ['label' => 'Benutzer und Rollen (danach legen Sie ein neues Inhaber-Konto an)', 'tables' => ['sessions', 'invitations', 'passkeys', 'devices', 'memberships', 'users']],
+    'people' => ['label' => 'Benutzer und Rollen (danach legen Sie ein neues Inhaber-Konto an)', 'tables' => ['sessions', 'invitations', 'passkeys', 'devices', 'memberships', 'roles', 'users']],
     'banking' => ['label' => 'Bankdaten (Konten, Buchungen, Verknüpfungen mit Belegen)', 'tables' => ['matches', 'transactions', 'imports', 'import_profiles', 'bank_accounts']],
 ];
 const DH_EXTENSIONS = ['pdo_mysql', 'mbstring', 'intl', 'sodium', 'fileinfo', 'exif', 'zip', 'gd', 'curl'];

@@ -120,19 +120,17 @@ it('answers the Gate from the role in the active organisation', function (): voi
     app(CurrentOrg::class)->set($member);
     expect(Gate::forUser($member->user)->allows(Permission::UploadDocuments->value))->toBeTrue()
         ->and(Gate::forUser($member->user)->allows(Permission::ManageMembers->value))->toBeFalse()
-        ->and(Gate::forUser($member->user)->allows(Permission::EditDocuments->value))->toBeFalse();
+        ->and(Gate::forUser($member->user)->allows(Permission::EditDocuments->value))->toBeTrue();
 });
 
-it('lets members see all documents only when the organisation switches it on', function (): void {
+it('gives a membership without a role no rights at all', function (): void {
     $member = Membership::factory()->create();
-    app(CurrentOrg::class)->set($member);
+    $member->update(['org_role_id' => null]);
+    app(CurrentOrg::class)->set($member->fresh() ?? $member);
 
-    expect(Gate::forUser($member->user)->allows(Permission::ViewAllDocuments->value))->toBeFalse();
+    $allowed = array_filter(Permission::cases(), fn (Permission $p): bool => Gate::forUser($member->user)->allows($p->value));
 
-    $member->organization->update(['settings_json' => ['members_see_all_documents' => true]]);
-    $member->unsetRelation('organization');
-
-    expect(Gate::forUser($member->user)->allows(Permission::ViewAllDocuments->value))->toBeTrue();
+    expect($allowed)->toBe([]);
 });
 
 it('lets tax advisors read and export everything, but change nothing (Q-20)', function (): void {

@@ -2,38 +2,40 @@
 
 declare(strict_types=1);
 
-use App\Domain\Org\Access;
 use App\Domain\Org\Permission;
 use App\Domain\Org\Role;
+use App\Domain\Org\RoleRight;
 
 /*
-| PLAN §2.1, row by row: [permission, owner, member, tax advisor].
-| ✅ Allow · ❌ Deny · ⚙️ OrgSetting · "eigene" OwnOnly · "eigene, ⚙️"
-| OwnOnlyIfOrgSetting · 🔶 ShareOnly. Change this table only together with PLAN §2.1.
+| #30: which checkbox grants which permission. null = Admins only, no checkbox.
 */
-dataset('matrix', [
-    'Beleg hochladen' => [Permission::UploadDocuments, Access::Allow, Access::Allow, Access::Deny],
-    'Eigene Belege sehen/bearbeiten' => [Permission::ManageOwnDocuments, Access::Allow, Access::Allow, Access::Deny],
-    'Alle Belege der Organisation sehen' => [Permission::ViewAllDocuments, Access::Allow, Access::OrgSetting, Access::ShareOnly],
-    'Belege bearbeiten' => [Permission::EditDocuments, Access::Allow, Access::OwnOnly, Access::Deny],
-    'Beleg löschen (Papierkorb)' => [Permission::TrashDocuments, Access::Allow, Access::OwnOnlyIfOrgSetting, Access::Deny],
-    'Endgültig löschen' => [Permission::DeleteDocumentsForever, Access::Allow, Access::Deny, Access::Deny],
-    'Kontoauszug importieren / Abgleich' => [Permission::ImportBanking, Access::Allow, Access::Deny, Access::Deny],
-    'Berichte erstellen' => [Permission::CreateReports, Access::Allow, Access::Deny, Access::ShareOnly],
-    'Export' => [Permission::Export, Access::Allow, Access::Deny, Access::ShareOnly],
-    'Mitglieder/Zugänge verwalten' => [Permission::ManageMembers, Access::Allow, Access::Deny, Access::Deny],
-    'Kategorien/Regeln verwalten' => [Permission::ManageSettings, Access::Allow, Access::Deny, Access::Deny],
-    'Audit-Log sehen' => [Permission::ViewAuditLog, Access::Allow, Access::Deny, Access::Deny],
+dataset('rights', [
+    'Beleg hochladen' => [Permission::UploadDocuments, RoleRight::Upload],
+    'Eigene Belege verwalten' => [Permission::ManageOwnDocuments, RoleRight::Upload],
+    'Alle Belege sehen' => [Permission::ViewAllDocuments, RoleRight::ViewAll],
+    'Belege bearbeiten' => [Permission::EditDocuments, RoleRight::Edit],
+    'Beleg löschen (Papierkorb)' => [Permission::TrashDocuments, RoleRight::Delete],
+    'Endgültig löschen' => [Permission::DeleteDocumentsForever, null],
+    'Bankdaten' => [Permission::ImportBanking, RoleRight::Banking],
+    'Berichte' => [Permission::CreateReports, RoleRight::Export],
+    'Export' => [Permission::Export, RoleRight::Export],
+    'Tags' => [Permission::ManageTags, RoleRight::Tags],
+    'Personen und Rollen' => [Permission::ManageMembers, null],
+    'Einstellungen und Updates' => [Permission::ManageSettings, null],
+    'Audit-Log' => [Permission::ViewAuditLog, null],
 ]);
 
-it('matches the permission matrix of PLAN §2.1', function (Permission $permission, Access $owner, Access $member, Access $accountant): void {
-    expect(Role::Owner->access($permission))->toBe($owner)
-        ->and(Role::Member->access($permission))->toBe($member)
-        ->and(Role::Accountant->access($permission))->toBe($accountant);
-})->with('matrix');
+it('maps every permission to its checkbox', function (Permission $permission, ?RoleRight $right): void {
+    expect($permission->right())->toBe($right);
+})->with('rights');
 
-it('covers every permission in the matrix', function (): void {
-    expect(Permission::cases())->toHaveCount(12);
+it('covers every permission', function (): void {
+    expect(Permission::cases())->toHaveCount(13);
+});
+
+it('has the agreed defaults for the pre-installed roles', function (): void {
+    expect(RoleRight::defaultsFor(Role::Member))->toBe(RoleRight::cases())
+        ->and(RoleRight::defaultsFor(Role::Accountant))->toBe([RoleRight::ViewAll, RoleRight::Export]);
 });
 
 it('requires a step-up exactly where the matrix says "mit Bestätigung"', function (): void {

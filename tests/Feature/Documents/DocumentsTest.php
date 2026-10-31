@@ -6,6 +6,7 @@ use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
 use App\Domain\Org\Membership;
 use App\Domain\Org\OrgScope;
+use App\Domain\Org\RoleRight;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -56,7 +57,7 @@ it('keeps files of other organisations and other members out of reach', function
     $stranger = Membership::factory()->owner()->create();
     $this->actingAs($stranger->user)->get('/files/'.$file->id)->assertNotFound();
 
-    $member = Membership::factory()->create(['org_id' => $owner->org_id]);
+    $member = Membership::factory()->withRights(RoleRight::Upload)->create(['org_id' => $owner->org_id]);
     $this->actingAs($member->user)->get('/files/'.$file->id)->assertNotFound();
 });
 

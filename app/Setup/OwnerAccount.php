@@ -7,6 +7,7 @@ namespace App\Setup;
 use App\Domain\Auth\User;
 use App\Domain\Org\Membership;
 use App\Domain\Org\Organization;
+use App\Domain\Org\OrgRole;
 use App\Domain\Org\Role;
 use Illuminate\Support\Facades\DB;
 
@@ -28,6 +29,8 @@ final class OwnerAccount
             $kept = self::exists() ? null : Organization::query()->oldest()->first();
             $organization = $kept ?? Organization::query()->create(['name' => $org]);
             $organization->update(['name' => $org]);
+            // That reset removed the roles too.
+            OrgRole::ensureDefaults($organization);
 
             $user = User::query()->create([
                 'username' => mb_strtolower($username),

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Domain\Auth\User;
 use App\Domain\Org\Membership;
 use App\Domain\Org\Role;
+use App\Domain\Org\RoleRight;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -52,8 +53,8 @@ it('needs the password and a period with receipts', function (): void {
     $this->post('/export', ['from' => '2001-01-01', 'to' => '2001-01-31', 'password' => 'ein-langes-test-passwort'])->assertSessionHasErrors('from');
 });
 
-it('is for owners only', function (): void {
-    $member = Membership::factory()->create();
+it('needs the checkbox "Exportieren"', function (): void {
+    $member = Membership::factory()->withRights(RoleRight::Upload)->create();
 
     $this->actingAs($member->user)->get('/export')->assertForbidden();
 });

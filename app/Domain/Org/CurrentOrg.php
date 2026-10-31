@@ -51,9 +51,8 @@ final class CurrentOrg
     }
 
     /**
-     * Org-wide answer for the Gate: true for `Allow`, `ShareOnly` and `OrgSetting`
-     * with the setting on. Cells that depend on the own document are false
-     * here and decided by the resource policies.
+     * Answer for the Gate: Admins may everything, everyone else what the
+     * checkboxes of their role say. No role means no rights.
      */
     public function allows(Permission $permission): bool
     {
@@ -61,29 +60,12 @@ final class CurrentOrg
             return false;
         }
 
-        return match ($this->role()->access($permission)) {
-            Access::Allow => true,
-            Access::OrgSetting => $this->setting($permission),
-            // Q-20: until shares exist (Phase 7) a tax advisor's share covers the whole organisation.
-            Access::ShareOnly => true,
-            default => false,
-        };
-    }
-
-    /**
-     * Value of the ⚙️ organisation setting behind a permission (default if unset).
-     */
-    public function setting(Permission $permission): bool
-    {
-        $setting = $permission->orgSetting();
-
-        if ($setting === null) {
-            return false;
+        if ($this->role() === Role::Owner) {
+            return true;
         }
 
-        [$key, $default] = $setting;
-        $value = ($this->organization()->settings_json ?? [])[$key] ?? $default;
+        $right = $permission->right();
 
-        return is_bool($value) ? $value : $default;
+        return $right !== null && $this->membership()->orgRole?->has($right) === true;
     }
 }

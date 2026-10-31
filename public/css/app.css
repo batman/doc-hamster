@@ -60,6 +60,8 @@ a { color: var(--accent); }
 
 /* Forms */
 label { display: block; margin-top: var(--space); font-weight: 600; }
+.rights { margin-top: var(--space); border: 1px solid var(--border); border-radius: var(--radius); }
+.rights label { margin-top: .25rem; font-weight: 400; }
 input, select, textarea {
     width: 100%; min-height: 48px; padding: .6rem .75rem; font: inherit; color: var(--text);
     background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
