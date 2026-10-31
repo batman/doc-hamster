@@ -187,3 +187,10 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done: PLAN §2.1 (docs pause, #39). Screens only rendered in tests, not looked at in a browser.
 - Next: **Lead:** post-merge review; release when it suits. **Manager:** MVP-TAGS is next on the roadmap.
 - Branch/PR: manager/MVP-ROLES-custom-roles
+
+## 2026-10-31 · Manager · MVP-TAGS
+- Done: Tags per #32: `tags` + `document_tags` (PLAN §6.2), pre-installed tags for new and existing organisations, tag screen, chips at upload and per receipt, AND filter in the list, `Tags` column in `index.csv`, own group in `install.php`. Also relaxed the QR library pin (`^3.0`, in #40), which had `main` failing `composer validate --strict` since the device probe.
+- Decided while building, for the Lead to veto: pre-installed tags aren't protected, #32 only says they exist, so they can be renamed and deleted. Ticking only "Tags" in a fresh install leaves the list empty until someone adds tags.
+- Not done: screens only rendered in tests, not looked at in a browser or on a phone. PLAN (categories, docs pause).
+- Next: **Lead:** post-merge review. Stage 1 of #35 is then done apart from your MVP-CSV and PHONE.
+- Branch/PR: manager/MVP-TAGS-tags

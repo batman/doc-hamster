@@ -9,12 +9,14 @@ use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PhoneCheckController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SetupController;
+use App\Http\Controllers\TagController;
 use App\Http\Controllers\UpdateController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'org'])->group(function (): void {
     Route::get('/', [DocumentController::class, 'index'])->name('documents.index');
     Route::post('documents', [DocumentController::class, 'store'])->middleware('can:documents.upload')->name('documents.store');
+    Route::post('documents/{id}/tags', [DocumentController::class, 'updateTags'])->middleware('can:documents.edit')->name('documents.tags');
     Route::get('files/{id}', [DocumentController::class, 'file'])->name('documents.file');
     Route::get('phone-check/qr', [PhoneCheckController::class, 'qr'])->name('phone-check.qr');
 
@@ -35,6 +37,13 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::get('update', [UpdateController::class, 'show'])->name('updates.show');
         Route::post('update/check', [UpdateController::class, 'check'])->middleware('throttle:10,1')->name('updates.check');
         Route::post('update/install', [UpdateController::class, 'install'])->middleware('throttle:10,1')->name('updates.install');
+    });
+
+    Route::middleware('can:tags.manage')->group(function (): void {
+        Route::get('tags', [TagController::class, 'index'])->name('tags.index');
+        Route::post('tags', [TagController::class, 'store'])->name('tags.store');
+        Route::post('tags/{id}', [TagController::class, 'update'])->name('tags.update');
+        Route::post('tags/{id}/delete', [TagController::class, 'destroy'])->name('tags.destroy');
     });
 
     Route::middleware('can:exports.create')->group(function (): void {

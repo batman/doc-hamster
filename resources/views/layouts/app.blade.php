@@ -19,6 +19,9 @@
             @can('exports.create')
                 <a href="{{ route('exports.form') }}">{{ __('exports.title') }}</a>
             @endcan
+            @can('tags.manage')
+                <a href="{{ route('tags.index') }}">{{ __('tags.title') }}</a>
+            @endcan
             @can('members.manage')
                 <a href="{{ route('members.index') }}">{{ __('members.title') }}</a>
                 <a href="{{ route('roles.index') }}">{{ __('roles.title') }}</a>

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Org;
 
+use App\Domain\Documents\Tag;
 use Database\Factories\OrganizationFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -32,7 +33,10 @@ final class Organization extends Model
 
     protected static function booted(): void
     {
-        self::created(static fn (self $organization) => OrgRole::ensureDefaults($organization));
+        self::created(static function (self $organization): void {
+            OrgRole::ensureDefaults($organization);
+            Tag::addDefaults($organization);
+        });
     }
 
     /**

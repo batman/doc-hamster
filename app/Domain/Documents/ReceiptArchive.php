@@ -32,7 +32,7 @@ final class ReceiptArchive
             throw new RuntimeException('Could not create the index.');
         }
         fwrite($index, "\xEF\xBB\xBF");
-        fputcsv($index, ['Datum', 'Titel', 'Datei', 'Typ', 'Größe (Bytes)', 'SHA-256'], ';', '"', '');
+        fputcsv($index, ['Datum', 'Titel', 'Datei', 'Typ', 'Größe (Bytes)', 'SHA-256', 'Tags'], ';', '"', '');
 
         foreach ($documents as $document) {
             foreach ($document->files as $file) {
@@ -53,6 +53,7 @@ final class ReceiptArchive
                     $file->mime,
                     (string) $file->size,
                     $file->sha256,
+                    self::safeCell($document->tags->pluck('name')->implode(', ')),
                 ], ';', '"', '');
             }
         }

@@ -8,6 +8,7 @@ use App\Domain\Org\BelongsToOrg;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
@@ -43,6 +44,14 @@ final class Document extends Model
     public function files(): HasMany
     {
         return $this->hasMany(DocumentFile::class);
+    }
+
+    /**
+     * @return BelongsToMany<Tag, $this>
+     */
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class, 'document_tags')->orderBy('name');
     }
 
     /**

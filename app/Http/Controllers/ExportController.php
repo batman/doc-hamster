@@ -49,7 +49,7 @@ final class ExportController
         // A role may have "Exportieren" without "Alle Belege sehen": then only the own ones (#30).
         $documents = Document::query()
             ->visibleTo($user->id, Gate::allows(Permission::ViewAllDocuments->value))
-            ->with('files')
+            ->with(['files', 'tags'])
             ->whereBetween('created_at', [$from, $to])
             ->oldest()
             ->get();

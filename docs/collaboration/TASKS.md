@@ -115,9 +115,9 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | MVP-CSV | Bank CSV import + manual match (MVP) | Lead (this PC) | in progress | P1-6 | Install/setup stays with the other PC (Q-14) |
 | MVP-ZIP | ZIP export per period (MVP) | Lead (install session) | done | P1-6 | PR #24; transactions join the index once MVP-CSV is merged |
 | MVP-PEOPLE | Owner adds employees and tax advisors, resets passwords, removes access (D-012) | Lead (install session) | done | P1-6 | PR #25, #27; tax advisors read-only on everything until shares (Q-20). Also: owner-triggered update, PR #26 |
-| MVP-ROLES | Roles the Admin creates and names, checkboxes per role; Admin fixed, Mitarbeiter + Steuerberater pre-installed | Manager | in review | MVP-PEOPLE | Issue #30, item 4 of roadmap #35. PLAN §2.1 not updated while the docs pause lasts |
+| MVP-ROLES | Roles the Admin creates and names, checkboxes per role; Admin fixed, Mitarbeiter + Steuerberater pre-installed | Manager | done | MVP-PEOPLE | PR #40. PLAN §2.1 not updated while the docs pause lasts |
 | MVP-FRONTEND | Own CSS/JS framework and frontend layer | Operator + Lead (install session) | todo, reserved | – | Issue #31. Fits D-004. Not started |
-| MVP-TAGS | Tags on receipts: pick at upload, filter in the list, managed by Admin and "Tags bearbeiten" | – | todo | MVP-ROLES (checkbox) | Issue #32. Not started |
+| MVP-TAGS | Tags on receipts: pick at upload, filter in the list, managed by Admin and "Tags bearbeiten" | Manager | in review | MVP-ROLES (checkbox) | Issue #32. Plain chips until MVP-FRONTEND |
 | MVP-TIMELINE | Receipt list as timeline, table and large icons; timeline by upload or document date | Operator + Lead (install session) | todo, reserved | MVP-FRONTEND | Issue #33. Not started |
 | PRINT | DocHamster as a printer, through the hamster first, Windows first | – | todo | HAMSTER | Issue #34, stage 4 of the roadmap #35 |
 | MAIL | Documents by e-mail: inbox with release, mail archive | – | todo | HAMSTER | Issue #38, stage 4 of the roadmap #35 |
