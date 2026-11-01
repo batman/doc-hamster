@@ -119,7 +119,7 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | MVP-FRONTEND | Own CSS/JS framework and frontend layer | Operator + Lead (install session) | todo, reserved | – | Issue #31. Fits D-004. Not started |
 | MVP-TAGS | Tags on receipts: pick at upload, filter in the list, managed by Admin and "Tags bearbeiten" | Manager | done | MVP-ROLES (checkbox) | PR #41. Plain chips until MVP-FRONTEND |
 | MVP-TIMELINE | Receipt list as timeline, table and large icons; timeline by upload or document date | Operator + Lead (install session) | todo, reserved | MVP-FRONTEND | Issue #33. Not started |
-| MVP-TAGCOLORS | Tags get colours | – | todo | MVP-TAGS, MVP-FRONTEND | Issue #43, waits for Q-29 (fixed set or free choice). Not started |
+| MVP-TAGCOLORS | Tags get colours | – | todo | MVP-TAGS, MVP-FRONTEND | Issue #43, any colour (Q-29). Not started |
 | PRINT | DocHamster as a printer, through the hamster first, Windows first | – | todo | HAMSTER | Issue #34, stage 4 of the roadmap #35 |
 | MAIL | Documents by e-mail: inbox with release, mail archive | – | todo | HAMSTER | Issue #38, stage 4 of the roadmap #35 |
 | PHONE | Website on the home screen: camera, photos, documents, device pairing; never a native app | Lead (this PC) | in progress | – | Issue #37, steps 1 and 2 in stage 1 of the roadmap #35. Device probe first |
