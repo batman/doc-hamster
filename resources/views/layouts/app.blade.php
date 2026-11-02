@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
     <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#30302e">
     <title>@hasSection('title')@yield('title') – @endif{{ config('app.name') }}</title>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     @stack('head')

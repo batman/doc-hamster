@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#30302e">
+    <title>Styleguide – DocHamster</title>
+    <link rel="stylesheet" href="css/app.css">
+    <style>
+        /* Sheet-only helpers, not part of app.css. */
+        .sg-section { margin-top: 3rem; }
+        .sg-section > h2 { border-bottom: 2px solid var(--primary); padding-bottom: .25rem; }
+        .sg-note { font-size: .875rem; color: var(--muted); margin-top: .25rem; }
+        .sg-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: .75rem; margin-top: 1rem; }
+        .sg-swatch { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; font-size: .8rem; }
+        .sg-swatch div { height: 3.5rem; }
+        .sg-swatch p { margin: 0; padding: .4rem .5rem; }
+        .sg-row { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+        .sg-row > * { margin-top: 1rem; }
+        .sg-dark { background: var(--secondary); color: var(--secondary-text); padding: .5rem 1rem; border-radius: var(--radius); margin-top: 1rem; }
+    </style>
+</head>
+<body>
+    <a class="skip-link" href="#main">Zum Inhalt springen</a>
+    <header class="site-header">
+        <a class="brand" href="#">DocHamster</a>
+        <a href="#">Belege</a>
+        <a href="#">Bank</a>
+        <a href="#">Export</a>
+        <a href="#">Tags</a>
+        <a href="#">Mitglieder</a>
+        <a href="#">Rollen</a>
+        <a href="#">Updates</a>
+        <form class="logout" onsubmit="return false"><button type="submit">Abmelden</button></form>
+    </header>
+
+    <main id="main" class="page">
+        <h1>Styleguide</h1>
+        <p class="muted">Alle Bausteine aus <code>css/app.css</code> auf einer Seite. Hell/dunkel folgt der Systemeinstellung.</p>
+
+        <section class="sg-section">
+            <h2>Farben</h2>
+            <div class="sg-swatches" id="swatches"></div>
+        </section>
+
+        <section class="sg-section">
+            <h2>Schrift</h2>
+            <h1>Überschrift 1</h1>
+            <h2>Überschrift 2</h2>
+            <h3>Überschrift 3</h3>
+            <p>Fließtext: Beleg fotografieren, senden, fertig. Der Server ordnet ihn der Buchung zu. Ein <a href="#">Link im Text</a>.</p>
+            <p class="muted">Gedämpfter Text (.muted), z. B. Hinweise und Datum.</p>
+            <p><small>Kleiner Text (small)</small> · <code>Code / Passwort</code> · <strong>Fett</strong></p>
+        </section>
+
+        <section class="sg-section">
+            <h2>Buttons</h2>
+            <div class="sg-row">
+                <button type="submit">Speichern</button>
+                <a class="button" href="#">Link als Button</a>
+                <button type="submit" disabled>Deaktiviert</button>
+            </div>
+            <p class="sg-note">Es gibt nur eine Button-Art. Sekundär, Gefahr (Löschen) und Deaktiviert sind noch nicht gestaltet.</p>
+            <div class="sg-dark"><span class="logout"><button type="button">Abmelden</button></span> Button in der Kopfzeile</div>
+        </section>
+
+        <section class="sg-section">
+            <h2>Formularfelder</h2>
+            <form onsubmit="return false">
+                <label for="sg-text">Textfeld</label>
+                <input id="sg-text" type="text" placeholder="Platzhalter">
+
+                <label for="sg-pw">Passwort</label>
+                <input id="sg-pw" type="password" value="geheim123">
+
+                <label for="sg-date">Datum</label>
+                <input id="sg-date" type="date" value="2026-11-02">
+
+                <label for="sg-select">Auswahl</label>
+                <select id="sg-select"><option>Alle Belege</option><option>Nur offene</option></select>
+
+                <label for="sg-area">Mehrzeilig</label>
+                <textarea id="sg-area" rows="3">Notiz zum Beleg</textarea>
+
+                <label for="sg-err">Feld mit Fehler</label>
+                <input id="sg-err" type="text" value="12,5x" aria-invalid="true" aria-describedby="sg-err-msg">
+                <p class="error" id="sg-err-msg">Bitte einen gültigen Betrag eingeben.</p>
+
+                <label class="file-button">Datei wählen
+                    <input type="file">
+                </label>
+
+                <fieldset class="rights">
+                    <legend>Rechte (fieldset .rights)</legend>
+                    <label><input type="checkbox" checked> Belege hochladen</label>
+                    <label><input type="checkbox"> Bank importieren</label>
+                </fieldset>
+
+                <label>Tags (Chips)</label>
+                <div class="chips">
+                    <label class="chip"><input type="checkbox" checked><span>#reise</span></label>
+                    <label class="chip"><input type="checkbox"><span>#büro</span></label>
+                    <label class="chip"><input type="checkbox"><span>#bewirtung</span></label>
+                </div>
+
+                <button type="submit">Absenden</button>
+            </form>
+        </section>
+
+        <section class="sg-section">
+            <h2>Meldungen</h2>
+            <div class="notice">Hinweis (.notice): Neues Passwort <code>Kx7-pq2-Lm9</code>, wird nur einmal angezeigt.</div>
+            <p class="error">Fehlermeldung (.error): Die Datei ist zu groß.</p>
+            <ul class="checks">
+                <li class="check-ok">OK: PHP-Version passt</li>
+                <li class="check-warning">Warnung: Speicher fast voll</li>
+                <li class="check-fail">Fehler: Ordner nicht beschreibbar</li>
+            </ul>
+            <p class="sg-note">Eine Erfolgsmeldung („Gespeichert“) als Box gibt es noch nicht.</p>
+        </section>
+
+        <section class="sg-section">
+            <h2>Reiter</h2>
+            <nav class="tabs">
+                <a href="#" aria-current="page">Buchungen</a>
+                <a href="#">Kontoauszüge</a>
+                <a href="#">Import</a>
+            </nav>
+        </section>
+
+        <section class="sg-section">
+            <h2>Belegliste</h2>
+            <ul class="documents">
+                <li>
+                    <a href="#"><img alt="" width="160" height="200" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='200'%3E%3Crect width='160' height='200' fill='%23e9e6dc'/%3E%3Cg fill='%23b8b3a5'%3E%3Crect x='20' y='24' width='90' height='10'/%3E%3Crect x='20' y='50' width='120' height='6'/%3E%3Crect x='20' y='64' width='100' height='6'/%3E%3Crect x='20' y='78' width='110' height='6'/%3E%3Crect x='80' y='160' width='60' height='12'/%3E%3C/g%3E%3C/svg%3E">
+                    Tankstelle Musterstadt, 2026-10-28.jpg</a>
+                    <span class="muted">42,10 € · 28.10.2026</span>
+                </li>
+                <li><a href="#">Bürobedarf GmbH Rechnung 1234.pdf</a> <span class="muted">19,99 € · 30.10.2026</span></li>
+            </ul>
+        </section>
+
+        <section class="sg-section">
+            <h2>Tabelle</h2>
+            <div class="table-scroll">
+                <table>
+                    <thead><tr><th>Datum</th><th>Verwendungszweck</th><th>Betrag</th><th>Beleg</th></tr></thead>
+                    <tbody>
+                        <tr><td>28.10.2026</td><td>Tankstelle Musterstadt</td><td>−42,10 €</td><td><a href="#">verknüpft</a></td></tr>
+                        <tr><td>30.10.2026</td><td>Bürobedarf GmbH</td><td>−19,99 €</td><td class="muted">offen</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="sg-section">
+            <h2>Aufklappen</h2>
+            <details>
+                <summary>Details anzeigen</summary>
+                <p>Inhalt, der erst nach Klick sichtbar wird.</p>
+            </details>
+        </section>
+
+        <section class="sg-section error-page">
+            <h2>Fehlerseite</h2>
+            <p class="error-code">404</p>
+            <p>Diese Seite gibt es nicht.</p>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <hr>
+        <small class="muted">DocHamster Version 0.1.0</small>
+    </footer>
+
+    <script>
+        // Show every colour token with its current value (changes with light/dark).
+        const tokens = ['--primary', '--primary-text', '--primary-ink', '--secondary', '--secondary-text',
+            '--bg', '--surface', '--text', '--muted', '--border', '--error', '--ok', '--warning'];
+        const render = () => {
+            const css = getComputedStyle(document.documentElement);
+            document.getElementById('swatches').innerHTML = tokens.map(t =>
+                `<div class="sg-swatch"><div style="background:var(${t})"></div><p><strong>${t}</strong><br>${css.getPropertyValue(t).trim()}</p></div>`
+            ).join('');
+        };
+        render();
+        matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+    </script>
+</body>
+</html>
