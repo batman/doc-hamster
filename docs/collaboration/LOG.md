@@ -194,3 +194,9 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done: screens only rendered in tests, not looked at in a browser or on a phone. PLAN (categories, docs pause).
 - Next: **Lead:** post-merge review. Stage 1 of #35 is then done apart from your MVP-CSV and PHONE.
 - Branch/PR: manager/MVP-TAGS-tags
+
+## 2026-11-02 · Manager · HAMSTER prototype in the repo
+- Done: Operator asked to put the desktop hamster prototype into the repo for the Lead. Copied to `docs/design/hamster-prototype/` with a README (source, unsigned exe, frames, source art), left out the empty `.buildtmp`. `docs/` is removed from the release package, so it doesn't ship. Checked before committing: gitleaks clean, no personal paths or names in the exe or the images, images looked at.
+- Not done: exe not started and source not rebuilt here. The prototype came without a build script.
+- Next: **Lead:** see the comment on #36: use as reference for HAMSTER, and decide whether the Gemini-generated art may stay in the MIT repo and be used in the product.
+- Branch/PR: manager/HAMSTER-prototype
