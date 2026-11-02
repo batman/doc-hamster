@@ -8,6 +8,7 @@
     <meta name="theme-color" content="#30302e">
     <title>@hasSection('title')@yield('title') – @endif{{ config('app.name') }}</title>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <script src="{{ asset('js/hamster.js') }}"></script>
     <script src="{{ asset('js/app.js') }}"></script>
     @stack('head')
 </head>
@@ -66,7 +67,7 @@
             </nav>
             <div class="nav-backdrop"></div>
             @can('documents.upload')
-                <div class="drop-overlay" hidden><p>{{ __('documents.drop') }}</p></div>
+                <div class="drop-overlay" hidden><div class="drop-hamster"></div><p>{{ __('documents.drop') }}</p></div>
             @endcan
         @endauth
         <div class="content">

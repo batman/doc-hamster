@@ -23,7 +23,14 @@
     @endif
 
     @if ($documents->isEmpty())
-        <p class="muted">{{ $selected !== [] ? __('tags.no_match') : __('documents.empty') }}</p>
+        @if ($selected !== [])
+            <p class="muted">{{ __('tags.no_match') }}</p>
+        @else
+            <div class="empty-state">
+                <div class="empty-hamster" data-hamster="sleep"></div>
+                <p class="muted">{{ __('documents.empty') }}</p>
+            </div>
+        @endif
     @else
         <ul class="documents">
             @foreach ($documents as $document)

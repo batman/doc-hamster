@@ -6,7 +6,7 @@
  * eyes, the "z" while sleeping. Animations swap whole frames on the grid,
  * nothing is scaled or moved by less than a pixel.
  *
- * Use: <div data-hamster="sleep"></div> (moods: sleep, awake), optional
+ * Use: <div data-hamster="sleep"></div> (moods: sleep, awake, eat), optional
  * data-hamster-label="…" for a screen-reader text (without it the hamster is
  * decorative).
  * JS: var h = window.docHamster.mount(element, { mood: 'sleep' });
@@ -27,7 +27,12 @@
         s: '#e1bc87', // belly shadow
         p: '#d87879', // ears, paws
         r: '#fb899b', // cheeks
-        z: '#7fa7e6'  // the "z" while sleeping
+        z: '#7fa7e6', // the "z" while sleeping
+        a: '#f2622e', // carrot
+        e: '#ff9a5c', // carrot light
+        b: '#b8401a', // carrot shadow
+        g: '#6cc04a', // leaves
+        h: '#3f8a2c'  // leaves dark, stalks
     };
 
     // Lying hamster with closed eyes, 92 x 41 pixels. This is the body layer:
@@ -36,12 +41,12 @@
         '..................................................kkkkkkkkkkkkkk............................',
         '..............................................kkkkkdoooooooooodkkkkk........kk.k............',
         '...........................................kkkkdooooooooooooooooooodkkk....kkokok...........',
-        '........................................kkkkooooooooooooooooooooooooookkk.kokooook..........',
-        '......................................kkkdoooooooooooooooooooooooooooooodkkoodoookk.........',
-        '.....................................kdoooooooooooooooooooooooooooooooooookkoooooodk........',
-        '.....................................kooooooooooooooooooooooooooooooooooooookdoooddk........',
-        '........kkk.......kookk......kkkkddkkkkooooooooooooooooooooooooooooooooooooookdoodkk........',
-        '.......kook.....kkkkookkkkkkkkkdddkooookooooooooooooooooooooooooooooooooooooookddddk........',
+        '.........................................kkkooooooooooooooooooooooooookkk.kokooook..........',
+        '.......................................kkdoooooooooooooooooooooooooooooodkkoodoookk.........',
+        '......................................kkdoooooooooooooooooooooooooooooooookkoooooodk........',
+        '......................................kdooooooooooooooooooooooooooooooooooookdoooddk........',
+        '........kkk.......kookk............kkkkooooooooooooooooooooooooooooooooooooookdoodkk........',
+        '.......kook.....kkkkookkkkkkkkk...kooookooooooooooooooooooooooooooooooooooooookddddk........',
         '......kooook...kooookookooooodkkkkoodkookooooooooooooooooooooooooooooooooooooookdddk........',
         '......kddoookkkkkoooooooooooooookoodkppokoooooooooooooooooooooooooooooooooooooookdk.........',
         '......kdddookkookkoooooooooooookdookppppkooooooooooooooooooooooooooooooooooooooook..........',
@@ -49,18 +54,18 @@
         '......kdddkooookkooooooooooooooooodkppppkoooooooooooooooooooooooooooooooooooooooook.........',
         '......kkdkooooooooooooooooooooooooddkppkdooooooooooooooooooooooooooooooooooooooooodk........',
         '.......kkooooooooooooooooooooooooooodkkkdooooooooooooooooooooooooooooooooooooooooook........',
-        '........koooooooooooooooooooooooooooooookoooooooooooooooooooooooooooooooooooooooooodk.......',
-        '.......kooooooooooooooooooooooooooooooookdooooooooooooooooooooooooooooooooooooooooook.......',
-        '......kkoooooooooooooooooooooooooooooooookoooooooooooooooooooooooooooooooooooooooooodk......',
+        '........koooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooodk.......',
+        '.......kooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooook.......',
+        '......kkoooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooodk......',
         '......kooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooook......',
         '.....kkooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooook......',
         '.....koooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooookk.....',
         '.....kooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooodk.....',
-        '....kkoooooooooooooooooooooooooooooooooooookooooooooooooooooooooooooooooooooooooooooodk.....',
-        '....koooooooooooooooooooooooooooooooooooooookoooooooooooooooooooooooooooooooooooooooodk.....',
-        '..kkoooooookoooooooooooooooooooooooooooooooookooooooooooooooooooooooooooooooooooooooddk.....',
-        '..koookkookkoooooooookooookkooooooccccccoooookooooooooooooooooooooooooooooooooooooooddk.....',
-        '.kocoookkkkooooooooookkookkoooocccccccccccooookoooooooooooooooooooooooooooooooooooooddk.....',
+        '....kkooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooodk.....',
+        '....koooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooodk.....',
+        '..kkoooooookooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooddk.....',
+        '..koookkookkoooooooookooookkooooooccccccooooooooooooooooooooooooooooooooooooooooooooddk.....',
+        '.kocoookkkkooooooooookkookkoooocccccccccccooooooooooooooooooooooooooooooooooooooooooddk.....',
         '.kcccoooooooooooooooookkkkoooccccccccccccccoopkoooooooooooooooooooooooooooooooooooooddk.....',
         'kccccccooooooooooooooooooooccccccccccccccccoopkooooooooooooooccccccoooooooooooooooodddk.....',
         'kccrrrccooooooooooooooooccccrrrrccccccccccccoskooooooooooccccccccccccooooooooooooooddk......',
@@ -86,18 +91,93 @@
     var BREATH_FROM = 37;
     var BREATH_ROW = 22;
 
-    // Open eyes, laid over the head at column 5, row 24. '.' keeps what is below.
+    // Open eyes, laid over the head at column 5, row 22. '.' keeps what is below.
     var EYES_OPEN = {
         x: 5,
-        y: 24,
+        y: 22,
         rows: [
-            '........................',
-            '...wk.o.................',
-            '.ookkoo.........o.wk.oo.',
-            '..o..o..........ookkoo..',
-            '.................o..o...'
+            '..kkk...................',
+            '.kwwkk...........kkk....',
+            '.kwwkk..........kwwkk...',
+            '.kkkkko.........kwwkk...',
+            '...kw.o..........kkkkoo.',
+            '.....o............kw.o..',
+            '....................o...',
+            '........................'
         ]
     };
+
+    // A carrot bigger than the hamster, lying in front of him; its tip is in his mouth.
+    var CARROT = {
+        x: -78,
+        y: 15,
+        rows: [
+            '...kk.........................................................................................',
+            '..keekkkkkkkk.................................................................................',
+            '.kaeeeeeeeeeekkkkkk...........................................................................',
+            'kaaeeeeeeeeeeeeeeeekkkkkk.....................................................................',
+            'aaaeeeeeeeeeeeeeeeeeeeeeekkkkkk...............................................................',
+            'aaaeeeeeeeeeeeeeeeeeeeeeeeeeeeekkkkk..........................................................',
+            'aaaeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeekkkkk.....................................................',
+            'aaaaaaaaaeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeekkkkk................................................',
+            'aaaaaaaaaaaaaaaaaaaeeeeeeeeeeeeeeeeeeeeeeeeeeekkkkk...........................................',
+            'aaaaaaaaaaaaaaaaaaaaaaaaaeeeeeeeeeeeeeeeeeeeeeeeeeekkkk.......................................',
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaeeeeeeeeeeeeeeeeeeeeeeeekkkk...................................',
+            'aaaaaaaaaaaaaaaaabbbbaaaaaaaaaaaaaaaaaaaaeeeeeeeeeeeeeeeeeekkkkk..............................',
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaeeeeeeeeeeeeeeeeeekkkk..........................',
+            'aaaaaaaabbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaeeeeeeeeeeeeeeeeekkk.......................',
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbaaaaaaaaaaaeeeeeeeeeeeekkkk...................',
+            'aaaaaaaaaaaaaaaaaaaaaaaaaabbbbaaaaaaaaaaaaaaaaaaaaaaabbbbaaaaaaaeeeeeeeeeeekkkk...............',
+            'bbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaeeeeeeeekkk............',
+            'bbbbbbbbbaaaaaaaaaaaaaaaaaaaaaaaaaabbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaeeeeeeekkkk........',
+            'bbbbbbbbbbbbbbbbbbbaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbaaaaeeeeeeekkk.....',
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbaaaaaaaaaaaaaaaaaaaaaaaaaabbbbaaaaaaaaaaaaaaaaaaaaeeekkk..',
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbaaaaaabbbaaaaaaaaaaaabbbbaaaaaeeek.',
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbk..',
+            'kbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbkkkkkk...',
+            '.kbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbkkkkkkkkk.........',
+            '.kbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbkkkkkkkkkkk..................',
+            '..kkkkkkkbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbkkkkkkkkkkkkkkkkkk.............................'
+        ]
+    };
+    var LEAVES = {
+        x: -106,
+        y: 4,
+        rows: [
+            '...............gg..g..............',
+            '..............h...g...............',
+            '............gghh.gg...............',
+            '...............hh.................',
+            '..............ggh.gg.g............',
+            '..............g.hh..g...h.g.......',
+            '.............g.gghhgg..ghg........',
+            '..................h...g.hh.ggg....',
+            '................gghhgg..ghg.......',
+            '................g..h.ggg.h..g.....',
+            '........gg.....g.gghh.gg.hhg......',
+            '........g...g.......hh.gg.h..ggg..',
+            '........gg.g.......gghh..ghhg.....',
+            '......hhh.g..g..g..gghhhgg.h.g....',
+            '......hhhhh.g..gg.gg...h..ghg.....',
+            '......g.hhhhhhg.g.g..gghhgghhgggg.',
+            '.....ggg.g.hhhhh..g.gggghh.ghg....',
+            '........g..gg.hhhhh.g.ggghggh..g..',
+            '............ggg.hhhhh.g..hhhhhgg..',
+            '.........g.gg...g.ghhhh.gghhghg.gg',
+            '.........g.g.g.gggggghhhhgghhhhg..',
+            '.........hhhhg.g.g.ggg.hhhhgh.h...',
+            '.........hhhhhhhhhhhhhhg.hhhhhh...',
+            '.........g.g.hhhhhhhhhhhhhhhhhhh..',
+            '..........g..g.g.g.g.g.hhhhhhhhh..',
+            '..........g...g..ggghhhhhhhhhhhh..',
+            '..............g.hhhhhhhhhhhg......',
+            '................hhhh.ggg.ggg......'
+        ]
+    };
+    var MOUTH = 14;      // carrot pixels right of this column are inside the mouth
+    var BITE_STEP = 120; // ms per tick while eating
+    var BITE_TICKS = 6;  // ticks per bite; each bite pulls the carrot one pixel in
+    var BITES = 30;      // then a new carrot
 
     // The "z" in two sizes.
     var Z = {
@@ -122,13 +202,16 @@
     }
 
     // Draws a raster into parent as one <path> per colour, built from horizontal
-    // runs. opts: x, y (offset in pixels), to (per row: end column).
+    // runs. opts: x, y (offset in pixels), to (per row: end column), clip (last column drawn).
     function draw(rows, parent, opts) {
         opts = opts || {};
         var paths = {};
         rows.forEach(function (row, y) {
             var x = 0;
             var stop = opts.to ? opts.to[y] : row.length;
+            if (opts.clip !== undefined) {
+                stop = Math.min(stop, opts.clip - (opts.x || 0) + 1);
+            }
             while (x < stop) {
                 var ch = row.charAt(x);
                 var end = x;
@@ -189,7 +272,6 @@
         var height = LYING.length;
         var label = host.getAttribute('data-hamster-label');
         var svg = el('svg', {
-            viewBox: '0 ' + -ZZZ_ROOM + ' ' + width + ' ' + (height + ZZZ_ROOM),
             'shape-rendering': 'crispEdges',
             class: 'hamster'
         });
@@ -205,8 +287,10 @@
         var bodyIn = draw(breatheIn(LYING), el('g', { class: 'hamster-body-in' }), { y: -1 });
         var head = draw(LYING, el('g', { class: 'hamster-head' }), { to: LYING_HEAD });
         var eyes = draw(EYES_OPEN.rows, el('g', { class: 'hamster-eyes' }), { x: EYES_OPEN.x, y: EYES_OPEN.y });
+        var food = el('g', { class: 'hamster-food' });
+        var crumbs = el('g', { class: 'hamster-crumbs' });
         var zzz = el('g', { class: 'hamster-zzz' });
-        [bodyOut, bodyIn, head, eyes, zzz].forEach(function (layer) {
+        [bodyOut, bodyIn, head, eyes, food, crumbs, zzz].forEach(function (layer) {
             svg.appendChild(layer);
         });
         host.replaceChildren(svg);
@@ -235,18 +319,67 @@
             });
         }
 
+        // The carrot after n bites: pulled n pixels towards the mouth.
+        function drawCarrot(n) {
+            food.replaceChildren();
+            draw(LEAVES.rows, food, { x: LEAVES.x + n, y: LEAVES.y });
+            draw(CARROT.rows, food, { x: CARROT.x + n, y: CARROT.y, clip: MOUTH });
+        }
+
+        // Crumbs fall from the mouth to the ground, one pixel per tick.
+        var crumbList = [];
+        function dropCrumbs(spawn) {
+            crumbList = crumbList.filter(function (c) { return c.y < height - 2; });
+            crumbList.forEach(function (c) { c.y++; });
+            if (spawn) {
+                crumbList.push({ x: MOUTH - 4 + Math.floor(Math.random() * 6), y: 34 });
+            }
+            crumbs.replaceChildren();
+            crumbList.forEach(function (c) {
+                draw(['a'], crumbs, { x: c.x, y: c.y });
+            });
+        }
+
+        function awake() {
+            show(eyes, true);
+            if (!still) {
+                stops.push(loop([[false, 1000], [true, 900]], breathe));
+                stops.push(loop([[true, 3200], [false, 140], [true, 2300], [false, 140]], function (open) {
+                    show(eyes, open);
+                }));
+            }
+        }
+
         function setMood(mood) {
             stopAll();
             breathe(false);
             zzz.replaceChildren();
+            food.replaceChildren();
+            crumbs.replaceChildren();
+            crumbList = [];
             svg.setAttribute('class', 'hamster hamster-' + mood);
+            // The eating scene is wider (the carrot); the others leave room for the "z".
+            svg.setAttribute('viewBox', mood === 'eat'
+                ? LEAVES.x + ' 0 ' + (width - LEAVES.x) + ' ' + height
+                : '0 ' + -ZZZ_ROOM + ' ' + width + ' ' + (height + ZZZ_ROOM));
 
             if (mood === 'awake') {
-                show(eyes, true);
+                awake();
+                return;
+            }
+
+            if (mood === 'eat') {
+                awake();
+                drawCarrot(0);
                 if (!still) {
-                    stops.push(loop([[false, 1000], [true, 900]], breathe));
-                    stops.push(loop([[true, 3200], [false, 140], [true, 2300], [false, 140]], function (open) {
-                        show(eyes, open);
+                    var tick = 0;
+                    stops.push(loop([[null, BITE_STEP]], function () {
+                        var bite = tick % BITE_TICKS === 0;
+                        if (bite) {
+                            drawCarrot(Math.floor(tick / BITE_TICKS) % BITES);
+                        }
+                        dropCrumbs(bite);
+                        tick++;
                     }));
                 }
                 return;

@@ -1,0 +1,13 @@
+GIMP Palette
+Name: docHamster
+Columns: 9
+#
+ 31  30  29	outline, eyes (k)
+255 255 255	light in the eyes (w)
+255 118  34	fur, brand orange (o)
+212  80  15	fur shadow (d)
+252 237 194	belly and face (c)
+225 188 135	belly shadow (s)
+216 120 121	ears, paws (p)
+251 137 155	cheeks (r)
+127 167 230	the "z" while sleeping (z)

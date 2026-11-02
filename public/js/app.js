@@ -63,12 +63,34 @@
         }
         const input = form.querySelector('input[type="file"]');
         const overlay = document.querySelector('.drop-overlay');
+        // The hamster in the overlay: awake while files hover, eating the carrot while they upload.
+        let hamster = null;
+        const showOverlay = mood => {
+            overlay.hidden = false;
+            const box = overlay.querySelector('.drop-hamster');
+            if (!box || !window.docHamster) {
+                return;
+            }
+            if (hamster === null) {
+                hamster = window.docHamster.mount(box, { mood });
+            } else {
+                hamster.mood(mood);
+            }
+        };
+        const hideOverlay = () => {
+            overlay.hidden = true;
+            if (hamster !== null) {
+                hamster.stop();
+            }
+        };
         const send = () => {
             if (input.files.length === 0) {
                 return;
             }
             form.querySelector('.nav-text').textContent = form.dataset.busy;
             form.classList.add('is-busy');
+            overlay.querySelector('p').textContent = form.dataset.busy;
+            showOverlay('eat');
             form.submit();
         };
         input.addEventListener('change', send);
@@ -78,13 +100,15 @@
         document.addEventListener('dragenter', event => {
             if (carriesFiles(event)) {
                 depth++;
-                overlay.hidden = false;
+                if (overlay.hidden) {
+                    showOverlay('awake');
+                }
             }
         });
         document.addEventListener('dragleave', event => {
             if (carriesFiles(event) && --depth <= 0) {
                 depth = 0;
-                overlay.hidden = true;
+                hideOverlay();
             }
         });
         document.addEventListener('dragover', event => {
@@ -98,7 +122,6 @@
             }
             event.preventDefault();
             depth = 0;
-            overlay.hidden = true;
             input.files = event.dataTransfer.files;
             send();
         });

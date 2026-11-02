@@ -139,7 +139,13 @@ a { color: var(--primary-ink); }
     background: color-mix(in srgb, var(--bg) 88%, transparent); pointer-events: none;
 }
 .drop-overlay[hidden] { display: none; }
-.drop-overlay p { margin: 0; font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+.drop-overlay p { margin: 0; font-size: 1.5rem; font-weight: 700; color: var(--primary); text-align: center; }
+.drop-hamster { width: min(24rem, 80vw); margin: 0 auto 1rem; }
+
+/* Pixel hamster from js/hamster.js */
+.hamster { display: block; width: 100%; height: auto; }
+.empty-state { text-align: center; padding-block: 2rem; }
+.empty-hamster { width: min(18rem, 80%); margin: 0 auto 1rem; }
 
 /* Tooltip: data-tooltip="Text" shows below the element, or right of it with .tooltip-right */
 [data-tooltip] { position: relative; }
