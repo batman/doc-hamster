@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Symbole – docHamster</title>
+    <link rel="stylesheet" href="../../public/css/app.css">
+    <style>
+        /* Review page only: loads Tabler SVGs from jsDelivr, never shipped with the app. */
+        .il-group { margin-top: 2.5rem; }
+        .il-group > h2 { border-bottom: 2px solid var(--primary); padding-bottom: .25rem; }
+        .il-row { display: grid; grid-template-columns: 2.5rem 3rem 1fr 11rem; gap: .75rem; align-items: center; padding: .4rem 0; border-bottom: 1px solid var(--border); }
+        .il-nr { color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+        .il-icon { display: grid; place-content: center; width: 3rem; height: 3rem; border-radius: var(--radius); background: var(--surface); }
+        .il-icon svg { width: 1.75rem; height: 1.75rem; }
+        .il-icon.il-missing { color: var(--error); font-weight: 700; }
+        .il-row input { min-height: 40px; padding: .3rem .6rem; font-family: ui-monospace, monospace; font-size: .9rem; }
+        .il-tools { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+        .il-tools button { margin-top: 1rem; }
+        @media (max-width: 30rem) {
+            .il-row { grid-template-columns: 2rem 3rem 1fr; }
+            .il-row input { grid-column: 2 / -1; }
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <h1>Symbole</h1>
+        <p class="muted">Tabler Icons <span id="version"></span> (MIT). Namen im Feld ändern, das Symbol aktualisiert sich sofort. Alle Namen findest du auf tabler.io/icons.</p>
+        <div class="il-tools">
+            <button type="button" id="copy">Liste kopieren</button>
+            <span class="muted" id="copied" hidden>Kopiert.</span>
+        </div>
+        <div id="list"></div>
+        <datalist id="names"></datalist>
+    </main>
+
+    <script>
+        const VERSION = '3.49.0';
+        const BASE = `https://cdn.jsdelivr.net/npm/@tabler/icons@${VERSION}/icons/outline/`;
+
+        // [group, meaning, Tabler name]; '' = no icon yet.
+        const ITEMS = [
+            ['Navigation (Kopfzeile)', 'Startseite / Logo', ''],
+            ['Navigation (Kopfzeile)', 'Belege', 'receipt'],
+            ['Navigation (Kopfzeile)', 'Bank', 'building-bank'],
+            ['Navigation (Kopfzeile)', 'Export', 'file-export'],
+            ['Navigation (Kopfzeile)', 'Tags', 'tags'],
+            ['Navigation (Kopfzeile)', 'Mitglieder', 'users'],
+            ['Navigation (Kopfzeile)', 'Rollen', 'user-shield'],
+            ['Navigation (Kopfzeile)', 'Updates', 'cloud-download'],
+            ['Navigation (Kopfzeile)', 'Abmelden', 'power'],
+            ['Navigation (Kopfzeile)', 'Menü öffnen (Handy)', 'menu-2'],
+            ['Navigation (Kopfzeile)', 'Menü schließen', 'x'],
+
+            ['Belege erfassen', 'Foto aufnehmen / Kamera', 'camera'],
+            ['Belege erfassen', 'Datei hochladen', 'upload'],
+            ['Belege erfassen', 'Kamera wechseln (vorne/hinten)', 'camera-rotate'],
+            ['Belege erfassen', 'Blitz', 'bolt'],
+            ['Belege erfassen', 'Erneut aufnehmen', 'reload'],
+            ['Belege erfassen', 'Senden', 'send'],
+
+            ['Dateien und Belege', 'Dokument allgemein', 'file'],
+            ['Dateien und Belege', 'Bild / Foto', 'photo'],
+            ['Dateien und Belege', 'PDF', 'file-type-pdf'],
+            ['Dateien und Belege', 'ZIP-Datei', 'file-zip'],
+            ['Dateien und Belege', 'Beleg (Kassenbon)', 'receipt-euro'],
+            ['Dateien und Belege', 'Rechnung', 'file-invoice'],
+            ['Dateien und Belege', 'Vorschau / Ansehen', 'eye'],
+            ['Dateien und Belege', 'Herunterladen', 'download'],
+            ['Dateien und Belege', 'Drehen', 'rotate-clockwise'],
+            ['Dateien und Belege', 'Vergrößern', 'zoom-in'],
+
+            ['Bank', 'Kontoauszug importieren', 'file-import'],
+            ['Bank', 'CSV-Datei', 'file-type-csv'],
+            ['Bank', 'Buchung', 'arrows-exchange'],
+            ['Bank', 'Einnahme', 'trending-up'],
+            ['Bank', 'Ausgabe', 'trending-down'],
+            ['Bank', 'Beleg verknüpfen', 'link'],
+            ['Bank', 'Verknüpfung lösen', 'link-off'],
+            ['Bank', 'Offen / ohne Beleg', 'circle-dashed'],
+            ['Bank', 'Erledigt / mit Beleg', 'check'],
+            ['Bank', 'Betrag / Euro', 'currency-euro'],
+            ['Bank', 'Konto', 'wallet'],
+
+            ['Tags', 'Tag', 'tag'],
+            ['Tags', 'Tag hinzufügen', 'tag-plus'],
+            ['Tags', 'Tag entfernen', 'tag-off'],
+            ['Tags', 'Farbe wählen', 'palette'],
+
+            ['Mitglieder und Rechte', 'Person', 'user'],
+            ['Mitglieder und Rechte', 'Person einladen / hinzufügen', 'user-plus'],
+            ['Mitglieder und Rechte', 'Rolle / Rechte', 'id-badge-2'],
+            ['Mitglieder und Rechte', 'Schlüssel / Passkey', 'key'],
+            ['Mitglieder und Rechte', 'Passwort', 'password'],
+            ['Mitglieder und Rechte', 'Steuerberater-Zugang', 'briefcase'],
+            ['Mitglieder und Rechte', 'Gesperrt / Schloss zu', 'lock'],
+            ['Mitglieder und Rechte', 'Freigegeben / Schloss offen', 'lock-open'],
+
+            ['Allgemeine Aktionen', 'Hinzufügen / Neu', 'plus'],
+            ['Allgemeine Aktionen', 'Bearbeiten', 'pencil'],
+            ['Allgemeine Aktionen', 'Löschen', 'trash'],
+            ['Allgemeine Aktionen', 'Speichern', 'device-floppy'],
+            ['Allgemeine Aktionen', 'Abbrechen', 'circle-x'],
+            ['Allgemeine Aktionen', 'Schließen', 'x'],
+            ['Allgemeine Aktionen', 'Suchen', 'search'],
+            ['Allgemeine Aktionen', 'Filtern', 'filter'],
+            ['Allgemeine Aktionen', 'Sortieren', 'arrows-sort'],
+            ['Allgemeine Aktionen', 'Aktualisieren / Neu laden', 'refresh'],
+            ['Allgemeine Aktionen', 'Kopieren', 'copy'],
+            ['Allgemeine Aktionen', 'Teilen', 'share'],
+            ['Allgemeine Aktionen', 'Drucken', 'printer'],
+            ['Allgemeine Aktionen', 'Mehr Aktionen (drei Punkte)', 'dots'],
+            ['Allgemeine Aktionen', 'Einstellungen', 'settings'],
+
+            ['Navigation in Seiten', 'Zurück', 'arrow-left'],
+            ['Navigation in Seiten', 'Weiter', 'arrow-right'],
+            ['Navigation in Seiten', 'Aufklappen', 'chevron-down'],
+            ['Navigation in Seiten', 'Zuklappen', 'chevron-up'],
+            ['Navigation in Seiten', 'Externer Link', 'external-link'],
+
+            ['Datum und Zeit', 'Datum / Kalender', 'calendar'],
+            ['Datum und Zeit', 'Zeitraum', 'calendar-month'],
+            ['Datum und Zeit', 'Uhrzeit / zuletzt geändert', 'clock'],
+
+            ['Meldungen und Zustände', 'OK / Erfolg', 'circle-check'],
+            ['Meldungen und Zustände', 'Info', 'info-circle'],
+            ['Meldungen und Zustände', 'Warnung', 'alert-triangle'],
+            ['Meldungen und Zustände', 'Fehler', 'alert-circle'],
+            ['Meldungen und Zustände', 'Hilfe / Frage', 'help-circle'],
+            ['Meldungen und Zustände', 'Lädt gerade', 'loader-2'],
+            ['Meldungen und Zustände', 'Leer / nichts gefunden', 'inbox'],
+
+            ['System und Einrichtung', 'Server', 'server'],
+            ['System und Einrichtung', 'Datenbank', 'database'],
+            ['System und Einrichtung', 'Speicherplatz', 'chart-pie'],
+            ['System und Einrichtung', 'Update verfügbar', 'circle-arrow-up'],
+            ['System und Einrichtung', 'Sicherheit', 'shield-check'],
+            ['System und Einrichtung', 'Handy-Test', 'device-mobile'],
+            ['System und Einrichtung', 'QR-Code', 'qrcode'],
+            ['System und Einrichtung', 'Hell / Dunkel umschalten', 'sun-moon'],
+        ];
+
+        const cache = new Map();
+        const loadSvg = name => {
+            if (!cache.has(name)) {
+                cache.set(name, fetch(BASE + name + '.svg').then(r => r.ok ? r.text() : null).catch(() => null));
+            }
+            return cache.get(name);
+        };
+
+        const showIcon = async (box, name) => {
+            box.classList.remove('il-missing');
+            if (!name) { box.textContent = '–'; return; }
+            const svg = await loadSvg(name);
+            if (svg) { box.innerHTML = svg; } else { box.textContent = '?'; box.classList.add('il-missing'); }
+        };
+
+        document.getElementById('version').textContent = VERSION;
+        const list = document.getElementById('list');
+        let group = null, section = null;
+        ITEMS.forEach(([g, label, name], i) => {
+            if (g !== group) {
+                group = g;
+                section = document.createElement('section');
+                section.className = 'il-group';
+                section.innerHTML = `<h2>${g}</h2>`;
+                list.append(section);
+            }
+            const row = document.createElement('div');
+            row.className = 'il-row';
+            row.innerHTML = `<span class="il-nr">${i + 1}.</span><span class="il-icon"></span><span>${label}</span>`
+                + `<input list="names" spellcheck="false" aria-label="Tabler-Name für ${label}">`;
+            const box = row.querySelector('.il-icon');
+            const input = row.querySelector('input');
+            input.value = name;
+            input.addEventListener('input', () => {
+                ITEMS[i][2] = input.value.trim();
+                showIcon(box, ITEMS[i][2]);
+            });
+            showIcon(box, name);
+            section.append(row);
+        });
+
+        // All icon names as suggestions while typing.
+        fetch(`https://data.jsdelivr.com/v1/packages/npm/@tabler/icons@${VERSION}?structure=flat`)
+            .then(r => r.json())
+            .then(d => {
+                const names = d.files.map(f => f.name)
+                    .filter(n => n.startsWith('/icons/outline/') && n.endsWith('.svg'))
+                    .map(n => n.slice(15, -4)).sort();
+                document.getElementById('names').innerHTML = names.map(n => `<option value="${n}">`).join('');
+            })
+            .catch(() => {});
+
+        document.getElementById('copy').addEventListener('click', async () => {
+            const text = ITEMS.map(([, label, name], i) => `${i + 1}. ${label}: ${name || '…'}`).join('\n');
+            await navigator.clipboard.writeText(text);
+            document.getElementById('copied').hidden = false;
+        });
+    </script>
+</body>
+</html>

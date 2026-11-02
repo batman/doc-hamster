@@ -6,7 +6,7 @@
     <meta name="robots" content="noindex">
     <meta name="color-scheme" content="light dark">
     <meta name="theme-color" content="#30302e">
-    <title>Styleguide – DocHamster</title>
+    <title>Styleguide – docHamster</title>
     <link rel="stylesheet" href="css/app.css">
     <style>
         /* Sheet-only helpers, not part of app.css. */
@@ -19,21 +19,13 @@
         .sg-swatch p { margin: 0; padding: .4rem .5rem; }
         .sg-row { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
         .sg-row > * { margin-top: 1rem; }
-        .sg-dark { background: var(--secondary); color: var(--secondary-text); padding: .5rem 1rem; border-radius: var(--radius); margin-top: 1rem; }
     </style>
 </head>
 <body>
     <a class="skip-link" href="#main">Zum Inhalt springen</a>
     <header class="site-header">
-        <a class="brand" href="#">DocHamster</a>
-        <a href="#">Belege</a>
-        <a href="#">Bank</a>
-        <a href="#">Export</a>
-        <a href="#">Tags</a>
-        <a href="#">Mitglieder</a>
-        <a href="#">Rollen</a>
-        <a href="#">Updates</a>
-        <form class="logout" onsubmit="return false"><button type="submit">Abmelden</button></form>
+        <button type="button" class="nav-toggle" aria-label="Menü"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h14"/></svg></button>
+        <a class="brand" href="#"><img src="img/logo.png" alt="docHamster" width="290" height="75"></a>
     </header>
 
     <main id="main" class="page">
@@ -63,7 +55,10 @@
                 <button type="submit" disabled>Deaktiviert</button>
             </div>
             <p class="sg-note">Es gibt nur eine Button-Art. Sekundär, Gefahr (Löschen) und Deaktiviert sind noch nicht gestaltet.</p>
-            <div class="sg-dark"><span class="logout"><button type="button">Abmelden</button></span> Button in der Kopfzeile</div>
+            <div class="sg-row">
+                <button type="button" data-tooltip="Tooltip unter dem Element">Tooltip unten</button>
+                <button type="button" class="tooltip-right" data-tooltip="Tooltip rechts">Tooltip rechts</button>
+            </div>
         </section>
 
         <section class="sg-section">
@@ -172,7 +167,7 @@
 
     <footer class="site-footer">
         <hr>
-        <small class="muted">DocHamster Version 0.1.0</small>
+        <small class="muted">docHamster Version 0.1.0</small>
     </footer>
 
     <script>

@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'DocHamster'),
+    'name' => env('APP_NAME', 'docHamster'),
 
     /*
     |--------------------------------------------------------------------------

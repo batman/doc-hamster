@@ -39,6 +39,18 @@ it('lets an owner upload a receipt, see it and open the file', function (): void
     $this->get('/files/'.$file->id)->assertOk()->assertHeader('Content-Type', 'image/jpeg');
 });
 
+it('takes several receipts in one upload', function (): void {
+    $owner = Membership::factory()->owner()->create();
+
+    $this->actingAs($owner->user)
+        ->post('/documents', ['files' => [UploadedFile::fake()->image('a.jpg'), UploadedFile::fake()->createWithContent('b.jpg', '<?php echo 1;')]])
+        ->assertSessionHasErrors('file');
+    $this->post('/documents', ['files' => [UploadedFile::fake()->image('a.jpg'), UploadedFile::fake()->image('b.png')]])
+        ->assertRedirect('/');
+
+    expect(Document::withoutGlobalScope(OrgScope::class)->count())->toBe(2);
+});
+
 it('refuses files that are neither image nor PDF, whatever their name says', function (): void {
     $owner = Membership::factory()->owner()->create();
 

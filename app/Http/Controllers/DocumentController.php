@@ -61,40 +61,52 @@ final class DocumentController
 
     public function store(Request $request, AuditLog $audit, CurrentOrg $org): RedirectResponse
     {
-        $data = $request->validate(['file' => ['required', 'file', 'max:25600'], ...self::tagRules()]);
+        // One file ("file") or several from the menu ("files[]", picked or dropped).
+        $data = $request->validate([
+            'file' => ['required_without:files', 'file', 'max:25600'],
+            'files' => ['required_without:file', 'array', 'max:20'],
+            'files.*' => ['file', 'max:25600'],
+            ...self::tagRules(),
+        ]);
 
-        $upload = $request->file('file');
-        // From the file's bytes – client name and client MIME type can say anything.
-        $mime = $upload instanceof UploadedFile ? (string) (new finfo(FILEINFO_MIME_TYPE))->file($upload->getRealPath()) : '';
-        $extension = self::EXTENSIONS[$mime] ?? null;
+        $many = $request->file('files');
+        $checked = [];
+        foreach (is_array($many) ? $many : [$request->file('file')] as $upload) {
+            // From the file's bytes – client name and client MIME type can say anything.
+            $mime = $upload instanceof UploadedFile ? (string) (new finfo(FILEINFO_MIME_TYPE))->file($upload->getRealPath()) : '';
+            $extension = self::EXTENSIONS[$mime] ?? null;
 
-        if (! $upload instanceof UploadedFile || $extension === null) {
-            return back()->withErrors(['file' => __('documents.wrong_type')]);
+            if (! $upload instanceof UploadedFile || $extension === null) {
+                return back()->withErrors(['file' => __('documents.wrong_type')]);
+            }
+            $checked[] = [$upload, $mime, $extension];
         }
 
         $userId = $this->userId($request);
-        $document = DB::transaction(static function () use ($upload, $extension, $mime, $org, $userId, $data): Document {
-            $document = Document::query()->create([
-                'uploaded_by' => $userId,
-                'title' => Str::limit($upload->getClientOriginalName(), 250, ''),
-            ]);
-            $path = $upload->storeAs($org->id().'/'.now()->format('Y/m'), Str::lower((string) Str::ulid()).'.'.$extension, 'local');
+        foreach ($checked as [$upload, $mime, $extension]) {
+            $document = DB::transaction(static function () use ($upload, $extension, $mime, $org, $userId, $data): Document {
+                $document = Document::query()->create([
+                    'uploaded_by' => $userId,
+                    'title' => Str::limit($upload->getClientOriginalName(), 250, ''),
+                ]);
+                $path = $upload->storeAs($org->id().'/'.now()->format('Y/m'), Str::lower((string) Str::ulid()).'.'.$extension, 'local');
 
-            DocumentFile::query()->create([
-                'document_id' => $document->id,
-                'path' => (string) $path,
-                'mime' => $mime,
-                'size' => (int) $upload->getSize(),
-                'sha256' => (string) hash_file('sha256', $upload->getRealPath()),
-            ]);
-            $document->tags()->sync($data['tags'] ?? []);
+                DocumentFile::query()->create([
+                    'document_id' => $document->id,
+                    'path' => (string) $path,
+                    'mime' => $mime,
+                    'size' => (int) $upload->getSize(),
+                    'sha256' => (string) hash_file('sha256', $upload->getRealPath()),
+                ]);
+                $document->tags()->sync($data['tags'] ?? []);
 
-            return $document;
-        });
+                return $document;
+            });
 
-        $audit->record('document.uploaded', orgId: $org->id(), userId: $userId, subject: $document, ip: $request->ip());
+            $audit->record('document.uploaded', orgId: $org->id(), userId: $userId, subject: $document, ip: $request->ip());
+        }
 
-        return redirect('/')->with('status', __('documents.saved'));
+        return redirect('/')->with('status', trans_choice('documents.saved', count($checked)));
     }
 
     public function updateTags(Request $request, string $id, AuditLog $audit, CurrentOrg $org): RedirectResponse

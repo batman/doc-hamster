@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'title' => 'Handy-Test',
-    'intro' => 'Diese Seite prüft, ob dein Handy alles kann, was DocHamster braucht. Es wird nichts an den Server gesendet.',
+    'intro' => 'Diese Seite prüft, ob dein Handy alles kann, was docHamster braucht. Es wird nichts an den Server gesendet.',
     'open' => 'offen',
     'ok' => 'ja',
     'warn' => 'unklar',

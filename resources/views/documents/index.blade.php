@@ -9,22 +9,6 @@
         <p class="check-ok" role="status">{{ session('status') }}</p>
     @endif
 
-    @can('documents.upload')
-        <form method="post" action="{{ route('documents.store') }}" enctype="multipart/form-data">
-            @csrf
-            <label for="file">{{ __('documents.choose') }}</label>
-            <input id="file" type="file" name="file" accept="image/*,application/pdf" required>
-            @error('file')<p class="error" role="alert">{{ $message }}</p>@enderror
-            @if ($tags->isNotEmpty())
-                <fieldset class="rights">
-                    <legend>{{ __('tags.choose') }}</legend>
-                    @include('documents._tag-chips', ['selected' => []])
-                </fieldset>
-            @endif
-            <button type="submit">{{ __('documents.upload') }}</button>
-        </form>
-    @endcan
-
     @if ($tags->isNotEmpty())
         <form method="get" action="{{ url('/') }}">
             <fieldset class="rights">
