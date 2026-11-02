@@ -71,7 +71,7 @@
         @endauth
         <div class="content">
             <main id="main" class="page">
-                @if ($errors->hasAny(['file', 'files', 'files.*']))
+                @if (isset($errors) && $errors->hasAny(['file', 'files', 'files.*']))
                     <p class="error" role="alert">{{ $errors->first('file') ?: ($errors->first('files') ?: $errors->first('files.*')) }}</p>
                 @endif
                 @yield('content')
