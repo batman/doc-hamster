@@ -19,6 +19,7 @@
         .sg-swatch p { margin: 0; padding: .4rem .5rem; }
         .sg-row { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
         .sg-row > * { margin-top: 1rem; }
+        .sg-hamster { width: 18rem; max-width: 100%; }
     </style>
 </head>
 <body>
@@ -158,6 +159,15 @@
             </details>
         </section>
 
+        <section class="sg-section">
+            <h2>Hamster</h2>
+            <div class="sg-row">
+                <div class="sg-hamster" data-hamster="sleep"></div>
+                <div class="sg-hamster" data-hamster="awake"></div>
+            </div>
+            <p class="sg-note">Aus <code>js/hamster.js</code>: Ebenen im Pixel-Raster, Bild für Bild. Schläft (atmet, „z“) und wach (atmet, blinzelt). Bei „Bewegung reduzieren“ steht er still.</p>
+        </section>
+
         <section class="sg-section error-page">
             <h2>Fehlerseite</h2>
             <p class="error-code">404</p>
@@ -170,6 +180,7 @@
         <small class="muted">docHamster Version 0.1.0</small>
     </footer>
 
+    <script src="js/hamster.js"></script>
     <script>
         // Show every colour token with its current value (changes with light/dark).
         const tokens = ['--primary', '--primary-text', '--primary-ink', '--secondary', '--secondary-text',
