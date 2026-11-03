@@ -126,6 +126,6 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | INBOX | Upload interface with a personal key per device | – | todo | PHONE | Issue #36, stage 3 of the roadmap #35 |
 | HAMSTER | Desktop hamster: drop a file, it lands on the server; own repository, Tauri | – | todo | INBOX | Issue #36, stage 3 of the roadmap #35 |
 | UI-STYLE | New look: styleguide, stylesheet and icons from the PO's design session (twelve points) | PO (Claude chat) | done | – | `public/design/` and `docs/design/ui-redesign.md`; the running app is unchanged |
-| UI-APPLY | Apply the new look to the Blade views and JS (menu frame, Einstellungen page, filter and views, no hamster) | – | todo | UI-STYLE | Hand-over in `docs/design/ui-redesign.md`; replaces `public/css/app.css` together with the markup |
+| UI-APPLY | Apply the new look to the Blade views and JS (menu frame, Einstellungen page, filter and views, no hamster) | Lead (this PC) | in progress | UI-STYLE | Hand-over in `docs/design/ui-redesign.md`; replaces `public/css/app.css` together with the markup |
 
 Phases 2–8: see PLAN.md §14 (reordered in v1.1: 2 capture with time/location → 3 Revolut & matching → 4 receipt pack = core flow done → 5 OCR → 6 search → 7 tax advisor access → 8 release). The Manager adds rows when the previous phase is in review.
