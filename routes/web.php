@@ -10,6 +10,7 @@ use App\Http\Controllers\ExportController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PhoneCheckController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SetupController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\UpdateController;
@@ -18,6 +19,8 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'org'])->group(function (): void {
     Route::get('/', [DocumentController::class, 'index'])->name('documents.index');
     Route::post('documents', [DocumentController::class, 'store'])->middleware('can:documents.upload')->name('documents.store');
+    Route::post('documents/view', [DocumentController::class, 'setView'])->name('documents.view');
+    Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('documents/{id}/tags', [DocumentController::class, 'updateTags'])->middleware('can:documents.edit')->name('documents.tags');
     Route::get('files/{id}', [DocumentController::class, 'file'])->name('documents.file');
     Route::get('phone-check/qr', [PhoneCheckController::class, 'qr'])->name('phone-check.qr');

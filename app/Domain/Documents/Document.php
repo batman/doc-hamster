@@ -63,6 +63,14 @@ final class Document extends Model
         return $this->belongsToMany(Tag::class, 'document_tags')->orderBy('name');
     }
 
+    /** Where the receipt opens in the list: its first file. */
+    public function fileUrl(): string
+    {
+        $file = $this->files->first();
+
+        return $file === null ? '#' : route('documents.file', $file->id);
+    }
+
     /**
      * Everything for those who may see all documents, otherwise only the user's own.
      *

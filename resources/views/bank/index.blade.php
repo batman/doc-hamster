@@ -9,8 +9,6 @@
         <p class="check-ok" role="status">{{ session('status') }}</p>
     @endif
 
-    <p><a href="{{ route('bank.import') }}">{{ __('bank.import') }}</a></p>
-
     <nav class="tabs" aria-label="{{ __('bank.title') }}">
         @foreach ($views as $name)
             <a href="{{ route('bank.index', ['view' => $name]) }}" @if ($name === $view) aria-current="page" @endif>{{ __('bank.views.'.$name) }}</a>

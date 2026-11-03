@@ -11,6 +11,7 @@ use App\Domain\Documents\DocumentFile;
 use App\Domain\Documents\Tag;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
+use Carbon\CarbonImmutable;
 use finfo;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -37,6 +38,18 @@ final class DocumentController
         'application/pdf' => 'pdf',
     ];
 
+    /** The views of the list, like the Windows Explorer (ui-redesign point 10), with their icon. */
+    public const VIEWS = [
+        'details' => 'list-details',
+        'list' => 'list',
+        'small' => 'layout-grid',
+        'large' => 'layout-cards',
+        'timeline' => 'timeline',
+        'calendar' => 'calendar',
+    ];
+
+    private const LIMIT = 200;
+
     public function index(Request $request): View
     {
         $tags = Tag::query()->orderBy('name')->get();
@@ -52,11 +65,40 @@ final class DocumentController
             $query->whereHas('tags', static fn ($tag) => $tag->whereKey($tagId));
         }
 
+        $saved = $this->user($request)->receipt_view;
+        $view = $saved !== null && isset(self::VIEWS[$saved]) ? $saved : 'details';
+
+        $month = null;
+        if ($view === 'calendar') {
+            $wanted = $request->query('month');
+            $parsed = is_string($wanted) && preg_match('/^\d{4}-\d{2}$/', $wanted) === 1 ? CarbonImmutable::createFromFormat('!Y-m', $wanted) : null;
+            $month = $parsed instanceof CarbonImmutable ? $parsed : CarbonImmutable::now()->startOfMonth();
+            $documents = $query->whereBetween('created_at', [$month, $month->endOfMonth()])->oldest()->get();
+        } else {
+            $documents = $query->latest()->limit(self::LIMIT + 1)->get();
+        }
+        // Filtering in the browser works only when the page holds every receipt (point 7).
+        $complete = $selected === [] && ($view === 'calendar' || $documents->count() <= self::LIMIT);
+
         return view('documents.index', [
-            'documents' => $query->latest()->limit(200)->get(),
+            'documents' => $view === 'calendar' ? $documents : $documents->take(self::LIMIT),
             'tags' => $tags,
             'selected' => $selected,
+            'view' => $view,
+            'views' => self::VIEWS,
+            'month' => $month,
+            'complete' => $complete,
         ]);
+    }
+
+    /** The chosen view is kept per person (point 11). */
+    public function setView(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['view' => ['required', Rule::in(array_keys(self::VIEWS))]]);
+
+        $this->user($request)->forceFill(['receipt_view' => $data['view']])->save();
+
+        return back();
     }
 
     public function store(Request $request, AuditLog $audit, CurrentOrg $org): RedirectResponse
@@ -150,10 +192,15 @@ final class DocumentController
 
     private function userId(Request $request): string
     {
+        return $this->user($request)->id;
+    }
+
+    private function user(Request $request): User
+    {
         $user = $request->user();
 
         abort_unless($user instanceof User, 403);
 
-        return $user->id;
+        return $user;
     }
 }

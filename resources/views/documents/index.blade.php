@@ -3,64 +3,50 @@
 @section('title', __('documents.title'))
 
 @section('content')
-    <h1>{{ __('documents.title') }}</h1>
+    <div class="page-head">
+        <h1>{{ __('documents.title') }}</h1>
+        <div class="toolbar">
+            @if ($tags->isNotEmpty())
+                {{-- Applies with every tick in the browser; the GET form is the fallback when the page doesn't hold every receipt. --}}
+                <form class="dropdown" data-kind="filter" data-complete="{{ $complete ? '1' : '0' }}" method="get" action="{{ route('documents.index') }}">
+                    @if ($month)
+                        <input type="hidden" name="month" value="{{ $month->format('Y-m') }}">
+                    @endif
+                    <button type="button" class="icon-button @if ($selected !== []) is-active @endif" data-tooltip="{{ __('documents.filter') }}" aria-label="{{ __('documents.filter') }}" aria-haspopup="true" aria-expanded="false">
+                        <span data-icon="off" @if ($selected !== []) hidden @endif><x-icon name="filter" /></span>
+                        <span data-icon="on" @if ($selected === []) hidden @endif><x-icon name="filter-check" /></span>
+                        <span class="badge" @if ($selected === []) hidden @endif>{{ count($selected) }}</span>
+                    </button>
+                    <div class="dropdown-panel" hidden>
+                        <p class="dropdown-title">{{ __('tags.filter') }}</p>
+                        @foreach ($tags as $tag)
+                            <label><input type="checkbox" name="tags[]" value="{{ $tag->id }}" @checked(in_array($tag->id, $selected, true))> {{ $tag->name }}</label>
+                        @endforeach
+                        <button type="button" class="dropdown-reset" data-reset @if ($selected === []) hidden @endif>{{ __('tags.reset_filter') }}</button>
+                    </div>
+                </form>
+            @endif
+            <form class="dropdown" data-kind="view" method="post" action="{{ route('documents.view') }}">
+                @csrf
+                <button type="button" class="icon-button" data-tooltip="{{ __('documents.view') }}" aria-label="{{ __('documents.view') }}" aria-haspopup="true" aria-expanded="false"><x-icon :name="$views[$view]" /></button>
+                <div class="dropdown-panel" role="menu" hidden>
+                    <p class="dropdown-title">{{ __('documents.view') }}</p>
+                    @foreach ($views as $name => $icon)
+                        <button type="submit" name="view" value="{{ $name }}" class="menu-item" role="menuitemradio" aria-checked="{{ $name === $view ? 'true' : 'false' }}"><x-icon :name="$icon" /><span>{{ __('documents.views.'.$name) }}</span></button>
+                    @endforeach
+                </div>
+            </form>
+        </div>
+    </div>
 
     @if (session('status'))
         <p class="check-ok" role="status">{{ session('status') }}</p>
     @endif
 
-    @if ($tags->isNotEmpty())
-        <form method="get" action="{{ url('/') }}">
-            <fieldset class="rights">
-                <legend>{{ __('tags.filter') }}</legend>
-                @include('documents._tag-chips')
-            </fieldset>
-            <button type="submit">{{ __('tags.apply_filter') }}</button>
-            @if ($selected !== [])
-                <a href="{{ url('/') }}">{{ __('tags.reset_filter') }}</a>
-            @endif
-        </form>
-    @endif
-
-    @if ($documents->isEmpty())
-        @if ($selected !== [])
-            <p class="muted">{{ __('tags.no_match') }}</p>
-        @else
-            <div class="empty-state">
-                <div class="empty-hamster" data-hamster="sleep"></div>
-                <p class="muted">{{ __('documents.empty') }}</p>
-            </div>
-        @endif
+    @if ($documents->isEmpty() && $selected === [] && $view !== 'calendar')
+        <div class="empty-state"><p class="muted">{{ __('documents.empty') }}</p></div>
     @else
-        <ul class="documents">
-            @foreach ($documents as $document)
-                @php($file = $document->files->first())
-                <li>
-                    @if ($file)
-                        <a href="{{ route('documents.file', $file->id) }}">
-                            @if ($file->isImage())
-                                <img src="{{ route('documents.file', $file->id) }}" alt="" loading="lazy">
-                            @endif
-                            {{ $document->title }}
-                        </a>
-                    @else
-                        {{ $document->title }}
-                    @endif
-                    <span class="muted">{{ $document->created_at->format('d.m.Y H:i') }}@if ($document->tags->isNotEmpty()) · {{ $document->tags->pluck('name')->implode(', ') }}@endif</span>
-                    @can('documents.edit')
-                        @if ($tags->isNotEmpty())
-                            <details>
-                                <summary>{{ __('tags.change') }}</summary>
-                                <form method="post" action="{{ route('documents.tags', $document->id) }}">
-                                    @csrf
-                                    @include('documents._tag-chips', ['selected' => $document->tags->pluck('id')->all()])
-                                    <button type="submit">{{ __('tags.change') }}</button>
-                                </form>
-                            </details>
-                        @endif
-                    @endcan
-                </li>
-            @endforeach
-        </ul>
+        @include('documents.views.'.(in_array($view, ['small', 'large'], true) ? 'tiles' : $view))
+        <p class="muted" data-no-match @unless ($documents->isEmpty() && $selected !== []) hidden @endunless>{{ __('tags.no_match') }}</p>
     @endif
 @endsection

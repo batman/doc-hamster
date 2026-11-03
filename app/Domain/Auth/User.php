@@ -23,6 +23,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property string $display_name
  * @property string $locale
  * @property string|null $password_hash
+ * @property string|null $receipt_view How the receipt list is shown (DocumentController::VIEWS).
  */
 #[UseFactory(UserFactory::class)]
 final class User extends Authenticatable
