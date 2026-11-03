@@ -200,3 +200,10 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done / next step: **UI-APPLY** – put the new look into the Blade views and JS and replace `public/css/app.css` with `public/design/app.css` in the same PR (issue `to:lead`).
 - Watch out: the new CSS needs the new markup (left column with dark block + menu), CSS alone would break the layout. The hamster is out of the UI for now; keep `public/js/hamster.js`.
 - Branch/PR: po/UI-STYLE-new-look
+
+## 2026-11-03 · PO (Claude chat) · UI-STYLE-2
+- Done: Design round 2 with the PO (points 13 to 23): tags as pills with colours, documents never cropped (frame with padding), icons instead of thumbnails in Details/Liste/Kleine Symbole, receipt view next to the list (dialog on narrow windows), filter with "Anwenden", Tags page with search and editor, Einstellungen as a column menu with folding strips. New styles are added at the end of `public/css/app.css` (existing rules unchanged). The styleguide is back in `public/design/` with working samples; ten Tabler icons added. Hand-over: `docs/design/ui-redesign.md` (Round 2).
+- Not done / next step: **UI-APPLY-2** for the Lead (views, JS, thumbnails stored at upload, data model changes with label `plan`). Open product question for the PO: what "Versenden" does.
+- Watch out: thumbnails must never be cropped; the "#" of a tag comes from CSS.
+- Branch/PR: po/design
+

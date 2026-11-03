@@ -39,3 +39,46 @@ The old `public/styleguide.html` still matches the current `app.css` and stays u
 ## Decided without asking (for the Lead to veto)
 
 Phone: only the menu button top left, the menu is a drawer. The filter combines tags with AND (as today). Date for timeline and calendar is the upload date.
+
+---
+
+# Round 2: points 13 to 23 (PO design session, 2026-11-03)
+
+Reference for the markup: **`public/design/styleguide.html`** (open it at `/design/styleguide.html`; it uses `public/css/app.css` and `public/design/styleguide.js`). All new styles are **added at the end of `public/css/app.css`**, existing rules are unchanged, so the running app keeps working until the views are changed. The sample pages in the styleguide work: Belege (list left, details right, six views, filter with "Anwenden"), Tags, Einstellungen (column menu).
+
+## The points (decided by the PO)
+
+13. **Icons, not thumbnails, in Details, Liste and Kleine Symbole.** The file type icon (image = `photo`, PDF = `file-type-pdf`, text = `file-text`). Only **Große Symbole**, the **Zeitstrahl** and the receipt view show thumbnails.
+14. **Thumbnails are made once, at upload, and stored.** The list loads the small stored image, never the original. Loading must be clearly faster than today. (Not visible in the styleguide.)
+15. **Documents are never cropped**, not by rounded corners, not by `object-fit: cover`. The whole page sits in a frame (`.thumb-frame`: our colour, border, rounded corners, padding). The rounding belongs to the frame.
+16. **No "Tags ändern" button in the table.** The Tags column only shows the pills. Tags are changed in the receipt view (17).
+17. **Receipt view**: a click on a receipt opens it next to the list (see 20), not in a new window. It shows the whole document, the actions download, edit, send, delete (icon buttons with tooltip), the tags (pills to toggle), a note, and the history (uploaded, created, last opened, last downloaded, file type, booking). Delete asks first in our own dialog (`.dialog`), not a browser dialog.
+18. **Tags are pills** (`.tag`, colours `.tag-c1` to `.tag-c6`). Always a "#" in front (drawn by CSS, the markup holds only the name), never a bare word, always side by side and wrapping like text, never one below the other. Selected (`.is-selected`, filled) and not selected (only border) have the **same size**. Ticking several pills in a list changes nothing yet: the filter dropdown collects the choice, **"Anwenden"** applies it, "Zurücksetzen" clears it.
+19. **Tags page** (under Einstellungen): search field on top (filters the pills while typing, any letter inside the name), pills as running text. Two panes: pills left, editor right. The editor shows "Neuen Tag anlegen" until a pill is clicked. Then: name, colour (six choices), number of receipts, delete (with dialog). The number: **under 100 receipts** it is a link to the receipt list filtered by this tag; **from 100** it unfolds first (`details`) into counts per type (images, PDFs, texts), each linking to the filtered list. A X at the top right closes the editor and shows "Neuen Tag anlegen" again.
+20. **Master-detail everywhere.** A click on a list entry splits the window: list left, details right (`.page-split`, `.split-main`, `.split-detail`). Linked records open in the right pane, with a way back. Below **80rem** window width the right pane opens as a dialog over the list (same content). Applies to receipts, tags, people, roles, bank and every other list.
+21. **Einstellungen as column menu.** First only the group names with their own icon. A click splits the window: the submenu on the right. A click on an entry splits again: the settings page on the right. **At most two panes are open** (the menu counts separately); a further split folds the left pane to a strip.
+22. **Folded strips** (`.col-strip`): icon and text run top to bottom and are rotated like the text. The Einstellungen strip reads: gear, "Einstellungen", dash, group icon, group name. The strip of the submenu reads: entry icon and entry name. Every open pane (except the page) has an arrow (chevron left, "nach innen") to fold it. Folding the submenu gives the page the whole width. Folding is by `.col-collapse` buttons, unfolding by a click on the strip.
+23. **Accordion.** A click on the strip of "Einstellungen" opens it again and folds the submenu to a strip; the page on the right stays open. So every step back is visible without leaving the page. Rule: opening a strip closes the open pane directly to its right; the page (rightmost) always stays.
+
+## Decided without asking (for the Lead to veto)
+
+- Small symbols show only the type icon (the PO named only the large ones).
+- Tag colours: six fixed colours, one per tag (`tags.color` 1 to 6, default 1). Contrast: selected pills use dark text on the colour.
+- Tags page is a "leaf group": it has no submenu, so the second pane is the tag list and the third the editor.
+- Dialog breakpoint 80rem (menu plus list plus details need room).
+- Pill selection in dropdowns uses a real checkbox hidden inside the label (`.tag-choice`), so keyboard and screen readers work.
+
+## What the app code has to change (UI-APPLY-2)
+
+1. **Views** (`resources/views/documents/views/*`): Details, Liste, Kleine Symbole use type icons (`_thumb` only where thumbnails are allowed). Tiles (large), timeline and receipt view wrap the image in `.thumb-frame`; the image uses `object-fit: contain`. Tags column and all tag lists use `.tags` and `.tag.tag-cN`. Remove the "Tags ändern" `details` from the table.
+2. **Thumbnails (point 14)**: generate at upload (images: scaled copy, aspect ratio kept; PDF: first page; text: none, show the icon) and store them next to the document; serve them with cache headers; the list uses only them. Existing documents: a one-time command or job to create the missing thumbnails. If a thumbnail is missing, show the type icon, never a broken image. Choice of library and size is the Lead's.
+3. **Receipt view** in the right pane (and as dialog below 80rem): the content listed in 17. New data per receipt: a note, "last opened" and "last downloaded" timestamps (data model change: PR labelled `plan`). Also its own URL so that a receipt can be linked.
+4. **Filter dropdown**: tags as `.tag-choice` pills, buttons "Zurücksetzen" and "Anwenden" (same height). The view dropdown stays as it is.
+5. **Tags**: new column `color` on `tags` (data model change, label `plan`). New Tags page as in 19, search in the browser.
+6. **Einstellungen**: the column menu as in 21 to 23 (see `mountSettings` in `public/design/styleguide.js` for the exact behaviour; the folding logic is a few lines). The groups: Personen & Rollen, Bank, Tags, Export, Update.
+7. **Delete dialogs** use `.dialog`, not `confirm()`.
+8. Tests: update tests that look for the old markup.
+
+## Open for the Lead (product question to the PO, not decided)
+
+- **"Versenden"** on a receipt: to whom and how (email address, link, advisor)? Show the button disabled until this is settled.

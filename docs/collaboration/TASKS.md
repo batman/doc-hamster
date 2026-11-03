@@ -127,5 +127,7 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | HAMSTER | Desktop hamster: drop a file, it lands on the server; own repository, Tauri | – | todo | INBOX | Issue #36, stage 3 of the roadmap #35 |
 | UI-STYLE | New look: styleguide, stylesheet and icons from the PO's design session (twelve points) | PO (Claude chat) | done | – | `public/design/` and `docs/design/ui-redesign.md`; the running app is unchanged |
 | UI-APPLY | Apply the new look to the Blade views and JS (menu frame, Einstellungen page, filter and views, no hamster) | Lead (this PC) | done | UI-STYLE | Menu frame, Einstellungen, filter in the browser, six views kept per person, no hamster in the app |
+| UI-STYLE-2 | Design round 2: tags as pills, thumbnails (points 13 to 23), receipt view, column menu | PO (Claude chat) | done | UI-APPLY | Styleguide back in `public/design/` (uses `public/css/app.css`), hand-over in `docs/design/ui-redesign.md` (Round 2) |
+| UI-APPLY-2 | Apply round 2 to Blade views and JS (pills, thumbnails stored at upload, receipt view, tags page, column menu) | Lead | todo | UI-STYLE-2 | Data model changes (`tags.color`, receipt note and timestamps) need a PR labelled `plan` |
 
 Phases 2–8: see PLAN.md §14 (reordered in v1.1: 2 capture with time/location → 3 Revolut & matching → 4 receipt pack = core flow done → 5 OCR → 6 search → 7 tax advisor access → 8 release). The Manager adds rows when the previous phase is in review.
