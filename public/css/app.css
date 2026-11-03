@@ -81,7 +81,7 @@ a { color: var(--primary-ink); }
 .site-header a { color: var(--secondary-text); }
 .site-header .brand { display: flex; align-items: center; padding-inline: .25rem 1rem; text-decoration: none; }
 .side-plain .site-header .brand { padding-inline: 1rem; }
-.brand img { display: block; width: auto; height: 2.25rem; }
+.brand img { display: block; width: auto; height: 3rem; }
 .nav-toggle { flex: none; width: 3.5rem; min-height: 3.5rem; margin: 0; padding: 0; border-radius: 0; background: none; color: var(--secondary-text); }
 .nav-toggle:hover { background: rgb(255 255 255 / .12); box-shadow: none; }
 .nav-toggle .icon { width: 1.75rem; height: 1.75rem; }

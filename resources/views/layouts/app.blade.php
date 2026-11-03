@@ -18,7 +18,7 @@
             <aside class="side">
                 <header class="site-header">
                     <button type="button" class="nav-toggle" aria-controls="nav" aria-expanded="true" aria-label="{{ __('app.nav.toggle') }}"><x-icon name="menu-2" /></button>
-                    <a class="brand" href="{{ url('/') }}"><img src="{{ asset('img/logo.png') }}" alt="{{ config('app.name') }}" width="290" height="75"></a>
+                    <a class="brand" href="{{ url('/') }}"><img src="{{ asset('img/logo.png') }}" alt="{{ config('app.name') }}" width="476" height="186"></a>
                 </header>
                 <nav id="nav" class="sidebar" aria-label="{{ __('app.nav.label') }}">
                     @can('documents.upload')
@@ -56,7 +56,7 @@
             @endcan
         @else
             <aside class="side side-plain">
-                <header class="site-header"><a class="brand" href="{{ url('/') }}"><img src="{{ asset('img/logo.png') }}" alt="{{ config('app.name') }}" width="290" height="75"></a></header>
+                <header class="site-header"><a class="brand" href="{{ url('/') }}"><img src="{{ asset('img/logo.png') }}" alt="{{ config('app.name') }}" width="476" height="186"></a></header>
             </aside>
         @endauth
         <div class="content">

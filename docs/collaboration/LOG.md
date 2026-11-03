@@ -207,3 +207,7 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Watch out: thumbnails must never be cropped; the "#" of a tag comes from CSS.
 - Branch/PR: po/design
 
+## 2026-11-03 · PO (Claude chat) · UI-STYLE-2 (logo)
+- Done: New logo (point 24): `public/img/logo.png` (for dark surfaces) and `public/img/logo-on-light.png`. Logo height in the dark block 3rem, image attributes 476 x 186 in the layout and the styleguide.
+- Branch/PR: po/design
+
