@@ -33,7 +33,7 @@ it('keeps a quick note private, and with the right shows it to everyone', functi
     $this->post('/notes', ['body' => 'Für alle', 'shared' => 1, 'checklist' => "Milch\n[x] Brot", 'link' => 'bon.jpg'])->assertRedirect();
 
     $note = Note::query()->withoutGlobalScope(OrgScope::class)->where('body', 'Für alle')->firstOrFail();
-    expect($note->checklist)->toBe([['text' => 'Milch', 'done' => false], ['text' => 'Brot', 'done' => true]])
+    expect($note->checklist)->toEqual([['text' => 'Milch', 'done' => false], ['text' => 'Brot', 'done' => true]])
         ->and($note->documents()->pluck('documents.id')->all())->toBe([$this->doc->id]);
 
     $this->actingAs($clerk->user)->get('/')->assertSee('Für alle')->assertSee('bon.jpg');
