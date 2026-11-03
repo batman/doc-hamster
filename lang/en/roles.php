@@ -15,6 +15,7 @@ return [
         'banking' => 'Import and match bank data',
         'export' => 'Export',
         'tags' => 'Edit tags',
+        'notes' => 'Show notes to everyone',
     ],
     'people' => '{0} Nobody has this role|{1} :count person has this role|[2,*] :count people have this role',
     'preinstalled' => 'pre-installed, can not be deleted',

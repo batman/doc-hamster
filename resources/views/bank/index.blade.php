@@ -2,7 +2,10 @@
 
 @section('title', __('bank.title'))
 
+@section('main_class', 'page page-split')
+
 @section('content')
+    <div class="split-main">
     <h1>{{ __('bank.title') }}</h1>
 
     @if (session('status'))
@@ -30,23 +33,28 @@
         <p class="muted">{{ __('bank.empty.'.$view) }}</p>
     @else
         <ul class="documents">
-            @foreach ($transactions as $transaction)
-                <li>
-                    <a href="{{ route('bank.show', $transaction->id) }}">
-                        {{ $transaction->booking_date->format('d.m.Y') }} · {{ $transaction->formattedAmount() }} · {{ $transaction->counterparty }}
+            @foreach ($transactions as $entry)
+                <li @if ($transaction?->id === $entry->id) class="is-open" @endif>
+                    <a href="{{ route('bank.show', [$entry->id, ...request()->query()]) }}">
+                        {{ $entry->booking_date->format('d.m.Y') }} · {{ $entry->formattedAmount() }} · {{ $entry->counterparty }}
                     </a>
                     <span class="muted">
-                        {{ $transaction->account->name }}
-                        @if ($transaction->matches_count > 0)
-                            · {{ trans_choice('bank.receipts_count', $transaction->matches_count, ['count' => $transaction->matches_count]) }}
+                        {{ $entry->account->name }}
+                        @if ($entry->matches_count > 0)
+                            · {{ trans_choice('bank.receipts_count', $entry->matches_count, ['count' => $entry->matches_count]) }}
                         @endif
                     </span>
-                    @if ($transaction->purpose)
-                        <span class="muted statement-purpose">{{ $transaction->purpose }}</span>
+                    @if ($entry->purpose)
+                        <span class="muted statement-purpose">{{ $entry->purpose }}</span>
                     @endif
                 </li>
             @endforeach
         </ul>
         @include('bank._pages', ['pages' => $transactions])
+    @endif
+    </div>
+
+    @if ($transaction)
+        @include('bank._detail')
     @endif
 @endsection

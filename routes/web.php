@@ -7,17 +7,27 @@ use App\Http\Controllers\BankController;
 use App\Http\Controllers\BankImportController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PhoneCheckController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SetupController;
+use App\Http\Controllers\ShareController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\UpdateController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'org'])->group(function (): void {
-    Route::get('/', [DocumentController::class, 'index'])->name('documents.index');
+    Route::get('/', [HomeController::class, 'index'])->name('home');
+    Route::post('notes', [HomeController::class, 'store'])->name('notes.store');
+    Route::post('notes/{id}', [HomeController::class, 'update'])->name('notes.update');
+    Route::post('notes/{id}/check', [HomeController::class, 'check'])->name('notes.check');
+    Route::post('notes/{id}/delete', [HomeController::class, 'destroy'])->name('notes.destroy');
+    Route::get('documents', [DocumentController::class, 'index'])->name('documents.index');
+    Route::get('documents/trash', [DocumentController::class, 'trash'])->middleware('can:documents.trash')->name('documents.trash');
+    Route::post('documents/{id}/restore', [DocumentController::class, 'restore'])->middleware('can:documents.trash')->name('documents.restore');
+    Route::post('documents/{id}/share-link', [ShareController::class, 'store'])->middleware('can:exports.create')->name('documents.share');
     Route::post('documents', [DocumentController::class, 'store'])->middleware('can:documents.upload')->name('documents.store');
     Route::post('documents/view', [DocumentController::class, 'setView'])->name('documents.view');
     Route::get('documents/{id}', [DocumentController::class, 'show'])->name('documents.show');
@@ -72,9 +82,15 @@ Route::middleware(['auth', 'org'])->group(function (): void {
 
     Route::middleware('can:exports.create')->group(function (): void {
         Route::get('export', [ExportController::class, 'form'])->name('exports.form');
+        Route::get('share-links', [ShareController::class, 'index'])->name('shares.index');
+        Route::post('share-links/days', [ShareController::class, 'days'])->name('shares.days');
+        Route::post('share-links/{id}/revoke', [ShareController::class, 'revoke'])->name('shares.revoke');
         Route::post('export', [ExportController::class, 'store'])->name('exports.store');
     });
 });
+
+// A receipt handed out by link (A4): no login, until it expires or is revoked.
+Route::get('s/{token}', [ShareController::class, 'open'])->middleware('throttle:30,1')->name('shares.open');
 
 // Temporary device probe (#37): open like the later home-screen page, holds no data.
 Route::get('phone-check', [PhoneCheckController::class, 'show'])->name('phone-check');

@@ -21,6 +21,7 @@ enum Permission: string
     case CreateReports = 'reports.create';
     case Export = 'exports.create';
     case ManageTags = 'tags.manage';
+    case ShareNotes = 'notes.share';
     case ManageMembers = 'members.manage';
     case ManageSettings = 'settings.manage';
     case ViewAuditLog = 'audit.view';
@@ -40,6 +41,7 @@ enum Permission: string
             self::ImportBanking => RoleRight::Banking,
             self::CreateReports, self::Export => RoleRight::Export,
             self::ManageTags => RoleRight::Tags,
+            self::ShareNotes => RoleRight::Notes,
             self::DeleteDocumentsForever, self::ManageMembers, self::ManageSettings, self::ViewAuditLog => null,
         };
     }

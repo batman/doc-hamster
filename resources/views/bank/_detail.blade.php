@@ -1,15 +1,15 @@
-@extends('layouts.app')
-
-@section('title', $transaction->formattedAmount())
-
-@section('content')
-    <h1>{{ $transaction->formattedAmount() }}</h1>
+{{-- The booking beside the list; below 80rem the CSS shows it as a dialog. --}}
+<a class="split-backdrop" href="{{ route('bank.index', request()->query()) }}" aria-label="{{ __('documents.close') }}"></a>
+<aside class="split-detail" aria-label="{{ $transaction->formattedAmount() }}">
+    <div class="detail-head">
+        <h2>{{ $transaction->formattedAmount() }}</h2>
+        <a class="icon-button" href="{{ route('bank.index', request()->query()) }}" aria-label="{{ __('documents.close') }}" data-tooltip="{{ __('documents.close') }}"><x-icon name="x" /></a>
+    </div>
     <p>{{ $transaction->booking_date->format('d.m.Y') }} · {{ $transaction->counterparty }}</p>
     <p class="muted">{{ $transaction->account->name }}</p>
     @if ($transaction->purpose)
         <p class="muted">{{ $transaction->purpose }}</p>
     @endif
-    <p><a href="{{ route('bank.index') }}">{{ __('bank.back') }}</a></p>
 
     @if (session('status'))
         <p class="check-ok" role="status">{{ session('status') }}</p>
@@ -53,4 +53,4 @@
             @endforeach
         </ul>
     @endif
-@endsection
+</aside>

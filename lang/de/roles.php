@@ -15,6 +15,7 @@ return [
         'banking' => 'Bankdaten importieren und abgleichen',
         'export' => 'Exportieren',
         'tags' => 'Tags bearbeiten',
+        'notes' => 'Notizen für alle zeigen',
     ],
     'people' => '{0} Niemand hat diese Rolle|{1} :count Person hat diese Rolle|[2,*] :count Personen haben diese Rolle',
     'preinstalled' => 'vorinstalliert, kann nicht gelöscht werden',

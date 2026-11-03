@@ -27,6 +27,7 @@ final class SettingsMenu
         ], true],
         'export' => ['file-export', [
             ['export', 'exports.form', 'file-export', 'exports.create', ['exports.*']],
+            ['shares', 'shares.index', 'send', 'exports.create', ['shares.*']],
         ], false],
         'update' => ['cloud-download', [
             ['update', 'updates.show', 'cloud-download', 'settings.manage', ['updates.*']],

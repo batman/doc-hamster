@@ -20,10 +20,10 @@ beforeEach(function (): void {
 });
 
 it('keeps the chosen view per person and shows the receipt in every view', function (string $view, string $marker): void {
-    $this->actingAs($this->admin->user)->from('/')->post('/documents/view', ['view' => $view])->assertRedirect('/');
+    $this->actingAs($this->admin->user)->from('/documents')->post('/documents/view', ['view' => $view])->assertRedirect('/documents');
 
     expect($this->admin->user->fresh()->receipt_view)->toBe($view);
-    $this->get('/')->assertOk()->assertSee($marker, false)->assertSee('bon.jpg');
+    $this->get('/documents')->assertOk()->assertSee($marker, false)->assertSee('bon.jpg');
 })->with([
     ['details', 'class="view-details"'],
     ['list', 'class="view-list"'],
@@ -37,8 +37,8 @@ it('refuses unknown views and moves the calendar by month', function (): void {
     $this->actingAs($this->admin->user)->post('/documents/view', ['view' => 'gross'])->assertSessionHasErrors('view');
     $this->post('/documents/view', ['view' => 'calendar']);
 
-    $this->get('/?month=2020-01')->assertOk()->assertSee('Januar 2020')->assertDontSee('bon.jpg');
-    $this->get('/')->assertSee('bon.jpg');
+    $this->get('/documents?month=2020-01')->assertOk()->assertSee('Januar 2020')->assertDontSee('bon.jpg');
+    $this->get('/documents')->assertSee('bon.jpg');
 });
 
 it('shows only the settings a person may open', function (): void {

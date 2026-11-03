@@ -7,11 +7,11 @@
     <meta name="color-scheme" content="light dark">
     <meta name="theme-color" content="#30302e">
     <title>@hasSection('title')@yield('title') – @endif{{ config('app.name') }}</title>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ config('dochamster.version') }}">
     @auth
         <link rel="stylesheet" href="{{ route('tags.css') }}">
     @endauth
-    <script src="{{ asset('js/app.js') }}"></script>
+    <script src="{{ asset('js/app.js') }}?v={{ config('dochamster.version') }}"></script>
     @stack('head')
 </head>
 <body>
@@ -21,7 +21,7 @@
             <aside class="side">
                 <header class="site-header">
                     <button type="button" class="nav-toggle" aria-controls="nav" aria-expanded="true" aria-label="{{ __('app.nav.toggle') }}"><x-icon name="menu-2" /></button>
-                    <a class="brand" href="{{ url('/') }}"><img src="{{ asset('img/logo.png') }}" alt="{{ config('app.name') }}" width="476" height="186"></a>
+                    <a class="brand" href="{{ route('home') }}"><img src="{{ asset('img/logo.png') }}" alt="{{ config('app.name') }}" width="476" height="186"></a>
                 </header>
                 <nav id="nav" class="sidebar" aria-label="{{ __('app.nav.label') }}">
                     @can('documents.upload')
@@ -37,6 +37,7 @@
                     <ul class="nav-list">
                         {{-- Everything else (people, roles, tags, bank import, export, update, phone test) sits under Einstellungen. --}}
                         @foreach ([
+                            ['home', 'home', 'home.title', null, ['home', 'notes.*']],
                             ['documents.index', 'receipt', 'documents.title', null, ['documents.*']],
                             ['bank.index', 'building-bank', 'bank.title', 'banking.import', ['bank.index', 'bank.show']],
                             ['settings.index', 'settings', 'settings.title', null, ['settings.*', 'members.*', 'roles.*', 'tags.*', 'exports.*', 'updates.*', 'bank.import*', 'bank.accounts.*', 'phone-check*']],
@@ -50,6 +51,7 @@
                         @csrf
                         <button type="submit" class="nav-item tooltip-right" data-tooltip="{{ __('auth.logout') }}"><x-icon name="power" /><span class="nav-text">{{ __('auth.logout') }}</span></button>
                     </form>
+                    <small class="nav-version tooltip-right" data-tooltip="{{ __('app.version', ['version' => config('dochamster.version')]) }}"><span class="nav-text">{{ __('app.version', ['version' => config('dochamster.version')]) }}</span></small>
                     <button type="button" class="nav-collapse" aria-label="{{ __('app.nav.collapse') }}" data-collapse="{{ __('app.nav.collapse') }}" data-expand="{{ __('app.nav.expand') }}"><x-icon name="chevron-left" /></button>
                 </nav>
             </aside>
@@ -69,10 +71,9 @@
                 @endif
                 @yield('content')
             </main>
-            <footer class="site-footer">
-                <hr>
-                <small class="muted">{{ config('app.name') }} {{ __('app.version', ['version' => config('dochamster.version')]) }}</small>
-            </footer>
+            @guest
+                <footer class="site-footer"><small class="muted">{{ config('app.name') }} {{ __('app.version', ['version' => config('dochamster.version')]) }}</small></footer>
+            @endguest
         </div>
     </div>
 </body>

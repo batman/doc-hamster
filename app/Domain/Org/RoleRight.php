@@ -17,6 +17,7 @@ enum RoleRight: string
     case Banking = 'banking';
     case Export = 'export';
     case Tags = 'tags';
+    case Notes = 'notes';
 
     /**
      * Checkboxes of a pre-installed role in a new organisation.

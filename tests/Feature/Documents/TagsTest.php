@@ -50,8 +50,8 @@ it('stores the tags picked at upload, which are optional', function (): void {
     $this->actingAs($this->admin->user)->post('/documents', [
         'file' => UploadedFile::fake()->image('mit.jpg'),
         'tags' => [$invoice->id, $contract->id],
-    ])->assertRedirect('/');
-    $this->post('/documents', ['file' => UploadedFile::fake()->image('ohne.jpg')])->assertRedirect('/');
+    ])->assertRedirect('/documents');
+    $this->post('/documents', ['file' => UploadedFile::fake()->image('ohne.jpg')])->assertRedirect('/documents');
 
     expect(DB::table('document_tags')->where('document_id', documentNamed('mit.jpg')->id)->pluck('source')->all())->toBe(['user', 'user'])
         ->and(DB::table('document_tags')->where('document_id', documentNamed('ohne.jpg')->id)->count())->toBe(0);
@@ -81,8 +81,8 @@ it('filters the list, and several tags must all match', function (): void {
     $this->post('/documents', ['file' => UploadedFile::fake()->image('beide.jpg'), 'tags' => [$invoice->id, $contract->id]]);
     $this->post('/documents', ['file' => UploadedFile::fake()->image('eins.jpg'), 'tags' => [$invoice->id]]);
 
-    $this->get('/?'.http_build_query(['tags' => [$invoice->id]]))->assertSee('beide.jpg')->assertSee('eins.jpg');
-    $this->get('/?'.http_build_query(['tags' => [$invoice->id, $contract->id]]))->assertSee('beide.jpg')->assertDontSee('eins.jpg');
+    $this->get('/documents?'.http_build_query(['tags' => [$invoice->id]]))->assertSee('beide.jpg')->assertSee('eins.jpg');
+    $this->get('/documents?'.http_build_query(['tags' => [$invoice->id, $contract->id]]))->assertSee('beide.jpg')->assertDontSee('eins.jpg');
 });
 
 it('lets those who may edit a receipt change its tags, limited to what they can see', function (): void {
@@ -98,7 +98,7 @@ it('lets those who may edit a receipt change its tags, limited to what they can 
 
     $advisor = Membership::factory()->accountant()->create(['org_id' => $this->orgId]);
     $this->actingAs($advisor->user)->post('/documents/'.$document->id.'/tags', ['tags' => []])->assertForbidden();
-    $this->get('/?'.http_build_query(['tags' => [$invoice->id]]))->assertOk()->assertSee('bon.jpg');
+    $this->get('/documents?'.http_build_query(['tags' => [$invoice->id]]))->assertOk()->assertSee('bon.jpg');
 
     expect(DB::table('document_tags')->where('document_id', $document->id)->count())->toBe(1);
 });

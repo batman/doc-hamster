@@ -1,9 +1,11 @@
-{{-- The receipt next to the list (design point 17); below 80rem the CSS shows it as a dialog over the list. --}}
+{{-- The receipt next to the list (design point 17); below 80rem the CSS shows it as a dialog over the list.
+     The document is only shown, never opened by a click: downloads go through the button. --}}
 @php
     $file = $document->files->first();
     $close = route('documents.index', request()->query());
     $when = fn ($date) => $date?->format('d.m.Y H:i') ?? __('documents.never');
     $booking = $document->matches->map(fn ($match) => $match->transaction->booking_date->format('d.m.Y').' · '.$match->transaction->formattedAmount())->implode(', ');
+    $shareUrl = session('share_url');
 @endphp
 <a class="split-backdrop" href="{{ $close }}" aria-label="{{ __('documents.close') }}"></a>
 <aside class="split-detail" aria-label="{{ $document->title }}">
@@ -19,20 +21,20 @@
         @can('documents.edit')
             <a class="icon-button" href="#title" aria-label="{{ __('documents.edit') }}" data-tooltip="{{ __('documents.edit') }}"><x-icon name="pencil" /></a>
         @endcan
-        <button type="button" class="icon-button" aria-label="{{ __('documents.send_later') }}" data-tooltip="{{ __('documents.send_later') }}" disabled><x-icon name="send" /></button>
+        @if ($file)
+            {{-- The device's share menu with the file itself (A2); where there is none, our dialog with mail and link (A3). --}}
+            <button type="button" class="icon-button" aria-label="{{ __('documents.send') }}" data-tooltip="{{ __('documents.send') }}"
+                data-share="{{ route('documents.download', $file->id) }}" data-share-name="{{ $document->title }}" data-share-type="{{ $file->mime }}" data-dialog-open="share-document"><x-icon name="send" /></button>
+        @endif
         @can('documents.trash')
             <button type="button" class="icon-button" aria-label="{{ __('documents.delete') }}" data-tooltip="{{ __('documents.delete') }}" data-dialog-open="delete-document"><x-icon name="trash" /></button>
         @endcan
     </div>
 
-    @if ($file)
-        <a href="{{ route('documents.file', $file->id) }}" target="_blank" rel="noopener" aria-label="{{ __('documents.open_file') }}">
-            @if ($file->isImage())
-                <span class="thumb-frame detail-doc"><img class="thumb" src="{{ route('documents.file', $file->id) }}" alt=""></span>
-            @else
-                @include('documents._thumb', ['frameClass' => 'detail-doc'])
-            @endif
-        </a>
+    @if ($file?->isImage())
+        <span class="thumb-frame detail-doc"><img class="thumb" src="{{ route('documents.file', $file->id) }}" alt=""></span>
+    @elseif ($file)
+        @include('documents._thumb', ['frameClass' => 'detail-doc'])
     @endif
 
     @can('documents.edit')
@@ -80,6 +82,37 @@
         </dl>
     </section>
 </aside>
+
+@if ($file)
+    <div class="dialog-backdrop" data-dialog="share-document" @unless ($shareUrl) hidden @endunless>
+        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="share-document-title">
+            <h2 id="share-document-title">{{ __('documents.send') }}</h2>
+            @if ($shareUrl)
+                <label for="share-url" class="visually-hidden">{{ __('documents.share_copy') }}</label>
+                <input id="share-url" value="{{ $shareUrl }}" readonly data-share-url>
+                <div class="dialog-actions">
+                    <a class="button button-quiet" href="mailto:?subject={{ rawurlencode(__('documents.share_mail_subject', ['title' => $document->title])) }}&amp;body={{ rawurlencode($shareUrl) }}">{{ __('documents.share_mail') }}</a>
+                    <button type="button" data-copy="share-url" data-copied="{{ __('documents.share_copied') }}">{{ __('documents.share_copy') }}</button>
+                </div>
+            @else
+                @can('exports.create')
+                <form method="post" action="{{ route('documents.share', $document->id) }}">
+                    @csrf
+                    <div class="dialog-actions">
+                        <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
+                        <button type="submit">{{ __('documents.share_link') }}</button>
+                    </div>
+                </form>
+                @else
+                <div class="dialog-actions">
+                    <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
+                    <a class="button" href="{{ route('documents.download', $file->id) }}">{{ __('documents.download') }}</a>
+                </div>
+                @endcan
+            @endif
+        </div>
+    </div>
+@endif
 
 @can('documents.trash')
     <div class="dialog-backdrop" data-dialog="delete-document" hidden>

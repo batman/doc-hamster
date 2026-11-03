@@ -200,11 +200,46 @@
     // Our own confirm dialog: [data-dialog-open="x"] shows [data-dialog="x"]; Escape, the backdrop and "Abbrechen" close it.
     const setupDialogs = () => {
         const shut = dialog => { dialog.hidden = true; };
-        document.querySelectorAll('[data-dialog-open]').forEach(button => button.addEventListener('click', () => {
+        const open = button => {
             const dialog = document.querySelector(`[data-dialog="${button.dataset.dialogOpen}"]`);
             dialog.hidden = false;
-            dialog.querySelector('[data-dialog-close]').focus();
+            dialog.querySelector('[data-dialog-close], button, a, input')?.focus();
+        };
+        // The file is fetched ahead: the share menu has to open right on the click.
+        const shared = new Map();
+        document.querySelectorAll('[data-share]').forEach(button => {
+            if (!navigator.canShare) {
+                return;
+            }
+            fetch(button.dataset.share, { credentials: 'same-origin' })
+                .then(response => (response.ok ? response.blob() : null))
+                .then(blob => {
+                    const file = blob && new File([blob], button.dataset.shareName, { type: button.dataset.shareType });
+                    if (file && navigator.canShare({ files: [file] })) {
+                        shared.set(button, file);
+                    }
+                })
+                .catch(() => { /* no share menu then, our dialog stays */ });
+        });
+        document.querySelectorAll('[data-dialog-open]').forEach(button => button.addEventListener('click', () => {
+            const file = shared.get(button);
+            if (file) {
+                navigator.share({ files: [file], title: file.name }).catch(error => {
+                    if (error.name !== 'AbortError') {
+                        open(button);
+                    }
+                });
+                return;
+            }
+            open(button);
         }));
+        document.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', () => {
+            const field = document.getElementById(button.dataset.copy);
+            field.select();
+            navigator.clipboard?.writeText(field.value).then(() => { button.textContent = button.dataset.copied; });
+        }));
+        // Checklists save with every tick.
+        document.querySelectorAll('form[data-autosubmit]').forEach(form => form.addEventListener('change', () => form.submit()));
         document.querySelectorAll('[data-dialog]').forEach(dialog => {
             dialog.addEventListener('click', event => {
                 if (event.target === dialog || event.target.closest('[data-dialog-close]')) {
@@ -233,10 +268,16 @@
                 strip(i).hidden = false;
             }
         };
+        const tidy = () => {
+            if (strip(1) && pane(0)) {
+                strip(1).hidden = !(pane(1).hidden && !pane(0).hidden);
+            }
+        };
         cols.addEventListener('click', event => {
             const folder = event.target.closest('[data-fold]');
             if (folder) {
                 fold(Number(folder.dataset.fold));
+                tidy();
                 return;
             }
             const opener = event.target.closest('[data-strip]');
@@ -249,6 +290,7 @@
                 if (cols.querySelector('.col-page') && pane(i + 1) === null) {
                     fold(i - 1);
                 }
+                tidy();
             }
         });
     };

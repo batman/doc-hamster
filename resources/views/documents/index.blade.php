@@ -9,6 +9,9 @@
         <div class="page-head">
             <h1>{{ __('documents.title') }}</h1>
             <div class="toolbar">
+                @if ($trashed > 0)
+                    <a href="{{ route('documents.trash') }}">{{ __('documents.trash_count', ['count' => $trashed]) }}</a>
+                @endif
                 @if ($tags->isNotEmpty())
                     {{-- Ticks only collect; "Anwenden" filters, in the browser when the page holds every receipt, else on the server. --}}
                     <form class="dropdown" data-kind="filter" data-complete="{{ $complete ? '1' : '0' }}" method="get" action="{{ route('documents.index') }}">

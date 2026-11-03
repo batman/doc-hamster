@@ -39,10 +39,12 @@ final class BankController
             'views' => self::VIEWS,
             'transactions' => $view === 'receipts' ? null : $this->transactions($view),
             'documents' => $view === 'receipts' ? $this->receiptsWithoutBooking($org) : null,
+            'transaction' => null,
         ]);
     }
 
-    public function show(string $id, CurrentOrg $org): View
+    /** The booking beside the list (design point 20), a dialog on narrow windows. */
+    public function show(Request $request, string $id, CurrentOrg $org): View
     {
         $transaction = Transaction::query()->with('account')->whereKey($id)->firstOrFail();
 
@@ -51,7 +53,8 @@ final class BankController
             ->whereHas('matches', static fn (Builder $match) => $match->where('transaction_id', $transaction->id))
             ->get();
 
-        return view('bank.show', [
+        return view('bank.index', [
+            ...$this->index($request, $org)->getData(),
             'transaction' => $transaction,
             'linked' => $linked,
             'hidden' => $transaction->matches()->count() - $linked->count(),

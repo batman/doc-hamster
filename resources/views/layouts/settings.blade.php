@@ -34,7 +34,7 @@
                 <x-icon name="chevron-right" />
                 <span class="strip-label"><x-icon :name="$current['icon']" /><span>{{ __('settings.groups.'.$group) }}</span></span>
             </button>
-            <div class="col col-nav @if (! $hasPage) is-last @endif" data-col="1">
+            <div class="col {{ $__env->hasSection('pane') ? 'col-pane' : 'col-nav' }} @if (! $hasPage) is-last @endif" data-col="1">
                 @hasSection('pane')
                     @yield('pane')
                 @else

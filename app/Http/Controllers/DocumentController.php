@@ -107,6 +107,7 @@ final class DocumentController
             'views' => self::VIEWS,
             'month' => $month,
             'complete' => $complete,
+            'trashed' => Gate::allows(Permission::TrashDocuments->value) ? $this->visible($request)->onlyTrashed()->count() : 0,
         ];
     }
 
@@ -170,7 +171,7 @@ final class DocumentController
             $audit->record('document.uploaded', orgId: $org->id(), userId: $userId, subject: $document, ip: $request->ip());
         }
 
-        return redirect('/')->with('status', trans_choice('documents.saved', count($checked)));
+        return redirect()->route('documents.index')->with('status', trans_choice('documents.saved', count($checked)));
     }
 
     public function updateTags(Request $request, string $id, AuditLog $audit, CurrentOrg $org): RedirectResponse
@@ -214,6 +215,21 @@ final class DocumentController
         $audit->record('document.trashed', orgId: $org->id(), userId: $this->userId($request), subject: $document, ip: $request->ip());
 
         return redirect()->route('documents.index')->with('status', __('documents.deleted'));
+    }
+
+    /** The trash (#30 "Belege löschen"): receipts deleted by mistake come back from here. */
+    public function trash(Request $request): View
+    {
+        return view('documents.trash', ['documents' => $this->visible($request)->onlyTrashed()->with('files')->latest('deleted_at')->limit(200)->get()]);
+    }
+
+    public function restore(Request $request, string $id, AuditLog $audit, CurrentOrg $org): RedirectResponse
+    {
+        $document = $this->visible($request)->onlyTrashed()->whereKey($id)->firstOrFail();
+        $document->restore();
+        $audit->record('document.restored', orgId: $org->id(), userId: $this->userId($request), subject: $document, ip: $request->ip());
+
+        return redirect()->route('documents.trash')->with('status', __('documents.restored'));
     }
 
     public function file(Request $request, string $id): Response
