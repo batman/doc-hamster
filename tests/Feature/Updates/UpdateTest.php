@@ -85,3 +85,20 @@ it('refuses an installer whose checksum does not match', function (): void {
     $response->assertSessionHasErrors('update');
     expect($written)->toBeFalse();
 });
+
+it('hands over to install.php for an update without questions and says when it is done', function (): void {
+    fakeRelease('1.1.0', '<?php // installer');
+
+    $webRoot = dirname(base_path()).'/dh-test-web-'.uniqid();
+    mkdir($webRoot);
+
+    $response = $this->withServerVariables(['SCRIPT_FILENAME' => $webRoot.'/index.php'])
+        ->post('/update/install', ['password' => 'ein-langes-test-passwort']);
+
+    @unlink($webRoot.'/install.php');
+    @unlink(dirname($webRoot).'/dochamster-install-code.txt');
+    @rmdir($webRoot);
+
+    expect($response->headers->get('Location'))->toMatch('#/install\.php\?code=[0-9A-F]{20}&update=1$#');
+    $this->get('/update?updated=1')->assertSee('Fertig: docHamster ist jetzt auf Version 1.0.0.');
+});

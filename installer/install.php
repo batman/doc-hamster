@@ -51,11 +51,17 @@ function page(string $title, string $body): void
 {
     echo '<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
         .'<meta name="robots" content="noindex"><title>'.h($title).' – DocHamster</title><style>'
-        .'body{font:16px/1.5 system-ui,sans-serif;max-width:40rem;margin:2rem auto;padding:0 1rem}'
-        .'input{width:100%;padding:.6rem;font:inherit;box-sizing:border-box}input[type=checkbox]{width:auto}button,.button{display:inline-block;margin-top:1rem;padding:.7rem 1.4rem;'
-        .'border:0;border-radius:6px;background:#2b6cb0;color:#fff;font:inherit;text-decoration:none;cursor:pointer}'
-        .'.ok{color:#2f855a}.fail{color:#c53030}code{background:#eee;padding:.1rem .3rem;word-break:break-all}</style></head><body>'
-        .'<p>DocHamster · Installation · Version '.h(DH_INSTALLER_VERSION).'</p><h1>'.h($title).'</h1>'.$body.'</body></html>';
+        .':root{color-scheme:light dark;--p:#ff7622;--ink:#dd4000;--bg:#faf9f5;--sf:#f0eee6;--tx:#1f1e1d;--bd:#d9d6cc;--ok:#10a65b;--err:#ee1717}'
+        .'@media (prefers-color-scheme:dark){:root{--ink:#ff7622;--bg:#262624;--sf:#30302e;--tx:#f5f4ee;--bd:#4a4945;--ok:#68d391;--err:#fc8181}}'
+        .'*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}'
+        .'header{display:flex;align-items:center;height:3.5rem;padding:0 1rem;background:#30302e;color:#faf9f5;font-weight:700}header small{margin-left:auto;font-weight:400;opacity:.8}'
+        .'main{max-width:40rem;padding:1.5rem 2rem 3rem}a{color:var(--ink)}label{display:block;margin-top:1rem;font-weight:600;color:var(--p)}'
+        .'input{width:100%;max-width:32rem;min-height:48px;padding:.6rem .75rem;font:inherit;color:var(--tx);background:var(--bg);border:2px solid var(--p);border-radius:20px}'
+        .'input[type=checkbox]{width:auto;min-height:0;accent-color:var(--p)}label:has(input[type=checkbox]){color:var(--tx);font-weight:400}'
+        .'button,.button{display:inline-flex;align-items:center;min-height:48px;margin-top:1.5rem;padding:.7rem 1.4rem;border:0;border-radius:20px;background:var(--p);color:#fff;'
+        .'font:inherit;font-size:1.125rem;font-weight:600;letter-spacing:.07em;text-decoration:none;cursor:pointer}'
+        .'.ok{color:var(--ok)}.fail{color:var(--err)}code{background:var(--sf);padding:.1rem .3rem;border-radius:4px;word-break:break-all}</style></head><body>'
+        .'<header>docHamster<small>Installation · Version '.h(DH_INSTALLER_VERSION).'</small></header><main><h1>'.h($title).'</h1>'.$body.'</main></body></html>';
     exit;
 }
 
@@ -330,6 +336,8 @@ if (empty($_SESSION['unlocked'])) {
         if (hash_equals($norm((string) file_get_contents($codeFile)), $norm($given))) {
             session_regenerate_id(true);
             $_SESSION['unlocked'] = true;
+            // From the app's update button: the answers are known, so no choice page (see step 2b).
+            $_SESSION['auto_update'] = ($_GET['update'] ?? '') === '1';
             header('Location: '.basename(__FILE__));
             exit;
         }
@@ -366,6 +374,15 @@ $zipFile = dirname($appDir).'/dochamster-download.zip';
 // Step 2b: an existing copy – the user decides: update (data stays) or fresh install (data gone).
 if ($existing) {
     $action = $posted ? (string) ($_POST['action'] ?? '') : '';
+
+    // Started by the app: update right away. A first short page shows that something happens, its reload does the work.
+    $auto = ! empty($_SESSION['auto_update']) && $finished && $allOk;
+    if ($auto && $action === '') {
+        if (! isset($_GET['run'])) {
+            page('docHamster wird aktualisiert', '<meta http-equiv="refresh" content="1;url='.h(basename(__FILE__)).'?run=1"><p>Version '.h($release['version']).' wird installiert. Das dauert etwa eine Minute, bitte die Seite nicht schließen.</p>');
+        }
+        $action = 'update';
+    }
 
     if ($action === '') {
         $installed = is_file($appDir.'/VERSION') ? trim((string) file_get_contents($appDir.'/VERSION')) : 'unbekannt';
@@ -451,6 +468,11 @@ if ($existing) {
     if ($needsOwner) {
         page('Fast fertig', '<p class="ok">DocHamster '.h($release['version']).' ist installiert.'.$selfDeleted.'</p><p>Jetzt legen Sie noch Ihr Inhaber-Konto an.</p>'
             .'<a class="button" href="/setup?code='.rawurlencode($code).'">Weiter</a>');
+    }
+    // Back to the app, which says which version is now installed.
+    if ($auto && $selfDeleted === '') {
+        header('Location: /update?updated=1');
+        exit;
     }
     page($action === 'update' ? 'Aktualisiert' : 'Neu installiert', '<p class="ok">DocHamster ist jetzt auf Version '.h($release['version']).'.'.$selfDeleted.'</p><a class="button" href="/">Zu DocHamster</a>');
 }

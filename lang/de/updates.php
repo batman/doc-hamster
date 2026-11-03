@@ -11,6 +11,7 @@ return [
     'available' => 'Version :version ist verfügbar.',
     'keeps_data' => 'Alle Belege, Konten und Einstellungen bleiben erhalten.',
     'install' => 'Jetzt aktualisieren',
+    'done' => 'Fertig: docHamster ist jetzt auf Version :version.',
     'unreachable' => 'GitHub ist gerade nicht erreichbar. Bitte versuchen Sie es später noch einmal.',
     'not_writable' => 'docHamster darf den Webordner nicht ändern. Bitte laden Sie install.php von der Release-Seite selbst hoch.',
     'manual' => 'Auf diesem Server geht das nicht automatisch. Bitte laden Sie install.php von der Release-Seite hoch und öffnen Sie sie.',

@@ -25,6 +25,7 @@ final class UpdateController
             'current' => (string) config('dochamster.version'),
             'available' => session('update.available'),
             'supported' => $this->supported($request),
+            'updated' => $request->query('updated') === '1',
         ]);
     }
 
@@ -71,7 +72,7 @@ final class UpdateController
 
         $audit->record('update.started', orgId: $org->id(), userId: $org->membership()->user_id, meta: ['version' => $latest['version']], ip: $request->ip());
 
-        return redirect()->to('/install.php?code='.$code);
+        return redirect()->to('/install.php?code='.$code.'&update=1');
     }
 
     /** Only the layout install.php creates: app folder next to the web root. */

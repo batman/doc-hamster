@@ -6,6 +6,9 @@
     <h1>{{ __('updates.title') }}</h1>
     <p>{{ __('updates.current', ['version' => $current]) }}</p>
 
+    @if ($updated)
+        <p class="check-ok" role="status">{{ __('updates.done', ['version' => $current]) }}</p>
+    @endif
     @if (session('status'))
         <p class="check-ok" role="status">{{ session('status') }}</p>
     @endif
