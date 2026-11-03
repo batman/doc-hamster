@@ -194,3 +194,9 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done: screens only rendered in tests, not looked at in a browser or on a phone. PLAN (categories, docs pause).
 - Next: **Lead:** post-merge review. Stage 1 of #35 is then done apart from your MVP-CSV and PHONE.
 - Branch/PR: manager/MVP-TAGS-tags
+
+## 2026-11-03 · PO (Claude chat) · UI-STYLE
+- Done: Went through the old styleguide with the PO and collected twelve points. New styleguide with every app page, new stylesheet and new Tabler icons, all next to the running app (`public/design/`), plus the hand-over `docs/design/ui-redesign.md`. `public/css/app.css` and the views are untouched, so the app looks as before.
+- Not done / next step: **UI-APPLY** – put the new look into the Blade views and JS and replace `public/css/app.css` with `public/design/app.css` in the same PR (issue `to:lead`).
+- Watch out: the new CSS needs the new markup (left column with dark block + menu), CSS alone would break the layout. The hamster is out of the UI for now; keep `public/js/hamster.js`.
+- Branch/PR: po/UI-STYLE-new-look
