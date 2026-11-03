@@ -1,8 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.settings')
 
 @section('title', __('exports.title'))
 
-@section('content')
+@section('page')
     <h1>{{ __('exports.title') }}</h1>
     <p>{{ __('exports.text') }}</p>
 

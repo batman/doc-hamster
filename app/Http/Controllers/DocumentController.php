@@ -9,11 +9,13 @@ use App\Domain\Auth\User;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
 use App\Domain\Documents\Tag;
+use App\Domain\Documents\Thumbnail;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
 use Carbon\CarbonImmutable;
 use finfo;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -52,6 +54,22 @@ final class DocumentController
 
     public function index(Request $request): View
     {
+        return view('documents.index', $this->listing($request));
+    }
+
+    /** The list with one receipt opened beside it (design point 17), with its own address. */
+    public function show(Request $request, string $id): View
+    {
+        $open = $this->visible($request)->with(['files', 'tags', 'matches.transaction'])->whereKey($id)->firstOrFail();
+
+        return view('documents.index', [...$this->listing($request), 'open' => $open]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function listing(Request $request): array
+    {
         $tags = Tag::query()->orderBy('name')->get();
         $wanted = $request->query('tags');
         $selected = $tags->pluck('id')->intersect(is_array($wanted) ? $wanted : [])->values()->all();
@@ -80,7 +98,8 @@ final class DocumentController
         // Filtering in the browser works only when the page holds every receipt (point 7).
         $complete = $selected === [] && ($view === 'calendar' || $documents->count() <= self::LIMIT);
 
-        return view('documents.index', [
+        return [
+            'open' => null,
             'documents' => $view === 'calendar' ? $documents : $documents->take(self::LIMIT),
             'tags' => $tags,
             'selected' => $selected,
@@ -88,7 +107,7 @@ final class DocumentController
             'views' => self::VIEWS,
             'month' => $month,
             'complete' => $complete,
-        ]);
+        ];
     }
 
     /** The chosen view is kept per person (point 11). */
@@ -144,6 +163,9 @@ final class DocumentController
 
                 return $document;
             });
+            // Once, at upload: the list shows only this small copy (design point 14).
+            $file = $document->files()->firstOrFail();
+            $file->update(['thumb_path' => Thumbnail::make($file)]);
 
             $audit->record('document.uploaded', orgId: $org->id(), userId: $userId, subject: $document, ip: $request->ip());
         }
@@ -167,17 +189,82 @@ final class DocumentController
         return back()->with('status', __('tags.changed'));
     }
 
+    /** Title, note and tags from the receipt view. */
+    public function update(Request $request, string $id, AuditLog $audit, CurrentOrg $org): RedirectResponse
+    {
+        $data = $request->validate([
+            'title' => ['sometimes', 'required', 'string', 'max:250'],
+            'note' => ['nullable', 'string', 'max:5000'],
+            ...self::tagRules(),
+        ]);
+        $document = $this->visible($request)->whereKey($id)->firstOrFail();
+
+        $document->update(['note' => $data['note'] ?? null, ...(isset($data['title']) ? ['title' => $data['title']] : [])]);
+        $document->tags()->sync($data['tags'] ?? []);
+        $audit->record('document.changed', orgId: $org->id(), userId: $this->userId($request), subject: $document, ip: $request->ip());
+
+        return back()->with('status', __('documents.changed'));
+    }
+
+    /** Into the trash: the receipt leaves every list, the file stays (#30, "Belege löschen"). */
+    public function destroy(Request $request, string $id, AuditLog $audit, CurrentOrg $org): RedirectResponse
+    {
+        $document = $this->visible($request)->whereKey($id)->firstOrFail();
+        $document->delete();
+        $audit->record('document.trashed', orgId: $org->id(), userId: $this->userId($request), subject: $document, ip: $request->ip());
+
+        return redirect()->route('documents.index')->with('status', __('documents.deleted'));
+    }
+
     public function file(Request $request, string $id): Response
+    {
+        [$file, $document] = $this->visibleFile($request, $id);
+        $document->forceFill(['last_opened_at' => now()])->saveQuietly();
+
+        return Storage::disk('local')->response($file->path, null, ['Content-Type' => $file->mime]);
+    }
+
+    public function download(Request $request, string $id): Response
+    {
+        [$file, $document] = $this->visibleFile($request, $id);
+        $document->forceFill(['last_downloaded_at' => now()])->saveQuietly();
+
+        // A renamed receipt keeps its file type in the download name.
+        $extension = pathinfo($file->path, PATHINFO_EXTENSION);
+        $name = str_ends_with(Str::lower($document->title), '.'.$extension) ? $document->title : $document->title.'.'.$extension;
+
+        return Storage::disk('local')->download($file->path, $name, ['Content-Type' => $file->mime]);
+    }
+
+    /** The stored small image; it never changes, so the browser may keep it. */
+    public function thumb(Request $request, string $id): Response
+    {
+        [$file] = $this->visibleFile($request, $id);
+        abort_if($file->thumb_path === null, 404);
+
+        return Storage::disk('local')->response($file->thumb_path, null, [
+            'Content-Type' => 'image/jpeg',
+            'Cache-Control' => 'private, max-age=31536000, immutable',
+        ]);
+    }
+
+    /**
+     * @return array{DocumentFile, Document}
+     */
+    private function visibleFile(Request $request, string $id): array
     {
         // Explicit query, not route binding: bindings run before the `org` middleware sets the scope.
         $file = DocumentFile::query()->whereKey($id)->firstOrFail();
 
-        Document::query()
-            ->visibleTo($this->userId($request), Gate::allows(Permission::ViewAllDocuments->value))
-            ->whereKey($file->document_id)
-            ->firstOrFail();
+        return [$file, $this->visible($request)->whereKey($file->document_id)->firstOrFail()];
+    }
 
-        return Storage::disk('local')->response($file->path, null, ['Content-Type' => $file->mime]);
+    /**
+     * @return Builder<Document>
+     */
+    private function visible(Request $request): Builder
+    {
+        return Document::query()->visibleTo($this->userId($request), Gate::allows(Permission::ViewAllDocuments->value));
     }
 
     /**

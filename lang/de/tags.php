@@ -21,5 +21,13 @@ return [
     'reset_filter' => 'Filter zurücksetzen',
     'change' => 'Tags ändern',
     'changed' => 'Die Tags wurden geändert.',
+    'search' => 'Tags suchen',
+    'new' => 'Neuen Tag anlegen',
+    'color' => 'Farbe',
+    'own_color' => 'Eigene Farbe',
+    'hex' => 'Farbwert',
+    'delete_title' => 'Tag löschen?',
+    'delete_text' => '„#:name“ wird von allen Belegen entfernt. Die Belege bleiben erhalten.',
+    'cancel' => 'Abbrechen',
     'no_match' => 'Kein Beleg hat alle gewählten Tags.',
 ];

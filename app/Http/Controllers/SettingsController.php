@@ -4,46 +4,27 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\SettingsMenu;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Http\RedirectResponse;
 
 /**
- * Einstellungen: one page that leads to everything besides receipts and bank
- * (ui-redesign point 12). A person sees only the links they may open.
+ * Einstellungen: the groups, then a group's entries (design point 21). The
+ * pages themselves come from their own controllers in layouts/settings.
  */
 final class SettingsController
 {
-    /** group => list of [key, route, icon, ability (null = everyone logged in)] */
-    private const GROUPS = [
-        'access' => [
-            ['members', 'members.index', 'users', 'members.manage'],
-            ['roles', 'roles.index', 'user-shield', 'members.manage'],
-        ],
-        'documents' => [
-            ['tags', 'tags.index', 'tags', 'tags.manage'],
-        ],
-        'bank' => [
-            ['bank', 'bank.import', 'building-bank', 'banking.import'],
-        ],
-        'export' => [
-            ['export', 'exports.form', 'file-export', 'exports.create'],
-        ],
-        'system' => [
-            ['update', 'updates.show', 'cloud-download', 'settings.manage'],
-            ['phone', 'phone-check.qr', 'device-mobile', null],
-        ],
-    ];
-
     public function index(): View
     {
-        $groups = [];
-        foreach (self::GROUPS as $group => $links) {
-            $allowed = array_values(array_filter($links, static fn (array $link): bool => $link[3] === null || Gate::allows($link[3])));
-            if ($allowed !== []) {
-                $groups[$group] = $allowed;
-            }
-        }
+        return view('settings.index');
+    }
 
-        return view('settings.index', ['groups' => $groups]);
+    public function group(string $group): View|RedirectResponse
+    {
+        $groups = SettingsMenu::groups();
+        abort_unless(isset($groups[$group]), 404);
+
+        // A leaf group is a single page: open it right away.
+        return $groups[$group]['leaf'] ? redirect()->route($groups[$group]['items'][0]['route']) : view('settings.index');
     }
 }

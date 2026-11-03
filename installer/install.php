@@ -241,6 +241,13 @@ function migrate(string $appDir): void
     if ($kernel->call('migrate', ['--force' => true]) !== 0) {
         throw new RuntimeException('Die Datenbank konnte nicht angepasst werden.');
     }
+    // Thumbnails for receipts uploaded before they existed; a failure here doesn't stop the update.
+    if (array_key_exists('dochamster:thumbnails', $kernel->all())) {
+        try {
+            $kernel->call('dochamster:thumbnails');
+        } catch (Throwable $e) {
+        }
+    }
 }
 
 /** @return array<string, string> */

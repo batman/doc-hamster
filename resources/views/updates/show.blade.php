@@ -1,8 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.settings')
 
 @section('title', __('updates.title'))
 
-@section('content')
+@section('page')
     <h1>{{ __('updates.title') }}</h1>
     <p>{{ __('updates.current', ['version' => $current]) }}</p>
 

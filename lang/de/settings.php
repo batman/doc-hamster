@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 return [
     'title' => 'Einstellungen',
+    'fold' => 'Zuklappen',
+    'expand' => ':name aufklappen',
     'groups' => [
-        'access' => 'Zugang',
-        'documents' => 'Belege',
+        'people' => 'Personen & Rollen',
         'bank' => 'Bank',
+        'tags' => 'Tags',
         'export' => 'Export',
-        'system' => 'System',
+        'update' => 'Update',
     ],
     'links' => [
         'members' => ['title' => 'Personen', 'text' => 'Wer Zugang hat'],

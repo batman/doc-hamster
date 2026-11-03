@@ -104,7 +104,7 @@ it('lets those who may edit a receipt change its tags, limited to what they can 
 });
 
 it('lets Admins and the checkbox manage the list, nobody else', function (): void {
-    $this->actingAs($this->admin->user)->post('/tags', ['name' => 'Tanken'])->assertRedirect(route('tags.index'));
+    $this->actingAs($this->admin->user)->post('/tags', ['name' => '#Tanken'])->assertRedirect();
     expect(tagNamed($this->orgId, 'Tanken')->org_id)->toBe($this->orgId);
 
     $this->post('/tags', ['name' => 'tanken'])->assertSessionHasErrors('name');

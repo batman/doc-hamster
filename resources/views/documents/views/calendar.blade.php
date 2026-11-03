@@ -17,7 +17,7 @@
         <div class="day">
             <b>{{ $day }}</b>
             @foreach ($byDay->get($day, collect()) as $document)
-                <a class="entry" href="{{ $document->fileUrl() }}" data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}">{{ $document->title }}</a>
+                <a class="entry" href="{{ route('documents.show', [$document->id, ...request()->query()]) }}" data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}">{{ $document->title }}</a>
             @endforeach
         </div>
     @endfor

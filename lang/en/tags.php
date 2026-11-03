@@ -21,5 +21,13 @@ return [
     'reset_filter' => 'Reset filter',
     'change' => 'Change tags',
     'changed' => 'The tags were changed.',
+    'search' => 'Search tags',
+    'new' => 'Create a new tag',
+    'color' => 'Colour',
+    'own_color' => 'Own colour',
+    'hex' => 'Colour value',
+    'delete_title' => 'Delete tag?',
+    'delete_text' => '"#:name" will be removed from all receipts. The receipts stay.',
+    'cancel' => 'Cancel',
     'no_match' => 'No receipt has all the chosen tags.',
 ];

@@ -493,3 +493,28 @@ button.col-strip:hover { box-shadow: none; background: var(--bg); }
 .count-details ul { margin: .5rem 0 0; padding-left: 1.2rem; }
 .page-split > .cols { flex: 1 1 0; min-width: 0; }
 label.tag-choice:not(.chip):has(> input[type="checkbox"]) { display: inline-block; min-height: 0; gap: 0; padding: 0; font-weight: 600; }
+
+/* App additions for round 2 */
+.tag.is-selected, .tag[aria-pressed="true"], .tag-choice input:checked + .tag { color: var(--tag-text, #1a1a18); }
+a.col-item { text-decoration: none; }
+.col-item .go { display: flex; margin-left: auto; }
+.col-item .go .icon { width: 1.125rem; height: 1.125rem; color: var(--muted); }
+.dialog-actions form { flex: 1; display: flex; }
+.dialog-actions form button { flex: 1; margin: 0; }
+.dropdown-tags { padding: .25rem .5rem .75rem; }
+.dropdown-panel .dialog-actions { margin-top: .25rem; padding: 0 .5rem .5rem; }
+.tag-color-field { margin: 1rem 0 0; padding: 0; border: 0; }
+.tag-color-field legend { padding: 0; font-weight: 600; color: var(--primary); }
+.tag-color-own { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-top: .75rem; }
+.tag-color-own label { margin: 0; }
+.tag-color-own input[type="color"] { width: 3rem; height: 3rem; min-height: 0; padding: 0; border-radius: 50%; cursor: pointer; }
+.tag-color-own input[data-color-hex] { max-width: 9rem; }
+.detail-doc .thumb { max-height: 100%; }
+@media (max-width: 63.99rem) {
+    .cols { flex-direction: column; min-height: 0; }
+    .col, .col-nav { width: auto; border-right: 0; border-bottom: 1px solid var(--border); }
+    button.col-strip { width: 100%; flex-direction: row; padding: .75rem 1rem; border-right: 0; border-bottom: 1px solid var(--border); }
+    .strip-label { writing-mode: horizontal-tb; }
+    .strip-label .icon { rotate: 0deg; }
+}
+.col { overflow-x: hidden; }

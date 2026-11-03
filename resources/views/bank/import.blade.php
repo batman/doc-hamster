@@ -1,8 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.settings')
 
 @section('title', __('bank.import'))
 
-@section('content')
+@section('page')
     <h1>{{ __('bank.import') }}</h1>
 
     @if (session('status'))

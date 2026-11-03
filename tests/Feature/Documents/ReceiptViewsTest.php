@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domain\Documents\Document;
+use App\Domain\Documents\Tag;
 use App\Domain\Org\Membership;
 use App\Domain\Org\OrgScope;
 use App\Domain\Org\RoleRight;
@@ -41,9 +42,40 @@ it('refuses unknown views and moves the calendar by month', function (): void {
 });
 
 it('shows only the settings a person may open', function (): void {
-    $this->actingAs($this->admin->user)->get('/settings')->assertOk()->assertSee('Personen')->assertSee('Update')->assertSee('Handy-Test');
+    $this->actingAs($this->admin->user)->get('/settings')->assertOk()->assertSee('Personen &amp; Rollen', false)->assertSee('Update');
+    $this->get('/settings/update')->assertOk()->assertSee('Handy-Test');
+    $this->get('/settings/tags')->assertRedirect(route('tags.index'));
 
     $clerk = Membership::factory()->withRights(RoleRight::Upload)->create(['org_id' => $this->admin->org_id]);
     $this->actingAs($clerk->user)->get('/settings')->assertOk()
-        ->assertDontSee('Personen')->assertDontSee('Konten und Import')->assertSee('Handy-Test');
+        ->assertDontSee('Personen &amp; Rollen', false)->assertDontSee('Bank</span>', false)->assertSee('Update');
+    $this->get('/settings/people')->assertNotFound();
+});
+
+it('opens a receipt beside the list, saves title, note and tags, and deletes into the trash', function (): void {
+    $document = Document::query()->withoutGlobalScope(OrgScope::class)->where('title', 'bon.jpg')->firstOrFail();
+    $tag = Tag::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $this->admin->org_id)->firstOrFail();
+
+    $this->actingAs($this->admin->user)->get('/documents/'.$document->id)->assertOk()
+        ->assertSee('class="split-detail"', false)->assertSee('Verlauf');
+
+    $this->post('/documents/'.$document->id, ['title' => 'Tankquittung', 'note' => 'Fahrt nach Köln', 'tags' => [$tag->id]])->assertRedirect();
+    $document->refresh();
+    expect([$document->title, $document->note, $document->tags()->pluck('tags.id')->all()])->toBe(['Tankquittung', 'Fahrt nach Köln', [$tag->id]]);
+
+    $this->post('/documents/'.$document->id.'/delete')->assertRedirect(route('documents.index'));
+    expect(Document::query()->withoutGlobalScope(OrgScope::class)->count())->toBe(0)
+        ->and(Document::withTrashed()->withoutGlobalScope(OrgScope::class)->count())->toBe(1);
+});
+
+it('colours tags: a palette colour by chance, any colour by hand, and serves them as a stylesheet', function (): void {
+    $this->actingAs($this->admin->user)->post('/tags', ['name' => 'Reise'])->assertRedirect();
+    $travel = Tag::query()->where('name', 'Reise')->firstOrFail();
+    expect(Tag::PALETTE)->toContain($travel->color);
+
+    $this->post('/tags/'.$travel->id, ['name' => 'Reise', 'color' => '#ff7622', 'color_hex' => '#12345A'])->assertRedirect();
+    expect($travel->fresh()->color)->toBe('#12345a');
+    $this->post('/tags/'.$travel->id, ['name' => 'Reise', 'color_hex' => 'red;}'])->assertSessionHasErrors('color');
+
+    $this->get('/tags.css')->assertOk()->assertSee('.tag-'.$travel->id.'{--tag:#12345a;--tag-text:#ffffff}', false);
 });

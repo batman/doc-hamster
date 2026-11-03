@@ -44,6 +44,18 @@ Both agents are Claude (Claude Code, separate sessions). Each session is told it
 8. **Talk through GitHub.** Questions, requests and replies between the agents go into GitHub **issues** labelled `to:lead` / `to:manager` / `to:po`, or into PR reviews. Check them at the start of every session. Decisions that come out of a discussion are recorded in DECISIONS.md.
 9. **Review critically, never rubber-stamp.** A review names what was checked, what could break, and what is missing. "Looks good" alone is not a review.
 
+## PO working rule (2026-11-03, every session, Lead and Manager)
+
+1. **Collect first.** When the PO describes changes or ideas, note them as a numbered list. Do not implement, commit or start tasks yet.
+2. **Implement only on "Go".** "Go" means: implement all points collected since the last Go, none left out. Without an explicit Go, do nothing.
+3. **Keep answers short.** State information once, no repetition, no recaps.
+4. **Ask only necessary questions.** Decide small things yourself and report them ("decided myself: …"). Bundle questions, number them F1, F2 …
+5. **Answer only what was asked.** No unrequested tips or advice.
+6. **Proposals (A1, A2 …) count as accepted** if the PO says nothing; they go in with the next Go.
+7. **No technical explanations of solutions.** If something fails, say briefly what is wrong and that it is fixed with the next Go.
+8. **With each delivered version**, give a short test list of only the changed items.
+9. **Never put the PO's real name into the repo** (files, commit authors, PR/issue texts). Use "PO", sample names (Max Mustermann), and a noreply or login identity. Merge PRs locally (rebase + fast-forward), not with the GitHub merge button, which writes the profile name into the history.
+
 ## Public repository rules
 
 The repo is private now and **will be made public**. Git history is permanent: deleting a file later does not remove it from history, forks or caches.

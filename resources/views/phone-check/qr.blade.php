@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.settings')
 
 @section('title', __('phone_check.qr_title'))
 
@@ -7,7 +7,7 @@
     <meta http-equiv="refresh" content="30">
 @endpush
 
-@section('content')
+@section('page')
     <h1>{{ __('phone_check.qr_title') }}</h1>
 
     <h2>{{ __('phone_check.qr_step_page') }}</h2>

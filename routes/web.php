@@ -20,7 +20,14 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::get('/', [DocumentController::class, 'index'])->name('documents.index');
     Route::post('documents', [DocumentController::class, 'store'])->middleware('can:documents.upload')->name('documents.store');
     Route::post('documents/view', [DocumentController::class, 'setView'])->name('documents.view');
+    Route::get('documents/{id}', [DocumentController::class, 'show'])->name('documents.show');
+    Route::post('documents/{id}', [DocumentController::class, 'update'])->middleware('can:documents.edit')->name('documents.update');
+    Route::post('documents/{id}/delete', [DocumentController::class, 'destroy'])->middleware('can:documents.trash')->name('documents.destroy');
+    Route::get('files/{id}/download', [DocumentController::class, 'download'])->name('documents.download');
+    Route::get('files/{id}/thumb', [DocumentController::class, 'thumb'])->name('documents.thumb');
+    Route::get('tags.css', [TagController::class, 'css'])->name('tags.css');
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
+    Route::get('settings/{group}', [SettingsController::class, 'group'])->name('settings.group');
     Route::post('documents/{id}/tags', [DocumentController::class, 'updateTags'])->middleware('can:documents.edit')->name('documents.tags');
     Route::get('files/{id}', [DocumentController::class, 'file'])->name('documents.file');
     Route::get('phone-check/qr', [PhoneCheckController::class, 'qr'])->name('phone-check.qr');

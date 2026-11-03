@@ -8,6 +8,9 @@
     <meta name="theme-color" content="#30302e">
     <title>@hasSection('title')@yield('title') – @endif{{ config('app.name') }}</title>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    @auth
+        <link rel="stylesheet" href="{{ route('tags.css') }}">
+    @endauth
     <script src="{{ asset('js/app.js') }}"></script>
     @stack('head')
 </head>
@@ -60,7 +63,7 @@
             </aside>
         @endauth
         <div class="content">
-            <main id="main" class="page">
+            <main id="main" class="@yield('main_class', 'page')">
                 @if (isset($errors) && $errors->hasAny(['file', 'files', 'files.*']))
                     <p class="error" role="alert">{{ $errors->first('file') ?: ($errors->first('files') ?: $errors->first('files.*')) }}</p>
                 @endif

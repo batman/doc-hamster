@@ -134,7 +134,7 @@
         });
     };
 
-    // Receipt filter: applies with every tick. A receipt must have all ticked tags.
+    // Receipt filter: ticks collect, "Anwenden" filters. A receipt must have all ticked tags.
     // When the page doesn't hold every receipt, the server filters instead.
     const setupFilter = () => {
         const filter = document.querySelector('.dropdown[data-kind="filter"]');
@@ -171,7 +171,6 @@
             const badge = filter.querySelector('.badge');
             badge.textContent = String(wanted.length);
             badge.hidden = !active;
-            reset.hidden = !active;
 
             // Keep the address in step, so reloading or a shared link shows the same.
             const url = new URL(location.href);
@@ -180,16 +179,127 @@
             history.replaceState(null, '', url);
         };
 
-        boxes.forEach(box => box.addEventListener('change', apply));
+        const close = () => {
+            filter.querySelector('.dropdown-panel').hidden = true;
+            filter.querySelector('.icon-button').setAttribute('aria-expanded', 'false');
+        };
+        filter.addEventListener('submit', event => {
+            if (filter.dataset.complete === '1') {
+                event.preventDefault();
+                apply();
+                close();
+            }
+        });
         reset.addEventListener('click', () => {
             boxes.forEach(box => { box.checked = false; });
             apply();
+            close();
         });
+    };
+
+    // Our own confirm dialog: [data-dialog-open="x"] shows [data-dialog="x"]; Escape, the backdrop and "Abbrechen" close it.
+    const setupDialogs = () => {
+        const shut = dialog => { dialog.hidden = true; };
+        document.querySelectorAll('[data-dialog-open]').forEach(button => button.addEventListener('click', () => {
+            const dialog = document.querySelector(`[data-dialog="${button.dataset.dialogOpen}"]`);
+            dialog.hidden = false;
+            dialog.querySelector('[data-dialog-close]').focus();
+        }));
+        document.querySelectorAll('[data-dialog]').forEach(dialog => {
+            dialog.addEventListener('click', event => {
+                if (event.target === dialog || event.target.closest('[data-dialog-close]')) {
+                    shut(dialog);
+                }
+            });
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+                document.querySelectorAll('[data-dialog]:not([hidden])').forEach(shut);
+            }
+        });
+    };
+
+    // Einstellungen columns: a pane folds to its strip; opening a strip folds the pane right of it, except the page.
+    const setupColumns = () => {
+        const cols = document.querySelector('[data-cols]');
+        if (!cols) {
+            return;
+        }
+        const pane = i => cols.querySelector(`[data-col="${i}"]`);
+        const strip = i => cols.querySelector(`[data-strip="${i}"]`);
+        const fold = i => {
+            if (pane(i) && strip(i)) {
+                pane(i).hidden = true;
+                strip(i).hidden = false;
+            }
+        };
+        cols.addEventListener('click', event => {
+            const folder = event.target.closest('[data-fold]');
+            if (folder) {
+                fold(Number(folder.dataset.fold));
+                return;
+            }
+            const opener = event.target.closest('[data-strip]');
+            if (opener) {
+                const i = Number(opener.dataset.strip);
+                pane(i).hidden = false;
+                opener.hidden = true;
+                fold(i + 1);
+                // At most two panes besides the menu: with the page open, the pane left of this one folds.
+                if (cols.querySelector('.col-page') && pane(i + 1) === null) {
+                    fold(i - 1);
+                }
+            }
+        });
+    };
+
+    // Tags page: the search narrows the pills while typing, any letters inside the name.
+    const setupTagSearch = () => {
+        const search = document.querySelector('[data-tag-search]');
+        if (!search) {
+            return;
+        }
+        search.addEventListener('input', () => {
+            const wanted = search.value.trim().toLowerCase();
+            document.querySelectorAll('[data-tag-name]').forEach(item => {
+                item.hidden = !item.dataset.tagName.includes(wanted);
+            });
+        });
+    };
+
+    // Tag colour: a palette colour, or any colour from the picker or typed as #rrggbb.
+    const setupColorField = () => {
+        const field = document.querySelector('[data-color-field]');
+        if (!field) {
+            return;
+        }
+        const picker = field.querySelector('[data-color-picker]');
+        const hex = field.querySelector('[data-color-hex]');
+        const radios = [...field.querySelectorAll('input[type="radio"]')];
+        const own = value => {
+            radios.forEach(radio => { radio.checked = false; });
+            hex.value = value;
+        };
+        picker.addEventListener('input', () => own(picker.value));
+        hex.addEventListener('input', () => {
+            if (/^#[0-9a-fA-F]{6}$/.test(hex.value)) {
+                picker.value = hex.value.toLowerCase();
+            }
+            radios.forEach(radio => { radio.checked = false; });
+        });
+        radios.forEach(radio => radio.addEventListener('change', () => {
+            hex.value = '';
+            picker.value = radio.value;
+        }));
     };
 
     document.addEventListener('DOMContentLoaded', () => {
         setupMenu();
         setupDropdowns();
         setupFilter();
+        setupDialogs();
+        setupColumns();
+        setupTagSearch();
+        setupColorField();
     });
 })();

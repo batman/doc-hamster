@@ -1,8 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.settings')
 
 @section('title', __('bank.columns_title'))
 
-@section('content')
+@section('page')
     <h1>{{ __('bank.columns_title') }}</h1>
     <p>{{ __('bank.columns_hint', ['account' => $accountName]) }}</p>
 

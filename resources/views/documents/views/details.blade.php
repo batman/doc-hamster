@@ -9,24 +9,10 @@
         </thead>
         <tbody>
             @foreach ($documents as $document)
-                <tr data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}">
-                    <td><a href="{{ $document->fileUrl() }}">@include('documents._thumb'){{ $document->title }}</a></td>
+                <tr data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" @if ($open?->id === $document->id) class="is-open" @endif>
+                    <td><a href="{{ route('documents.show', [$document->id, ...request()->query()]) }}">@include('documents._type-icon'){{ $document->title }}</a></td>
                     <td>{{ $document->created_at->format('d.m.Y H:i') }}</td>
-                    <td>
-                        {{ $document->tags->pluck('name')->implode(', ') }}
-                        @can('documents.edit')
-                            @if ($tags->isNotEmpty())
-                                <details>
-                                    <summary>{{ __('tags.change') }}</summary>
-                                    <form method="post" action="{{ route('documents.tags', $document->id) }}">
-                                        @csrf
-                                        @include('documents._tag-chips', ['selected' => $document->tags->pluck('id')->all()])
-                                        <button type="submit">{{ __('tags.change') }}</button>
-                                    </form>
-                                </details>
-                            @endif
-                        @endcan
-                    </td>
+                    <td>@include('documents._tags')</td>
                 </tr>
             @endforeach
         </tbody>

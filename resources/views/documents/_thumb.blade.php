@@ -1,6 +1,9 @@
+{{-- Never cropped: the whole page in a frame. Only the stored small copy, never the original (design points 14, 15). --}}
 @php($file = $document->files->first())
-@if ($file?->isImage())
-    <img class="thumb" src="{{ route('documents.file', $file->id) }}" alt="" loading="lazy">
-@else
-    <span class="thumb thumb-file"><x-icon name="file-text" /></span>
-@endif
+<span class="thumb-frame {{ $frameClass ?? '' }}">
+    @if ($file?->thumb_path)
+        <img class="thumb" src="{{ route('documents.thumb', $file->id) }}" alt="" loading="lazy">
+    @else
+        <x-icon :name="$file?->typeIcon() ?? 'file-text'" />
+    @endif
+</span>

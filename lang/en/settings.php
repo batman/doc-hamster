@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 return [
     'title' => 'Settings',
+    'fold' => 'Fold',
+    'expand' => 'Open :name',
     'groups' => [
-        'access' => 'Access',
-        'documents' => 'Receipts',
+        'people' => 'People & roles',
         'bank' => 'Bank',
+        'tags' => 'Tags',
         'export' => 'Export',
-        'system' => 'System',
+        'update' => 'Update',
     ],
     'links' => [
         'members' => ['title' => 'People', 'text' => 'Who has access'],

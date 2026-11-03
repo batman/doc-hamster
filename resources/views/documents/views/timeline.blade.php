@@ -5,10 +5,10 @@
             <h2>{{ $group->first()->created_at->locale(app()->getLocale())->translatedFormat('F Y') }}</h2>
             <ul>
                 @foreach ($group as $document)
-                    <li data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}">
+                    <li data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" @if ($open?->id === $document->id) class="is-open" @endif>
                         <span class="when muted">{{ $document->created_at->format('d.m. H:i') }}</span>
                         @include('documents._thumb')
-                        <a href="{{ $document->fileUrl() }}">{{ $document->title }}</a>
+                        <a href="{{ route('documents.show', [$document->id, ...request()->query()]) }}">{{ $document->title }}</a>
                     </li>
                 @endforeach
             </ul>

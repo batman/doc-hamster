@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 /**
@@ -23,11 +24,14 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $doc_date
  * @property string|null $note
  * @property Carbon $created_at
+ * @property Carbon|null $last_opened_at
+ * @property Carbon|null $last_downloaded_at
  */
 final class Document extends Model
 {
     use BelongsToOrg;
     use HasUlids;
+    use SoftDeletes;
 
     protected $fillable = ['org_id', 'uploaded_by', 'title', 'doc_date', 'note'];
 
@@ -36,7 +40,7 @@ final class Document extends Model
      */
     protected function casts(): array
     {
-        return ['doc_date' => 'date'];
+        return ['doc_date' => 'date', 'last_opened_at' => 'datetime', 'last_downloaded_at' => 'datetime'];
     }
 
     /**
@@ -61,14 +65,6 @@ final class Document extends Model
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class, 'document_tags')->orderBy('name');
-    }
-
-    /** Where the receipt opens in the list: its first file. */
-    public function fileUrl(): string
-    {
-        $file = $this->files->first();
-
-        return $file === null ? '#' : route('documents.file', $file->id);
     }
 
     /**

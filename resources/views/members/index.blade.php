@@ -1,8 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.settings')
 
 @section('title', __('members.title'))
 
-@section('content')
+@section('page')
     <h1>{{ __('members.title') }}</h1>
 
     @if (session('status'))

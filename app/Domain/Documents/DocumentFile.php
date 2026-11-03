@@ -21,13 +21,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $mime
  * @property int $size
  * @property string $sha256
+ * @property string|null $thumb_path
  */
 final class DocumentFile extends Model
 {
     use BelongsToOrg;
     use HasUlids;
 
-    protected $fillable = ['org_id', 'document_id', 'kind', 'page_no', 'path', 'mime', 'size', 'sha256'];
+    protected $fillable = ['org_id', 'document_id', 'kind', 'page_no', 'path', 'mime', 'size', 'sha256', 'thumb_path'];
 
     /**
      * @return BelongsTo<Document, $this>
@@ -35,6 +36,16 @@ final class DocumentFile extends Model
     public function document(): BelongsTo
     {
         return $this->belongsTo(Document::class);
+    }
+
+    /** Tabler icon for the file type in lists (design point 13). */
+    public function typeIcon(): string
+    {
+        return match (true) {
+            $this->isImage() => 'photo',
+            $this->mime === 'application/pdf' => 'file-type-pdf',
+            default => 'file-text',
+        };
     }
 
     public function isImage(): bool
