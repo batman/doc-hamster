@@ -224,3 +224,31 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done: point 8 of #56 (Ghostscript, Lead decides), Revolut `State` rows (product question). Pages not looked at in a browser. Locally 5 setup/update tests fail on SQLite on unchanged `main` too (Windows environment); CI is green.
 - Next: **Lead:** post-merge review of #58/#59; point 8; tick/close #4, #6, #8, #43, #48, #53. **Manager:** nothing free left on the board.
 - Branch/PR: manager/REVIEW-56a-share-links (#58), manager/REVIEW-56b-thumbs-amounts (#59), manager/board-2026-11-04b
+
+## 2026-11-04 · Manager · HAMSTER-FIG
+- Done: On the PO's request (PO go in the Claude chat) the hamster as a real 3D figure (three.js r160, vendored) drawn as pixel art like the PO's reference sheet: toon shader with two tones, one-pixel outline, orthographic camera, coarse pixel grid. Animations as key poses at 8 fps (no smooth motion): idle, walk, stand up, read, eat and tear a document, wave, lie flat, sleep, held, fall, land. Free-moving mascot: wanders, turns in 45° steps, can be grabbed with the mouse (long press on touch), dragged, thrown, falls and lands; eating a document is an animation only. All in `public/js/hamster-mascot.js` (`docHamster3d.createRenderer` / `mountMascot`), demo page `public/design/hamster.html`.
+- Not done (Lead, as agreed with the PO): where the mascot appears (logo, pages, desktop app HAMSTER), what eating a document really does, replacing `public/js/hamster.js`. Not looked at on a real phone.
+- Watch out: needs WebGL; under "reduce motion" it stays put. The vendored three.min.js prints a deprecation warning in the console (unmodified upstream build).
+- Branch/PR: manager/HAMSTER-FIG-mascot
+
+## 2026-11-04 · Manager · HAMSTER-FIG (pixel pass)
+- Done (PO go): every frame now goes through a pixel pass – one outline around the whole figure, inner lines only where a part lies in front of another (head on body, legs, paws, ears), no lines where parts melt into each other; eyes, mouth, cheeks and the "z" are pixel stamps taken from the lying sprite in `public/js/hamster.js` (the PO's reference image is that sprite). Lying/sleeping fitted to the sprite by overlay at the same pixel scale (head turned to the viewer, body mound behind, flat underside, hind foot flat behind); breathing, blinking and the "z" path use the sprite's timing. Fur `#ff7622` (`--primary`) with shadow `#d4500f`, all other colours from the sprite.
+- Not done: still not looked at on a real phone. Integration stays with the Lead.
+- Branch/PR: manager/HAMSTER-FIG-mascot
+
+## 2026-11-04 · Manager · HAMSTER-FIG (back to 3D, start 2D)
+- Done (PO go): `public/js/hamster-mascot.js` back to the version before the pixel pass (PO: that one was better). PO decision: the whole hamster becomes 2D pixel art; the 3D model stays only as a measure for sizes and proportions. Base poses traced pixel by pixel from the PO's two reference images (lying = the sprite in `public/js/hamster.js`); shown to the PO for sign-off before any animation is built.
+- Next: after the PO's OK, layered 2D animations like `public/js/hamster.js`; PR only once the PO is happy (PO, F5).
+- Branch/PR: manager/HAMSTER-FIG-mascot
+
+## 2026-11-04 · Manager · HAMSTER-FIG (2D)
+- Done (PO go): the hamster is now 2D pixel art. Base poses traced pixel by pixel from the PO's reference sheet on one common pixel grid (so proportions match between poses), edges cleaned (closed one-pixel outline, no stray pixels); lying = the `public/js/hamster.js` sprite. `public/js/hamster-sprites.js` holds the pixel data, `public/js/hamster-mascot.js` (`docHamster2d`) builds the animations like hamster.js (pose swaps, whole-pixel moves, small overlays) and keeps the mascot behaviour (wander, drag, throw, fall, land, eat). Lying/sleeping use hamster.js breathing, blinking and "z" timing exactly. three.js removed again (no longer needed).
+- Not done: no real phone test; PR waits until the PO is happy (F5).
+- Branch/PR: manager/HAMSTER-FIG-mascot
+
+## 2026-11-04 · Manager · HAMSTER-FIG (animation polish)
+- Done (PO: "you set the tone"): went through every frame as an animator and fixed what would not pass a client review. Arms are now drawn parts that reach, hold and follow the document (read: pick up / put away; eat: up to the mouth, paws follow the shrinking sheet, back to the chest; tear: wind-up, rip with each paw on its half, throw with the halves, they fly out and fall, dust off). Paper scraps fly out beside the body instead of looking like dirt on the belly. Walk is a real four-frame cycle. Stand-up/kneel/lie-down/get-up keep the same open eyes and go through in-between poses (crouch, rear up, sit). Held: stretched, arms hang, legs kick; fall: arms up. Front-only animations turn to the front first in 45° steps. Automatic check over every frame of every animation and view: 0 open outlines, 0 stray pixels (fixed on the way: a hole in the head outline, cuts after squashing, two open pixels at an ear tip in the hamster.js sprite).
+- Not done: no real phone test.
+- PO: OK, finish it in the repo – PR opened and merged after green CI (one squashed commit on current main).
+- Next: **Lead:** post-merge review; where the mascot goes in the app (logo, pages, desktop app HAMSTER), what eating a document really does, whether it replaces `public/js/hamster.js`.
+- Branch/PR: manager/HAMSTER-FIG-pixel-mascot (squashed; the work-in-progress branch manager/HAMSTER-FIG-mascot can be deleted)

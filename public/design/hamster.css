@@ -1,0 +1,13 @@
+/* Demo page for the mascot only, not part of app.css. */
+body { margin: 0; min-height: 100vh; font-family: system-ui, sans-serif; background: #eef1f4; color: #1c2530; }
+.hd-main { max-width: 52rem; padding: 2rem 1rem 14rem; margin: 0 auto; }
+.hd-note { color: #4a5663; max-width: 40rem; line-height: 1.5; }
+.hd-section { margin-top: 2rem; }
+.hd-row, .hd-docs { display: flex; flex-wrap: wrap; gap: .5rem; }
+.hd-btn { min-height: 2.75rem; padding: 0 1rem; border: 2px solid #1c2530; border-radius: .5rem; background: #fff; color: inherit; font: inherit; cursor: pointer; }
+.hd-btn:focus-visible { outline: 3px solid #2f6fb2; outline-offset: 2px; }
+.hd-docs { margin-bottom: 1rem; }
+.hd-doc { width: 7rem; height: 9rem; padding: .5rem; box-sizing: border-box; border: 2px solid #4a230e; border-radius: .25rem; background: #fffdf7; font-size: .8rem; cursor: grab; touch-action: none; user-select: none; }
+.hd-doc.is-dragging { position: fixed; z-index: 60; cursor: grabbing; box-shadow: 0 .5rem 1rem rgb(0 0 0 / .2); }
+.hd-doc.is-over { border-color: #e9862a; }
+.hd-check { display: flex; gap: .5rem; align-items: center; margin-top: 1rem; }
