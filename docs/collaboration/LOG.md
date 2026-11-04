@@ -233,3 +233,8 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Done (PO go): `public/js/hamster-mascot.js` back to the version before the pixel pass (PO: that one was better). PO decision: the whole hamster becomes 2D pixel art; the 3D model stays only as a measure for sizes and proportions. Base poses traced pixel by pixel from the PO's two reference images (lying = the sprite in `public/js/hamster.js`); shown to the PO for sign-off before any animation is built.
 - Next: after the PO's OK, layered 2D animations like `public/js/hamster.js`; PR only once the PO is happy (PO, F5).
 - Branch/PR: manager/HAMSTER-FIG-mascot
+
+## 2026-11-04 · Manager · HAMSTER-FIG (2D)
+- Done (PO go): the hamster is now 2D pixel art. Base poses traced pixel by pixel from the PO's reference sheet on one common pixel grid (so proportions match between poses), edges cleaned (closed one-pixel outline, no stray pixels); lying = the `public/js/hamster.js` sprite. `public/js/hamster-sprites.js` holds the pixel data, `public/js/hamster-mascot.js` (`docHamster2d`) builds the animations like hamster.js (pose swaps, whole-pixel moves, small overlays) and keeps the mascot behaviour (wander, drag, throw, fall, land, eat). Lying/sleeping use hamster.js breathing, blinking and "z" timing exactly. three.js removed again (no longer needed).
+- Not done: no real phone test; PR waits until the PO is happy (F5).
+- Branch/PR: manager/HAMSTER-FIG-mascot

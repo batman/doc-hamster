@@ -1,8 +1,8 @@
-/* Demo for the 3D mascot: feed documents by dragging them onto the hamster. */
+/* Demo for the pixel-art mascot: feed documents by dragging them onto the hamster. */
 (function () {
     'use strict';
 
-    var mascot = window.docHamster3d.mountMascot(window.THREE, { size: 192, px: 2 });
+    var mascot = window.docHamster2d.mountMascot({ px: 2 });
 
     document.querySelectorAll('[data-play]').forEach(function (btn) {
         btn.addEventListener('click', function () {
