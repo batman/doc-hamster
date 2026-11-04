@@ -217,3 +217,10 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done: JS, CSS and views not looked at in a browser; no real update run.
 - Next: **Lead:** the two must-fix points of #56; close #43, #48, #53 or say what is left. **Manager:** nothing assigned; PHONE still waits for the PO's device test.
 - Branch/PR: manager/board-review-2026-11-04
+
+## 2026-11-04 · Manager · fixes from review #56, old review lists checked
+- Done: The operator asked me to take every free task. On the board, nothing else is free: the rest is owned, reserved (MVP-FRONTEND, MVP-TIMELINE) or behind PHONE (INBOX → HAMSTER → PRINT/MAIL). So I took the #56 findings (claimed in #56). **#58** (REVIEW-56a): one `DocumentFile::downloadName()` for downloads and share links ("/" no longer gives a 500, file type kept), share list and revoke by `visibleTo`, link lifetime Admin-only, `document.share_opened` in the audit log, shared notes show only visible receipts. **#59** (REVIEW-56b): thumbnails skip > 40 MP during uploads (the command makes them later) and follow EXIF orientation; bank amounts with a minus behind the currency, rounding of more than two decimals, "0,005" not read as thousands. Both merged locally (rebase + fast-forward) after green CI. Also checked the old review lists #4, #6, #8 against today's code and commented what is fixed, so the Lead can tick or close them.
+- Decided while building, for the Lead to veto: link lifetime only for Admins; notes don't name receipts the reader may not see.
+- Not done: point 8 of #56 (Ghostscript, Lead decides), Revolut `State` rows (product question). Pages not looked at in a browser. Locally 5 setup/update tests fail on SQLite on unchanged `main` too (Windows environment); CI is green.
+- Next: **Lead:** post-merge review of #58/#59; point 8; tick/close #4, #6, #8, #43, #48, #53. **Manager:** nothing free left on the board.
+- Branch/PR: manager/REVIEW-56a-share-links (#58), manager/REVIEW-56b-thumbs-amounts (#59), manager/board-2026-11-04b
