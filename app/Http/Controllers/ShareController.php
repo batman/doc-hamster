@@ -11,6 +11,7 @@ use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\OrgScope;
 use App\Domain\Org\Permission;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -35,8 +36,8 @@ final class ShareController
         return back()->with('share_url', route('shares.open', $token));
     }
 
-    /** The receipt behind a link, as a download. */
-    public function open(string $token): Response
+    /** The receipt behind a link, as a download; every opening lands in the audit log (PLAN §8, §11). */
+    public function open(Request $request, string $token, AuditLog $audit): Response
     {
         $link = ShareLink::query()->withoutGlobalScope(OrgScope::class)->where('token_hash', hash('sha256', $token))->first();
         abort_if($link === null || ! $link->isActive(), 404);
@@ -45,14 +46,17 @@ final class ShareController
         $file = $document?->files()->withoutGlobalScope(OrgScope::class)->first();
         abort_if($file === null, 404);
 
-        return Storage::disk('local')->download($file->path, $document->title, ['Content-Type' => $file->mime]);
+        $audit->record('document.share_opened', orgId: $link->org_id, subject: $document, meta: ['link' => $link->id], ip: $request->ip());
+
+        return Storage::disk('local')->download($file->path, $file->downloadName($document->title), ['Content-Type' => $file->mime]);
     }
 
     public function index(CurrentOrg $org): View
     {
         return view('shares.index', [
-            'links' => ShareLink::query()->with('document')->whereNull('revoked_at')->where('expires_at', '>', now())->latest()->get(),
+            'links' => $this->visibleLinks($org)->with('document')->whereNull('revoked_at')->where('expires_at', '>', now())->latest()->get(),
             'days' => $this->linkDays($org),
+            'canSetDays' => Gate::allows(Permission::ManageSettings->value),
         ]);
     }
 
@@ -67,11 +71,25 @@ final class ShareController
 
     public function revoke(Request $request, string $id, AuditLog $audit, CurrentOrg $org): RedirectResponse
     {
-        $link = ShareLink::query()->whereKey($id)->firstOrFail();
+        $link = $this->visibleLinks($org)->whereKey($id)->firstOrFail();
         $link->update(['revoked_at' => now()]);
         $audit->record('document.share_revoked', orgId: $org->id(), userId: $org->membership()->user_id, subject: $link, ip: $request->ip());
 
         return redirect()->route('shares.index')->with('status', __('shares.revoked'));
+    }
+
+    /**
+     * Links to receipts the person may see: without "Alle Belege sehen" a link
+     * to someone else's receipt would show its title (#56).
+     *
+     * @return Builder<ShareLink>
+     */
+    private function visibleLinks(CurrentOrg $org): Builder
+    {
+        $userId = $org->membership()->user_id;
+        $seesAll = Gate::allows(Permission::ViewAllDocuments->value);
+
+        return ShareLink::query()->whereHas('document', static fn (Builder $document) => $document->visibleTo($userId, $seesAll));
     }
 
     private function linkDays(CurrentOrg $org): int

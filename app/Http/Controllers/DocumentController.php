@@ -245,11 +245,7 @@ final class DocumentController
         [$file, $document] = $this->visibleFile($request, $id);
         $document->forceFill(['last_downloaded_at' => now()])->saveQuietly();
 
-        // A renamed receipt keeps its file type in the download name.
-        $extension = pathinfo($file->path, PATHINFO_EXTENSION);
-        $name = str_ends_with(Str::lower($document->title), '.'.$extension) ? $document->title : $document->title.'.'.$extension;
-
-        return Storage::disk('local')->download($file->path, $name, ['Content-Type' => $file->mime]);
+        return Storage::disk('local')->download($file->path, $file->downloadName($document->title), ['Content-Type' => $file->mime]);
     }
 
     /** The stored small image; it never changes, so the browser may keep it. */

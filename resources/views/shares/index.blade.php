@@ -8,13 +8,17 @@
         <p class="check-ok" role="status">{{ session('status') }}</p>
     @endif
 
-    <form method="post" action="{{ route('shares.days') }}">
-        @csrf
-        <label for="days">{{ __('shares.days') }}</label>
-        <input id="days" name="days" type="number" min="1" max="365" value="{{ old('days', $days) }}" required>
-        @error('days')<p class="error" role="alert">{{ $message }}</p>@enderror
-        <button type="submit">{{ __('shares.save') }}</button>
-    </form>
+    @if ($canSetDays)
+        <form method="post" action="{{ route('shares.days') }}">
+            @csrf
+            <label for="days">{{ __('shares.days') }}</label>
+            <input id="days" name="days" type="number" min="1" max="365" value="{{ old('days', $days) }}" required>
+            @error('days')<p class="error" role="alert">{{ $message }}</p>@enderror
+            <button type="submit">{{ __('shares.save') }}</button>
+        </form>
+    @else
+        <p class="muted">{{ __('shares.days_set', ['days' => $days]) }}</p>
+    @endif
 
     <h2>{{ __('shares.active') }}</h2>
     @if ($links->isEmpty())

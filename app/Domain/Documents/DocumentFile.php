@@ -8,6 +8,7 @@ use App\Domain\Org\BelongsToOrg;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 /**
  * A stored file of a document, on the private disk outside the web root.
@@ -51,5 +52,19 @@ final class DocumentFile extends Model
     public function isImage(): bool
     {
         return str_starts_with($this->mime, 'image/');
+    }
+
+    /**
+     * The name a download gets: the title people gave it, with the file type
+     * behind it. Slashes are path separators in a download header, so a
+     * title like "Rechnung 03/2026" becomes "Rechnung 03-2026" (#56).
+     */
+    public function downloadName(string $title): string
+    {
+        $name = trim((string) preg_replace('/[\/\\\\\x00-\x1F\x7F]+/', '-', $title));
+        $name = $name === '' ? 'beleg' : $name;
+        $extension = Str::lower(pathinfo($this->path, PATHINFO_EXTENSION));
+
+        return $extension === '' || str_ends_with(Str::lower($name), '.'.$extension) ? $name : $name.'.'.$extension;
     }
 }

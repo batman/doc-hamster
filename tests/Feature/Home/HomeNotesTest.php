@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domain\Audit\AuditLogEntry;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
 use App\Domain\Documents\ShareLink;
@@ -36,7 +37,8 @@ it('keeps a quick note private, and with the right shows it to everyone', functi
     expect($note->checklist)->toEqual([['text' => 'Milch', 'done' => false], ['text' => 'Brot', 'done' => true]])
         ->and($note->documents()->pluck('documents.id')->all())->toBe([$this->doc->id]);
 
-    $this->actingAs($clerk->user)->get('/')->assertSee('Für alle')->assertSee('bon.jpg');
+    // The clerk may not see the Admin's receipt, so the shared note doesn't name it (#56).
+    $this->actingAs($clerk->user)->get('/')->assertSee('Für alle')->assertDontSee('bon.jpg');
     $this->post('/notes/'.$note->id.'/check', ['done' => [0]])->assertForbidden();
 
     $this->actingAs($this->admin->user)->post('/notes/'.$note->id, ['body' => 'Für alle', 'shared' => 1, 'editable' => 1, 'checklist' => "Milch\n[x] Brot"]);
@@ -63,4 +65,49 @@ it('brings a receipt back from the trash', function (): void {
 
     $this->post('/documents/'.$this->doc->id.'/restore')->assertRedirect(route('documents.trash'));
     $this->get('/documents')->assertSee('bon.jpg');
+});
+
+it('names the download after the title, without slashes and with the file type', function (): void {
+    Storage::disk('local')->put('x/bon.jpg', 'bild');
+    $file = DocumentFile::query()->withoutGlobalScope(OrgScope::class)->create(['org_id' => $this->admin->org_id, 'document_id' => $this->doc->id, 'path' => 'x/bon.jpg', 'mime' => 'image/jpeg', 'size' => 4, 'sha256' => str_repeat('0', 64)]);
+    $this->doc->update(['title' => 'Rechnung 03/2026']);
+
+    $this->actingAs($this->admin->user)->get('/files/'.$file->id.'/download')->assertOk()->assertDownload('Rechnung 03-2026.jpg');
+
+    $url = $this->post('/documents/'.$this->doc->id.'/share-link')->getSession()->get('share_url');
+    auth()->logout();
+    $this->get($url)->assertOk()->assertDownload('Rechnung 03-2026.jpg');
+
+    expect(AuditLogEntry::query()->where('action', 'document.share_opened')->count())->toBe(1);
+});
+
+it('stops a link when it expires or its receipt is in the trash', function (): void {
+    Storage::disk('local')->put('x/bon.jpg', 'bild');
+    DocumentFile::query()->withoutGlobalScope(OrgScope::class)->create(['org_id' => $this->admin->org_id, 'document_id' => $this->doc->id, 'path' => 'x/bon.jpg', 'mime' => 'image/jpeg', 'size' => 4, 'sha256' => str_repeat('0', 64)]);
+    $url = $this->actingAs($this->admin->user)->post('/documents/'.$this->doc->id.'/share-link')->getSession()->get('share_url');
+
+    $this->post('/documents/'.$this->doc->id.'/delete');
+    auth()->logout();
+    $this->get($url)->assertNotFound();
+
+    $this->doc->restore();
+    $this->get($url)->assertOk();
+    $this->travel(ShareLink::DEFAULT_DAYS + 1)->days();
+    $this->get($url)->assertNotFound();
+});
+
+it('lists and revokes only links to receipts the person may see, and only Admins set the lifetime', function (): void {
+    $exporter = Membership::factory()->withRights(RoleRight::Upload, RoleRight::Export)->create(['org_id' => $this->admin->org_id]);
+    $this->actingAs($this->admin->user)->post('/documents/'.$this->doc->id.'/share-link');
+    $link = ShareLink::query()->withoutGlobalScope(OrgScope::class)->firstOrFail();
+
+    $this->actingAs($exporter->user)->get('/share-links')->assertOk()->assertDontSee('bon.jpg')->assertSee('7');
+    $this->post('/share-links/'.$link->id.'/revoke')->assertNotFound();
+    $this->post('/share-links/days', ['days' => 365])->assertForbidden();
+    expect($link->fresh()->revoked_at)->toBeNull();
+
+    $this->actingAs($this->admin->user)->get('/share-links')->assertSee('bon.jpg');
+    $this->post('/share-links/days', ['days' => 30])->assertRedirect(route('shares.index'));
+    $this->post('/share-links/'.$link->id.'/revoke')->assertRedirect(route('shares.index'));
+    expect($link->fresh()->revoked_at)->not->toBeNull();
 });

@@ -83,7 +83,8 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::middleware('can:exports.create')->group(function (): void {
         Route::get('export', [ExportController::class, 'form'])->name('exports.form');
         Route::get('share-links', [ShareController::class, 'index'])->name('shares.index');
-        Route::post('share-links/days', [ShareController::class, 'days'])->name('shares.days');
+        // The lifetime holds for the whole organisation, so only Admins set it (#56).
+        Route::post('share-links/days', [ShareController::class, 'days'])->middleware('can:settings.manage')->name('shares.days');
         Route::post('share-links/{id}/revoke', [ShareController::class, 'revoke'])->name('shares.revoke');
         Route::post('export', [ExportController::class, 'store'])->name('exports.store');
     });

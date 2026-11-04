@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'title' => 'Links',
     'days' => 'Ein Link gilt so viele Tage',
+    'days_set' => 'Ein Link gilt :days Tage. Das stellen Admins ein.',
     'save' => 'Speichern',
     'saved' => 'Gespeichert.',
     'active' => 'Gültige Links',

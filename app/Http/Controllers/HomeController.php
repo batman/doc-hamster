@@ -10,6 +10,7 @@ use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -26,7 +27,8 @@ final class HomeController
         $userId = $org->membership()->user_id;
 
         return view('home.index', [
-            'notes' => Note::query()->visibleTo($userId)->with(['author', 'documents'])->latest()->get(),
+            // A shared note shows only the receipts the reader may see (#56).
+            'notes' => Note::query()->visibleTo($userId)->with(['author', 'documents' => fn (BelongsToMany $documents) => $documents->whereIn('documents.id', $this->visibleDocuments()->select('documents.id'))])->latest()->get(),
             'userId' => $userId,
             'canShare' => Gate::allows(Permission::ShareNotes->value),
             'documents' => $this->visibleDocuments()->latest()->limit(500)->get(['id', 'title']),
@@ -95,7 +97,10 @@ final class HomeController
         }
         $note->save();
 
-        $note->documents()->detach(array_filter((array) ($data['unlink'] ?? []), 'is_string'));
+        $unlink = array_values(array_filter((array) ($data['unlink'] ?? []), 'is_string'));
+        if ($unlink !== []) {
+            $note->documents()->detach($this->visibleDocuments()->whereKey($unlink)->pluck('id')->all());
+        }
         // A receipt is linked by its name, picked from the suggestions (A7); only receipts the person may see.
         if (($data['link'] ?? '') !== '') {
             $document = $this->visibleDocuments()->where('title', $data['link'])->first();
