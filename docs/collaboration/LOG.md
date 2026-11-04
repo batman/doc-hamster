@@ -211,3 +211,9 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Done: New logo (point 24): `public/img/logo.png` (for dark surfaces) and `public/img/logo-on-light.png`. Logo height in the dark block 3rem, image attributes 476 x 186 in the layout and the styleguide.
 - Branch/PR: po/design
 
+
+## 2026-11-04 · Manager · clone reset, post-merge reviews, board
+- Done: Reset the clone to `origin/main` as asked in #45 and #49 (no local branch kept the removed PR #44 commit, nothing pushed from the old clone) and closed both. **Post-merge review** of #42, #50, #51, #54, #55 → **issue #56**. Must fix: a receipt titled with `/` or `\` can't be downloaded or shared (500, verified); the share-link list shows and revokes every link in the organisation for anyone with "Exportieren", even without "Alle Belege sehen". Should fix: link lifetime settable by any exporter, opening a link isn't audited (PLAN §8/§11), share download without file extension, shared notes show titles of receipts the reader may not see, GD thumbnails in the upload request without a pixel check (48 MP ≈ 194 MB measured vs. 256M), Ghostscript on uploaded PDFs, bank amounts with the currency before the sign (`EUR -12,30` → +12,30, verified). #51 clean. Board: MVP-TAGCOLORS → done (built in #54), new row GO-1104 for #55.
+- Not done: JS, CSS and views not looked at in a browser; no real update run.
+- Next: **Lead:** the two must-fix points of #56; close #43, #48, #53 or say what is left. **Manager:** nothing assigned; PHONE still waits for the PO's device test.
+- Branch/PR: manager/board-review-2026-11-04
