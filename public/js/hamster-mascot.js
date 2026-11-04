@@ -37,19 +37,21 @@
     // Lays `s` over `g` at x, y ('.' keeps what is below); grows g upwards or to
     // the right if needed and reports how many rows were added on top.
     function overlay(g, s, x, y) {
-        var w = Math.max(g[0].length, x + s[0].length), a = rows(g), top = Math.min(0, y), i, j;
+        var w = g[0].length, a = rows(g), top = Math.min(0, y), i, j;
         a = a.map(function (r) { while (r.length < w) { r.push('.'); } return r; });
         for (i = 0; i < -top; i++) { a.unshift(blankRow(w)); }
         y -= top;
         while (a.length < y + s.length) { a.push(blankRow(w)); }
         for (j = 0; j < s.length; j++) {
             for (i = 0; i < s[j].length; i++) {
-                if (s[j][i] !== '.' && x + i >= 0) { a[y + j][x + i] = s[j][i]; }
+                if (s[j][i] !== '.' && x + i >= 0 && x + i < w) { a[y + j][x + i] = s[j][i]; }
             }
         }
         return { g: join(a), top: top };
     }
     function put(g, s, x, y) { return overlay(g, s, x, y).g; }
+    // Adds n transparent columns on both sides (the figure stays centred).
+    function pad(g, n) { var e = new Array(n + 1).join('.'); return g.map(function (r) { return e + r + e; }); }
     // Replaces letters in a rectangle (only those listed in `from`).
     function recolor(g, x0, y0, x1, y1, from, to) {
         var a = rows(g);
@@ -84,23 +86,64 @@
         }
         return join(a);
     }
-    // Repaints a rectangle as belly (left of the belly edge) and fur (right of
-    // it); the edge runs straight from (ax, ay) to (bx, by). Used to take the
-    // front arm away before it is drawn raised.
-    function fillBelly(g, x0, y0, x1, y1, ax, ay, bx, by) {
-        var a = rows(g);
-        for (var y = y0; y <= y1; y++) {
-            var edge = ax + (bx - ax) * (y - ay) / (by - ay);
-            for (var x = x0; x <= x1; x++) { a[y][x] = x <= edge ? 'c' : 'o'; }
-        }
-        return join(a);
-    }
     // hamster.js breathing: every column from `fromCol` is lifted by one pixel
     // above `row`. Returns rows that start one row higher.
     function breatheIn(g, fromCol, row) {
         var blank = new Array(g[0].length + 1).join('.');
         var src = [blank].concat(g);
         return src.map(function (r, y) { return y > row ? r : r.slice(0, fromCol) + src[y + 1].slice(fromCol); });
+    }
+
+    // Closes the outline after parts were moved: a coloured pixel next to
+    // transparency becomes outline, a lone outline pixel goes. Only rows from
+    // `y0` on (the moved feet), so the face and stamps stay untouched.
+    function repairOutline(g, y0) {
+        var a = rows(g), h = a.length, w = a[0].length, x, y;
+        function at(yy, xx) { return yy < 0 || xx < 0 || yy >= h || xx >= w ? '.' : a[yy][xx]; }
+        for (y = y0; y < h; y++) {
+            for (x = 0; x < w; x++) {
+                var c = a[y][x];
+                if (c === '.' || c === 'k') { continue; }
+                if (at(y - 1, x) === '.' || at(y + 1, x) === '.' || at(y, x - 1) === '.' || at(y, x + 1) === '.') { a[y][x] = 'k'; }
+            }
+        }
+        for (y = y0; y < h; y++) {
+            for (x = 0; x < w; x++) {
+                if (a[y][x] !== 'k') { continue; }
+                var n = 0;
+                for (var dy = -1; dy <= 1; dy++) { for (var dx = -1; dx <= 1; dx++) { if ((dx || dy) && at(y + dy, x + dx) !== '.') { n++; } } }
+                if (n === 0) { a[y][x] = '.'; }
+            }
+        }
+        return join(a);
+    }
+    // An arm drawn from the shoulder (inside the body) to the paw: a 3-pixel fur
+    // stroke with an outline (none near the shoulder, where it grows out of the
+    // body) and a pink paw at the end.
+    function arm(g, sx, sy, px, py) {
+        var a = rows(g), h = a.length, w = a[0].length, painted = {}, n = Math.max(Math.abs(px - sx), Math.abs(py - sy), 1), i, x, y;
+        for (i = 0; i <= n; i++) {
+            var cx = Math.round(sx + (px - sx) * i / n), cy = Math.round(sy + (py - sy) * i / n);
+            for (y = cy - 1; y <= cy + 1; y++) { for (x = cx - 1; x <= cx + 1; x++) { painted[y + ',' + x] = 1; } }
+        }
+        var ring = {};
+        Object.keys(painted).forEach(function (k) {
+            var p = k.split(','), yy = +p[0], xx = +p[1];
+            [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) {
+                var kk = (yy + d[0]) + ',' + (xx + d[1]);
+                if (!painted[kk]) { ring[kk] = 1; }
+            });
+        });
+        function set(k, c) {
+            var p = k.split(','), yy = +p[0], xx = +p[1];
+            if (yy >= 0 && xx >= 0 && yy < h && xx < w) { a[yy][xx] = c; }
+        }
+        Object.keys(ring).forEach(function (k) {
+            var p = k.split(','), d = Math.abs(+p[0] - sy) + Math.abs(+p[1] - sx);
+            if (d > 3) { set(k, 'k'); }
+        });
+        Object.keys(painted).forEach(function (k) { set(k, 'o'); });
+        return put(join(a), PAW, px - 2, py - 2);
     }
 
     // ------------------------------------------------------------------ stamps
@@ -130,16 +173,14 @@
     var DOC_L = DOC.map(function (r, y) { return r.slice(0, 6) + (y % 2 ? 'k' : '.'); });
     var DOC_R = DOC.map(function (r, y) { return (y % 2 ? '.' : 'k') + r.slice(6); });
     var PAW = ['.kk.', 'kppk', 'kppk', '.kk.'];
-    // Raised arm for waving: paw top right, the base sits inside the shoulder.
-    var ARM_UP = [
-        '......kkk..', '.....kpppk.', '.....kpppk.', '.....kkppk.', '......kook.', '.....koook.',
-        '.....kook..', '....koook..', '....kook...', '...koook...', '...kook....', '..koook....',
-        '..kook.....', '.koook.....', 'koooo......', 'oooo.......'
-    ];
-    var ARM_UP2 = ARM_UP.map(function (r, y) { return y < 6 ? r.slice(2) + '..' : (y < 9 ? r.slice(1) + '.' : r); });
+    var SCRAP = ['wg', 'gg'];
     var Z = { m: ['zzzz', '..z.', '.z..', 'zzzz'], l: ['zzzzz', '...z.', '..z..', '.z...', 'zzzzz'] };
     // hamster.js Z_PATH: size and top-left pixel per step (on the lying pose).
     var Z_PATH = [['m', 27, 3], ['m', 28, 1], ['m', 29, -2], ['m', 30, -5], ['m', 31, -8], ['l', 32, -12], ['l', 33, -16], null, null];
+
+    // Standing front: shoulders and the paws' rest spots (where the traced arms are).
+    // Shoulders sit just below the cheeks, so the arms stay short.
+    var SH_L = [9, 33], SH_R = [32, 34], REST_L = [11, 45], REST_R = [24, 46];
 
     // ------------------------------------------------------------ base poses
     var B = null;
@@ -147,22 +188,46 @@
         if (B) { return B; }
         var S = global.docHamsterSprites;
         // Standing front without the traced happy eyes; eyes are stamped on.
-        var front = recolor(recolor(S.standFront, 9, 10, 15, 14, 'kd', 'o'), 22, 10, 29, 14, 'kd', 'o');
+        var front = recolor(recolor(S.standFront, 10, 10, 15, 14, 'kd', 'o'), 22, 10, 29, 14, 'kd', 'o');
+        // Without arms: belly left/right of the belly edges, fur outside them.
+        var bare = rows(front);
+        for (var y = 38; y <= 53; y++) {
+            var cl = 12 + (8 - 12) * (y - 36) / 14, cr = 27 + (32 - 27) * (y - 36) / 14;
+            for (var x = 6; x <= 34; x++) {
+                if ((x > 15 && x < 21) || (y > 50 && x < 21)) { continue; }
+                bare[y][x] = x >= cl && x <= cr ? 'c' : 'o';
+            }
+        }
         B = {
-            front: front, three: S.standThree, side: S.standSide, back: S.standBack,
-            fours: S.foursSide, sitFront: S.sitFront, sitThree: S.sitThree,
-            lie: S.lieThree, lieBack: S.lieBack, lieEyes: S.lieEyesOpen,
-            noArm: fillBelly(front, 22, 38, 36, 49, 27, 36, 32, 50)
+            front: front, bare: join(bare), three: S.standThree, side: S.standSide, back: S.standBack,
+            fours: S.foursSide, lieEyes: S.lieEyesOpen,
+            // Sitting half-turned, with the same open eye as the standing pose.
+            sit: put(recolor(S.sitThree, 10, 15, 15, 17, 'kp', 'o'), ['.kk.', 'kkkk', 'kkkk', 'kkkk'], 11, 14),
+            // The hamster.js sprite has two open outline pixels at an ear tip; closed here.
+            lie: put(S.lieThree, ['kk'], 19, 6)
         };
         return B;
     }
     function face(g, eye, eye2) { return put(put(g, EYE[eye], 10, 10), EYE[eye2 || eye], 23, 10); }
-    function frontEyes(eye) {
-        if (eye === 'angry') { return face(base().front, 'angryL', 'angryR'); }
-        return face(base().front, eye);
+    function eyes(g, eye) { return eye === 'angry' ? face(g, 'angryL', 'angryR') : face(g, eye); }
+    function frontEyes(eye) { return eyes(base().front, eye); }
+    // Standing front with both arms drawn to the given paw spots.
+    function arms(eye, l, r, grow) {
+        var g = eyes(base().bare, eye);
+        if (grow) { g = stretch(g, 60, grow); }
+        return arm(arm(g, SH_L[0], SH_L[1], l[0], l[1]), SH_R[0], SH_R[1], r[0], r[1]);
     }
+    // Paws on the left and right edge of a document lying at x, y.
+    function grip(x, y, h) { var m = y + Math.floor((h || 12) / 2); return [[x, m], [x + 11, m]]; }
+    function lerp(a, b, u) { return [Math.round(a[0] + (b[0] - a[0]) * u), Math.round(a[1] + (b[1] - a[1]) * u)]; }
+    // Squash: rows taken out, outline closed again where the cut is.
+    function squash(g, row, n) { return repairOutline(stretch(g, row, -n), 0); }
     // Breathing for standing poses: the body below the head grows by one pixel.
     function breathe(g, on) { return on ? stretch(g, 60, 1) : g; }
+    // Lying pose with open eyes (hamster.js EYES_OPEN).
+    function lieOpen() { var b = base(); return put(b.lie, b.lieEyes.rows, b.lieEyes.x, b.lieEyes.y); }
+    // Feet of the standing front kicking: left and right foot slide apart by k.
+    function kick(g, k, y0) { return repairOutline(slide(slide(g, 0, y0, 21, y0 + 4, -k), 27, y0, 48, y0 + 4, k), y0 - 1); }
 
     // -------------------------------------------------------------- animations
     // Each: label/sub (German UI), posture it ends in, dur (s), loop, fps and
@@ -174,71 +239,134 @@
             if (view && view !== 'front') { return breathe(base()[view], inF); }
             return breathe(frontEyes((t % 3.8) >= 3.6 ? 'blink' : 'open'), inF);
         } },
+        // Turning on the spot (45° per frame) before an animation shown front-on.
+        turn: { label: 'Drehen', sub: 'Zur Vorderseite', posture: 'stand', dur: 0.5, loop: false, fps: 8, hidden: true, frame: function (f, t, view) {
+            return view && view !== 'front' ? base()[view] : frontEyes('open');
+        } },
+        // Four frames: legs apart / passing (body up) / legs crossed / passing.
         walk: { label: 'Laufen', sub: 'Auf allen Vieren', posture: 'fours', dur: 0.5, loop: true, fps: 8, frame: function (f) {
             var g = base().fours, k = f % 4;
-            if (k === 0) { g = slide(slide(g, 0, 41, 33, 42, -1), 34, 41, 67, 42, 1); }
-            if (k === 2) { g = slide(slide(g, 0, 41, 33, 42, 1), 34, 41, 67, 42, -1); }
-            return (k === 1 || k === 3) ? stretch(g, 22, 1) : g;
+            if (k === 0) { g = repairOutline(slide(slide(g, 12, 39, 33, 42, -2), 42, 39, 63, 42, 2), 38); }
+            if (k === 2) { g = repairOutline(slide(slide(g, 12, 39, 33, 42, 2), 42, 39, 63, 42, -2), 38); }
+            return (k === 1 || k === 3) ? stretch(g, 30, 1) : g;
         } },
-        standup: { label: 'Aufstehen', sub: 'Vierbeiner → aufrecht', posture: 'stand', dur: 1.0, loop: false, fps: 8, frame: function (f) {
+        standup: { label: 'Aufstehen', sub: 'Vierbeiner → aufrecht', posture: 'stand', dur: 0.875, loop: false, fps: 8, frame: function (f) {
             var b = base();
-            return [b.fours, stretch(b.fours, 30, -2), b.sitThree, b.sitThree, stretch(b.three, 50, 2), b.three, b.three, b.three, b.three][Math.min(f, 8)];
+            return [b.fours, squash(b.fours, 30, 3), stretch(b.fours, 30, 3), b.sit, squash(b.three, 50, 4), stretch(b.three, 50, 2), b.three, b.three][Math.min(f, 7)];
         } },
         down: { label: 'Hinknien', sub: 'Aufrecht → Vierbeiner', posture: 'fours', dur: 0.625, loop: false, fps: 8, frame: function (f) {
             var b = base();
-            return [b.three, stretch(b.three, 50, -3), b.sitThree, stretch(b.fours, 30, -2), b.fours, b.fours][Math.min(f, 5)];
+            return [b.three, squash(b.three, 50, 4), b.sit, squash(b.fours, 30, 3), stretch(b.fours, 30, 1), b.fours][Math.min(f, 5)];
         } },
-        read: { label: 'Dokument lesen', sub: 'Zeile für Zeile', posture: 'stand', dur: 5.0, loop: true, fps: 8, frame: function (f, t) {
-            if (t < 0.25 || t >= 4.75) { return frontEyes('open'); }
-            var g;
-            if (t < 3.5) {
-                var line = Math.floor((t - 0.25) / 1.0), phase = (t - 0.25) % 1.0;
-                g = face(base().front, phase < 0.5 ? 'open' : 'right');
-                if (line === 1) { g = stretch(g, 24, -1); }
+        // Reach down, bring the document up, read three lines (eyes travel left
+        // to right, a small nod per line), happy nod, put it away.
+        read: { label: 'Dokument lesen', sub: 'Zeile für Zeile', posture: 'stand', dur: 5.5, loop: false, fps: 8, frame: function (f) {
+            var hold = [13, 38], low = [13, 52];
+            if (f === 0 || f >= 43) { return frontEyes('open'); }
+            if (f === 1 || f === 42) { return arms('open', lerp(REST_L, grip(low[0], low[1])[0], 0.5), lerp(REST_R, grip(low[0], low[1])[1], 0.5)); }
+            var pos = f === 2 || f === 41 ? low : f === 3 || f === 40 ? [13, 45] : hold;
+            var p = grip(pos[0], pos[1]), eye = 'open', nod = 0;
+            if (f >= 4 && f < 28) { var ph = (f - 4) % 8; eye = ph < 4 ? 'open' : 'right'; nod = ph === 0 && f > 4 ? 1 : 0; }
+            if (f >= 28 && f < 40) { eye = 'happy'; nod = (f % 4) < 2 ? 1 : 0; }
+            var g = arms(eye, p[0], p[1]);
+            if (nod) { g = stretch(g, 24, -1); }
+            return put(g, DOC, pos[0], pos[1] - (nod ? 1 : 0));
+        } },
+        // Bring the document to the mouth, eat it bite by bite (paws follow the
+        // shrinking sheet, paper scraps fall to the floor), chew, swallow.
+        eat: { label: 'Dokument fressen', sub: 'Bissen für Bissen', posture: 'stand', dur: 4.0, loop: false, fps: 8, frame: function (f) {
+            if (f === 0 || f >= 31) { return frontEyes('open'); }
+            if (f === 30) { return arms('happy', lerp(REST_L, [13, 30], 0.5), lerp(REST_R, [24, 30], 0.5)); }
+            var lift = [[13, 44], [13, 38], [13, 31], [13, 25]], g, x = 13, y, sheet;
+            if (f <= 4) {
+                var at = lift[Math.min(f - 1, 3)];
+                y = at[1];
+                sheet = DOC;
+                g = arms(f < 4 ? 'open' : 'happy', grip(x, y)[0], grip(x, y)[1]);
             } else {
-                g = face(base().front, 'happy');
-                if (Math.floor(t / 0.25) % 2) { g = stretch(g, 24, -1); }
-            }
-            return put(put(put(g, DOC, 13, 38), PAW, 10, 43), PAW, 23, 43);
-        } },
-        eat: { label: 'Dokument fressen', sub: 'Bissen für Bissen', posture: 'stand', dur: 3.84, loop: false, fps: 8.333, frame: function (f) {
-            var bites = Math.min(12, Math.floor(f / 2)), chew = f % 2;
-            var g = face(base().front, f < 26 ? 'happy' : 'open');
-            if (f < 26) {
-                var rest = DOC.slice(bites);
-                if (rest.length) { g = put(g, rest, 13, 22); }
-                g = put(put(g, PAW, 10, 24), PAW, 23, 24);
-                // Crumbs fall from the mouth, one per bite.
-                for (var c = 0; c < bites; c++) {
-                    var cy = 34 + (f - c * 2) * 2;
-                    if (cy < 74) { g = put(g, [c % 2 ? 'w' : 'g'], 14 + (c * 5) % 8, cy); }
+                var bites = Math.min(12, Math.floor((f - 5) / 2) + 1);
+                sheet = DOC.slice(bites);
+                y = 22;
+                var chew = (f % 2) === 0;
+                if (sheet.length) {
+                    var p = grip(x, y, sheet.length);
+                    g = arms('happy', p[0], p[1]);
+                } else {
+                    g = arms('happy', [14, 31], [23, 31]);
+                }
+                if (chew) { g = stretch(g, 24, 1); }
+                // Room on both sides for the scraps (keeps the figure centred).
+                g = pad(g, 12);
+                // Paper scraps: two per bite fly out of the mouth corners and fall
+                // beside the body to the floor.
+                for (var c = 1; c <= bites; c++) {
+                    var k = f - (5 + (c - 1) * 2);
+                    if (k < 1) { continue; }
+                    [-1, 1].forEach(function (side) {
+                        var sx = 18 + side * (6 + 4 * k), sy = 26 - 3 * k + k * k + (chew ? 1 : 0);
+                        if (sy < 76) { g = put(g, SCRAP, Math.round(sx) + 12, Math.round(sy)); }
+                    });
                 }
             }
-            return chew && f < 26 ? stretch(g, 24, 1) : g;
+            var off = f > 4 ? 12 : 0;
+            return sheet && sheet.length ? put(g, sheet, x + off, y + (f > 4 && (f % 2) === 0 ? 1 : 0)) : g;
         } },
-        tear: { label: 'Dokument zerreißen', sub: 'Wütend · wegwerfen', posture: 'stand', dur: 2.5, loop: false, fps: 8, frame: function (f) {
-            var g = frontEyes(f < 14 ? 'angry' : 'happy');
-            var apart = Math.min(4, Math.max(0, f - 3)), fall = Math.max(0, f - 9) * 4;
-            if (f < 16) {
-                g = put(g, DOC_L, 13 - apart, 38 + fall);
-                g = put(g, DOC_R, 18 + apart, 38 + fall);
-                for (var s = 0; s < 6 && f >= 7; s++) {
-                    var k = f - 7;
-                    g = put(g, ['w'], Math.max(0, 18 + (s - 3) * (k + 1)), Math.round(36 - k + (k * k) / 2 + s));
+        // Hold, wind up (paws together), rip, halves fly apart, throw them away
+        // (arms up, scraps), halves fall, dust off the paws.
+        tear: { label: 'Dokument zerreißen', sub: 'Wütend · wegwerfen', posture: 'stand', dur: 3.0, loop: false, fps: 8, frame: function (f) {
+            if (f === 0 || f >= 23) { return frontEyes('open'); }
+            var y = 38, P = 30;
+            if (f === 1) { return put(arms('open', grip(13, 45)[0], grip(13, 45)[1]), DOC, 13, 45); }
+            if (f <= 4) {
+                // hold it up, then wind up: paws pull in, body tenses
+                var g0 = arms('angry', grip(13, y)[0], grip(13, y)[1], f === 4 ? -1 : 0);
+                return put(g0, DOC, 13, y);
+            }
+            var g, eye = f < 16 ? 'angry' : 'happy', lx, rx, ly, ry;
+            if (f < 10) {
+                // rip: the halves part, each paw on its half's outer edge
+                var apart = [2, 5, 8, 9, 9][f - 5];
+                lx = 13 - apart; rx = 19 + apart; ly = ry = y;
+                g = pad(arms(eye, [lx, y + 6], [rx + 6, y + 6]), P);
+            } else if (f === 10) {
+                // throw: both halves go up with the paws
+                lx = 3; rx = 39; ly = ry = 16;
+                g = pad(arms(eye, [6, 22], [42, 22], 1), P);
+            } else if (f < 16) {
+                // let go: the halves fly out to the sides and fall to the floor
+                var k = f - 10;
+                lx = 3 - 5 * k; rx = 39 + 5 * k; ly = ry = Math.round(16 - 4 * k + 2.2 * k * k);
+                g = pad(arms(eye, k < 2 ? [6, 22] : REST_L, k < 2 ? [42, 22] : REST_R), P);
+            } else {
+                // dust off: paws tap together twice
+                var tap = (f % 2) === 0;
+                return arms(eye, tap ? [16, 44] : REST_L, tap ? [21, 44] : REST_R);
+            }
+            if (ly < 78) { g = put(g, DOC_L, lx + P, ly); }
+            if (ry < 78) { g = put(g, DOC_R, rx + P, ry); }
+            if (f >= 6) {
+                // scraps burst out of the tear and fall beside the body
+                var q = f - 5;
+                for (var s2 = 0; s2 < 4; s2++) {
+                    var side = s2 % 2 ? 1 : -1, sp = 3 + (s2 >> 1) * 2;
+                    var sx = 18 + side * sp * q, sy = 36 - (4 - (s2 >> 1)) * q + q * q;
+                    if (sy < 76) { g = put(g, SCRAP, Math.round(sx) + P, Math.round(sy)); }
                 }
             }
-            return f >= 4 && f < 9 ? stretch(g, 60, 1) : g;
+            return g;
         } },
         wave: { label: 'Winken', sub: 'Hallo!', posture: 'stand', dur: 2.0, loop: true, fps: 8, frame: function (f) {
-            return put(face(base().noArm, 'happy'), f % 2 ? ARM_UP2 : ARM_UP, 40, 23);
+            var g = eyes(base().bare, 'happy');
+            g = arm(g, SH_L[0], SH_L[1], REST_L[0], REST_L[1]);
+            return arm(g, SH_R[0], SH_R[1] - 2, f % 2 ? 41 : 44, f % 2 ? 20 : 22);
         } },
         liedown: { label: 'Hinlegen', sub: 'Vierbeiner → liegen', posture: 'lie', dur: 0.5, loop: false, fps: 8, frame: function (f) {
             var b = base();
-            return [b.fours, stretch(b.fours, 22, -3), stretch(b.fours, 18, -6), b.lie, b.lie][Math.min(f, 4)];
+            return [b.fours, squash(b.fours, 30, 3), squash(b.fours, 30, 6), lieOpen(), lieOpen()][Math.min(f, 4)];
         } },
         rise: { label: 'Aufrappeln', sub: 'Liegen → Vierbeiner', posture: 'fours', dur: 0.5, loop: false, fps: 8, frame: function (f) {
             var b = base();
-            return [b.lie, stretch(b.fours, 18, -6), stretch(b.fours, 22, -3), b.fours, b.fours][Math.min(f, 4)];
+            return [lieOpen(), squash(b.fours, 30, 6), squash(b.fours, 30, 3), stretch(b.fours, 30, 1), b.fours][Math.min(f, 4)];
         } },
         // Exactly hamster.js: only the body breathes (1.0 s out, 0.9 s in), the
         // head stays; open eyes blink 3.2 s / 0.14 s / 2.3 s / 0.14 s.
@@ -262,17 +390,18 @@
             });
             return { g: g, dy: dy };
         } },
+        // Held by the scruff: stretched, arms hang out, legs kick.
         dangle: { label: 'Gehalten', sub: 'Mit der Maus gepackt', posture: 'stand', dur: 0.5, loop: true, fps: 8, frame: function (f) {
-            var g = stretch(frontEyes('open'), 60, 2), k = f % 2 ? 1 : -1;
-            return slide(slide(g, 0, 77, 20, 80, k), 28, 77, 48, 80, -k);
+            var k = f % 2 ? 2 : -1;
+            return kick(arms('open', [5, 47 + (f % 2)], [43, 47 + ((f + 1) % 2)], 3), k, 77);
         } },
-        fall: { label: 'Fallen', sub: 'Strampeln', posture: 'stand', dur: 0.5, loop: true, fps: 8, frame: function (f) {
-            var g = stretch(frontEyes('angry'), 60, 1), k = f % 2 ? 1 : -1;
-            return slide(slide(g, 0, 76, 20, 79, -k), 28, 76, 48, 79, k);
+        fall: { label: 'Fallen', sub: 'Arme hoch, strampeln', posture: 'stand', dur: 0.5, loop: true, fps: 8, frame: function (f) {
+            var k = f % 2 ? -1 : 2;
+            return kick(arms('angry', [4, 24 + (f % 2)], [44, 24 + ((f + 1) % 2)], 1), k, 75);
         } },
-        land: { label: 'Landen', sub: 'Plattgedrückt', posture: 'stand', dur: 0.625, loop: false, fps: 8, frame: function (f) {
-            var e = frontEyes(f < 3 ? 'angry' : 'open');
-            return [stretch(e, 56, -5), stretch(e, 56, -3), stretch(e, 60, 1), e, e, e][Math.min(f, 5)];
+        land: { label: 'Landen', sub: 'Stauchen · federn', posture: 'stand', dur: 0.625, loop: false, fps: 8, frame: function (f) {
+            var e = frontEyes(f < 2 ? 'angry' : 'open');
+            return [squash(e, 56, 6), squash(e, 56, 3), stretch(e, 60, 2), stretch(e, 60, 1), e, e][Math.min(f, 5)];
         } }
     };
     var ORDER = ['idle', 'walk', 'standup', 'read', 'eat', 'tear', 'wave', 'lie', 'sleep', 'dangle', 'fall', 'land'];
@@ -344,9 +473,10 @@
         }
         function frameOf(id, f, t, heading) {
             var a = ANIMS[id], v = viewOf(heading);
-            var r = a.frame(f, t, id === 'idle' ? v.view : null);
+            var turning = id === 'idle' || id === 'turn';
+            var r = a.frame(f, t, turning ? v.view : null);
             var g = r.g ? r.g : r, dy = r.g ? r.dy : 0;
-            var flip = DIRECTED[id] ? heading > 0 : (id === 'idle' ? v.flip : false);
+            var flip = DIRECTED[id] ? heading > 0 : (turning ? v.flip : false);
             return { g: g, dy: dy, flip: flip };
         }
         function render(id, f, t, heading) {
@@ -506,6 +636,8 @@
         function play(id) { R.setAnim(id); }
         function startAction(name, dur) {
             var path = st.posture === REQ[name] ? [] : (TRANS[st.posture + '>' + REQ[name]] || []);
+            // Animations shown front-on: turn to the front first (45° steps).
+            if (REQ[name] === 'stand' && name !== 'idle' && (path.length || st.heading !== 0)) { path = path.concat(['turn']); }
             st.pending = path.concat([name]);
             st.action = null;
             st.actionDur = dur;
@@ -551,7 +683,7 @@
         function onFrame(f, total, id) {
             if (st.mode !== 'ground') { st.headingTarget = 0; }
             if (st.heading !== st.headingTarget) {
-                var standing = id === 'idle' || st.mode !== 'ground';
+                var standing = id === 'idle' || id === 'turn' || st.mode !== 'ground';
                 st.heading = standing ? st.heading + Math.max(-45, Math.min(45, st.headingTarget - st.heading)) : st.headingTarget;
                 R.setHeading(st.heading);
                 if (standing) { return; }
