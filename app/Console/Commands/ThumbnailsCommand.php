@@ -9,7 +9,10 @@ use App\Domain\Documents\Thumbnail;
 use App\Domain\Org\OrgScope;
 use Illuminate\Console\Command;
 
-/** Makes the missing thumbnails of files uploaded before design point 14. Runs again safely. */
+/**
+ * Makes the missing thumbnails: files from before design point 14 and images
+ * too large to decode during the upload (#56). Runs again safely.
+ */
 final class ThumbnailsCommand extends Command
 {
     protected $signature = 'dochamster:thumbnails';
@@ -20,7 +23,7 @@ final class ThumbnailsCommand extends Command
     {
         $made = 0;
         DocumentFile::query()->withoutGlobalScope(OrgScope::class)->whereNull('thumb_path')->each(function (DocumentFile $file) use (&$made): void {
-            $path = Thumbnail::make($file);
+            $path = Thumbnail::make($file, maxPixels: null);
             if ($path !== null) {
                 $file->update(['thumb_path' => $path]);
                 $made++;

@@ -32,6 +32,14 @@ it('turns bank amounts into minor units', function (string $value, ?int $minor):
     ['1.234', 123400],
     ['5,5', 550],
     ['100', 10000],
+    // #56: a sign behind the currency, more than two decimals
+    ['EUR -12,30', -1230],
+    ['€ -0,99', -99],
+    ["\u{2212}5,00", -500],
+    ['1,2345', 123],
+    ['1,2355', 124],
+    ['-0,005', -1],
+    ['1.234.567', 123456700],
     ['', null],
     ['abc', null],
 ]);

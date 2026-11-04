@@ -117,11 +117,17 @@ final readonly class CsvStatement
         return $map;
     }
 
-    /** "1.234,56", "1,234.56", "-12,30", "12.30 EUR", "12,30-" → minor units; null if it isn't an amount. */
+    /**
+     * "1.234,56", "1,234.56", "-12,30", "EUR -12,30", "12.30 EUR", "12,30-" → minor
+     * units; null if it isn't an amount. Exactly three digits behind the last
+     * separator are thousands ("1.234", but not "0,005"); any other count are
+     * decimals, rounded to cents ("1,2345" → 1,23).
+     */
     public static function amountToMinor(string $value): ?int
     {
         $value = trim($value);
-        $negative = str_starts_with($value, '-') || str_ends_with($value, '-') || str_starts_with($value, '−');
+        // A minus anywhere before the number (also behind a currency) or right after it.
+        $negative = preg_match('/^[^0-9]*[-\x{2212}]/u', $value) === 1 || str_ends_with($value, '-');
         $digits = (string) preg_replace('/[^0-9.,]/', '', $value);
 
         if ($digits === '' || preg_match('/[0-9]/', $digits) !== 1) {
@@ -129,11 +135,15 @@ final readonly class CsvStatement
         }
 
         $last = max((int) strrpos($digits, ','), (int) strrpos($digits, '.'));
-        $hasDecimals = strpbrk($digits, ',.') !== false && strlen($digits) - $last - 1 <= 2;
+        // "0,005" can't be thousands: nothing but a zero stands in front.
+        $hasDecimals = strpbrk($digits, ',.') !== false
+            && (strlen($digits) - $last - 1 !== 3 || preg_match('/^0*$/', substr($digits, 0, $last)) === 1);
         $whole = $hasDecimals ? substr($digits, 0, $last) : $digits;
         $fraction = $hasDecimals ? substr($digits, $last + 1) : '';
 
-        $minor = ((int) preg_replace('/[^0-9]/', '', $whole)) * 100 + (int) str_pad($fraction, 2, '0');
+        $cents = (int) str_pad(substr($fraction, 0, 2), 2, '0');
+        $roundUp = strlen($fraction) > 2 && (int) $fraction[2] >= 5 ? 1 : 0;
+        $minor = ((int) preg_replace('/[^0-9]/', '', $whole)) * 100 + $cents + $roundUp;
 
         return $negative ? -$minor : $minor;
     }
