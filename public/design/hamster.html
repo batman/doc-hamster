@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>docHamster Maskottchen</title>
+<link rel="stylesheet" href="hamster.css">
+</head>
+<body>
+<main class="hd-main">
+    <h1>docHamster Maskottchen</h1>
+    <p class="hd-note">3D-Figur als Pixel-Art. Packen und ziehen mit der Maus (Handy: lange drücken), loslassen und er fällt. Ein Dokument auf den Hamster ziehen, dann frisst er es.</p>
+
+    <section class="hd-section" aria-labelledby="hd-docs">
+        <h2 id="hd-docs">Dokumente zum Füttern</h2>
+        <div class="hd-docs">
+            <div class="hd-doc" data-food>Rechnung 0815</div>
+            <div class="hd-doc" data-food>Quittung Bäckerei</div>
+            <div class="hd-doc" data-food>Tankbeleg</div>
+        </div>
+        <button type="button" class="hd-btn" id="hd-refill">Neue Dokumente</button>
+    </section>
+
+    <section class="hd-section" aria-labelledby="hd-anims">
+        <h2 id="hd-anims">Animation auslösen</h2>
+        <div class="hd-row">
+            <button type="button" class="hd-btn" data-play="idle">Idle</button>
+            <button type="button" class="hd-btn" data-play="walk">Laufen</button>
+            <button type="button" class="hd-btn" data-play="read">Dokument lesen</button>
+            <button type="button" class="hd-btn" data-play="eat">Dokument fressen</button>
+            <button type="button" class="hd-btn" data-play="tear">Dokument zerreißen</button>
+            <button type="button" class="hd-btn" data-play="wave">Winken</button>
+            <button type="button" class="hd-btn" data-play="lie">Liegen</button>
+            <button type="button" class="hd-btn" data-play="sleep">Schlafen</button>
+        </div>
+        <label class="hd-check"><input type="checkbox" id="hd-auto" checked> Läuft von selbst herum</label>
+    </section>
+</main>
+<script src="../js/vendor/three.min.js"></script>
+<script src="../js/hamster-mascot.js"></script>
+<script src="hamster-demo.js"></script>
+</body>
+</html>

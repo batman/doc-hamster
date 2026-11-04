@@ -217,3 +217,9 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done: JS, CSS and views not looked at in a browser; no real update run.
 - Next: **Lead:** the two must-fix points of #56; close #43, #48, #53 or say what is left. **Manager:** nothing assigned; PHONE still waits for the PO's device test.
 - Branch/PR: manager/board-review-2026-11-04
+
+## 2026-11-04 · Manager · HAMSTER-FIG
+- Done: On the PO's request (PO go in the Claude chat) the hamster as a real 3D figure (three.js r160, vendored) drawn as pixel art like the PO's reference sheet: toon shader with two tones, one-pixel outline, orthographic camera, coarse pixel grid. Animations as key poses at 8 fps (no smooth motion): idle, walk, stand up, read, eat and tear a document, wave, lie flat, sleep, held, fall, land. Free-moving mascot: wanders, turns in 45° steps, can be grabbed with the mouse (long press on touch), dragged, thrown, falls and lands; eating a document is an animation only. All in `public/js/hamster-mascot.js` (`docHamster3d.createRenderer` / `mountMascot`), demo page `public/design/hamster.html`.
+- Not done (Lead, as agreed with the PO): where the mascot appears (logo, pages, desktop app HAMSTER), what eating a document really does, replacing `public/js/hamster.js`. Not looked at on a real phone.
+- Watch out: needs WebGL; under "reduce motion" it stays put. The vendored three.min.js prints a deprecation warning in the console (unmodified upstream build).
+- Branch/PR: manager/HAMSTER-FIG-mascot
