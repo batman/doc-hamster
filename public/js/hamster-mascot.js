@@ -49,10 +49,10 @@
 
     // ------------------------------------------------------------ pose channels
     var DEF = {
-        y: 0, hipsY: 0.67, pitch: 0, sy: 1, flat: 1, wide: 1,
+        y: 0, hipsY: 0.67, pitch: 0, sy: 1, flat: 1, wide: 1, bellyW: 1,
         headX: 0, headY: 0, headZ: 0, headDrop: 0, puff: 0,
         armLX: -1.1, armLZ: 0.25, armRX: -1.1, armRZ: 0.25,
-        legLX: 0, legRX: 0, earL: 0, earR: 0,
+        legLX: 0, legRX: 0, legBack: 0, earL: 0, earR: 0,
         docOn: 0, docEat: 0, split: 0, fall: 0, conf: 0, zz: 0, zOn: 0, eyes: 'open'
     };
     var DISCRETE = { docOn: 1, zOn: 1, eyes: 1 };
@@ -61,8 +61,8 @@
     var REST = { armLX: -1.1, armRX: -1.1, armLZ: 0.25, armRZ: 0.25 };
     var FOURS = { pitch: 1.2, hipsY: 0.62, headX: -1.05, armLX: -1.2, armRX: -1.2, armLZ: -0.05, armRZ: -0.05, legLX: -1.2, legRX: -1.2 };
     var LIE = {
-        pitch: 1.5, hipsY: 0.43, sy: 1.08, flat: 0.85, wide: 1.12, headX: -1.4, headDrop: 0.2,
-        armLX: -2.4, armRX: -2.4, armLZ: -0.15, armRZ: -0.15, legLX: 0.25, legRX: -0.6, eyes: 'open'
+        pitch: 1.5, hipsY: 0.5, sy: 1.3, flat: 1.0, wide: 1.1, bellyW: 1.45, headX: -1.4, headDrop: 0.27,
+        armLX: -2.4, armRX: -2.4, armLZ: -0.15, armRZ: -0.15, legLX: -0.35, legRX: -0.6, legBack: -0.42, eyes: 'open'
     };
     var HOLD = { armLX: -1.5, armRX: -1.5, armLZ: 0.33, armRZ: 0.33, headX: 0.3, docOn: 1 };
     var REACH = { armLX: -0.35, armRX: -0.35, armLZ: -0.1, armRZ: -0.1 };
@@ -177,14 +177,14 @@
             [0, X(LIE, {})],
             [1.2, { eyes: 'blink' }],
             [1.35, { eyes: 'open' }],
-            [2.0, { flat: 0.89 }],
+            [2.0, { flat: 1.04 }],
             [3.0, { headY: 0.15 }],
-            [4.0, { flat: 0.85, headY: 0 }]
+            [4.0, { flat: 1.0, headY: 0 }]
         ] },
         sleep: { label: 'Schlafen', sub: 'Flach · Zzz', posture: 'lie', dur: 3.2, loop: true, keys: [
-            [0, X(LIE, { eyes: 'sleep', zOn: 1, earL: -0.3, earR: -0.3, flat: 0.83, zz: 0 })],
-            [1.6, { flat: 0.89, zz: 0.5 }],
-            [3.2, { flat: 0.83, zz: 1 }]
+            [0, X(LIE, { eyes: 'sleep', zOn: 1, earL: -0.3, earR: -0.3, flat: 0.97, zz: 0 })],
+            [1.6, { flat: 1.04, zz: 0.5 }],
+            [3.2, { flat: 0.97, zz: 1 }]
         ] },
         dangle: { label: 'Gehalten', sub: 'Mit der Maus gepackt', posture: 'stand', dur: 0.5, loop: true, keys: [
             [0, X(DANGLE, {})],
@@ -305,7 +305,7 @@
         // Body: upper ellipsoid + lower "pear" blob, cream belly patch, tail.
         E(J.squash, [0.58, 0.64, 0.5], [0, 0, 0], M.fur, true);
         E(J.squash, [0.62, 0.45, 0.52], [0, -0.2, 0], M.fur, true);
-        E(J.squash, [0.42, 0.5, 0.3], [0, -0.08, 0.26], M.cream, false);
+        J.belly = E(J.squash, [0.42, 0.5, 0.3], [0, -0.08, 0.26], M.cream, false);
         E(J.squash, [0.09, 0.08, 0.09], [0, -0.45, -0.5], M.fur, true);
 
         // Head with the face from the reference sheet: big round eyes with a
@@ -437,6 +437,7 @@
             J.hips.rotation.x = p.pitch;
             var k = 1 / Math.sqrt(p.sy);
             J.squash.scale.set(k * p.wide, p.sy, k * p.flat);
+            J.belly.scale.x = 0.42 * p.bellyW;
             J.head.position.set(0, 0.42 * p.sy, 0.02 + p.headDrop);
             J.head.rotation.set(p.headX, p.headY, p.headZ);
             var pf = 0.55 + 0.6 * p.puff;
@@ -444,6 +445,7 @@
             J.armL.position.y = J.armR.position.y = 0.12 * p.sy;
             J.armL.rotation.set(p.armLX, 0, -p.armLZ);
             J.armR.rotation.set(p.armRX, 0, p.armRZ);
+            J.legL.position.y = J.legR.position.y = -0.22 + p.legBack;
             J.legL.rotation.x = p.legLX;
             J.legR.rotation.x = p.legRX;
             J.earL.rotation.set(p.earL, 0, -0.35);
@@ -794,7 +796,7 @@
         // ------------------------------------------------------ pointer
         function hit(lx, ly) {
             var cx = st.x, cy, rx, ry;
-            if (st.posture === 'lie') { cy = st.y - 0.38 * unit; rx = 0.95 * unit; ry = 0.45 * unit; } else if (st.posture === 'fours' && st.mode === 'ground') { cy = st.y - 0.55 * unit; rx = 0.85 * unit; ry = 0.6 * unit; } else { cy = st.y - 0.85 * unit; rx = 0.62 * unit; ry = 0.9 * unit; }
+            if (st.posture === 'lie') { cy = st.y - 0.5 * unit; rx = 1.05 * unit; ry = 0.55 * unit; } else if (st.posture === 'fours' && st.mode === 'ground') { cy = st.y - 0.55 * unit; rx = 0.85 * unit; ry = 0.6 * unit; } else { cy = st.y - 0.85 * unit; rx = 0.62 * unit; ry = 0.9 * unit; }
             var dx = (lx - cx) / rx, dy = (ly - cy) / ry;
             return dx * dx + dy * dy <= 1;
         }
