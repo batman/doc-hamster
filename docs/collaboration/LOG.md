@@ -228,3 +228,8 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Done (PO go): every frame now goes through a pixel pass – one outline around the whole figure, inner lines only where a part lies in front of another (head on body, legs, paws, ears), no lines where parts melt into each other; eyes, mouth, cheeks and the "z" are pixel stamps taken from the lying sprite in `public/js/hamster.js` (the PO's reference image is that sprite). Lying/sleeping fitted to the sprite by overlay at the same pixel scale (head turned to the viewer, body mound behind, flat underside, hind foot flat behind); breathing, blinking and the "z" path use the sprite's timing. Fur `#ff7622` (`--primary`) with shadow `#d4500f`, all other colours from the sprite.
 - Not done: still not looked at on a real phone. Integration stays with the Lead.
 - Branch/PR: manager/HAMSTER-FIG-mascot
+
+## 2026-11-04 · Manager · HAMSTER-FIG (back to 3D, start 2D)
+- Done (PO go): `public/js/hamster-mascot.js` back to the version before the pixel pass (PO: that one was better). PO decision: the whole hamster becomes 2D pixel art; the 3D model stays only as a measure for sizes and proportions. Base poses traced pixel by pixel from the PO's two reference images (lying = the sprite in `public/js/hamster.js`); shown to the PO for sign-off before any animation is built.
+- Next: after the PO's OK, layered 2D animations like `public/js/hamster.js`; PR only once the PO is happy (PO, F5).
+- Branch/PR: manager/HAMSTER-FIG-mascot
