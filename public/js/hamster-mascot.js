@@ -52,7 +52,7 @@
         y: 0, hipsY: 0.67, pitch: 0, sy: 1, flat: 1, wide: 1, bellyW: 1,
         headX: 0, headY: 0, headZ: 0, headDrop: 0, puff: 0,
         armLX: -1.1, armLZ: 0.25, armRX: -1.1, armRZ: 0.25,
-        legLX: 0, legRX: 0, legBack: 0, earL: 0, earR: 0,
+        legLX: 0, legRX: 0, legBack: 0, legDown: 0, footL: 0, earL: 0, earR: 0,
         docOn: 0, docEat: 0, split: 0, fall: 0, conf: 0, zz: 0, zOn: 0, eyes: 'open'
     };
     var DISCRETE = { docOn: 1, zOn: 1, eyes: 1 };
@@ -61,8 +61,8 @@
     var REST = { armLX: -1.1, armRX: -1.1, armLZ: 0.25, armRZ: 0.25 };
     var FOURS = { pitch: 1.2, hipsY: 0.62, headX: -1.05, armLX: -1.2, armRX: -1.2, armLZ: -0.05, armRZ: -0.05, legLX: -1.2, legRX: -1.2 };
     var LIE = {
-        pitch: 1.5, hipsY: 0.5, sy: 1.3, flat: 1.0, wide: 1.1, bellyW: 1.45, headX: -1.4, headDrop: 0.27,
-        armLX: -2.4, armRX: -2.4, armLZ: -0.15, armRZ: -0.15, legLX: -0.35, legRX: -0.6, legBack: -0.42, eyes: 'open'
+        pitch: 1.5, hipsY: 0.4, sy: 1.38, flat: 0.92, wide: 1.12, bellyW: 1.45, headX: -1.4, headDrop: 0.17,
+        armLX: -2.6, armRX: -2.6, armLZ: -0.25, armRZ: -0.25, legLX: -0.08, legRX: -1.3, legBack: -0.42, legDown: 0.22, footL: 1.72, eyes: 'open'
     };
     var HOLD = { armLX: -1.5, armRX: -1.5, armLZ: 0.33, armRZ: 0.33, headX: 0.3, docOn: 1 };
     var REACH = { armLX: -0.35, armRX: -0.35, armLZ: -0.1, armRZ: -0.1 };
@@ -177,14 +177,14 @@
             [0, X(LIE, {})],
             [1.2, { eyes: 'blink' }],
             [1.35, { eyes: 'open' }],
-            [2.0, { flat: 1.04 }],
+            [2.0, { flat: 0.96 }],
             [3.0, { headY: 0.15 }],
-            [4.0, { flat: 1.0, headY: 0 }]
+            [4.0, { flat: 0.92, headY: 0 }]
         ] },
         sleep: { label: 'Schlafen', sub: 'Flach · Zzz', posture: 'lie', dur: 3.2, loop: true, keys: [
-            [0, X(LIE, { eyes: 'sleep', zOn: 1, earL: -0.3, earR: -0.3, flat: 0.97, zz: 0 })],
-            [1.6, { flat: 1.04, zz: 0.5 }],
-            [3.2, { flat: 0.97, zz: 1 }]
+            [0, X(LIE, { eyes: 'sleep', zOn: 1, earL: -0.3, earR: -0.3, flat: 0.9, zz: 0 })],
+            [1.6, { flat: 0.96, zz: 0.5 }],
+            [3.2, { flat: 0.9, zz: 1 }]
         ] },
         dangle: { label: 'Gehalten', sub: 'Mit der Maus gepackt', posture: 'stand', dur: 0.5, loop: true, keys: [
             [0, X(DANGLE, {})],
@@ -243,13 +243,13 @@
     var HALF_H = 1.15, TARGET_Y = 0.85, ELEV = 10 * Math.PI / 180;
 
     // ---------------------------------------------------------------- shaders
-    var TOON_VS = 'varying vec3 vN; void main(){ vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
-    var TOON_FS = 'uniform vec3 uColor; uniform vec3 uShade; uniform vec3 uLight; varying vec3 vN;' +
-        'void main(){ vec3 n = normalize(vN); if(!gl_FrontFacing) n = -n; float d = dot(n, normalize(uLight));' +
+    var TOON_VS = 'varying vec3 vN; varying float vY; void main(){ vN = normalize(normalMatrix * normal); vY = (modelMatrix * vec4(position, 1.0)).y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
+    var TOON_FS = 'uniform vec3 uColor; uniform vec3 uShade; uniform vec3 uLight; varying vec3 vN; varying float vY;' +
+        'void main(){ if (vY < 0.0) discard; vec3 n = normalize(vN); if(!gl_FrontFacing) n = -n; float d = dot(n, normalize(uLight));' +
         ' gl_FragColor = vec4(d > 0.3 ? uColor : uShade, 1.0); }';
-    var OUT_VS = 'uniform float uThick; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0);' +
+    var OUT_VS = 'uniform float uThick; varying float vY; void main(){ vY = (modelMatrix * vec4(position, 1.0)).y; vec4 mv = modelViewMatrix * vec4(position, 1.0);' +
         ' vec3 n = normalize(normalMatrix * normal); mv.xyz += n * uThick; gl_Position = projectionMatrix * mv; }';
-    var OUT_FS = 'uniform vec3 uColor; void main(){ gl_FragColor = vec4(uColor, 1.0); }';
+    var OUT_FS = 'uniform vec3 uColor; varying float vY; void main(){ if (vY < 0.0) discard; gl_FragColor = vec4(uColor, 1.0); }';
 
     // ============================================================== the figure
     function buildFigure(T) {
@@ -371,8 +371,11 @@
             var s = i === 0 ? 1 : -1;
             var g = grp(J.hips, [s * 0.28, -0.22, 0.1]);
             E(g, [0.2, 0.24, 0.2], [0, -0.12, 0], M.fur, true);
-            E(g, [0.1, 0.05, 0.16], [0, -0.4, 0.1], M.pink, true);
+            var foot = grp(g, [0, -0.38, 0]);
+            E(foot, [0.1, 0.05, 0.16], [0, -0.02, 0.1], M.pink, true);
+            [-0.045, 0, 0.045].forEach(function (tx) { E(foot, [0.032, 0.03, 0.032], [tx, -0.03, 0.25], M.pink, true); });
             J[id] = g;
+            J[id === 'legL' ? 'footL' : 'footR'] = foot;
         });
 
         // Document: two halves with an interlocking torn edge.
@@ -446,6 +449,8 @@
             J.armL.rotation.set(p.armLX, 0, -p.armLZ);
             J.armR.rotation.set(p.armRX, 0, p.armRZ);
             J.legL.position.y = J.legR.position.y = -0.22 + p.legBack;
+            J.legL.position.z = J.legR.position.z = 0.1 + p.legDown;
+            J.footL.rotation.x = p.footL;
             J.legL.rotation.x = p.legLX;
             J.legR.rotation.x = p.legRX;
             J.earL.rotation.set(p.earL, 0, -0.35);
