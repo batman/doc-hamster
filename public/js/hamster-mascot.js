@@ -23,13 +23,16 @@
     'use strict';
 
     // ---------------------------------------------------------------- palette
+    // Fur: the DocHamster brand orange (--primary in public/css/app.css) with
+    // the shadow tone public/js/hamster.js uses with it. All other colours are
+    // taken from the PO's lying sprite.
     var C = {
-        fur: '#E9862A', furShade: '#C8621B',
-        cream: '#F8DFA6', creamShade: '#E5BD7A',
-        pink: '#E8957F', pinkShade: '#C87563', earInner: '#E39184',
-        blush: '#F6919C', nose: '#9C4A2A', dark: '#2B1408', white: '#FFFFFF',
+        fur: '#FF7622', furShade: '#D4500F',
+        cream: '#FBEDC1', creamShade: '#E1BC87',
+        pink: '#D87D6A', pinkShade: '#B9604F', earInner: '#D87D6A',
+        blush: '#FB879A', white: '#FFFFFF',
         paper: '#FFFDF7', paperShade: '#E3DED2', ink: '#8C97A4', stamp: '#D2503C',
-        outline: '#4A230E', shadow: '#A5B6C5', zz: '#7FA7E6'
+        outline: '#010101', shadow: '#A5B6C5', zz: '#7FA7E6'
     };
 
     function hexToRgb(hex) {
@@ -50,7 +53,7 @@
     // ------------------------------------------------------------ pose channels
     var DEF = {
         y: 0, hipsY: 0.67, pitch: 0, sy: 1, flat: 1, wide: 1, bellyW: 1,
-        headX: 0, headY: 0, headZ: 0, headDrop: 0, puff: 0,
+        headX: 0, headY: 0, headZ: 0, headDrop: 0, headW: 1, headH: 1, faceCam: 0, puff: 0,
         armLX: -1.1, armLZ: 0.25, armRX: -1.1, armRZ: 0.25,
         legLX: 0, legRX: 0, legBack: 0, legDown: 0, footL: 0, earL: 0, earR: 0,
         docOn: 0, docEat: 0, split: 0, fall: 0, conf: 0, zz: 0, zOn: 0, eyes: 'open'
@@ -60,8 +63,17 @@
 
     var REST = { armLX: -1.1, armRX: -1.1, armLZ: 0.25, armRZ: 0.25 };
     var FOURS = { pitch: 1.2, hipsY: 0.62, headX: -1.05, armLX: -1.2, armRX: -1.2, armLZ: -0.05, armRZ: -0.05, legLX: -1.2, legRX: -1.2 };
+    // Keys that hold until the next one (hard frame changes, no in-betweens).
+    function held(dur, keys) {
+        var out = [];
+        keys.forEach(function (k, i) {
+            var next = i + 1 < keys.length ? keys[i + 1][0] : dur;
+            out.push(k, [next - 0.001, {}]);
+        });
+        return out;
+    }
     var LIE = {
-        pitch: 1.5, hipsY: 0.4, sy: 1.38, flat: 0.92, wide: 1.12, bellyW: 1.45, headX: -1.4, headDrop: 0.17,
+        pitch: 1.5, hipsY: 0.5, sy: 1.25, flat: 1.3, wide: 1.12, bellyW: 1.45, headX: -1.2, headDrop: 0.1, headW: 1.25, headH: 0.92, faceCam: 0.85,
         armLX: -2.6, armRX: -2.6, armLZ: -0.25, armRZ: -0.25, legLX: -0.08, legRX: -1.3, legBack: -0.42, legDown: 0.22, footL: 1.72, eyes: 'open'
     };
     var HOLD = { armLX: -1.5, armRX: -1.5, armLZ: 0.33, armRZ: 0.33, headX: 0.3, docOn: 1 };
@@ -165,27 +177,24 @@
         ] },
         liedown: { label: 'Hinlegen', sub: 'Vierbeiner → liegen', posture: 'lie', dur: 0.6, loop: false, keys: [
             [0, X(FOURS, {})],
-            [0.3, X(FOURS, { hipsY: 0.5, pitch: 1.35, headX: -1.2, flat: 0.85 })],
+            [0.3, X(FOURS, { hipsY: 0.52, pitch: 1.35, headX: -1.2, flat: 1.1 })],
             [0.6, X(LIE, {})]
         ] },
         rise: { label: 'Aufrappeln', sub: 'Liegen → Vierbeiner', posture: 'fours', dur: 0.5, loop: false, keys: [
             [0, X(LIE, {})],
-            [0.25, X(FOURS, { hipsY: 0.52, flat: 0.85 })],
+            [0.25, X(FOURS, { hipsY: 0.55, flat: 1.1 })],
             [0.5, X(FOURS, {})]
         ] },
-        lie: { label: 'Liegen', sub: 'Flach ausgestreckt', posture: 'lie', dur: 4.0, loop: true, keys: [
-            [0, X(LIE, {})],
-            [1.2, { eyes: 'blink' }],
-            [1.35, { eyes: 'open' }],
-            [2.0, { flat: 0.96 }],
-            [3.0, { headY: 0.15 }],
-            [4.0, { flat: 0.92, headY: 0 }]
-        ] },
-        sleep: { label: 'Schlafen', sub: 'Flach · Zzz', posture: 'lie', dur: 3.2, loop: true, keys: [
-            [0, X(LIE, { eyes: 'sleep', zOn: 1, earL: -0.3, earR: -0.3, flat: 0.9, zz: 0 })],
-            [1.6, { flat: 0.96, zz: 0.5 }],
-            [3.2, { flat: 0.9, zz: 1 }]
-        ] },
+        // Lying and sleeping like public/js/hamster.js: only the body breathes
+        // (1 pixel, 1.0 s out / 0.9 s in, two hard frames), the head stays.
+        lie: { label: 'Liegen', sub: 'Atmen · Blinzeln', posture: 'lie', dur: 5.78, loop: true, keys: held(5.78, [
+            [0, X(LIE, {})], [1.0, { flat: 1.33 }], [1.9, { flat: 1.3 }], [2.9, { flat: 1.33 }],
+            [3.2, { eyes: 'sleep' }], [3.34, { eyes: 'open' }], [3.8, { flat: 1.3 }], [4.8, { flat: 1.33 }],
+            [5.5, { eyes: 'sleep', flat: 1.3 }], [5.64, { eyes: 'open' }]
+        ]) },
+        sleep: { label: 'Schlafen', sub: 'Atmen · Zzz', posture: 'lie', dur: 1.9, loop: true, keys: held(1.9, [
+            [0, X(LIE, { eyes: 'sleep', zOn: 1, earL: -0.3, earR: -0.3 })], [1.0, { flat: 1.33 }]
+        ]) },
         dangle: { label: 'Gehalten', sub: 'Mit der Maus gepackt', posture: 'stand', dur: 0.5, loop: true, keys: [
             [0, X(DANGLE, {})],
             [0.25, { legLX: -0.1, legRX: 0.25 }],
@@ -240,21 +249,44 @@
         spin: { label: 'Drehen', az: null }
     };
     var STRIP = [0, -45, -90, -135, 180];
-    var HALF_H = 1.15, TARGET_Y = 0.85, ELEV = 10 * Math.PI / 180;
+    var TARGET_Y = 0.85, ELEV = 10 * Math.PI / 180;
+    // Art pixels per world unit. Fixed, so the face stamps always fit the body
+    // (the lying hamster is about 41 pixels tall, like public/js/hamster.js).
+    var ART = 40;
+    var ID = { body: 1, head: 2, ears: 3, arms: 4, legs: 5, shadow: 250, eyeL: 240, eyeR: 241, mouth: 242, cheekL: 243, cheekR: 244 };
+
+    // Pixel stamps taken from the lying sprite in public/js/hamster.js.
+    // k outline, w light, r cheek, p nose, z the "z"; '.' leaves what is below.
+    var STAMPS = {
+        open: ['.kkk.', 'kwwkk', 'kwwkk', 'kkkkk', '..kw.'],
+        sleep: ['k....k', 'kk..kk', '.kkkk.'],
+        happy: ['.kkkk.', 'kk..kk', 'k....k'],
+        angryL: ['kk...', '..kk.', '....k', '..kk.', 'kk...'],
+        angryR: ['...kk', '.kk..', 'k....', '.kk..', '...kk'],
+        cheek: ['.rrr.', 'rrrrr', '.rrr.'],
+        mouth: ['.kpk.', '..k..', 'k.k.k', '.k.k.'],
+        zm: ['zzzz', '..z.', '.z..', 'zzzz'],
+        zl: ['zzzzz', '...z.', '..z..', '.z...', 'zzzzz']
+    };
+    // Path of one "z" (hamster.js Z_PATH, relative to its first step); null = hidden.
+    var Z_PATH = [['zm', 0, 0], ['zm', 1, -2], ['zm', 2, -5], ['zm', 3, -8], ['zm', 4, -11], ['zl', 5, -15], ['zl', 6, -19], null, null];
+    var Z_STEP = 0.38;
 
     // ---------------------------------------------------------------- shaders
+    // Nothing is drawn below the floor (y < 0): lying bodies get a flat underside.
     var TOON_VS = 'varying vec3 vN; varying float vY; void main(){ vN = normalize(normalMatrix * normal); vY = (modelMatrix * vec4(position, 1.0)).y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
     var TOON_FS = 'uniform vec3 uColor; uniform vec3 uShade; uniform vec3 uLight; varying vec3 vN; varying float vY;' +
         'void main(){ if (vY < 0.0) discard; vec3 n = normalize(vN); if(!gl_FrontFacing) n = -n; float d = dot(n, normalize(uLight));' +
         ' gl_FragColor = vec4(d > 0.3 ? uColor : uShade, 1.0); }';
-    var OUT_VS = 'uniform float uThick; varying float vY; void main(){ vY = (modelMatrix * vec4(position, 1.0)).y; vec4 mv = modelViewMatrix * vec4(position, 1.0);' +
-        ' vec3 n = normalize(normalMatrix * normal); mv.xyz += n * uThick; gl_Position = projectionMatrix * mv; }';
-    var OUT_FS = 'uniform vec3 uColor; varying float vY; void main(){ if (vY < 0.0) discard; gl_FragColor = vec4(uColor, 1.0); }';
+    // Part id in red, depth (16 bit) in green/blue: the pixel pass draws lines from it.
+    var ID_VS = 'varying float vY; void main(){ vY = (modelMatrix * vec4(position, 1.0)).y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
+    var ID_FS = 'uniform float uId; varying float vY; void main(){ if (vY < 0.0) discard; float d = gl_FragCoord.z;' +
+        ' gl_FragColor = vec4(uId / 255.0, floor(d * 255.0) / 255.0, fract(d * 255.0), 1.0); }';
 
     // ============================================================== the figure
     function buildFigure(T) {
         var LIGHT = new T.Vector3(-0.5, 0.42, 0.76).normalize();
-        var mats = [], geos = [];
+        var mats = [], geos = [], idMats = {}, meshes = [], anchors = [];
         function V3(rgb) { return new T.Vector3(rgb[0], rgb[1], rgb[2]); }
         function toon(color, shade, side) {
             var m = new T.ShaderMaterial({
@@ -264,25 +296,42 @@
             mats.push(m);
             return m;
         }
-        var OUT = new T.ShaderMaterial({
-            uniforms: { uThick: { value: 0.03 }, uColor: { value: V3(hexToRgb(C.outline)) } },
-            vertexShader: OUT_VS, fragmentShader: OUT_FS, side: T.BackSide
-        });
-        mats.push(OUT);
+        function idMat(id) {
+            if (!idMats[id]) {
+                idMats[id] = new T.ShaderMaterial({ uniforms: { uId: { value: id } }, vertexShader: ID_VS, fragmentShader: ID_FS, side: T.DoubleSide });
+                mats.push(idMats[id]);
+            }
+            return idMats[id];
+        }
         var M = {
             fur: toon(C.fur, C.furShade), cream: toon(C.cream, C.creamShade), pink: toon(C.pink, C.pinkShade),
-            earIn: toon(C.earInner, C.pinkShade), blush: toon(C.blush), nose: toon(C.nose), dark: toon(C.dark),
-            white: toon(C.white), paper: toon(C.paper, C.paperShade, T.DoubleSide), ink: toon(C.ink, C.ink, T.DoubleSide),
-            stamp: toon(C.stamp, C.stamp, T.DoubleSide), shadow: toon(C.shadow), zz: toon(C.zz, C.zz, T.DoubleSide)
+            earIn: toon(C.earInner, C.pinkShade), paper: toon(C.paper, C.paperShade, T.DoubleSide),
+            ink: toon(C.ink, C.ink, T.DoubleSide), stamp: toon(C.stamp, C.stamp, T.DoubleSide), shadow: toon(C.shadow)
         };
         function G(g) { geos.push(g); return g; }
+        // Part group of the meshes created next (body, head, ears, arms, legs).
+        var group = ID.body;
+        function reg(m, id) {
+            m.userData.mat = m.material;
+            m.userData.idm = idMat(id || group);
+            meshes.push(m);
+            return m;
+        }
         var SPH = G(new T.SphereGeometry(1, 28, 18));
-        function E(parent, r, p, mat, outline) {
-            var m = new T.Mesh(SPH, mat);
+        function E(parent, r, p, mat) {
+            var m = reg(new T.Mesh(SPH, mat));
             m.scale.set(r[0], r[1], r[2]);
             m.position.set(p[0], p[1], p[2]);
-            if (outline) { m.add(new T.Mesh(SPH, OUT)); }
             parent.add(m);
+            return m;
+        }
+        // Invisible marker for a face stamp: only drawn in the id pass, so the
+        // stamp appears only where that spot of the face can be seen.
+        function anchor(parent, r, p, id) {
+            var m = E(parent, r, p, M.fur);
+            m.userData.idm = idMat(id);
+            m.visible = false;
+            anchors.push(m);
             return m;
         }
         function grp(parent, p) {
@@ -293,7 +342,7 @@
         }
 
         var scene = new T.Scene();
-        var shadow = new T.Mesh(G(new T.CircleGeometry(1, 32)), M.shadow);
+        var shadow = reg(new T.Mesh(G(new T.CircleGeometry(1, 32)), M.shadow), ID.shadow);
         shadow.rotation.x = -Math.PI / 2;
         shadow.position.y = 0.004;
         scene.add(shadow);
@@ -303,77 +352,56 @@
         J.hips = grp(J.root, [0, 0.67, 0]);
         J.squash = grp(J.hips);
         // Body: upper ellipsoid + lower "pear" blob, cream belly patch, tail.
-        E(J.squash, [0.58, 0.64, 0.5], [0, 0, 0], M.fur, true);
-        E(J.squash, [0.62, 0.45, 0.52], [0, -0.2, 0], M.fur, true);
-        J.belly = E(J.squash, [0.42, 0.5, 0.3], [0, -0.08, 0.26], M.cream, false);
-        E(J.squash, [0.09, 0.08, 0.09], [0, -0.45, -0.5], M.fur, true);
+        E(J.squash, [0.58, 0.64, 0.5], [0, 0, 0], M.fur);
+        E(J.squash, [0.62, 0.45, 0.52], [0, -0.2, 0], M.fur);
+        J.belly = E(J.squash, [0.42, 0.5, 0.3], [0, -0.08, 0.26], M.cream);
+        E(J.squash, [0.09, 0.08, 0.09], [0, -0.45, -0.5], M.fur);
 
-        // Head with the face from the reference sheet: big round eyes with a
-        // light dot, wide cream lower face, small "w" mouth, pink cheeks.
+        // Head: fur, cheek pouches (grow while eating), wide cream lower face,
+        // tuft, ears. Eyes, mouth and cheeks are pixel stamps (see STAMPS).
+        group = ID.head;
         J.head = grp(J.hips, [0, 0.42, 0.02]);
-        E(J.head, [0.5, 0.44, 0.44], [0, 0.2, 0.04], M.fur, true);
-        J.pouches = [-1, 1].map(function (s) { return E(J.head, [0.2, 0.17, 0.18], [s * 0.3, 0.08, 0.2], M.fur, true); });
-        E(J.head, [0.3, 0.17, 0.16], [0, 0.06, 0.37], M.cream, false);
-        E(J.head, [0.035, 0.026, 0.022], [0, 0.135, 0.52], M.nose, false);
-        [-1, 1].forEach(function (s) {
-            var ch = E(J.head, [0.085, 0.05, 0.025], [s * 0.29, 0.14, 0.385], M.blush, false);
-            ch.rotation.y = s * 0.6;
-        });
-        var arcSmall = G(new T.TorusGeometry(0.032, 0.014, 5, 10, Math.PI));
-        [-1, 1].forEach(function (s) {
-            var m = new T.Mesh(arcSmall, M.dark);
-            m.position.set(s * 0.03, 0.09, 0.527);
-            m.rotation.z = Math.PI;
-            J.head.add(m);
-        });
+        J.skull = grp(J.head);
+        E(J.skull, [0.5, 0.44, 0.44], [0, 0.2, 0.04], M.fur);
+        J.pouches = [-1, 1].map(function (s) { return E(J.skull, [0.2, 0.17, 0.18], [s * 0.3, 0.08, 0.2], M.fur); });
+        E(J.skull, [0.42, 0.18, 0.3], [0, 0, 0.2], M.cream);
         var cone = G(new T.ConeGeometry(0.05, 0.14, 6));
         [[-0.07, -0.45], [0, 0], [0.07, 0.45]].forEach(function (c) {
-            var m = new T.Mesh(cone, M.fur);
+            var m = reg(new T.Mesh(cone, M.fur));
             m.position.set(c[0], 0.65, 0.1);
             m.rotation.set(0.35, 0, -c[1]);
-            m.add(new T.Mesh(cone, OUT));
-            J.head.add(m);
+            J.skull.add(m);
         });
+        group = ID.ears;
         ['earL', 'earR'].forEach(function (id, i) {
             var s = i === 0 ? 1 : -1;
-            var g = grp(J.head, [s * 0.29, 0.53, -0.02]);
-            E(g, [0.13, 0.14, 0.06], [0, 0.08, 0], M.fur, true);
-            E(g, [0.08, 0.09, 0.03], [0, 0.08, 0.04], M.earIn, false);
+            var g = grp(J.skull, [s * 0.29, 0.53, -0.02]);
+            E(g, [0.13, 0.14, 0.06], [0, 0.08, 0], M.fur);
+            E(g, [0.08, 0.09, 0.03], [0, 0.08, 0.04], M.earIn);
             J[id] = g;
         });
-        var arc = G(new T.TorusGeometry(0.058, 0.018, 6, 14, Math.PI));
-        var bar = G(new T.BoxGeometry(0.11, 0.022, 0.012));
-        var barS = G(new T.BoxGeometry(0.075, 0.02, 0.012));
-        J.eyes = [-1, 1].map(function (s) {
-            var g = grp(J.head, [s * 0.27, 0.26, 0.4]);
-            g.rotation.y = s * 0.8;
-            g.translateZ(0.02);
-            var open = grp(g);
-            E(open, [0.062, 0.074, 0.045], [0, 0, 0], M.dark, false);
-            E(open, [0.022, 0.024, 0.01], [0.018, 0.026, 0.042], M.white, false);
-            var happy = new T.Mesh(arc, M.dark); happy.position.y = -0.02; g.add(happy);
-            var sleep = new T.Mesh(arc, M.dark); sleep.rotation.z = Math.PI; sleep.position.y = 0.02; g.add(sleep);
-            var blink = new T.Mesh(bar, M.dark); g.add(blink);
-            var angry = grp(g);
-            var a1 = new T.Mesh(barS, M.dark); a1.position.set(-s * 0.012, 0.018, 0); a1.rotation.z = s * 0.5; angry.add(a1);
-            var a2 = new T.Mesh(barS, M.dark); a2.position.set(-s * 0.012, -0.018, 0); a2.rotation.z = -s * 0.5; angry.add(a2);
-            return { open: open, happy: happy, sleep: sleep, blink: blink, angry: angry };
-        });
+        anchor(J.skull, [0.05, 0.05, 0.03], [0.2, 0.27, 0.44], ID.eyeL);
+        anchor(J.skull, [0.05, 0.05, 0.03], [-0.2, 0.27, 0.44], ID.eyeR);
+        anchor(J.skull, [0.05, 0.04, 0.03], [0.33, 0.08, 0.37], ID.cheekL);
+        anchor(J.skull, [0.05, 0.04, 0.03], [-0.33, 0.08, 0.37], ID.cheekR);
+        anchor(J.skull, [0.04, 0.04, 0.03], [0, 0.07, 0.49], ID.mouth);
 
+        group = ID.arms;
         ['armL', 'armR'].forEach(function (id, i) {
             var s = i === 0 ? 1 : -1;
             var g = grp(J.hips, [s * 0.3, 0.12, 0.22]);
-            E(g, [0.1, 0.22, 0.1], [0, -0.18, 0], M.fur, true);
-            E(g, [0.075, 0.06, 0.07], [0, -0.4, 0.01], M.pink, true);
+            E(g, [0.1, 0.22, 0.1], [0, -0.18, 0], M.fur);
+            E(g, [0.075, 0.06, 0.07], [0, -0.4, 0.01], M.pink);
             J[id] = g;
         });
+        group = ID.legs;
         ['legL', 'legR'].forEach(function (id, i) {
             var s = i === 0 ? 1 : -1;
             var g = grp(J.hips, [s * 0.28, -0.22, 0.1]);
-            E(g, [0.2, 0.24, 0.2], [0, -0.12, 0], M.fur, true);
+            E(g, [0.2, 0.24, 0.2], [0, -0.12, 0], M.fur);
             var foot = grp(g, [0, -0.38, 0]);
-            E(foot, [0.1, 0.05, 0.16], [0, -0.02, 0.1], M.pink, true);
-            [-0.045, 0, 0.045].forEach(function (tx) { E(foot, [0.032, 0.03, 0.032], [tx, -0.03, 0.25], M.pink, true); });
+            E(foot, [0.1, 0.05, 0.16], [0, -0.02, 0.1], M.pink);
+            [-0.045, 0, 0.045].forEach(function (tx) { E(foot, [0.032, 0.03, 0.032], [tx, -0.03, 0.25], M.pink); });
             J[id] = g;
             J[id === 'legL' ? 'footL' : 'footR'] = foot;
         });
@@ -383,8 +411,6 @@
         J.doc.rotation.x = -0.2;
         var DW = 0.17, DH = 0.22;
         var zig = [[0, -DH], [0.014, -0.16], [-0.012, -0.1], [0.016, -0.04], [-0.01, 0.02], [0.014, 0.08], [-0.014, 0.14], [0.01, 0.19], [0, DH]];
-        var lineMat = new T.LineBasicMaterial({ color: C.outline });
-        mats.push(lineMat);
         J.halves = [-1, 1].map(function (s) {
             var cx = s * DW / 2;
             var pts = [[s * DW, -DH]].concat(zig).concat([[s * DW, DH]]);
@@ -393,21 +419,19 @@
                 if (i === 0) { shape.moveTo(p[0] - cx, p[1]); } else { shape.lineTo(p[0] - cx, p[1]); }
             });
             var g = grp(J.doc, [cx, 0, 0]);
-            g.add(new T.Mesh(G(new T.ShapeGeometry(shape)), M.paper));
-            var lg = G(new T.BufferGeometry().setFromPoints(pts.map(function (p) { return new T.Vector3(p[0] - cx, p[1], 0.001); })));
-            g.add(new T.LineLoop(lg, lineMat));
+            g.add(reg(new T.Mesh(G(new T.ShapeGeometry(shape)), M.paper), 20));
             var rows = [[0.165, 0.024, 0.11], [0.11, 0.014, 0.13], [0.07, 0.014, 0.12], [0.03, 0.014, 0.13], [-0.01, 0.014, 0.1], [-0.05, 0.014, 0.13], [-0.09, 0.014, 0.12], [-0.13, 0.014, s > 0 ? 0.05 : 0.13]];
             rows.forEach(function (r) {
                 var len = r[2], geo = G(new T.PlaneGeometry(len, r[1]));
                 var x0 = s < 0 ? -0.15 + len / 2 : 0.025 + len / 2;
                 [1, -1].forEach(function (f) {
-                    var m = new T.Mesh(geo, M.ink);
+                    var m = reg(new T.Mesh(geo, M.ink), 20);
                     m.position.set(x0 - cx, r[0], f * 0.003);
                     g.add(m);
                 });
             });
             if (s > 0) {
-                var st = new T.Mesh(G(new T.RingGeometry(0.022, 0.034, 18)), M.stamp);
+                var st = reg(new T.Mesh(G(new T.RingGeometry(0.022, 0.034, 18)), M.stamp), 20);
                 st.position.set(0.1 - cx, -0.16, 0.004);
                 g.add(st);
             }
@@ -416,23 +440,17 @@
         });
         var seed = 7;
         function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
-        var scrapGeo = G(new T.PlaneGeometry(0.04, 0.035));
+        var scrapGeo = G(new T.PlaneGeometry(0.05, 0.045));
         J.conf = [];
         for (var ci = 0; ci < 12; ci++) {
-            var sm = new T.Mesh(scrapGeo, M.paper);
-            sm.userData = { p0: [(rnd() - 0.5) * 0.06, 0.1 + (rnd() - 0.5) * 0.35, 0.6], v: [(rnd() - 0.5) * 1.4, 0.4 + rnd() * 0.8, 0.1 + rnd() * 0.4], r: [rnd() * 9, rnd() * 9] };
+            var sm = reg(new T.Mesh(scrapGeo, M.paper), 20);
+            sm.userData.p0 = [(rnd() - 0.5) * 0.06, 0.1 + (rnd() - 0.5) * 0.35, 0.6];
+            sm.userData.v = [(rnd() - 0.5) * 1.4, 0.4 + rnd() * 0.8, 0.1 + rnd() * 0.4];
+            sm.userData.r = [rnd() * 9, rnd() * 9];
             J.hips.add(sm);
             J.conf.push(sm);
         }
-        J.zs = [];
-        var zTop = G(new T.BoxGeometry(0.12, 0.026, 0.01)), zDiag = G(new T.BoxGeometry(0.15, 0.026, 0.01));
-        for (var zi = 0; zi < 3; zi++) {
-            var zg = grp(J.root);
-            var t1 = new T.Mesh(zTop, M.zz); t1.position.y = 0.06; zg.add(t1);
-            var t2 = new T.Mesh(zTop, M.zz); t2.position.y = -0.06; zg.add(t2);
-            var t3 = new T.Mesh(zDiag, M.zz); t3.rotation.z = Math.PI / 4; zg.add(t3);
-            J.zs.push(zg);
-        }
+        var headTop = new T.Vector3();
 
         function applyPose(p) {
             J.root.position.y = p.y;
@@ -443,6 +461,7 @@
             J.belly.scale.x = 0.42 * p.bellyW;
             J.head.position.set(0, 0.42 * p.sy, 0.02 + p.headDrop);
             J.head.rotation.set(p.headX, p.headY, p.headZ);
+            J.skull.scale.set(p.headW, p.headH, p.headW);
             var pf = 0.55 + 0.6 * p.puff;
             J.pouches.forEach(function (m) { m.scale.set(0.2 * pf, 0.17 * pf, 0.18 * pf); });
             J.armL.position.y = J.armR.position.y = 0.12 * p.sy;
@@ -455,13 +474,6 @@
             J.legR.rotation.x = p.legRX;
             J.earL.rotation.set(p.earL, 0, -0.35);
             J.earR.rotation.set(p.earR, 0, 0.35);
-            J.eyes.forEach(function (e) {
-                e.open.visible = p.eyes === 'open';
-                e.happy.visible = p.eyes === 'happy';
-                e.sleep.visible = p.eyes === 'sleep';
-                e.blink.visible = p.eyes === 'blink';
-                e.angry.visible = p.eyes === 'angry';
-            });
             J.doc.visible = !!p.docOn;
             var keep = Math.max(0.001, 1 - p.docEat);
             J.doc.scale.set(1, keep, 1);
@@ -477,16 +489,18 @@
                 m.position.set(d.p0[0] + d.v[0] * c, d.p0[1] + d.v[1] * c - 1.7 * c * c, d.p0[2] + d.v[2] * c);
                 m.rotation.set(d.r[0] * c, d.r[1] * c, 0);
             });
-            J.zs.forEach(function (z, i) {
-                var ph = (p.zz + i / 3) % 1;
-                z.visible = !!p.zOn;
-                z.position.set(0.28 + 0.08 * Math.sin(ph * 6.28), 1.0 + ph * 0.6, 0.45);
-                var sc = 0.6 + ph * 0.7;
-                z.scale.set(sc, sc, sc);
-            });
             var lie = Math.min(1, Math.abs(p.pitch) / 1.3);
             shadow.scale.set(0.62 * p.wide, 0.5 + 0.38 * lie, 1);
             shadow.position.z = 0.12 * lie;
+            scene.updateMatrixWorld(true);
+            headTop.set(0, 0.66, 0.1);
+            J.skull.localToWorld(headTop);
+        }
+
+        // false: normal colours; true: part ids + depth.
+        function setPass(idPass) {
+            meshes.forEach(function (m) { m.material = idPass ? m.userData.idm : m.userData.mat; });
+            anchors.forEach(function (a) { a.visible = idPass; });
         }
 
         function setFur(hex) {
@@ -495,8 +509,8 @@
         }
 
         return {
-            scene: scene, J: J, OUT: OUT, applyPose: applyPose, setFur: setFur,
-            billboard: function (cam) { J.zs.forEach(function (z) { z.quaternion.copy(cam.quaternion); }); },
+            scene: scene, J: J, applyPose: applyPose, setFur: setFur, setPass: setPass,
+            headTop: headTop,
             dispose: function () {
                 geos.forEach(function (g) { g.dispose(); });
                 mats.forEach(function (m) { m.dispose(); });
@@ -504,68 +518,172 @@
         };
     }
 
+    // ============================================================ pixel pass
+    /*
+     * Turns the two render passes into a pixel-art frame: one outline around
+     * the whole figure, inner lines only where a part lies clearly in front of
+     * another (legs, paws, ears, head on body), no lines where parts melt into
+     * each other, then the face and the "z" as pixel stamps.
+     */
+    function pixelPass(T, col, idb, w, h, pose, cam, headTop, zTick) {
+        var n = w * h, out = new Uint8ClampedArray(n * 4);
+        var ids = new Uint8Array(n), dep = new Float32Array(n);
+        var i, x, y, s, d;
+        for (y = 0; y < h; y++) {
+            for (x = 0; x < w; x++) {
+                s = ((h - 1 - y) * w + x) * 4;
+                d = (y * w + x);
+                if (idb[s + 3] === 0) { continue; }
+                ids[d] = idb[s];
+                dep[d] = idb[s + 1] / 255 + idb[s + 2] / 65025;
+                out[d * 4] = col[s];
+                out[d * 4 + 1] = col[s + 1];
+                out[d * 4 + 2] = col[s + 2];
+                out[d * 4 + 3] = 255;
+            }
+        }
+        function solid(j) { var v = ids[j]; return v !== 0 && v !== ID.shadow; }
+        // Face anchors belong to the head.
+        function part(v) { return v >= 240 && v <= 244 ? ID.head : v; }
+        var line = new Uint8Array(n), TH = 0.1 / 39.9, TH2 = 0.025 / 39.9;
+        for (y = 0; y < h; y++) {
+            for (x = 0; x < w; x++) {
+                i = y * w + x;
+                if (!solid(i)) { continue; }
+                var nb = [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h - 1 ? i + w : -1];
+                for (var k = 0; k < 4; k++) {
+                    var j = nb[k];
+                    if (j < 0) { continue; }
+                    if (!solid(j)) { line[j] = 1; } else if (dep[j] - dep[i] > (part(ids[i]) !== part(ids[j]) ? TH2 : TH)) { line[j] = 1; }
+                }
+            }
+        }
+        var OUTLINE = hexToRgb(C.outline);
+        for (i = 0; i < n; i++) {
+            if (line[i]) {
+                out[i * 4] = OUTLINE[0] * 255; out[i * 4 + 1] = OUTLINE[1] * 255; out[i * 4 + 2] = OUTLINE[2] * 255; out[i * 4 + 3] = 255;
+            }
+        }
+        // Face stamps at the visible part of each anchor.
+        var acc = {};
+        for (i = 0; i < n; i++) {
+            var v = ids[i];
+            if (v >= 240 && v <= 244) {
+                var a = acc[v] || (acc[v] = { x: 0, y: 0, c: 0 });
+                a.x += i % w; a.y += Math.floor(i / w); a.c++;
+            }
+        }
+        var PAL = { k: C.outline, w: C.white, r: C.blush, p: C.pink, s: C.creamShade, z: C.zz };
+        function stamp(rows, cx, cy) {
+            var sh = rows.length, sw = rows[0].length;
+            var x0 = Math.round(cx - (sw - 1) / 2), y0 = Math.round(cy - (sh - 1) / 2);
+            rows.forEach(function (row, ry) {
+                for (var rx = 0; rx < sw; rx++) {
+                    var ch = row[rx];
+                    if (ch === '.') { continue; }
+                    var px = x0 + rx, py = y0 + ry;
+                    if (px < 0 || py < 0 || px >= w || py >= h) { continue; }
+                    var c = hexToRgb(PAL[ch]), o = (py * w + px) * 4;
+                    out[o] = c[0] * 255; out[o + 1] = c[1] * 255; out[o + 2] = c[2] * 255; out[o + 3] = 255;
+                }
+            });
+        }
+        function at(id, fn) { var a = acc[id]; if (a && a.c) { fn(a.x / a.c, a.y / a.c); } }
+        at(ID.cheekL, function (cx, cy) { stamp(STAMPS.cheek, cx, cy); });
+        at(ID.cheekR, function (cx, cy) { stamp(STAMPS.cheek, cx, cy); });
+        at(ID.mouth, function (cx, cy) { stamp(STAMPS.mouth, cx, cy + 1); });
+        var eye = pose.eyes === 'blink' ? 'sleep' : pose.eyes;
+        at(ID.eyeL, function (cx, cy) { stamp(eye === 'angry' ? STAMPS.angryR : STAMPS[eye], cx, cy); });
+        at(ID.eyeR, function (cx, cy) { stamp(eye === 'angry' ? STAMPS.angryL : STAMPS[eye], cx, cy); });
+        // The "z": three on the same path, a third of the path apart.
+        if (pose.zOn) {
+            var hp = headTop.clone().project(cam);
+            var hx = (hp.x + 1) / 2 * w, hy = (1 - hp.y) / 2 * h - 4;
+            [0, 3, 6].forEach(function (off) {
+                var stp = Z_PATH[(zTick + off) % Z_PATH.length];
+                if (!stp) { return; }
+                var rows = STAMPS[stp[0]];
+                stamp(rows, hx + stp[1] + (rows[0].length - 1) / 2, hy + stp[2] + (rows.length - 1) / 2);
+            });
+        }
+        return new ImageData(out, w, h);
+    }
+
     // =============================================================== renderer
     /*
-     * opts: width, height (CSS px of the canvas), px (size of one art pixel in
-     * CSS px), outlinePx (outline in art pixels), fps, keyOnly, fur,
-     * strip: { canvas, width, height } – optional turnaround strip,
-     * onFrame(frame, total, animId), onEnd(animId).
+     * opts: width, height (CSS px of the canvas), px (CSS px per art pixel),
+     * fps, keyOnly, fur, strip: { canvas, px } – optional turnaround strip
+     * (five views), onFrame(frame, total, animId), onEnd(animId).
+     * The canvas gets a 2D context; WebGL works on its own hidden canvas.
      * Call tick(dt) yourself, or run() for an own animation loop.
      */
     function createRenderer(T, canvas, opts) {
         opts = opts || {};
         var W = opts.width || 192, H = opts.height || 192;
-        var o = { fps: opts.fps || 8, px: opts.px || 2, outlinePx: opts.outlinePx || 1.15, keyOnly: !!opts.keyOnly };
+        var o = { fps: opts.fps || 8, px: opts.px || 2, keyOnly: !!opts.keyOnly };
         var fig = buildFigure(T);
         if (opts.fur) { fig.setFur(opts.fur); }
 
-        function makeCam(aspect) { return new T.OrthographicCamera(-HALF_H * aspect, HALF_H * aspect, HALF_H, -HALF_H, 0.1, 40); }
-        function aimCam(cam, azDeg) {
+        var glCanvas = global.document.createElement('canvas');
+        glCanvas.width = glCanvas.height = 1;
+        var gl = new T.WebGLRenderer({ canvas: glCanvas, antialias: false, alpha: true });
+        gl.setPixelRatio(1);
+        gl.setClearColor(0x000000, 0);
+        var ctx = canvas.getContext('2d');
+        var strip = opts.strip || null, sctx = strip ? strip.canvas.getContext('2d') : null;
+        var CELL = 92;
+        var targets = {}, bufs = {};
+        function target(w, h) {
+            var key = w + 'x' + h;
+            if (!targets[key]) {
+                targets[key] = new T.WebGLRenderTarget(w, h, { minFilter: T.NearestFilter, magFilter: T.NearestFilter });
+                bufs[key] = [new Uint8Array(w * h * 4), new Uint8Array(w * h * 4)];
+            }
+            return key;
+        }
+        function size() {
+            canvas.width = Math.round(W / o.px);
+            canvas.height = Math.round(H / o.px);
+            if (strip) {
+                strip.canvas.width = CELL * STRIP.length;
+                strip.canvas.height = CELL;
+            }
+        }
+        size();
+
+        var cam = new T.OrthographicCamera(-1, 1, 1, -1, 0.1, 40);
+        function frameCam(w, h, azDeg) {
+            var halfH = h / 2 / ART, halfW = w / 2 / ART;
+            cam.left = -halfW; cam.right = halfW; cam.top = halfH; cam.bottom = -halfH;
+            cam.updateProjectionMatrix();
             var az = azDeg * Math.PI / 180, D = 12;
             cam.position.set(Math.sin(az) * Math.cos(ELEV) * D, TARGET_Y + Math.sin(ELEV) * D, Math.cos(az) * Math.cos(ELEV) * D);
             cam.lookAt(0, TARGET_Y, 0);
             cam.updateMatrixWorld();
         }
-        var cam = makeCam(W / H);
-        var r = new T.WebGLRenderer({ canvas: canvas, antialias: false, alpha: true });
-        r.setPixelRatio(1);
-        r.setClearColor(0x000000, 0);
-
-        var strip = opts.strip || null, rs = null, camS = null;
-        if (strip) {
-            rs = new T.WebGLRenderer({ canvas: strip.canvas, antialias: false, alpha: true });
-            rs.setPixelRatio(1);
-            rs.setClearColor(0x000000, 0);
-            camS = makeCam((strip.width / STRIP.length) / strip.height);
+        var lastPose = null, zTick = 0;
+        function view(az, w, h) {
+            var key = target(w, h), rt = targets[key], b = bufs[key];
+            frameCam(w, h, az);
+            gl.setRenderTarget(rt);
+            fig.setPass(false);
+            gl.clear();
+            gl.render(fig.scene, cam);
+            gl.readRenderTargetPixels(rt, 0, 0, w, h, b[0]);
+            fig.setPass(true);
+            gl.clear();
+            gl.render(fig.scene, cam);
+            gl.readRenderTargetPixels(rt, 0, 0, w, h, b[1]);
+            fig.setPass(false);
+            gl.setRenderTarget(null);
+            return pixelPass(T, b[0], b[1], w, h, lastPose, cam, fig.headTop, zTick);
         }
-        function spx() { return Math.max(2, Math.round(o.px * 0.6)); }
-        function size() {
-            r.setSize(Math.round(W / o.px), Math.round(H / o.px), false);
-            if (rs) { rs.setSize(Math.round(strip.width / spx()), Math.round(strip.height / spx()), false); }
-        }
-        size();
-
         function render(az) {
-            var hMain = Math.round(H / o.px);
-            fig.OUT.uniforms.uThick.value = (2 * HALF_H / hMain) * o.outlinePx;
-            aimCam(cam, az);
-            fig.billboard(cam);
-            r.render(fig.scene, cam);
-            if (rs) {
-                var w = Math.round(strip.width / spx()), h = Math.round(strip.height / spx()), cw = w / STRIP.length;
-                fig.OUT.uniforms.uThick.value = (2 * HALF_H / h) * o.outlinePx;
-                rs.setScissorTest(true);
-                rs.setScissor(0, 0, w, h);
-                rs.setViewport(0, 0, w, h);
-                rs.clear();
-                STRIP.forEach(function (a, i) {
-                    var x = Math.round(i * cw), ww = Math.round((i + 1) * cw) - x;
-                    rs.setViewport(x, 0, ww, h);
-                    rs.setScissor(x, 0, ww, h);
-                    aimCam(camS, a);
-                    fig.billboard(camS);
-                    rs.render(fig.scene, camS);
-                });
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.putImageData(view(az, canvas.width, canvas.height), 0, 0);
+            if (strip) {
+                sctx.clearRect(0, 0, strip.canvas.width, strip.canvas.height);
+                STRIP.forEach(function (a, i) { sctx.putImageData(view(a, CELL, CELL), i * CELL, 0); });
             }
         }
 
@@ -583,11 +701,20 @@
             if (!a.loop && st.t > a.dur + 0.5) { st.t = a.dur + 0.5; }
             var fr = current();
             var az = st.view === 'spin' ? -Math.floor(st.clock / 0.5) * 45 : (st.view ? VIEWS[st.view].az : st.az);
-            var key = st.anim + '|' + fr.f + '|' + az;
+            var pose = sample(a, fr.f / o.fps, o.keyOnly);
+            if (pose.faceCam) {
+                // Lying: the head turns towards the viewer, like the sprite.
+                var turn = Math.max(-0.8, Math.min(0.8, ((az % 360 + 540) % 360 - 180) * Math.PI / 180));
+                pose = X(pose, { headY: pose.headY + pose.faceCam * turn });
+            }
+            var zt = pose.zOn ? Math.floor(st.t / Z_STEP) : 0;
+            var key = st.anim + '|' + fr.f + '|' + az + '|' + zt;
             if (key !== st.key || st.dirty) {
                 st.key = key;
                 st.dirty = false;
-                fig.applyPose(sample(a, fr.f / o.fps, o.keyOnly));
+                lastPose = pose;
+                zTick = zt;
+                fig.applyPose(pose);
                 render(az);
                 if (fr.f !== st.frame || fr.total !== st.total) {
                     st.frame = fr.f;
@@ -628,20 +755,22 @@
             setOptions: function (n) {
                 if (n.fps && n.fps !== o.fps) { var f = current().f; o.fps = n.fps; st.t = f / o.fps + 1e-4; }
                 if (n.px && n.px !== o.px) { o.px = n.px; size(); }
-                if (typeof n.outlinePx === 'number') { o.outlinePx = n.outlinePx; }
                 if (typeof n.keyOnly === 'boolean') { o.keyOnly = n.keyOnly; }
                 if (n.fur) { fig.setFur(n.fur); }
                 st.dirty = true;
             },
             // Distance in CSS px from the canvas bottom to the ground point.
-            footOffset: function () { return H * (HALF_H - TARGET_Y * Math.cos(ELEV)) / (2 * HALF_H); },
+            footOffset: function () {
+                var halfH = (H / o.px) / 2 / ART;
+                return H * (halfH - TARGET_Y * Math.cos(ELEV)) / (2 * halfH);
+            },
             // CSS px per world unit (the hamster is about 1.75 units tall).
-            scale: function () { return H / (2 * HALF_H); },
+            scale: function () { return o.px * ART; },
             dispose: function () {
                 this.stop();
                 fig.dispose();
-                r.dispose();
-                if (rs) { rs.dispose(); }
+                Object.keys(targets).forEach(function (k) { targets[k].dispose(); });
+                gl.dispose();
             }
         };
     }
@@ -745,7 +874,7 @@
             if (st.mode !== 'ground') { return; }
             if (st.eatDone) { var cb = st.eatDone; st.eatDone = null; cb(); }
             if (!auto) { startAction('idle', 1e9); return; }
-            if (st.action === 'lie' && Math.random() < 0.55) { startAction('sleep', 8 + Math.random() * 10); return; }
+            if (st.action === 'lie' && Math.random() < 0.55) { st.headingTarget = 45 * st.dir; startAction('sleep', 8 + Math.random() * 10); return; }
             var total = 0, pick = 'idle';
             CHOICES.forEach(function (c) { total += c[1]; });
             var r = Math.random() * total;
@@ -763,7 +892,8 @@
                 return;
             }
             st.walkTo = null;
-            st.headingTarget = 25 * st.dir;
+            // Lying half turned to the viewer, like the sprite.
+            st.headingTarget = (pick === 'lie' ? 45 : 25) * st.dir;
             var durs = { idle: 3 + Math.random() * 3, read: 6, wave: 4, lie: 5 + Math.random() * 4, tear: 99 };
             startAction(pick, durs[pick]);
         }
@@ -924,7 +1054,7 @@
             play: function (id, seconds) {
                 if (!REQ[id] || st.mode !== 'ground') { return false; }
                 st.walkTo = null;
-                st.headingTarget = 25 * st.dir;
+                st.headingTarget = (REQ[id] === 'lie' ? 45 : 25) * st.dir;
                 startAction(id, seconds || 6);
                 return true;
             },

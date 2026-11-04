@@ -223,3 +223,8 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done (Lead, as agreed with the PO): where the mascot appears (logo, pages, desktop app HAMSTER), what eating a document really does, replacing `public/js/hamster.js`. Not looked at on a real phone.
 - Watch out: needs WebGL; under "reduce motion" it stays put. The vendored three.min.js prints a deprecation warning in the console (unmodified upstream build).
 - Branch/PR: manager/HAMSTER-FIG-mascot
+
+## 2026-11-04 · Manager · HAMSTER-FIG (pixel pass)
+- Done (PO go): every frame now goes through a pixel pass – one outline around the whole figure, inner lines only where a part lies in front of another (head on body, legs, paws, ears), no lines where parts melt into each other; eyes, mouth, cheeks and the "z" are pixel stamps taken from the lying sprite in `public/js/hamster.js` (the PO's reference image is that sprite). Lying/sleeping fitted to the sprite by overlay at the same pixel scale (head turned to the viewer, body mound behind, flat underside, hind foot flat behind); breathing, blinking and the "z" path use the sprite's timing. Fur `#ff7622` (`--primary`) with shadow `#d4500f`, all other colours from the sprite.
+- Not done: still not looked at on a real phone. Integration stays with the Lead.
+- Branch/PR: manager/HAMSTER-FIG-mascot
