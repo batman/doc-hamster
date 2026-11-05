@@ -457,8 +457,8 @@ label.tag-choice { color: inherit; }
 .button-quiet { background: var(--bg); color: var(--text); border: 2px solid var(--border); }
 .button-danger { background: var(--error); color: var(--bg); }
 
-/* Columns (Einstellungen, Tags): at most two panes are open, the others fold to a strip like an accordion */
-.cols { display: flex; align-items: stretch; min-height: 34rem; }
+/* Columns (Einstellungen, Tags): every pane folds to a strip and opens again on its own; the page gives way */
+.cols { display: flex; align-items: stretch; min-height: 100%; }
 .col { flex: none; box-sizing: border-box; padding: 1.25rem 1rem; border-right: 1px solid var(--border); overflow: auto; }
 .col-nav { width: 19rem; }
 .col-page { flex: 1 1 0; min-width: 0; padding: 1.25rem 2rem; border-right: 0; }
@@ -572,3 +572,47 @@ a.col-item { text-decoration: none; }
 .tray-name .muted { margin-left: 0; }
 .tray-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-left: auto; }
 .tray-howto li { margin-bottom: .35rem; }
+
+/* Go of 2026-11-05: column menu */
+/* Desktop: everything right of the menu starts below the dark bar and scrolls in its own box, both ways (points 1, 4, 7). */
+@media (min-width: 64rem) {
+    .shell:not(:has(> .side-plain)) .content { margin-top: 3.5rem; height: calc(100vh - 3.5rem); overflow: auto; }
+    .page-split { min-height: 100%; }
+    /* Menu hidden: only the menu button is left, the first strip slides under it (point 5). */
+    :is(html.nav-closed, .shell.nav-closed) .side:not(.side-plain) { position: fixed; top: 0; left: 0; height: 3.5rem; }
+    .cols > .col-page, .cols > .col.is-last { min-width: 30rem; }
+    .cols > .col-pane { min-width: 20rem; }
+    /* A shade at the edge while there is more to scroll sideways (A6). */
+    .shell::before, .shell::after {
+        content: ""; position: fixed; top: 3.5rem; bottom: var(--sbh, 0px); z-index: 15; width: .75rem;
+        pointer-events: none; opacity: 0; transition: opacity .15s;
+    }
+    .shell::before { left: var(--content-left, 0px); background: linear-gradient(to right, rgb(0 0 0 / .18), transparent); }
+    .shell::after { right: var(--sbw, 0px); background: linear-gradient(to left, rgb(0 0 0 / .18), transparent); }
+    html.more-left .shell::before, html.more-right .shell::after { opacity: 1; }
+}
+/* All fold/unfold arrows look the same: just the chevron, no button frame (point 3). */
+.col-fold, .nav-collapse {
+    display: inline-flex; align-items: center; justify-content: center; flex: none;
+    width: 48px; min-height: 48px; margin: 0; padding: 0;
+    border: 0; border-radius: calc(var(--radius) / 2); background: none; color: var(--text);
+}
+.nav-collapse { margin-top: .25rem; }
+.col-fold:hover, .nav-collapse:hover { background: none; box-shadow: none; color: var(--primary-ink); }
+.col-fold .icon, .nav-collapse .icon, button.col-strip > .icon { width: 1.25rem; height: 1.25rem; }
+button.col-strip:hover > .icon { color: var(--primary-ink); }
+/* Opening a pane slides it in (A5). */
+@keyframes col-in { from { opacity: 0; translate: -.75rem 0; } }
+.cols > .is-opening { animation: col-in .15s ease-out; }
+@media (prefers-reduced-motion: reduce) { .cols > .is-opening { animation: none; } }
+/* Phone: one level at a time, with a way back (A2). */
+.col-back { display: none; }
+@media (max-width: 63.99rem) {
+    .cols > .col-strip, .cols > .col-nav:not(.is-last), .col-fold, .nav-collapse { display: none !important; }
+    .cols > .col-pane, .cols > .col-page, .cols > .col.is-last { display: block; flex: none; }
+    .col-back {
+        display: flex; align-items: center; gap: .5rem; min-height: 48px; padding: 0 1rem;
+        border-bottom: 1px solid var(--border); color: var(--text); font-weight: 600; text-decoration: none;
+    }
+    .col-back .icon { color: var(--primary); }
+}

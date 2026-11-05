@@ -254,45 +254,86 @@
         });
     };
 
-    // Einstellungen columns: a pane folds to its strip; opening a strip folds the pane right of it, except the page.
+    // Einstellungen columns: every pane folds to its strip and opens again on its own; the page gives way.
+    // The browser remembers each pane's state; Escape folds the pane opened last.
     const setupColumns = () => {
         const cols = document.querySelector('[data-cols]');
         if (!cols) {
             return;
         }
+        const COLS = 'dh-cols';
         const pane = i => cols.querySelector(`[data-col="${i}"]`);
         const strip = i => cols.querySelector(`[data-strip="${i}"]`);
-        const fold = i => {
-            if (pane(i) && strip(i)) {
-                pane(i).hidden = true;
-                strip(i).hidden = false;
-            }
+        const foldable = i => pane(i) !== null && strip(i) !== null && pane(i).querySelector(`[data-fold="${i}"]`) !== null;
+        let state = {};
+        try { state = JSON.parse(localStorage.getItem(COLS)) ?? {}; } catch { state = {}; }
+        const opened = [];
+        const set = (i, open, animate = true) => {
+            pane(i).hidden = !open;
+            strip(i).hidden = open;
+            pane(i).classList.toggle('is-opening', open && animate);
+            state[i] = open ? 'open' : 'closed';
+            try { localStorage.setItem(COLS, JSON.stringify(state)); } catch { /* private mode: not remembered */ }
+            document.dispatchEvent(new Event('dh:cols'));
         };
-        const tidy = () => {
-            if (strip(1) && pane(0)) {
-                strip(1).hidden = !(pane(1).hidden && !pane(0).hidden);
+        [0, 1].forEach(i => {
+            if (foldable(i) && state[i] !== undefined) {
+                set(i, state[i] === 'open', false);
             }
-        };
+        });
+        cols.addEventListener('animationend', event => event.target.classList.remove('is-opening'));
         cols.addEventListener('click', event => {
             const folder = event.target.closest('[data-fold]');
             if (folder) {
-                fold(Number(folder.dataset.fold));
-                tidy();
+                const i = Number(folder.dataset.fold);
+                set(i, false);
+                strip(i).focus();
                 return;
             }
             const opener = event.target.closest('[data-strip]');
             if (opener) {
                 const i = Number(opener.dataset.strip);
-                pane(i).hidden = false;
-                opener.hidden = true;
-                fold(i + 1);
-                // At most two panes besides the menu: with the page open, the pane left of this one folds.
-                if (cols.querySelector('.col-page') && pane(i + 1) === null) {
-                    fold(i - 1);
-                }
-                tidy();
+                set(i, true);
+                opened.push(i);
+                pane(i).querySelector('[data-fold]')?.focus();
             }
         });
+        // Capture phase: runs before dialogs and dropdowns close themselves on the same key.
+        document.addEventListener('keydown', event => {
+            if (event.key !== 'Escape' || root.classList.contains('nav-open')
+                || document.querySelector('[data-dialog]:not([hidden]), .dropdown-panel:not([hidden])')) {
+                return;
+            }
+            while (opened.length > 0) {
+                const i = opened.pop();
+                if (!pane(i).hidden) {
+                    set(i, false);
+                    strip(i).focus();
+                    return;
+                }
+            }
+        }, { capture: true });
+    };
+
+    // Desktop: a shade at the left/right edge while the content can scroll further that way.
+    const setupScrollHint = () => {
+        const content = document.querySelector('.side:not(.side-plain) ~ .content');
+        if (!content) {
+            return;
+        }
+        const desktop = matchMedia('(min-width: 64rem)');
+        const update = () => {
+            root.style.setProperty('--content-left', `${content.getBoundingClientRect().left}px`);
+            root.style.setProperty('--sbw', `${content.offsetWidth - content.clientWidth}px`);
+            root.style.setProperty('--sbh', `${content.offsetHeight - content.clientHeight}px`);
+            const end = content.scrollWidth - content.clientWidth;
+            root.classList.toggle('more-left', desktop.matches && content.scrollLeft > 1);
+            root.classList.toggle('more-right', desktop.matches && content.scrollLeft < end - 1);
+        };
+        content.addEventListener('scroll', update, { passive: true });
+        document.addEventListener('dh:cols', update);
+        new ResizeObserver(update).observe(content);
+        update();
     };
 
     // Tags page: the search narrows the pills while typing, any letters inside the name.
@@ -341,6 +382,7 @@
         setupFilter();
         setupDialogs();
         setupColumns();
+        setupScrollHint();
         setupTagSearch();
         setupColorField();
     });

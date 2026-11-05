@@ -6,6 +6,7 @@ return [
     'title' => 'Settings',
     'fold' => 'Fold',
     'expand' => 'Open :name',
+    'open' => 'Open',
     'groups' => [
         'people' => 'People & roles',
         'bank' => 'Bank',

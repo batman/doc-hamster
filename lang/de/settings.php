@@ -6,6 +6,7 @@ return [
     'title' => 'Einstellungen',
     'fold' => 'Zuklappen',
     'expand' => ':name aufklappen',
+    'open' => 'Aufklappen',
     'groups' => [
         'people' => 'Personen & Rollen',
         'bank' => 'Bank',

@@ -1,4 +1,5 @@
-{{-- Einstellungen as columns: groups, entries, page. At most two are open; app.js folds the others to strips. --}}
+{{-- Einstellungen as columns: groups, entries, page. Each pane folds to a strip on its own (app.js); the page gives way.
+     On phones only the last level shows, with a back link. --}}
 @extends('layouts.app')
 
 @section('main_class', 'page page-split')
@@ -9,17 +10,21 @@
         [$group, $item] = \App\Http\SettingsMenu::current(request());
         $current = $group !== null ? ($groups[$group] ?? null) : null;
         $hasPage = trim($__env->yieldContent('page')) !== '';
+        $toGroup = $hasPage && $current && ! $current['leaf'];
     @endphp
     <div class="cols" data-cols>
-        <button type="button" class="col-strip" data-strip="0" aria-label="{{ __('settings.expand', ['name' => __('settings.title')]) }}" @unless ($hasPage) hidden @endunless>
+        @if ($current)
+            <a class="col-back" href="{{ $toGroup ? route('settings.group', $group) : route('settings.index') }}"><x-icon name="chevron-left" /><span>{{ $toGroup ? __('settings.groups.'.$group) : __('settings.title') }}</span></a>
+        @endif
+        <button type="button" class="col-strip tooltip-right" data-strip="0" data-tooltip="{{ __('settings.open') }}" aria-label="{{ __('settings.expand', ['name' => __('settings.title')]) }}" @unless ($hasPage) hidden @endunless>
             <x-icon name="chevron-right" />
-            <span class="strip-label"><x-icon name="settings" /><span>{{ __('settings.title') }}</span>@if ($current)<span>–</span><x-icon :name="$current['icon']" /><span>{{ __('settings.groups.'.$group) }}</span>@endif</span>
+            <span class="strip-label"><x-icon name="settings" /><span>{{ __('settings.title') }}</span></span>
         </button>
         <nav class="col col-nav @if (! $current) is-last @endif" data-col="0" aria-label="{{ __('settings.title') }}" @if ($hasPage) hidden @endif>
             <div class="col-head">
                 <h2>{{ __('settings.title') }}</h2>
                 @if ($current)
-                    <button type="button" class="icon-button" data-fold="0" aria-label="{{ __('settings.fold') }}" data-tooltip="{{ __('settings.fold') }}"><x-icon name="chevron-left" /></button>
+                    <button type="button" class="col-fold" data-fold="0" aria-label="{{ __('settings.fold') }}" data-tooltip="{{ __('settings.fold') }}"><x-icon name="chevron-left" /></button>
                 @endif
             </div>
             <ul class="col-list">
@@ -30,7 +35,7 @@
         </nav>
 
         @if ($current)
-            <button type="button" class="col-strip" data-strip="1" aria-label="{{ __('settings.expand', ['name' => __('settings.groups.'.$group)]) }}" hidden>
+            <button type="button" class="col-strip tooltip-right" data-strip="1" data-tooltip="{{ __('settings.open') }}" aria-label="{{ __('settings.expand', ['name' => __('settings.groups.'.$group)]) }}" hidden>
                 <x-icon name="chevron-right" />
                 <span class="strip-label"><x-icon :name="$current['icon']" /><span>{{ __('settings.groups.'.$group) }}</span></span>
             </button>
@@ -41,7 +46,7 @@
                     <div class="col-head">
                         <h2>{{ __('settings.groups.'.$group) }}</h2>
                         @if ($hasPage)
-                            <button type="button" class="icon-button" data-fold="1" aria-label="{{ __('settings.fold') }}" data-tooltip="{{ __('settings.fold') }}"><x-icon name="chevron-left" /></button>
+                            <button type="button" class="col-fold" data-fold="1" aria-label="{{ __('settings.fold') }}" data-tooltip="{{ __('settings.fold') }}"><x-icon name="chevron-left" /></button>
                         @endif
                     </div>
                     <ul class="col-list">
