@@ -11,7 +11,7 @@ docker compose up -d --build
 First boot provisions itself (`.env`, dependencies, app key, tables, demo
 owner) and takes a few minutes. Then open in your browser:
 
-**http://127.0.0.1:8080 — log in as `owner` / `hamster-demo-01`**
+**http://localhost:8080 — log in as `owner` / `hamster-demo-01`**
 
 What this is: a frictionless way to *test* DocHamster. It is not the product
 install path — real installations use `install.php` on hosting (see README).

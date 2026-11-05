@@ -11,7 +11,7 @@ TRY_PASSWORD="${TRY_PASSWORD:-hamster-demo-01}"
 
 if [ ! -f .env ]; then
     cp .env.example .env
-    sed -i 's/^APP_ENV=.*/APP_ENV=local/; s/^APP_DEBUG=.*/APP_DEBUG=true/; s|^APP_URL=.*|APP_URL=http://127.0.0.1:8080|; s/^DB_HOST=.*/DB_HOST=db/; s/^DB_PASSWORD=.*/DB_PASSWORD=hamster-db-01/; s/^SESSION_SECURE_COOKIE=.*/SESSION_SECURE_COOKIE=false/' .env
+    sed -i 's/^APP_ENV=.*/APP_ENV=local/; s/^APP_DEBUG=.*/APP_DEBUG=true/; s|^APP_URL=.*|APP_URL=http://localhost:8080|; s/^DB_HOST=.*/DB_HOST=db/; s/^DB_PASSWORD=.*/DB_PASSWORD=hamster-db-01/; s/^SESSION_SECURE_COOKIE=.*/SESSION_SECURE_COOKIE=false/' .env
     echo "[try] created .env with local defaults"
 fi
 
@@ -48,6 +48,6 @@ php artisan dochamster:owner --org="$TRY_ORG" --username="$TRY_USER" --password=
 
 sed -i 's/^DOCHAMSTER_INSTALLED=.*/DOCHAMSTER_INSTALLED=true/' .env
 
-echo "[try] ready → http://127.0.0.1:8080 (login: $TRY_USER / $TRY_PASSWORD)"
+echo "[try] ready → http://localhost:8080 (login: $TRY_USER / $TRY_PASSWORD)"
 
 exec docker-php-entrypoint "$@"
