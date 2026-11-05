@@ -6,7 +6,7 @@ Snap a receipt, send it, forget it. DocHamster takes the photo with time and (op
 
 ## Try it in 2 minutes (Docker)
 
-You need only Docker. No PHP, no Composer, no database, no hosting.
+The fastest way to see DocHamster running. You need only Docker — no PHP, no Composer, no database, no hosting.
 
 ```sh
 git clone https://github.com/batman/doc-hamster
@@ -14,9 +14,11 @@ cd doc-hamster
 docker compose up -d --build
 ```
 
-First boot provisions itself (takes a few minutes). Then open http://127.0.0.1:8080 and log in as `owner` / `hamster-demo-01`.
+The first boot provisions itself (a few minutes): it writes the config, installs dependencies, sets up the database, and creates a demo owner. Then open http://127.0.0.1:8080 and log in as `owner` / `hamster-demo-01`.
 
-Details, custom logins and reset: [`TRY.md`](TRY.md). This is only for trying out DocHamster – real installations use `install.php` below.
+`docker compose down` stops it and keeps your test data; `docker compose down -v` wipes everything for a fresh start. Custom demo logins and details: [`TRY.md`](TRY.md).
+
+This is only for trying out DocHamster — real installations use `install.php` on hosting below.
 
 ## How to install
 
@@ -78,7 +80,7 @@ PHP 8.3+, Laravel, MariaDB 10.11+ or MySQL 8.4+, Blade + small vanilla JS PWA (n
 
 ## Contributing
 
-This project is built by a human product owner together with two AI agents. Rules for everyone (humans and AIs): [`AGENTS.md`](AGENTS.md) and [`docs/collaboration/WORKFLOW.md`](docs/collaboration/WORKFLOW.md).
+This project is built by a human product owner together with two AI agents. Rules for everyone (humans and AIs): [`AGENTS.md`](AGENTS.md) and [`docs/collaboration/WORKFLOW.md`](docs/collaboration/WORKFLOW.md). To run the code locally, use the Docker try-out above.
 
 ## License
 
