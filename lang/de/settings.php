@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 return [
     'title' => 'Einstellungen',
+    'language' => [
+        'title' => 'Sprache',
+        'label' => 'Anzeigesprache',
+        'save' => 'Speichern',
+        'saved' => 'Sprache gespeichert.',
+    ],
     'fold' => 'Zuklappen',
     'expand' => ':name aufklappen',
     'open' => 'Aufklappen',
