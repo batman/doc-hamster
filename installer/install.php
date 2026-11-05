@@ -394,7 +394,12 @@ if ($existing) {
     if ($action === '') {
         $installed = is_file($appDir.'/VERSION') ? trim((string) file_get_contents($appDir.'/VERSION')) : 'unbekannt';
         $available = $release ? '<p>Installierte Version: <strong>'.h($installed).'</strong> · Verfügbar: <strong>'.h($release['version']).'</strong></p>' : '';
-        $blocked = '<p class="fail">Der Server erfüllt gerade nicht alle Voraussetzungen'.($release ? '' : ' oder die neue Version ist nicht erreichbar').'. Bitte laden Sie die Seite später neu.</p>';
+        $failed = '';
+        foreach ($checks as $label => $ok) {
+            $failed .= $ok ? '' : '<li>'.h((string) $label).'</li>';
+        }
+        $blocked = '<p class="fail">Der Server erfüllt gerade nicht alle Voraussetzungen'.($release ? '' : ' oder die neue Version ist nicht erreichbar').'. Bitte laden Sie die Seite später neu.</p>'
+            .($failed !== '' ? '<ul class="fail">'.$failed.'</ul>' : '');
         if (! $finished) {
             page('Installation gefunden', '<p>In <code>'.h($appDir).'</code> liegt schon eine DocHamster-Kopie, deren Einrichtung nie abgeschlossen wurde.</p><p>Soll ich sie löschen und neu installieren?</p>'
                 .($allOk ? '<form method="post">'.$csrf.'<input type="hidden" name="action" value="fresh"><button>Ja, überschreiben</button></form>' : $blocked));
