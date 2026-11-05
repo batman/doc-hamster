@@ -336,6 +336,35 @@
         update();
     };
 
+    // Menu badges: the numbers come again about once a minute while the page is visible.
+    const setupBadges = () => {
+        const side = document.querySelector('[data-badges]');
+        if (!side) {
+            return;
+        }
+        const show = counts => {
+            let any = 0;
+            side.querySelectorAll('[data-badge]').forEach(badge => {
+                const count = counts[badge.dataset.badge] ?? 0;
+                badge.textContent = count > 9 ? '9+' : String(count);
+                badge.hidden = count === 0;
+                any += count;
+            });
+            side.querySelector('[data-badge-any]').hidden = any === 0;
+        };
+        const poll = () => {
+            if (document.hidden) {
+                return;
+            }
+            fetch(side.dataset.badges, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+                .then(response => (response.ok ? response.json() : null))
+                .then(counts => counts && show(counts))
+                .catch(() => { /* offline or logged out: keep what is shown */ });
+        };
+        setInterval(poll, 60000);
+        document.addEventListener('visibilitychange', poll);
+    };
+
     // Tags page: the search narrows the pills while typing, any letters inside the name.
     const setupTagSearch = () => {
         const search = document.querySelector('[data-tag-search]');
@@ -383,6 +412,7 @@
         setupDialogs();
         setupColumns();
         setupScrollHint();
+        setupBadges();
         setupTagSearch();
         setupColorField();
     });

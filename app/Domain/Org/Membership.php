@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property Role $role
  * @property string|null $org_role_id null for Admins
  * @property CarbonImmutable|null $revoked_at
+ * @property array<string, string>|null $seen_at when each area was last opened (menu badges)
  */
 #[UseFactory(MembershipFactory::class)]
 final class Membership extends Model
@@ -43,6 +44,7 @@ final class Membership extends Model
         return [
             'role' => Role::class,
             'revoked_at' => 'immutable_datetime',
+            'seen_at' => 'array',
         ];
     }
 

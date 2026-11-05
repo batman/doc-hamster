@@ -10,6 +10,7 @@ use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
 use App\Domain\Printing\Printer;
 use App\Domain\Printing\WindowsInstaller;
+use App\Http\Badges;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -26,6 +27,8 @@ final class PrintTrayController
 {
     public function index(CurrentOrg $org): View
     {
+        Badges::markSeen($org, Badges::PRINT_TRAY);
+
         return view('print-tray.index', [
             'documents' => $this->tray($org)->with('files')->latest()->limit(200)->get(),
             'printers' => Printer::query()->where('user_id', $org->membership()->user_id)

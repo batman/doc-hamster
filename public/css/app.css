@@ -616,3 +616,21 @@ button.col-strip:hover > .icon { color: var(--primary-ink); }
     }
     .col-back .icon { color: var(--primary); }
 }
+
+/* Menu badges: a red circle with the number of new things in an area (A8-A11). */
+:root { --badge: #e8231a; --badge-text: #ffffff; }
+.nav-badge {
+    margin-left: auto; min-width: 1.35rem; height: 1.35rem; padding: 0 .35rem; border-radius: .7rem;
+    background: var(--badge); color: var(--badge-text);
+    font-size: .75rem; font-weight: 700; line-height: 1.35rem; text-align: center;
+}
+.nav-badge[hidden] { display: none; }
+.nav-toggle { position: relative; }
+.nav-dot { display: none; position: absolute; top: .8rem; right: .8rem; width: .65rem; height: .65rem; border-radius: 50%; background: var(--badge); box-shadow: 0 0 0 2px var(--secondary); }
+@media (min-width: 64rem) {
+    :is(html.nav-rail, .shell.nav-rail) .nav-badge { position: absolute; top: .2rem; right: .2rem; margin: 0; }
+    :is(html.nav-closed, .shell.nav-closed) .nav-dot:not([hidden]) { display: block; }
+}
+@media (max-width: 63.99rem) {
+    html:not(.nav-open) .nav-dot:not([hidden]) { display: block; }
+}

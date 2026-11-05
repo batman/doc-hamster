@@ -109,3 +109,20 @@ it('takes a print over as receipt, or sends it to the trash and back to the tray
     $this->post('/documents/'.$b->id.'/restore');
     $this->get('/print-tray')->assertSee('Bon B');
 });
+
+it('counts new prints in the menu badge until the Druckerablage is opened', function (): void {
+    $owner = Membership::factory()->owner()->create();
+    $token = pairPrinter($owner);
+    printOn($token)->assertCreated();
+
+    $this->actingAs($owner->user)->getJson('/badges')->assertOk()->assertExactJson(['print-tray' => 1]);
+    $this->get('/')->assertSee('data-badge="print-tray"', false);
+
+    $this->travel(1)->seconds();
+    $this->get('/print-tray')->assertOk();
+    $this->getJson('/badges')->assertExactJson(['print-tray' => 0]);
+
+    $this->travel(1)->seconds();
+    printOn($token)->assertCreated();
+    $this->actingAs($owner->user)->getJson('/badges')->assertExactJson(['print-tray' => 1]);
+});

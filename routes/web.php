@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\BankImportController;
 use App\Http\Controllers\DocumentController;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'org'])->group(function (): void {
     Route::get('/', [HomeController::class, 'index'])->name('home');
+    Route::get('badges', BadgeController::class)->name('badges');
     Route::post('notes', [HomeController::class, 'store'])->name('notes.store');
     Route::post('notes/{id}', [HomeController::class, 'update'])->name('notes.update');
     Route::post('notes/{id}/check', [HomeController::class, 'check'])->name('notes.check');
