@@ -1,6 +1,6 @@
 # AGENTS.md – Rules for AI agents working on DocHamster
 
-This file is the single source of truth for every AI agent on this repo. `CLAUDE.md` just imports it. If you are an AI agent: **read this file, then `docs/collaboration/WORKFLOW.md`, before doing anything.**
+This file is the single source of truth for every AI agent on this repo. If you are an AI agent: **read this file, then `docs/collaboration/WORKFLOW.md`, before doing anything.**
 
 > ⚠️ **This repository will become public on GitHub.** Treat every commit as published forever. Read [§ Public repository rules](#public-repository-rules) before your first commit.
 
@@ -27,6 +27,14 @@ Both agents are Claude (Claude Code, separate sessions). Each session is told it
 - **All questions go to the Lead** (issue `to:lead`), not to the PO. The Lead decides; it asks its operator only product-design and hard-to-change questions (rule 6).
 - The Manager **writes code only together with the Lead**: on sub-tasks the Lead assigns (e.g. from P0-23), following the Lead's technical decisions, in the Lead's review. The Manager never starts coding work on its own and answers no server/infrastructure questions.
 - **Merge first, review after (PO rule, 2026-10-29).** The author merges its own PR as soon as CI is green – never wait for a review. The **other agent reviews merged PRs** when it has time (Lead reviews Manager PRs, Manager reviews Lead PRs); findings become an issue or a follow-up PR. Rules: `docs/collaboration/WORKFLOW.md` §10.
+
+## At the start of every session
+
+1. Know your role (Lead or Manager) from the session's first message. If it isn't stated, ask the PO.
+2. `git pull` – the other agent works on a **different computer**; you only see its work after it pushed and you pulled.
+3. Read the latest entries in `docs/collaboration/LOG.md`, the board in `docs/collaboration/TASKS.md`, and open questions for your role in `docs/collaboration/DECISIONS.md`.
+4. Check GitHub: open issues labelled for your role (`gh issue list --label to:lead` or `to:manager`) and PRs waiting for your review. Answer or review them before starting new work. If you can't use `gh` on your machine, tell the PO and use the GitHub web UI via the PO.
+5. Check that the required skills from `docs/SKILLS.md` are installed on your machine.
 
 ## Hard rules
 

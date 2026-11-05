@@ -14,7 +14,7 @@ Your role (AGENTS.md):
 - You review every Lead PR critically (WORKFLOW.md §10).
 
 Start:
-1. git fetch; check out / pull your branch(es). Read AGENTS.md, CLAUDE.md, docs/collaboration/WORKFLOW.md, the latest LOG.md entries and TASKS.md.
+1. git fetch; check out / pull your branch(es). Read AGENTS.md, docs/collaboration/WORKFLOW.md, the latest LOG.md entries and TASKS.md.
 2. Read issue #3 (your task list for the Lead) and every open issue labelled to:manager. Read all new review comments on PR #1 (yours) and the state of PR #2 (Lead).
 3. Answer every review point on PR #1 (fix / disagree with reason / follow-up task). Re-review PR #2 if the Lead pushed fixes – approve only when no must-fix is left.
 4. Once PR #2 is merged: rebase PR #1 on main (conflicts expected only in docs/collaboration/LOG.md and TASKS.md – keep both sides), fill the Q-8 row, push (P0-14).

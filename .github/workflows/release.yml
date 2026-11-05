@@ -30,7 +30,7 @@ jobs:
           mkdir -p build
           git archive HEAD | tar -x -C build --one-top-level=dochamster
           cd build/dochamster
-          rm -rf tests .github .githooks docs scripts installer phpunit.xml phpstan.neon pint.json .gitleaks.toml AGENTS.md CLAUDE.md
+          rm -rf tests .github .githooks docs scripts installer phpunit.xml phpstan.neon pint.json .gitleaks.toml AGENTS.md
           composer install --no-dev --optimize-autoloader --no-interaction --no-progress
           echo "$VERSION" > VERSION
           cd ..
