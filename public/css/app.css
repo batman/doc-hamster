@@ -275,6 +275,10 @@ code { word-break: break-all; background: var(--surface); padding: .1rem .3rem; 
 .file-button input { display: block; margin-top: .5rem; }
 .phone-qr { display: block; width: 18rem; max-width: 100%; }
 
+/* Browser capture: live preview fills the content column like the phone probe. */
+#capture-preview { display: block; width: 100%; margin-top: 1rem; border-radius: var(--radius); }
+#capture-preview[hidden] { display: none; }
+
 /* Bank */
 .tabs { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: var(--space); }
 .tabs [aria-current="page"] { font-weight: 600; text-decoration: none; }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\BankImportController;
+use App\Http\Controllers\CaptureController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\HomeController;
@@ -32,6 +33,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('documents/{id}/restore', [DocumentController::class, 'restore'])->middleware('can:documents.trash')->name('documents.restore');
     Route::post('documents/{id}/share-link', [ShareController::class, 'store'])->middleware('can:exports.create')->name('documents.share');
     Route::post('documents', [DocumentController::class, 'store'])->middleware('can:documents.upload')->name('documents.store');
+    Route::get('capture', CaptureController::class)->middleware('can:documents.upload')->name('capture');
     Route::post('documents/view', [DocumentController::class, 'setView'])->name('documents.view');
     Route::get('documents/{id}', [DocumentController::class, 'show'])->name('documents.show');
     Route::post('documents/{id}', [DocumentController::class, 'update'])->middleware('can:documents.edit')->name('documents.update');
