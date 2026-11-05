@@ -1,0 +1,38 @@
+# Frictionless try-out: `docker compose up -d --build`, then open
+# http://127.0.0.1:8080 and log in as owner / hamster-demo-01.
+# First boot self-provisions (.env, deps, key, tables, demo owner) via
+# docker/entrypoint.sh. Full reset: `docker compose down -v` (+ delete .env).
+# Custom demo login: TRY_ORG / TRY_USER / TRY_PASSWORD in the shell.
+services:
+  app:
+    build: .
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+    environment:
+      TRY_ORG: ${TRY_ORG:-Demo}
+      TRY_USER: ${TRY_USER:-owner}
+      TRY_PASSWORD: ${TRY_PASSWORD:-hamster-demo-01}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mariadb:10.11
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-hamster-root-01}
+      MARIADB_DATABASE: ${DB_DATABASE:-dochamster}
+      MARIADB_USER: ${DB_USERNAME:-dochamster}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-hamster-db-01}
+    volumes:
+      - dochamster-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  dochamster-db:

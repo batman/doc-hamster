@@ -4,6 +4,20 @@ Snap a receipt, send it, forget it. DocHamster takes the photo with time and (op
 
 > **Status: early version (v0.1).** Upload, receipt list, bank CSV import, tags, notes and export work; more is coming. The plan is in [`docs/PLAN.md`](docs/PLAN.md) (German).
 
+## Try it in 2 minutes (Docker)
+
+You need only Docker. No PHP, no Composer, no database, no hosting.
+
+```sh
+git clone https://github.com/batman/doc-hamster
+cd doc-hamster
+docker compose up -d --build
+```
+
+First boot provisions itself (takes a few minutes). Then open http://127.0.0.1:8080 and log in as `owner` / `hamster-demo-01`.
+
+Details, custom logins and reset: [`TRY.md`](TRY.md). This is only for trying out DocHamster – real installations use `install.php` below.
+
 ## How to install
 
 DocHamster installs itself from one file, `install.php`. You need no command line, no Composer and no Docker – only FTP (or your host's file manager) and a browser.
