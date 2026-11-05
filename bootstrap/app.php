@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\PrinterApiController;
 use App\Http\Middleware\RedirectToSetup;
 use App\Http\Middleware\RequireSameOriginApi;
 use App\Http\Middleware\ResolveCurrentOrg;
@@ -21,6 +22,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // Outside the `web` group: monitoring polls must not start sessions.
         then: function (): void {
             Route::get('/health', HealthController::class)->name('health');
+
+            // The printer "Hamster" on a computer: no session, its own token (PrinterApiController).
+            Route::prefix('api/printer')->name('api.printer.')->group(function (): void {
+                Route::post('pair', [PrinterApiController::class, 'pair'])->middleware('throttle:pairing')->name('pair');
+                Route::post('upload', [PrinterApiController::class, 'upload'])->middleware('throttle:120,1')->name('upload');
+            });
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {

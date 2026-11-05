@@ -39,6 +39,7 @@
                         @foreach ([
                             ['home', 'home', 'home.title', null, ['home', 'notes.*']],
                             ['documents.index', 'receipt', 'documents.title', null, ['documents.*']],
+                            ['print-tray.index', 'printer', 'print_tray.title', 'documents.upload', ['print-tray.*']],
                             ['bank.index', 'building-bank', 'bank.title', 'banking.import', ['bank.index', 'bank.show']],
                             ['settings.index', 'settings', 'settings.title', null, ['settings.*', 'members.*', 'roles.*', 'tags.*', 'exports.*', 'updates.*', 'bank.import*', 'bank.accounts.*', 'phone-check*']],
                         ] as [$route, $icon, $label, $ability, $active])

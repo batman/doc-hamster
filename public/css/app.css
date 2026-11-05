@@ -565,3 +565,10 @@ a.col-item { text-decoration: none; }
 @media (prefers-color-scheme: dark) {
     .note { --note: #c9b85a; --note-ink: #1f1e16; }
 }
+
+/* Druckerablage (print tray) */
+.tray-list .tray-thumb { flex: none; width: 4rem; height: 4rem; padding: .25rem; }
+.tray-name { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.tray-name .muted { margin-left: 0; }
+.tray-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-left: auto; }
+.tray-howto li { margin-bottom: .35rem; }

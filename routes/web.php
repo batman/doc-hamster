@@ -10,6 +10,7 @@ use App\Http\Controllers\ExportController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PhoneCheckController;
+use App\Http\Controllers\PrintTrayController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SetupController;
@@ -41,6 +42,15 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('documents/{id}/tags', [DocumentController::class, 'updateTags'])->middleware('can:documents.edit')->name('documents.tags');
     Route::get('files/{id}', [DocumentController::class, 'file'])->name('documents.file');
     Route::get('phone-check/qr', [PhoneCheckController::class, 'qr'])->name('phone-check.qr');
+
+    // Druckerablage: what was printed on "Hamster" (print tray).
+    Route::middleware('can:documents.upload')->prefix('print-tray')->name('print-tray.')->group(function (): void {
+        Route::get('/', [PrintTrayController::class, 'index'])->name('index');
+        Route::post('printers', [PrintTrayController::class, 'setup'])->name('setup');
+        Route::post('printers/{id}/revoke', [PrintTrayController::class, 'revoke'])->name('revoke');
+        Route::post('{id}/accept', [PrintTrayController::class, 'accept'])->name('accept');
+        Route::post('{id}/delete', [PrintTrayController::class, 'destroy'])->middleware('can:documents.trash')->name('destroy');
+    });
 
     Route::middleware('can:members.manage')->group(function (): void {
         Route::get('members', [MemberController::class, 'index'])->name('members.index');

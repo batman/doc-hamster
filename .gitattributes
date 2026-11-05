@@ -15,3 +15,6 @@
 
 /.github export-ignore
 CHANGELOG.md export-ignore
+
+# cmd.exe needs Windows line ends in the printer installer.
+/clients/windows/*.cmd text eol=crlf

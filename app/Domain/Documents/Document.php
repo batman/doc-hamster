@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property string $title
  * @property Carbon|null $doc_date
  * @property string|null $note
+ * @property bool $in_print_tray
  * @property Carbon $created_at
  * @property Carbon|null $last_opened_at
  * @property Carbon|null $last_downloaded_at
@@ -33,14 +34,46 @@ final class Document extends Model
     use HasUlids;
     use SoftDeletes;
 
-    protected $fillable = ['org_id', 'uploaded_by', 'title', 'doc_date', 'note'];
+    /** Global scope: printed documents are not receipts until someone takes them over. */
+    public const OUTSIDE_PRINT_TRAY = 'outside_print_tray';
+
+    protected $fillable = ['org_id', 'uploaded_by', 'title', 'doc_date', 'note', 'in_print_tray'];
+
+    protected static function booted(): void
+    {
+        self::addGlobalScope(self::OUTSIDE_PRINT_TRAY, static function (Builder $query): void {
+            $query->where($query->qualifyColumn('in_print_tray'), false);
+        });
+    }
 
     /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
-        return ['doc_date' => 'date', 'last_opened_at' => 'datetime', 'last_downloaded_at' => 'datetime'];
+        return ['doc_date' => 'date', 'last_opened_at' => 'datetime', 'last_downloaded_at' => 'datetime', 'in_print_tray' => 'boolean'];
+    }
+
+    /**
+     * Only what waits in the print tray (Druckerablage).
+     *
+     * @param  Builder<Document>  $query
+     * @return Builder<Document>
+     */
+    public function scopeInPrintTray(Builder $query): Builder
+    {
+        return $query->withoutGlobalScope(self::OUTSIDE_PRINT_TRAY)->where($query->qualifyColumn('in_print_tray'), true);
+    }
+
+    /**
+     * Receipts and print tray together (trash, file delivery).
+     *
+     * @param  Builder<Document>  $query
+     * @return Builder<Document>
+     */
+    public function scopeWithPrintTray(Builder $query): Builder
+    {
+        return $query->withoutGlobalScope(self::OUTSIDE_PRINT_TRAY);
     }
 
     /**

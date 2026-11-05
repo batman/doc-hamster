@@ -17,7 +17,7 @@
             @foreach ($documents as $document)
                 <li>
                     @include('documents._type-icon')
-                    <span>{{ $document->title }}</span>
+                    <span>{{ $document->title }}@if ($document->in_print_tray) <span class="muted">({{ __('print_tray.title') }})</span>@endif</span>
                     <span class="muted">{{ __('documents.deleted_at', ['date' => $document->deleted_at?->format('d.m.Y H:i')]) }}</span>
                     <form method="post" action="{{ route('documents.restore', $document->id) }}">
                         @csrf

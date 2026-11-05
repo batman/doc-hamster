@@ -8,21 +8,18 @@ use App\Domain\Audit\AuditLog;
 use App\Domain\Auth\User;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
+use App\Domain\Documents\DocumentIntake;
 use App\Domain\Documents\Tag;
-use App\Domain\Documents\Thumbnail;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
 use Carbon\CarbonImmutable;
-use finfo;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -32,14 +29,6 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class DocumentController
 {
-    private const EXTENSIONS = [
-        'image/jpeg' => 'jpg',
-        'image/png' => 'png',
-        'image/webp' => 'webp',
-        'image/heic' => 'heic',
-        'application/pdf' => 'pdf',
-    ];
-
     /** The views of the list, like the Windows Explorer (ui-redesign point 10), with their icon. */
     public const VIEWS = [
         'details' => 'list-details',
@@ -107,7 +96,7 @@ final class DocumentController
             'views' => self::VIEWS,
             'month' => $month,
             'complete' => $complete,
-            'trashed' => Gate::allows(Permission::TrashDocuments->value) ? $this->visible($request)->onlyTrashed()->count() : 0,
+            'trashed' => Gate::allows(Permission::TrashDocuments->value) ? $this->visible($request)->withPrintTray()->onlyTrashed()->count() : 0,
         ];
     }
 
@@ -134,39 +123,18 @@ final class DocumentController
         $many = $request->file('files');
         $checked = [];
         foreach (is_array($many) ? $many : [$request->file('file')] as $upload) {
-            // From the file's bytes – client name and client MIME type can say anything.
-            $mime = $upload instanceof UploadedFile ? (string) (new finfo(FILEINFO_MIME_TYPE))->file($upload->getRealPath()) : '';
-            $extension = self::EXTENSIONS[$mime] ?? null;
-
-            if (! $upload instanceof UploadedFile || $extension === null) {
+            $type = DocumentIntake::detect($upload);
+            if (! $upload instanceof UploadedFile || $type === null) {
                 return back()->withErrors(['file' => __('documents.wrong_type')]);
             }
-            $checked[] = [$upload, $mime, $extension];
+            $checked[] = [$upload, ...$type];
         }
 
         $userId = $this->userId($request);
+        /** @var list<string> $tagIds */
+        $tagIds = array_values($data['tags'] ?? []);
         foreach ($checked as [$upload, $mime, $extension]) {
-            $document = DB::transaction(static function () use ($upload, $extension, $mime, $org, $userId, $data): Document {
-                $document = Document::query()->create([
-                    'uploaded_by' => $userId,
-                    'title' => Str::limit($upload->getClientOriginalName(), 250, ''),
-                ]);
-                $path = $upload->storeAs($org->id().'/'.now()->format('Y/m'), Str::lower((string) Str::ulid()).'.'.$extension, 'local');
-
-                DocumentFile::query()->create([
-                    'document_id' => $document->id,
-                    'path' => (string) $path,
-                    'mime' => $mime,
-                    'size' => (int) $upload->getSize(),
-                    'sha256' => (string) hash_file('sha256', $upload->getRealPath()),
-                ]);
-                $document->tags()->sync($data['tags'] ?? []);
-
-                return $document;
-            });
-            // Once, at upload: the list shows only this small copy (design point 14).
-            $file = $document->files()->firstOrFail();
-            $file->update(['thumb_path' => Thumbnail::make($file)]);
+            $document = DocumentIntake::store($upload, $mime, $extension, $org->id(), $userId, $upload->getClientOriginalName(), $tagIds);
 
             $audit->record('document.uploaded', orgId: $org->id(), userId: $userId, subject: $document, ip: $request->ip());
         }
@@ -217,15 +185,18 @@ final class DocumentController
         return redirect()->route('documents.index')->with('status', __('documents.deleted'));
     }
 
-    /** The trash (#30 "Belege löschen"): receipts deleted by mistake come back from here. */
+    /**
+     * The trash (#30 "Belege löschen"): receipts deleted by mistake come back
+     * from here; something from the print tray goes back there.
+     */
     public function trash(Request $request): View
     {
-        return view('documents.trash', ['documents' => $this->visible($request)->onlyTrashed()->with('files')->latest('deleted_at')->limit(200)->get()]);
+        return view('documents.trash', ['documents' => $this->visible($request)->withPrintTray()->onlyTrashed()->with('files')->latest('deleted_at')->limit(200)->get()]);
     }
 
     public function restore(Request $request, string $id, AuditLog $audit, CurrentOrg $org): RedirectResponse
     {
-        $document = $this->visible($request)->onlyTrashed()->whereKey($id)->firstOrFail();
+        $document = $this->visible($request)->withPrintTray()->onlyTrashed()->whereKey($id)->firstOrFail();
         $document->restore();
         $audit->record('document.restored', orgId: $org->id(), userId: $this->userId($request), subject: $document, ip: $request->ip());
 
@@ -268,7 +239,7 @@ final class DocumentController
         // Explicit query, not route binding: bindings run before the `org` middleware sets the scope.
         $file = DocumentFile::query()->whereKey($id)->firstOrFail();
 
-        return [$file, $this->visible($request)->whereKey($file->document_id)->firstOrFail()];
+        return [$file, $this->visible($request)->withPrintTray()->whereKey($file->document_id)->firstOrFail()];
     }
 
     /**
