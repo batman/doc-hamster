@@ -28,7 +28,6 @@
             <pre><code>docker run -d --name dochamster-station --restart unless-stopped --network host \
   -e DOCHAMSTER_URL={{ url('/') }} \
   -e PAIRING_CODE={{ $code }} \
-  -e PRINTER_URL=192.168.0.20 \
   -v dochamster-station:/data -v "$PWD":/app:ro -w /app \
   php:8.4-cli-alpine php dochamster-station.php</code></pre>
             <p class="muted">{{ __('scan.station_step_printer') }}</p>

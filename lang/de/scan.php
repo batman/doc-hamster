@@ -66,7 +66,7 @@ return [
     'station_code_text' => 'Dieser Code wird nur jetzt angezeigt und gilt 24 Stunden, einmal.',
     'station_step_download' => '1. Lade das Programm herunter und lege es auf den Rechner im Heimnetz:',
     'station_step_run' => '2. Starte es dort mit Docker (oder mit PHP: die gleichen Angaben als Umgebungsvariablen und „php dochamster-station.php“):',
-    'station_step_printer' => 'PRINTER_URL ist die Adresse deines Druckers im Heimnetz, zum Beispiel 192.168.0.20.',
+    'station_step_printer' => 'Deinen Drucker findet die Scan Station selbst im Heimnetz, du musst nichts eintragen. Findet sie ihn nicht, oder gibt es mehrere Geräte, hänge -e PRINTER_URL=Adresse-des-Druckers (zum Beispiel 192.168.0.20) an den Befehl an.',
     'station_online' => 'verbunden',
     'station_offline_state' => 'meldet sich nicht',
     'station_no_printer' => 'noch kein Gerät gemeldet',
