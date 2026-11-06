@@ -254,7 +254,7 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Branch/PR: manager/HAMSTER-FIG-pixel-mascot (squashed; the work-in-progress branch manager/HAMSTER-FIG-mascot can be deleted)
 
 ## 2026-11-06 · Manager · SCAN (proposal)
-- Done (PO go in the Claude chat): tested a real HP Envy 6500e-class printer on the LAN – a scan through the open eSCL interface works; the display accepts no custom destination (tried twice via the open Windows scan protocol; vendor-app role not used on purpose). Wrote `docs/proposals/printer-scan-station.md` (separate MIT module, scan one/many pages as one document, folders, scan button in the phone web app, QR/NFC sticker, IPP printing, receiver for printers that push). Opened issue #77 (`to:lead`), board row SCAN, Q-30, note on D-015.
+- Done (PO go in the Claude chat): tested a real home inkjet printer on the LAN – a scan through the open eSCL interface works; the display accepts no custom destination (tried twice via the open Windows scan protocol; vendor-app role not used on purpose). Wrote `docs/proposals/printer-scan-station.md` (separate MIT module, scan one/many pages as one document, folders, scan button in the phone web app, QR/NFC sticker, IPP printing, receiver for printers that push). Opened issue #77 (`to:lead`), board row SCAN, Q-30, note on D-015.
 - Not done: no code. Needs the Lead's decisions (D-015 amendment, folders in core, interface shape, Scan Station pairing, roadmap order).
 - Watch out: no real data in the repo (no IPs, serials, MACs). Do not use vendor private interfaces. Mopria eSCL spec licence terms still to be read before the first release.
 - Branch/PR: manager/SCAN-printer-scanner-module

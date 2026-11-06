@@ -10,21 +10,21 @@ Scan and print with DocHamster from a normal home printer:
 - scan one page, or several pages as **one document**;
 - save into **folders**;
 - print a document straight from DocHamster;
-- easy to install for **any** printer, no HP software, no e-mail, open source (MIT).
+- easy to install for **any** printer, no vendor software, no e-mail, open source (MIT).
 
-## 2. What was tested on a real printer (HP Envy 6500e class)
+## 2. What was tested on a real printer (a home inkjet printer)
 
 | Test | Result |
 |------|--------|
 | Printer reachable on the LAN, driverless scan interface (eSCL, "AirScan") | Works. A real scan job returned a PDF (blank-glass test, 150 dpi colour). |
 | Feeder and flatbed, PDF/JPEG/TIFF, up to 300 dpi (1200 optical) | Reported by the printer. |
 | Display menu "Scan" | Only "Web Scan" (a pull feature). No e-mail, folder or cloud scan. |
-| Windows scan service (WS-Scan): register a custom destination "DocHamster Test" | Accepted by the printer (token issued), but **never shown** on the display; selecting "Scan to Computer" printed an "install HP software" sheet. |
-| Admin session: shortcut list | Only HP's 15 built-in apps; no user or cloud shortcuts. |
-| Admin session: scan destination setting | Is the "digital send" feature switch, empty on this model. The list of computers for "Scan to Computer" is a separate setting that HP's own software owns (admin token gets 403). |
+| Windows scan service (WS-Scan): register a custom destination "DocHamster Test" | Accepted by the printer (token issued), but **never shown** on the display; selecting "Scan to Computer" printed an "install the vendor software" sheet. |
+| Admin session: shortcut list | Only the 15 built-in apps of the printer; no user or cloud shortcuts. |
+| Admin session: scan destination setting | Is the "digital send" feature switch, empty on this model. The list of computers for "Scan to Computer" is a separate setting that the vendor's own software owns (admin token gets 403). |
 | Local approval by pressing OK on the display | Disabled in the printer settings; PIN only. |
 
-**Conclusion:** on this model nothing we can install or configure *inside* the printer will add a "DocHamster" entry to its display. HP firmware is closed and signed, and the consumer line has no scan-to-folder/e-mail destination we could point at us. We therefore build the receiving side, not a printer program.
+**Conclusion:** on this model nothing we can install or configure *inside* the printer will add a "DocHamster" entry to its display. The vendor firmware is closed and signed, and the consumer line has no scan-to-folder/e-mail destination we could point at us. We therefore build the receiving side, not a printer program.
 
 ## 3. Design: one module, two ways in, one way out
 
@@ -46,7 +46,7 @@ eSCL is an open Mopria/PWG-style protocol; almost every printer and scanner made
 ### 3.2 Way in B – printer pushes (printers that can scan to folder)
 
 Many printers (Epson, Brother, Canon, Xerox, Ricoh, Kyocera, and most office models) have "scan to network folder/FTP" on the display. The module runs a small **receiver** (FTP/FTPS/SFTP first; SMB only if a permissive implementation exists). The wizard shows the exact values to type into the printer once. The printer then offers "DocHamster" (or "DocHamster – Invoices") as a normal display entry; the directory name maps to the DocHamster folder; files arriving within a short window from one job are merged.
-This is the only way to get a true on-printer button, and it needs a printer that has the feature. The HP Envy tested here does not.
+This is the only way to get a true on-printer button, and it needs a printer that has the feature. The home printer tested here does not.
 
 ### 3.3 Way out – printing
 
@@ -71,8 +71,8 @@ Core feature, not module: `folders` table (ULID, `org_id`, parent, name), `folde
 - Everything we ship is MIT. We write our own eSCL and IPP clients from the **public** specifications (Mopria eSCL spec, PWG IPP, RFC 8011).
 - **Do not copy** GPL code: sane-airscan, AirSane, scanservjs, Samba and similar are references for behaviour only, never linked or vendored (D-022: no GPL/AGPL in what we ship).
 - Dependencies only permissive (MIT/BSD/Apache/ISC); each one listed in `docs/DEPENDENCIES.md`; `composer check-licenses` in CI.
-- Do **not** use HP's private, reverse-engineered interfaces or tokens. They are undocumented, tied to the admin PIN and may break with firmware; the module relies on open protocols only.
-- Brand: describe compatibility in words ("works with printers that support eSCL, tested with an HP Envy 6500e"); no HP logo or copied HP text; "not affiliated" note (same rule as for Revolut, D-021).
+- Do **not** use the vendor's private, reverse-engineered interfaces or tokens. They are undocumented, tied to the admin PIN and may break with firmware; the module relies on open protocols only.
+- Brand: describe compatibility in words ("works with printers that support eSCL, tested with the models named in the README"); no vendor logo or copied vendor text; "not affiliated" note (same rule as for Revolut, D-021).
 - Check the Mopria spec's licence terms before the first release and note the result in the module's README.
 
 ## 7. Phases (all need the Lead's decisions first, AGENTS rule 4/6)
@@ -90,7 +90,7 @@ Complexity: high. Roughly 5–6 PRs in core and the module repo.
 
 ## 8. Risks
 
-- No on-printer button on printers without a scan-to-folder feature (this HP Envy). Mitigation: QR/NFC sticker, smart button, phone icon.
+- No on-printer button on printers without a scan-to-folder feature (the printer tested here). Mitigation: QR/NFC sticker, smart button, phone icon.
 - A remote DocHamster needs the small always-on Scan Station; home-network installs do not.
 - eSCL implementations differ per vendor; needs tests against several printers.
 - Receiver for push printers needs hardening (auth, quotas, file-type checks, no path traversal).
