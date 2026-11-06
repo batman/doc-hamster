@@ -17,6 +17,9 @@
     <div class="detail-actions">
         @if ($file)
             <a class="icon-button" href="{{ route('documents.download', $file->id) }}" aria-label="{{ __('documents.download') }}" data-tooltip="{{ __('documents.download') }}"><x-icon name="download" /></a>
+            {{-- Zoom: the whole document in a large viewer. Print: through the browser's print dialog, from a hidden frame (scripts/ app.js). --}}
+            <button type="button" class="icon-button" aria-label="{{ __('documents.zoom') }}" data-tooltip="{{ __('documents.zoom') }}" data-dialog-open="viewer"><x-icon name="zoom-in" /></button>
+            <button type="button" class="icon-button" aria-label="{{ __('documents.print') }}" data-tooltip="{{ __('documents.print') }}" data-print="{{ route('documents.file', $file->id) }}"><x-icon name="printer" /></button>
         @endif
         @can('documents.edit')
             <a class="icon-button" href="#title" aria-label="{{ __('documents.edit') }}" data-tooltip="{{ __('documents.edit') }}"><x-icon name="pencil" /></a>
@@ -90,6 +93,29 @@
         </dl>
     </section>
 </aside>
+
+@if ($file)
+    {{-- The viewer: an image zooms with the buttons, Ctrl + wheel and double click; a PDF uses the browser's own viewer (zoom, search, pages). --}}
+    <div class="dialog-backdrop viewer @unless ($file->isImage()) viewer-pdf-mode @endunless" data-dialog="viewer" hidden>
+        <div class="viewer-box" role="dialog" aria-modal="true" aria-label="{{ $document->title }}">
+            <div class="viewer-bar">
+                <strong class="viewer-title">{{ $document->title }}</strong>
+                <button type="button" class="icon-button zoom-only" aria-label="{{ __('documents.zoom_out') }}" data-tooltip="{{ __('documents.zoom_out') }}" data-zoom="out"><x-icon name="zoom-out" /></button>
+                <span class="viewer-level zoom-only" data-zoom-level>100 %</span>
+                <button type="button" class="icon-button zoom-only" aria-label="{{ __('documents.zoom_in') }}" data-tooltip="{{ __('documents.zoom_in') }}" data-zoom="in"><x-icon name="zoom-in" /></button>
+                <button type="button" class="icon-button zoom-only" aria-label="{{ __('documents.zoom_fit') }}" data-tooltip="{{ __('documents.zoom_fit') }}" data-zoom="fit"><x-icon name="arrows-maximize" /></button>
+                <button type="button" class="icon-button" aria-label="{{ __('documents.close') }}" data-tooltip="{{ __('documents.close') }}" data-dialog-close><x-icon name="x" /></button>
+            </div>
+            <div class="viewer-stage" data-zoom-stage>
+                @if ($file->isImage())
+                    <img class="viewer-img" alt="{{ $document->title }}" data-zoom-image data-src="{{ route('documents.file', $file->id) }}">
+                @else
+                    <iframe class="viewer-frame" title="{{ $document->title }}" data-src="{{ route('documents.file', $file->id) }}"></iframe>
+                @endif
+            </div>
+        </div>
+    </div>
+@endif
 
 @if ($file)
     <div class="dialog-backdrop" data-dialog="share-document" @unless ($shareUrl) hidden @endunless>

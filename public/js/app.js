@@ -405,7 +405,78 @@
         }));
     };
 
+    // Print: the file goes into a hidden frame of our own page and the browser's print dialog opens (nothing leaves the server).
+    // Zoom: the viewer loads its file only when it opens; images zoom by buttons, Ctrl + wheel, double click and + / -.
+    const setupPrintAndZoom = () => {
+        document.querySelectorAll('[data-print]').forEach(button => button.addEventListener('click', () => {
+            const frame = document.createElement('iframe');
+            frame.className = 'print-frame';
+            frame.setAttribute('aria-hidden', 'true');
+            frame.tabIndex = -1;
+            frame.addEventListener('load', () => {
+                try {
+                    frame.contentWindow.focus();
+                    frame.contentWindow.print();
+                } catch {
+                    window.open(button.dataset.print, '_blank', 'noopener');
+                }
+            });
+            frame.src = button.dataset.print;
+            document.body.append(frame);
+            setTimeout(() => frame.remove(), 120000);
+        }));
+
+        const viewer = document.querySelector('[data-dialog="viewer"]');
+        if (!viewer) {
+            return;
+        }
+        const image = viewer.querySelector('[data-zoom-image]');
+        const level = viewer.querySelector('[data-zoom-level]');
+        const MIN = 0.25;
+        const MAX = 8;
+        let zoom = 1;
+        const apply = next => {
+            zoom = Math.min(MAX, Math.max(MIN, next));
+            if (image) {
+                image.style.width = `${zoom * 100}%`;
+                level.textContent = `${Math.round(zoom * 100)} %`;
+            }
+        };
+        const factor = { in: 1.25, out: 0.8 };
+        viewer.querySelectorAll('[data-zoom]').forEach(button => button.addEventListener('click', () => {
+            apply(button.dataset.zoom === 'fit' ? 1 : zoom * factor[button.dataset.zoom]);
+        }));
+        image?.addEventListener('dblclick', () => apply(zoom > 1 ? 1 : 2.5));
+        viewer.addEventListener('wheel', event => {
+            if (image && event.ctrlKey) {
+                event.preventDefault();
+                apply(zoom * (event.deltaY < 0 ? 1.1 : 0.9));
+            }
+        }, { passive: false });
+        document.addEventListener('keydown', event => {
+            if (viewer.hidden || !image || event.ctrlKey || event.metaKey) {
+                return;
+            }
+            if (event.key === '+' || event.key === '=') {
+                apply(zoom * 1.25);
+            } else if (event.key === '-') {
+                apply(zoom * 0.8);
+            } else if (event.key === '0') {
+                apply(1);
+            }
+        });
+        document.querySelectorAll('[data-dialog-open="viewer"]').forEach(button => button.addEventListener('click', () => {
+            viewer.querySelectorAll('[data-src]').forEach(element => {
+                if (!element.getAttribute('src')) {
+                    element.setAttribute('src', element.dataset.src);
+                }
+            });
+            apply(1);
+        }));
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
+        setupPrintAndZoom();
         setupMenu();
         setupDropdowns();
         setupFilter();
