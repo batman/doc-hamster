@@ -300,3 +300,9 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done: print button and zoom in the document view (next PR); the module itself. Full suite not run on MySQL/MariaDB here (CI does); on SQLite three tests fail the same way on clean main (SetupCommandTest x2, UpdateTest x1), unrelated.
 - Watch out: `Document::scopeMatchable()` still counts receipts without a folder (old data) as matchable. `Folder::defaultIdFor()` creates "Belege" for an organisation that has none.
 - Branch/PR: manager/SCAN-folders
+
+## 2026-11-06 · Manager · SCAN (print + zoom in the document view)
+- Done (PO order): Print and Zoom buttons in the receipt view. Print puts the file into a hidden frame of our own page and opens the browser's print dialog. Zoom opens a large viewer: images zoom by buttons, Ctrl + wheel, double click and + / - (CSSOM only, no inline styles); PDFs use the browser's own viewer. For this, `DocumentController::file()` now sets `frame-ancestors 'self'` and `SAMEORIGIN` on delivered files only; `SecurityHeaders` keeps headers a controller set on purpose, all other pages stay `DENY`. Two new tests; pint, PHPStan clean.
+- Not done: not clicked through in a real browser (script is syntax-checked, headers and markup are tested); printing straight to a network printer comes with the module (IPP). Stacked on PR #79 (folders), the Lead merges #79 first.
+- Watch out: the file response CSP no longer has the default `script-src 'self'`; files are checked images/PDFs sent with `nosniff`. Worth a second look in review.
+- Branch/PR: manager/SCAN-print-zoom

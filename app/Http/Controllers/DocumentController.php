@@ -226,7 +226,12 @@ final class DocumentController
         [$file, $document] = $this->visibleFile($request, $id);
         $document->forceFill(['last_opened_at' => now()])->saveQuietly();
 
-        return Storage::disk('local')->response($file->path, null, ['Content-Type' => $file->mime]);
+        return Storage::disk('local')->response($file->path, null, [
+            'Content-Type' => $file->mime,
+            // Our own pages may show it in a frame (print and zoom); nobody else (clickjacking stays closed).
+            'Content-Security-Policy' => "frame-ancestors 'self'",
+            'X-Frame-Options' => 'SAMEORIGIN',
+        ]);
     }
 
     public function download(Request $request, string $id): Response

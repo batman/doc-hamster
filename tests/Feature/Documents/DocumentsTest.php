@@ -80,3 +80,29 @@ it('does not let tax advisors upload', function (): void {
         ->post('/documents', ['file' => UploadedFile::fake()->image('bon.jpg')])
         ->assertForbidden();
 });
+
+it('lets only our own pages frame a delivered file (print and zoom), everything else stays unframable', function (): void {
+    $owner = Membership::factory()->owner()->create();
+    $this->actingAs($owner->user)->post('/documents', ['file' => UploadedFile::fake()->image('bon.jpg')]);
+    $file = DocumentFile::withoutGlobalScope(OrgScope::class)->firstOrFail();
+
+    $this->get('/files/'.$file->id)->assertOk()
+        ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
+        ->assertHeader('Content-Security-Policy', "frame-ancestors 'self'");
+    $this->get('/documents')->assertHeader('X-Frame-Options', 'DENY');
+    expect($this->get('/documents')->headers->get('Content-Security-Policy'))->toContain("frame-ancestors 'none'");
+});
+
+it('offers print and zoom in the receipt view', function (): void {
+    $owner = Membership::factory()->owner()->create();
+    $this->actingAs($owner->user)->post('/documents', ['file' => UploadedFile::fake()->image('bon.jpg')]);
+    $document = Document::query()->withoutGlobalScope(OrgScope::class)->firstOrFail();
+    $file = DocumentFile::withoutGlobalScope(OrgScope::class)->firstOrFail();
+
+    $this->get('/documents/'.$document->id)->assertOk()
+        ->assertSee('data-print="'.route('documents.file', $file->id).'"', false)
+        ->assertSee('data-dialog-open="viewer"', false)
+        ->assertSee('data-zoom-image', false)
+        ->assertSee('Drucken')
+        ->assertSee('Vergrößern');
+});

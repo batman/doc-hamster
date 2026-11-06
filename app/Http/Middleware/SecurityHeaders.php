@@ -24,14 +24,20 @@ final class SecurityHeaders
     {
         $response = $next($request);
 
-        $response->headers->add([
+        // Only what the controller did not set itself: file delivery may be framed by our own pages (print, zoom).
+        $defaults = [
             'Content-Security-Policy' => self::CSP,
             'X-Content-Type-Options' => 'nosniff',
             'X-Frame-Options' => 'DENY',
             'Referrer-Policy' => 'same-origin',
             'Permissions-Policy' => 'camera=(self), geolocation=(self), microphone=(self), payment=(), usb=()',
             'Cross-Origin-Opener-Policy' => 'same-origin',
-        ]);
+        ];
+        foreach ($defaults as $name => $value) {
+            if (! $response->headers->has($name)) {
+                $response->headers->set($name, $value);
+            }
+        }
 
         if ($request->isSecure()) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000');
