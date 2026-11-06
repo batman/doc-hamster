@@ -25,6 +25,9 @@ final class SettingsMenu
         'tags' => ['tags', [
             ['tags', 'tags.index', 'tags', 'tags.manage', ['tags.*']],
         ], true],
+        'folders' => ['folder', [
+            ['folders', 'folders.index', 'folder', 'documents.edit', ['folders.*']],
+        ], true],
         'export' => ['file-export', [
             ['export', 'exports.form', 'file-export', 'exports.create', ['exports.*']],
             ['shares', 'shares.index', 'send', 'exports.create', ['shares.*']],

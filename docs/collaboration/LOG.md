@@ -258,3 +258,9 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done: no code. Needs the Lead's decisions (D-015 amendment, folders in core, interface shape, Scan Station pairing, roadmap order).
 - Watch out: no real data in the repo (no IPs, serials, MACs). Do not use vendor private interfaces. Mopria eSCL spec licence terms still to be read before the first release.
 - Branch/PR: manager/SCAN-printer-scanner-module
+
+## 2026-11-06 · Manager · SCAN (folders in the core)
+- Done (PO order: "just do it, I make the decisions"): D-026 recorded. Folders in the core: table `folders` + `documents.folder_id`, nested up to 5 levels, page under Einstellungen > Ordner (create, rename, move, delete), folder bar above the receipt list, folder choice in the receipt view, uploads inside a folder stay there. Every organisation has the folder "Belege" (undeletable, new receipts land there; existing receipts moved in by the migration). Bank matching only offers receipts of folders with "Bankabgleich" on (on for "Belege", off for new folders). 13 new folder tests plus one bank test; pint and PHPStan clean.
+- Not done: print button and zoom in the document view (next PR); the module itself. Full suite not run on MySQL/MariaDB here (CI does); on SQLite three tests fail the same way on clean main (SetupCommandTest x2, UpdateTest x1), unrelated.
+- Watch out: `Document::scopeMatchable()` still counts receipts without a folder (old data) as matchable. `Folder::defaultIdFor()` creates "Belege" for an organisation that has none.
+- Branch/PR: manager/SCAN-folders

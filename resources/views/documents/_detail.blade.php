@@ -44,6 +44,14 @@
                 <h3><label for="title">{{ __('documents.name') }}</label></h3>
                 <input id="title" name="title" value="{{ old('title', $document->title) }}" maxlength="250" required>
             </section>
+            <section class="detail-section">
+                <h3><label for="folder">{{ __('folders.folder') }}</label></h3>
+                <select id="folder" name="folder">
+                    @foreach ($folders as $row)
+                        <option value="{{ $row['folder']->id }}" @selected(old('folder', $document->folder_id) === $row['folder']->id)>{{ str_repeat('– ', $row['depth']) }}{{ $row['folder']->name }}</option>
+                    @endforeach
+                </select>
+            </section>
             @if ($tags->isNotEmpty())
                 <section class="detail-section">
                     <h3>{{ __('documents.tags') }}</h3>

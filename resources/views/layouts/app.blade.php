@@ -28,6 +28,10 @@
                     @can('documents.upload')
                         <form class="nav-upload" method="post" action="{{ route('documents.store') }}" enctype="multipart/form-data" data-busy="{{ __('documents.uploading') }}">
                             @csrf
+                            {{-- Opened inside a folder: new uploads go there (issue #77). --}}
+                            @if (is_string(request()->query('folder')) && request()->query('folder') !== 'none')
+                                <input type="hidden" name="folder" value="{{ request()->query('folder') }}">
+                            @endif
                             <label class="nav-item nav-action tooltip-right" data-tooltip="{{ __('documents.upload') }}">
                                 <input class="visually-hidden" type="file" name="files[]" multiple accept="image/*,application/pdf">
                                 <x-icon name="upload" /><span class="nav-text">{{ __('documents.upload') }}</span>
