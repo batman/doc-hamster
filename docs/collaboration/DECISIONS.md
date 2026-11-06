@@ -78,7 +78,7 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
 - **Decision:** answered by the plan itself: **several organisations per instance, with the roles owner, member and tax advisor, in v1** – PLAN §2 (roles, permission matrix), §4.6 (AK-4.6.1/2), §6.1 (`memberships`), D-012 and the v0.1 test list ("Mitglied einladen", "Mitglied sieht andere Org nicht") already require it, and Phase 1 builds it (P1-2, P1-6). Typical first users (Q-4) are the ones PLAN §2 names: households, freelancers, small businesses, clubs. The core flow stays focused on one person capturing and one owner checking; team extras (e.g. approval workflows) are not in v1.
 
 ### D-015 · Capture channel: phone web app, no hardware scanner — Owner: PO
-- **Status:** decided (PO, 2026-10-29)
+- **Status:** decided (PO, 2026-10-29) – **amendment requested by the PO on 2026-11-06, see Q-30 / issue #77**
 - **Decision:** The **phone web app (camera)** is the capture channel. No hardware document scanner. PDF upload from files stays.
 - **How the phone app delivers photos to the server** (upload protocol, offline queue, limits) is technical → Lead, see D-017.
 
@@ -260,3 +260,4 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
 | Q-19 | Lead → operator | D-018: how should the receipt pack look? | asked with the layout draft P0-5 |
 | Q-20 | Lead → operator | Tax advisor without shares (Phase 7): may they see and export all receipts of the organisation read-only for now, or nothing until shares exist (PLAN §2.1)? | **All receipts read-only incl. export** until shares exist (operator, 2026-10-30) |
 | Q-21 | Lead → operator | PLAN §2.1: members see only their own receipts unless the organisation setting `members_see_all_documents` is on (default off, no switch in the UI yet). Add a switch for the owner on the people page? | Superseded (operator, 2026-10-30): owners create and name roles with permission checkboxes; Admin may always do everything; defaults: employee (like Admin except people, roles, updates) and tax advisor (read-only) |
+| Q-30 | Manager → Lead | PO request: printer/scanner module (own repo, MIT): multi-page scan into folders, scan button in the phone web app, printing, receiver for printers that push; amends D-015 (no hardware scanner). Decide: D-015 amendment, folders in core, interface shape + Scan Station pairing, order in the roadmap (issue #77, proposal `docs/proposals/printer-scan-station.md`) | **Open** – technical except D-015 (PO already asked for it); the Lead decides |
