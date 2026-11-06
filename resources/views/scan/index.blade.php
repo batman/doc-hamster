@@ -12,6 +12,12 @@
     @if ($errors->any())
         <p class="error" role="alert">{{ $errors->first() }}</p>
     @endif
+    @if ($failure)
+        <p class="error" role="alert">{{ $failure }}</p>
+    @endif
+    @if ($stationOffline)
+        <p class="notice" role="status">{{ __('scan.station_offline') }}</p>
+    @endif
 
     @unless ($configured)
         <div class="notice">
@@ -40,7 +46,12 @@
             </section>
         @endif
 
-        <form method="post" action="{{ route('scan.page') }}" data-busy="{{ __('scan.scanning') }}">
+        @if ($waiting)
+            {{-- A Scan Station is scanning: this page looks again every few seconds (app.js). --}}
+            <p class="notice" role="status" data-scan-wait>{{ __('scan.waiting') }}</p>
+        @endif
+
+        <form method="post" action="{{ route('scan.page') }}" data-busy="{{ __('scan.scanning') }}" @if ($waiting) hidden @endif>
             @csrf
             <input type="hidden" name="folder" value="{{ old('folder', $folder) }}">
             <fieldset>

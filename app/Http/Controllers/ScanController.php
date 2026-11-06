@@ -9,7 +9,9 @@ use App\Domain\Documents\DocumentIntake;
 use App\Domain\Documents\Folder;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Scanning\ScannerAddress;
+use App\Domain\Scanning\ScanRequest;
 use App\Domain\Scanning\ScanSession;
+use App\Domain\Scanning\ScanStation;
 use App\Jobs\Net\EsclClient;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -20,6 +22,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * Scan from a network printer or scanner into DocHamster (issue #77, D-026):
@@ -34,17 +37,32 @@ final class ScanController
     /** The scan page: pages so far, the form for the next one, and "Fertig". */
     public function index(Request $request, CurrentOrg $org): View
     {
+        $userId = $org->membership()->user_id;
         $scanner = $this->scanner($org);
-        $session = new ScanSession($org->id(), $org->membership()->user_id);
+        $session = new ScanSession($org->id(), $userId);
+
+        // A scan through a Scan Station: wait while it runs, tell the end once.
+        ScanRequest::expireStale();
+        $latest = ScanRequest::query()->where('user_id', $userId)->where('acknowledged', false)->orderByDesc('id')->first();
+        $waiting = $latest?->isActive() ?? false;
+        $ended = $latest !== null && ! $waiting ? $latest : null;
+        $ended?->forceFill(['acknowledged' => true])->save();
+
+        $station = ScanStation::online();
+        $viaStation = $scanner === null && ScanStation::linked();
+        $known = $station ?? ScanStation::query()->whereNotNull('token_hash')->whereNull('revoked_at')->latest('last_seen_at')->first();
 
         return view('scan.index', [
-            'configured' => $scanner !== null,
-            'name' => $org->organization()->settings_json['scanner']['name'] ?? null,
-            'feeder' => (bool) ($org->organization()->settings_json['scanner']['feeder'] ?? false),
+            'configured' => $scanner !== null || $viaStation,
+            'name' => $scanner !== null ? ($org->organization()->settings_json['scanner']['name'] ?? null) : ($known->printer_name ?? $known?->name),
+            'feeder' => $scanner !== null ? (bool) ($org->organization()->settings_json['scanner']['feeder'] ?? false) : (bool) $known?->printer_feeder,
             'pages' => $session->count(),
             'folders' => Folder::flat(),
             'folder' => $request->query('folder'),
             'dpi' => (int) $request->session()->get('scan_dpi', 200),
+            'waiting' => $waiting,
+            'failure' => $ended?->status === 'failed' ? $this->message(new RuntimeException((string) $ended->error)) : null,
+            'stationOffline' => $viaStation && $station === null,
         ]);
     }
 
@@ -58,7 +76,7 @@ final class ScanController
         ]);
         $scanner = $this->scanner($org);
         if ($scanner === null) {
-            return back()->withErrors(['scan' => __('scan.not_set_up')]);
+            return $this->viaStation($request, $org, $data);
         }
         @set_time_limit(180);
 
@@ -72,6 +90,37 @@ final class ScanController
         $request->session()->put('scan_dpi', (int) $data['dpi']);
 
         return redirect()->route('scan.index', array_filter(['folder' => $request->input('folder')]))->with('status', trans_choice('scan.added', count($pages), ['count' => count($pages)]));
+    }
+
+    /**
+     * No scanner address, but a Scan Station: the request waits for the station,
+     * which asks every few seconds and uploads the pages (StationApiController).
+     *
+     * @param  array{source: string, color: string, dpi: string|int}  $data
+     */
+    private function viaStation(Request $request, CurrentOrg $org, array $data): RedirectResponse
+    {
+        $station = ScanStation::online();
+        if ($station === null) {
+            return back()->withErrors(['scan' => ScanStation::linked() ? __('scan.station_offline') : __('scan.not_set_up')]);
+        }
+        $userId = $org->membership()->user_id;
+        ScanRequest::expireStale();
+        if (ScanRequest::query()->where('user_id', $userId)->whereIn('status', ['queued', 'running'])->exists()) {
+            return redirect()->route('scan.index', array_filter(['folder' => $request->input('folder')]));
+        }
+
+        ScanRequest::query()->create([
+            'org_id' => $org->id(),
+            'user_id' => $userId,
+            'station_id' => $station->id,
+            'source' => $data['source'],
+            'color' => $data['color'],
+            'dpi' => (int) $data['dpi'],
+        ]);
+        $request->session()->put('scan_dpi', (int) $data['dpi']);
+
+        return redirect()->route('scan.index', array_filter(['folder' => $request->input('folder')]));
     }
 
     /** "Fertig": all pages become one PDF document in the chosen folder. */
@@ -125,10 +174,43 @@ final class ScanController
         return redirect()->route('scan.index');
     }
 
-    /** The scanner setting (Admins). */
+    /** The scanner setting (Admins): a device on the network, or Scan Stations. */
     public function settings(CurrentOrg $org): View
     {
-        return view('scan.settings', ['url' => $org->organization()->settings_json['scanner']['url'] ?? '', 'name' => $org->organization()->settings_json['scanner']['name'] ?? null]);
+        return view('scan.settings', [
+            'url' => $org->organization()->settings_json['scanner']['url'] ?? '',
+            'name' => $org->organization()->settings_json['scanner']['name'] ?? null,
+            'stations' => ScanStation::query()->whereNotNull('token_hash')->whereNull('revoked_at')->orderBy('name')->get(),
+            'waiting' => ScanStation::query()->whereNull('token_hash')->whereNull('revoked_at')->where('pairing_expires_at', '>', now())->count(),
+            'code' => session('station_code'),
+            'codeName' => session('station_name'),
+        ]);
+    }
+
+    /** A new Scan Station: shows its one-time code once, with the steps to start it. */
+    public function stationCreate(Request $request, CurrentOrg $org, AuditLog $audit): RedirectResponse
+    {
+        $data = $request->validate(['name' => ['nullable', 'string', 'max:100']]);
+        $name = trim((string) ($data['name'] ?? ''));
+        [$station, $code] = ScanStation::startPairing($org->membership()->user_id, $name !== '' ? $name : __('scan.station_default_name'));
+        $audit->record('station.created', orgId: $org->id(), userId: $org->membership()->user_id, subject: $station, ip: $request->ip());
+
+        return redirect()->route('scanner.show')->with('station_code', $code)->with('station_name', $station->name);
+    }
+
+    public function stationRevoke(Request $request, string $id, CurrentOrg $org, AuditLog $audit): RedirectResponse
+    {
+        $station = ScanStation::query()->whereKey($id)->whereNull('revoked_at')->firstOrFail();
+        $station->forceFill(['revoked_at' => now(), 'pairing_hash' => null, 'token_hash' => null])->save();
+        $audit->record('station.revoked', orgId: $org->id(), userId: $org->membership()->user_id, subject: $station, ip: $request->ip());
+
+        return redirect()->route('scanner.show')->with('status', __('scan.station_removed'));
+    }
+
+    /** The station program itself (one PHP file), for people who set a station up from this page. */
+    public function stationDownload(): BinaryFileResponse
+    {
+        return response()->download(base_path('station/dochamster-station.php'), 'dochamster-station.php', ['Content-Type' => 'text/x-php']);
     }
 
     /** Saves the address after asking the scanner who it is; an address that is not a scanner is never saved. */
