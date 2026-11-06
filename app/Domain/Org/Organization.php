@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Org;
 
+use App\Domain\Documents\Folder;
 use App\Domain\Documents\Tag;
 use Database\Factories\OrganizationFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -36,6 +37,7 @@ final class Organization extends Model
         self::created(static function (self $organization): void {
             OrgRole::ensureDefaults($organization);
             Tag::addDefaults($organization);
+            Folder::addDefaults($organization);
         });
     }
 

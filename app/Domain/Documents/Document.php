@@ -9,6 +9,7 @@ use App\Domain\Org\BelongsToOrg;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -19,6 +20,7 @@ use Illuminate\Support\Carbon;
  *
  * @property string $id
  * @property string $org_id
+ * @property string|null $folder_id
  * @property string|null $uploaded_by
  * @property string $title
  * @property Carbon|null $doc_date
@@ -37,7 +39,7 @@ final class Document extends Model
     /** Global scope: printed documents are not receipts until someone takes them over. */
     public const OUTSIDE_PRINT_TRAY = 'outside_print_tray';
 
-    protected $fillable = ['org_id', 'uploaded_by', 'title', 'doc_date', 'note', 'in_print_tray'];
+    protected $fillable = ['org_id', 'folder_id', 'uploaded_by', 'title', 'doc_date', 'note', 'in_print_tray'];
 
     protected static function booted(): void
     {
@@ -74,6 +76,28 @@ final class Document extends Model
     public function scopeWithPrintTray(Builder $query): Builder
     {
         return $query->withoutGlobalScope(self::OUTSIDE_PRINT_TRAY);
+    }
+
+    /**
+     * Receipts the bank matching may use: those in a folder with matching on
+     * (PO, 2026-11-06). Documents outside any folder (old data) still count.
+     *
+     * @param  Builder<Document>  $query
+     * @return Builder<Document>
+     */
+    public function scopeMatchable(Builder $query): Builder
+    {
+        return $query->where(static fn (Builder $inner): Builder => $inner
+            ->whereNull($query->qualifyColumn('folder_id'))
+            ->orWhereIn($query->qualifyColumn('folder_id'), Folder::query()->where('bank_matching', true)->select('id')));
+    }
+
+    /**
+     * @return BelongsTo<Folder, $this>
+     */
+    public function folder(): BelongsTo
+    {
+        return $this->belongsTo(Folder::class);
     }
 
     /**
