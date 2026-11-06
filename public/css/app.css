@@ -698,3 +698,8 @@ button.col-strip:hover > .icon { color: var(--primary-ink); }
 .viewer-frame { display: block; width: 100%; height: 100%; border: 0; }
 .viewer-pdf-mode .zoom-only { display: none; }
 @media print { .viewer, .print-frame { display: none; } }
+
+/* Scanning: the pages scanned so far (issue #77). */
+.scan-strip { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0 0 1rem; padding: 0; list-style: none; }
+.scan-strip li { display: flex; flex-direction: column; align-items: center; gap: .35rem; }
+.scan-strip .thumb-frame { height: 9rem; }

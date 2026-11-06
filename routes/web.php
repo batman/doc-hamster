@@ -14,6 +14,7 @@ use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PhoneCheckController;
 use App\Http\Controllers\PrintTrayController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\ScanController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SetupController;
 use App\Http\Controllers\ShareController;
@@ -85,6 +86,20 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('tags', [TagController::class, 'store'])->name('tags.store');
         Route::post('tags/{id}', [TagController::class, 'update'])->name('tags.update');
         Route::post('tags/{id}/delete', [TagController::class, 'destroy'])->name('tags.destroy');
+    });
+
+    Route::middleware('can:documents.upload')->prefix('scan')->name('scan.')->group(function (): void {
+        Route::get('/', [ScanController::class, 'index'])->name('index');
+        Route::post('page', [ScanController::class, 'scan'])->middleware('throttle:30,1')->name('page');
+        Route::post('finish', [ScanController::class, 'finish'])->name('finish');
+        Route::post('cancel', [ScanController::class, 'cancel'])->name('cancel');
+        Route::get('pages/{number}', [ScanController::class, 'page'])->whereNumber('number')->name('preview');
+        Route::post('pages/{number}/delete', [ScanController::class, 'remove'])->whereNumber('number')->name('remove');
+    });
+
+    Route::middleware('can:settings.manage')->group(function (): void {
+        Route::get('scanner', [ScanController::class, 'settings'])->name('scanner.show');
+        Route::post('scanner', [ScanController::class, 'save'])->middleware('throttle:10,1')->name('scanner.save');
     });
 
     Route::middleware('can:documents.edit')->group(function (): void {
