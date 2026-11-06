@@ -28,6 +28,9 @@ final class SettingsMenu
         'folders' => ['folder', [
             ['folders', 'folders.index', 'folder', 'documents.edit', ['folders.*']],
         ], true],
+        'scanner' => ['printer', [
+            ['scanner', 'scanner.show', 'printer', 'settings.manage', ['scanner.*']],
+        ], false],
         'export' => ['file-export', [
             ['export', 'exports.form', 'file-export', 'exports.create', ['exports.*']],
             ['shares', 'shares.index', 'send', 'exports.create', ['shares.*']],

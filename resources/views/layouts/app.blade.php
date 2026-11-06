@@ -46,12 +46,17 @@
                             ['documents.index', 'receipt', 'documents.title', null, ['documents.*'], null],
                             ['print-tray.index', 'printer', 'print_tray.title', 'documents.upload', ['print-tray.*'], \App\Http\Badges::PRINT_TRAY],
                             ['bank.index', 'building-bank', 'bank.title', 'banking.import', ['bank.index', 'bank.show'], null],
-                            ['settings.index', 'settings', 'settings.title', null, ['settings.*', 'members.*', 'roles.*', 'tags.*', 'exports.*', 'updates.*', 'bank.import*', 'bank.accounts.*', 'phone-check*'], null],
+                            ['settings.index', 'settings', 'settings.title', null, ['settings.*', 'members.*', 'roles.*', 'tags.*', 'exports.*', 'updates.*', 'bank.import*', 'bank.accounts.*', 'phone-check*', 'scanner.*', 'folders.*'], null],
                         ] as [$route, $icon, $label, $ability, $active, $badge])
                             @if ($ability === null || Gate::allows($ability))
                                 <li><a class="nav-item tooltip-right" href="{{ route($route) }}" data-tooltip="{{ __($label) }}" @if (request()->routeIs(...$active)) aria-current="page" @endif><x-icon :name="$icon" /><span class="nav-text">{{ __($label) }}</span> @if ($badge !== null) @php $count = $badges[$badge] ?? 0; @endphp <span class="nav-badge" data-badge="{{ $badge }}" @if ($count === 0) hidden @endif>{{ $count > 9 ? '9+' : $count }}</span> @endif</a></li>
                             @endif
                         @endforeach
+                        @can('documents.upload')
+                            @if (app(\App\Domain\Org\CurrentOrg::class)->isSet() && data_get(app(\App\Domain\Org\CurrentOrg::class)->organization()->settings_json, 'scanner.url'))
+                                <li><a class="nav-item tooltip-right" href="{{ route('scan.index') }}" data-tooltip="{{ __('scan.nav') }}" @if (request()->routeIs('scan.*')) aria-current="page" @endif><x-icon name="scan" /><span class="nav-text">{{ __('scan.nav') }}</span></a></li>
+                            @endif
+                        @endcan
                     </ul>
                     <form class="nav-logout" method="post" action="{{ route('logout') }}">
                         @csrf
