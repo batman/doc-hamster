@@ -475,7 +475,15 @@
         }));
     };
 
+    // A scan through a Scan Station takes a while: the scan page looks again every few seconds until it is over.
+    const setupScanWait = () => {
+        if (document.querySelector('[data-scan-wait]')) {
+            setTimeout(() => window.location.reload(), 3000);
+        }
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
+        setupScanWait();
         setupPrintAndZoom();
         setupMenu();
         setupDropdowns();

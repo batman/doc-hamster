@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\PrinterApiController;
+use App\Http\Controllers\StationApiController;
 use App\Http\Middleware\RedirectToSetup;
 use App\Http\Middleware\RequireSameOriginApi;
 use App\Http\Middleware\ResolveCurrentOrg;
@@ -27,6 +28,14 @@ return Application::configure(basePath: dirname(__DIR__))
             Route::prefix('api/printer')->name('api.printer.')->group(function (): void {
                 Route::post('pair', [PrinterApiController::class, 'pair'])->middleware('throttle:pairing')->name('pair');
                 Route::post('upload', [PrinterApiController::class, 'upload'])->middleware('throttle:120,1')->name('upload');
+            });
+
+            // The Scan Station next to a printer: connects out, its own token (StationApiController).
+            Route::prefix('api/station')->name('api.station.')->group(function (): void {
+                Route::post('pair', [StationApiController::class, 'pair'])->middleware('throttle:pairing')->name('pair');
+                Route::post('poll', [StationApiController::class, 'poll'])->middleware('throttle:60,1')->name('poll');
+                Route::post('requests/{id}/pages', [StationApiController::class, 'page'])->middleware('throttle:300,1')->name('page');
+                Route::post('requests/{id}/finish', [StationApiController::class, 'finish'])->middleware('throttle:60,1')->name('finish');
             });
         },
     )

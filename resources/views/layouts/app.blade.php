@@ -53,7 +53,7 @@
                             @endif
                         @endforeach
                         @can('documents.upload')
-                            @if (app(\App\Domain\Org\CurrentOrg::class)->isSet() && data_get(app(\App\Domain\Org\CurrentOrg::class)->organization()->settings_json, 'scanner.url'))
+                            @if (app(\App\Domain\Org\CurrentOrg::class)->isSet() && (data_get(app(\App\Domain\Org\CurrentOrg::class)->organization()->settings_json, 'scanner.url') || \App\Domain\Scanning\ScanStation::linked()))
                                 <li><a class="nav-item tooltip-right" href="{{ route('scan.index') }}" data-tooltip="{{ __('scan.nav') }}" @if (request()->routeIs('scan.*')) aria-current="page" @endif><x-icon name="scan" /><span class="nav-text">{{ __('scan.nav') }}</span></a></li>
                             @endif
                         @endcan
