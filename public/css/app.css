@@ -344,7 +344,7 @@ input[type="radio"] { width: 1.25rem; height: 1.25rem; min-height: 0; max-width:
 .view-tiles .thumb { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius); }
 .view-tiles .name { display: block; margin-top: .35rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .view-small .name { font-size: .875rem; }
-.thumb { border-radius: 10px; object-fit: cover; }
+.thumb { border-radius: 10px; object-fit: cover; -webkit-user-drag: none; user-select: none; -webkit-user-select: none; touch-action: pan-y pinch-zoom; }
 
 /* Timeline: newest first, grouped by month */
 .timeline { margin: 1rem 0 0; padding: 0 0 0 1.25rem; list-style: none; border-left: 3px solid var(--border); }

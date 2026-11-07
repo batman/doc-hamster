@@ -2,7 +2,7 @@
 @php($file = $document->files->first())
 <span class="thumb-frame {{ $frameClass ?? '' }}">
     @if ($file?->thumb_path)
-        <img class="thumb" src="{{ route('documents.thumb', $file->id) }}" alt="" loading="lazy">
+        <img class="thumb" src="{{ route('documents.thumb', $file->id) }}" alt="" loading="lazy" draggable="false">
     @else
         <x-icon :name="$file?->typeIcon() ?? 'file-text'" />
     @endif

@@ -276,3 +276,9 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done / next step: Verify CI, merge the fix and re-trigger preview builds for the open test PRs.
 - Watch out: Preview releases are still created only for same-repository open PRs labelled `preview-ready`.
 - Branch/PR: lead/PREVIEW-PUBLISHER-repo-context
+
+## 2026-11-07 · Lead · BUG-DROP-1
+- Done: Prepared the requested drag-and-drop safeguards for preview. Document preview images cannot start native image drags, and a marked drop from an in-app preview is ignored while external file drops remain available.
+- Not done / next step: Browser/device reproduction and CI are pending before the preview can be offered.
+- Watch out: This change does not add file-content deduplication.
+- Branch/PR: lead/BUG-DROP-1-preview

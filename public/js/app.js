@@ -77,7 +77,18 @@
         input.addEventListener('change', send);
 
         const carriesFiles = event => event.dataTransfer !== null && [...event.dataTransfer.types].includes('Files');
+        const carriesAppPreview = event => event.dataTransfer !== null
+            && [...event.dataTransfer.types].includes('application/x-dochamster-preview');
         let depth = 0; // dragenter/dragleave fire for every child element
+        // Never turn a dragged document preview into a fresh upload, even if a browser
+        // still starts a native drag despite the non-draggable image and CSS rules.
+        document.addEventListener('dragstart', event => {
+            if (!(event.target instanceof Element) || !event.target.closest('.thumb-frame img') || !event.dataTransfer) {
+                return;
+            }
+            event.dataTransfer.setData('application/x-dochamster-preview', '1');
+            event.preventDefault();
+        }, true);
         document.addEventListener('dragenter', event => {
             if (carriesFiles(event)) {
                 depth++;
@@ -96,6 +107,12 @@
             }
         });
         document.addEventListener('drop', event => {
+            if (carriesAppPreview(event)) {
+                event.preventDefault();
+                depth = 0;
+                overlay.hidden = true;
+                return;
+            }
             if (!carriesFiles(event)) {
                 return;
             }

@@ -32,7 +32,7 @@
     </div>
 
     @if ($file?->isImage())
-        <span class="thumb-frame detail-doc"><img class="thumb" src="{{ route('documents.file', $file->id) }}" alt=""></span>
+        <span class="thumb-frame detail-doc"><img class="thumb" src="{{ route('documents.file', $file->id) }}" alt="" draggable="false"></span>
     @elseif ($file)
         @include('documents._thumb', ['frameClass' => 'detail-doc'])
     @endif
