@@ -35,7 +35,9 @@ final class InstallerFixtures
     public static function removeDir(string $dir): void
     {
         if (! is_dir($dir) || is_link($dir)) {
-            @unlink($dir);
+            if (file_exists($dir) || is_link($dir)) {
+                @unlink($dir);
+            }
 
             return;
         }
@@ -70,5 +72,99 @@ final class InstallerFixtures
             $zip->addFromString($name, $content);
         }
         $zip->close();
+    }
+
+    public static function openZip(string $path): ZipArchive
+    {
+        $zip = new ZipArchive;
+        $zip->open($path);
+
+        return $zip;
+    }
+
+    /**
+     * Serves $docRoot over HTTP on a free loopback port; returns [process, baseUrl].
+     * The caller stops the server with stopServer(). A token marker proves the
+     * answers come from our server, not from a foreign port squatter.
+     *
+     * @return array{0: mixed, 1: string}
+     */
+    public static function startServer(string $docRoot): array
+    {
+        $token = bin2hex(random_bytes(8));
+        file_put_contents($docRoot.'/.dh-server-check', $token);
+        $context = stream_context_create(['http' => ['timeout' => 2]]);
+
+        foreach (range(18931, 18971) as $port) {
+            $proc = proc_open(
+                [PHP_BINARY, '-S', '127.0.0.1:'.$port, '-t', $docRoot],
+                [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']],
+                $pipes
+            );
+            if (! is_resource($proc)) {
+                continue;
+            }
+            for ($i = 0; $i < 50; $i++) {
+                if (@file_get_contents('http://127.0.0.1:'.$port.'/.dh-server-check', false, $context) === $token) {
+                    return [$proc, 'http://127.0.0.1:'.$port];
+                }
+                usleep(100000);
+            }
+            self::stopServer($proc);
+        }
+
+        throw new RuntimeException('No free port for the installer test server.');
+    }
+
+    public static function stopServer(mixed $proc): void
+    {
+        if (is_resource($proc)) {
+            proc_terminate($proc);
+            proc_close($proc);
+        }
+    }
+
+    /**
+     * Puts $entries behind a download URL the installer's curl download can fetch.
+     * Returns [url, sha256].
+     *
+     * @return array{0: string, 1: string}
+     */
+    public static function serveZip(string $serverDir, string $serverUrl, string $name, array $entries): array
+    {
+        $path = $serverDir.'/'.$name;
+        self::makeZip($path, $entries);
+
+        return [$serverUrl.'/'.$name, hash_file('sha256', $path)];
+    }
+
+    public static mixed $serverProc = null;
+
+    public static string $serverDir = '';
+
+    public static string $serverUrl = '';
+
+    /** One server per test file, started from beforeAll() (which has no $this). */
+    public static function startSharedServer(): void
+    {
+        self::$serverDir = self::makeTempDir('dh-server');
+        [self::$serverProc, self::$serverUrl] = self::startServer(self::$serverDir);
+    }
+
+    public static function stopSharedServer(): void
+    {
+        self::stopServer(self::$serverProc);
+        self::removeDir(self::$serverDir);
+        self::$serverProc = null;
+    }
+
+    /**
+     * serveZip() against the shared server.
+     *
+     * @return array{0: string, 1: string}
+     */
+    public static function serveSharedZip(string $name, array $entries): array
+    {
+        return self::serveZip(self::$serverDir, self::$serverUrl, $name, $entries);
     }
 }

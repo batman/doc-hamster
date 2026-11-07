@@ -189,7 +189,9 @@ function choosePreviewRelease(): array
 function removeTree(string $dir): void
 {
     if (! is_dir($dir) || is_link($dir)) {
-        @unlink($dir);
+        if (file_exists($dir) || is_link($dir)) {
+            @unlink($dir);
+        }
 
         return;
     }
@@ -261,7 +263,28 @@ function wireWebRoot(string $appDir, string $webRoot, bool $keepOld): void
     placeFile($webRoot.'/index.php', str_replace("__DIR__.'/../", var_export($appDir.'/', true).".'", $index), $keepOld);
 }
 
-/** Downloads and checks the release, returns the unpacked folder. */
+/**
+ * Rejects ZIP entries that would escape the app folder: only dochamster/...
+ * names without parent references are allowed. Runs before extractTo(), so a
+ * hostile or corrupt package never lands outside the temp folder.
+ */
+function assertZipPaths(ZipArchive $zip): void
+{
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $name = (string) $zip->getNameIndex($i);
+        if (strpos($name, 'dochamster/') !== 0 || strpos($name, '..') !== false) {
+            throw new RuntimeException('Unerwarteter Inhalt im Paket.');
+        }
+    }
+}
+
+/**
+ * Downloads and checks the release, returns the unpacked folder.
+ *
+ * Everything lands in $tmpDir; the caller moves the result into place with
+ * rename() last, so a failed run leaves no artisan marker behind and the
+ * install can simply be retried (issue #8).
+ */
 function unpackRelease(array $release, string $tmpDir, string $zipFile): string
 {
     removeTree($tmpDir);
@@ -274,12 +297,7 @@ function unpackRelease(array $release, string $tmpDir, string $zipFile): string
     if ($zip->open($zipFile) !== true) {
         throw new RuntimeException('ZIP-Datei lässt sich nicht öffnen.');
     }
-    for ($i = 0; $i < $zip->numFiles; $i++) {
-        $name = (string) $zip->getNameIndex($i);
-        if (strpos($name, 'dochamster/') !== 0 || strpos($name, '..') !== false) {
-            throw new RuntimeException('Unerwarteter Inhalt im Paket.');
-        }
-    }
+    assertZipPaths($zip);
     if (! $zip->extractTo($tmpDir)) {
         throw new RuntimeException('Entpacken fehlgeschlagen (Speicherplatz?).');
     }
