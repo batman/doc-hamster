@@ -12,6 +12,26 @@
         root.classList.add(`nav-${saved}`);
     }
 
+    // Settings columns as remembered, before the first paint (Go 2026-11-07, A57): <html> gets
+    // data-col0/1 = open|closed and --col0-w/--col1-w; the CSS draws them, so nothing jumps.
+    // setupColumns takes over once the page is there and removes these marks again.
+    try {
+        const cols = JSON.parse(localStorage.getItem('dh-cols')) ?? {};
+        const widths = JSON.parse(localStorage.getItem('dh-col-widths')) ?? {};
+        const rem = 16;
+        [0, 1].forEach(i => {
+            if (cols[i] === 'open' || cols[i] === 'closed') {
+                root.dataset[`col${i}`] = cols[i];
+            }
+            if (cols[i] !== 'closed' && typeof widths[i] === 'number') {
+                root.style.setProperty(`--col${i}-w`, `${widths[i]}px`);
+                if (widths[i] < 12 * rem) {
+                    root.dataset[`col${i}Icons`] = '';
+                }
+            }
+        });
+    } catch { /* nothing remembered */ }
+
     const setupMenu = () => {
         const nav = document.getElementById('nav');
         if (!nav) {
@@ -350,6 +370,11 @@
             }
         });
         cols.addEventListener('animationend', event => event.target.classList.remove('is-opening'));
+        const dropEarlyMarks = () => [0, 1].forEach(i => {
+            delete root.dataset[`col${i}`];
+            delete root.dataset[`col${i}Icons`];
+            root.style.removeProperty(`--col${i}-w`);
+        });
 
         // Walls between the columns (Go 2026-11-07, points 11-13): drag a column wider or narrower. Narrow shows
         // only the icons, too narrow snaps to the strip like the arrow; a strip can be dragged open again.
@@ -379,6 +404,7 @@
                 size(i, widths[i]);
             }
         });
+        dropEarlyMarks();
         [0, 1].filter(foldable).forEach(i => {
             const wall = document.createElement('div');
             wall.className = 'col-wall';
@@ -492,10 +518,7 @@
             delete widths[i];
             keepWidths();
             try { localStorage.setItem(COLS, JSON.stringify(state)); } catch { /* not remembered */ }
-            if (desktop.matches && !still.matches && foldable(i)) {
-                event.preventDefault();
-                fold(i).then(() => { location.href = item.href; });
-            }
+            // The page change itself is soft (view transitions in the CSS, A58): the column glides into its strip.
         });
 
         cols.addEventListener('click', event => {

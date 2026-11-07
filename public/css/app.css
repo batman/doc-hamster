@@ -20,7 +20,7 @@
     --ok: #10a65b;
     --warning: #ffa100;
     --radius: 20px;
-    --shadow: 1px 3px 4px 2px #cccccc;
+    --shadow: 0 2px 6px rgb(0 0 0 / .12), 0 6px 18px rgb(0 0 0 / .1);
     --tooltip-bg: var(--secondary);
     --tooltip-text: var(--secondary-text);
     --space: 1rem;
@@ -29,7 +29,7 @@
 @media (prefers-color-scheme: dark) {
     :root {
         --primary-ink: #ff7622;
-        --shadow: 1px 3px 4px 2px rgb(0 0 0 / .5);
+        --shadow: 0 2px 6px rgb(0 0 0 / .45), 0 6px 18px rgb(0 0 0 / .35);
         --tooltip-bg: var(--text);
         --tooltip-text: var(--bg);
         --secondary: #1a1a18;
@@ -872,4 +872,37 @@ input[type="file"]::file-selector-button { border-radius: 10px; font-size: 1rem;
 .cols > .col.is-gliding { transition: width .25s cubic-bezier(.45, 0, .55, 1); overflow: hidden; }
 .cols > .col.is-gliding * { white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .cols > .col.is-gliding { transition: none; } }
+
+/* Columns drawn as remembered before the first paint (A57). Only where the column can fold. */
+@media (min-width: 64rem) {
+    html[data-col0="closed"] .cols > [data-col="0"]:has([data-fold="0"]),
+    html[data-col1="closed"] .cols > [data-col="1"]:has([data-fold="1"]) { display: none; }
+    html[data-col0="closed"] .cols:has(> [data-col="0"] [data-fold="0"]) > [data-strip="0"],
+    html[data-col1="closed"] .cols:has(> [data-col="1"] [data-fold="1"]) > [data-strip="1"] { display: flex; }
+    html[data-col0="open"] .cols > [data-col="0"]:has([data-fold="0"]),
+    html[data-col1="open"] .cols > [data-col="1"]:has([data-fold="1"]) { display: block; }
+    html[data-col0="open"] .cols:has(> [data-col="0"] [data-fold="0"]) > [data-strip="0"],
+    html[data-col1="open"] .cols:has(> [data-col="1"] [data-fold="1"]) > [data-strip="1"] { display: none; }
+    html[style*="--col0-w"] .cols > [data-col="0"]:has([data-fold="0"]) { width: var(--col0-w); }
+    html[style*="--col1-w"] .cols > [data-col="1"]:has([data-fold="1"]) { width: var(--col1-w); }
+    html[data-col0-icons] .cols > [data-col="0"]:has([data-fold="0"]) :is(.col-head h2, .col-item > span),
+    html[data-col1-icons] .cols > [data-col="1"]:has([data-fold="1"]) :is(.col-head h2, .col-item > span) { display: none; }
+    html[data-col0-icons] .cols > [data-col="0"]:has([data-fold="0"]) .col-item,
+    html[data-col1-icons] .cols > [data-col="1"]:has([data-fold="1"]) .col-item { justify-content: center; padding: 0; }
+}
+
+/* Soft page change (A58): the browser cross-fades to the next page and slides the menu and the
+   columns into their new width. A column and its strip share a name, so one turns into the other.
+   Browsers without it simply switch, without jumping. */
+@view-transition { navigation: auto; }
+@media (min-width: 64rem) {
+    .side:not(.side-plain) { view-transition-name: side; }
+    .cols > [data-col="0"], .cols > [data-strip="0"] { view-transition-name: col0; }
+    .cols > [data-col="1"], .cols > [data-strip="1"] { view-transition-name: col1; }
+    .cols > .col-page { view-transition-name: page; }
+}
+::view-transition-group(*) { animation-duration: .25s; animation-timing-function: cubic-bezier(.45, 0, .55, 1); }
+@media (prefers-reduced-motion: reduce) {
+    @view-transition { navigation: none; }
+}
 
