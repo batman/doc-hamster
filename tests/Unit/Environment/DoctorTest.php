@@ -147,3 +147,23 @@ it('turns off every tool-based add-on when proc_open is disabled, without failin
         ->and($doctor->isAvailable(Addon::Vips))->toBeTrue()
         ->and(Doctor::hasFailures($doctor->run()))->toBeFalse();
 });
+
+it('skips the database check in local-only mode, even when the database is down', function (): void {
+    $probe = new FakeSystemProbe;
+    $probe->databaseVersion = null;
+    $doctor = new Doctor($probe);
+
+    $keys = array_map(fn (CheckResult $result): string => $result->key, $doctor->run(localOnly: true));
+
+    expect($keys)->not->toContain('database')
+        ->and($keys)->toContain('php_version')
+        ->and($keys)->toContain('cron')
+        ->and(Doctor::hasFailures($doctor->run(localOnly: true)))->toBeFalse();
+});
+
+it('still fails on an unreachable database by default', function (): void {
+    $probe = new FakeSystemProbe;
+    $probe->databaseVersion = null;
+
+    expect(check($probe, 'database')->status)->toBe(CheckStatus::Fail);
+});
