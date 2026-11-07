@@ -444,6 +444,14 @@ label.tag-choice { color: inherit; }
 .detail-head h2 { margin: 0 auto 0 0; font-size: 1.25rem; overflow-wrap: anywhere; }
 .detail-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; }
 .detail-doc { height: 20rem; margin-bottom: .5rem; }
+.document-zoom { margin-bottom: .5rem; }
+.document-zoom-controls { display: flex; align-items: center; justify-content: flex-end; gap: .4rem; margin-bottom: .5rem; }
+.document-zoom-controls .icon-button { font-size: 1.25rem; font-weight: 700; }
+.document-zoom-controls .icon-button:disabled { cursor: default; opacity: .45; }
+.zoom-level { min-width: 3.5rem; text-align: center; font-variant-numeric: tabular-nums; }
+.zoom-reset { min-height: 2.75rem; padding-inline: .75rem; }
+.document-zoom-viewport { display: block; overflow: auto; touch-action: pan-x pan-y pinch-zoom; }
+.document-zoom-viewport.detail-doc .thumb { display: block; max-width: none; max-height: none; margin-inline: auto; object-fit: contain; }
 .detail-section { margin-top: 1.25rem; }
 .detail-section h3 { margin: 0 0 .5rem; font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .detail-section textarea { min-height: 6rem; max-width: none; }

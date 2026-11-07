@@ -294,3 +294,15 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done / next step: Merge after the updated PR's CI passes, then publish the stable update.
 - Watch out: Keep PR #87 open for the separate zoom preview.
 - Branch/PR: lead/BUG-DROP-1-preview (#86)
+
+## 2026-11-07 · Lead · UI-ZOOM-1
+- Done: Prepared the document preview zoom controls, zoom level and 100% reset. Image documents use their original file; PDF previews use their generated thumbnail. Added German and English labels.
+- Not done / next step: Browser/device verification and CI are pending before the preview can be offered.
+- Watch out: PDF zoom enlarges the generated thumbnail, so sharpness depends on its available resolution.
+- Branch/PR: lead/UI-ZOOM-1-preview
+
+## 2026-11-07 · Lead · UI-ZOOM-1 (CI)
+- Done: PR #87 passed lint, static analysis, license checks, secret scan, and tests on MariaDB and MySQL. The change contains no database or stored-file changes and can be returned to stable Main safely.
+- Not done / next step: The PO needs to test the zoom controls in the document view on the server.
+- Watch out: PDF zoom uses the generated thumbnail.
+- Branch/PR: lead/UI-ZOOM-1-preview (#87)
