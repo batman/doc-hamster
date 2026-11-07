@@ -104,8 +104,8 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | P1-1 | Project skeleton (Laravel, D-001), config, `.env.example`, `dochamster:doctor`/`setup` (no Docker, D-010), CI, gitleaks | Manager (PO override, issue #8) | done | PO go | Old repo PR #9; review findings in issue #4 |
 | P1-2 | Migrations: identity & access tables | Lead | done | P1-1 | Old repo PR #19 |
 | P1-3 | Layout, CSS base, i18n, error pages | Lead | done | P1-1 | Old repo PR #24 |
-| P1-4 | Setup CLI, invitations, pairing (link/QR), passkeys | Lead | todo | P1-2 | Interim: owner password login + `dochamster:owner` (old repo PR #27) until passkeys |
-| P1-5 | Device token rotation, device list, revoke, step-up | Lead | todo | P1-4 | |
+| P1-4 | Setup CLI, invitations, pairing (link/QR), passkeys | Lead (pairing part: Manager) | todo (pairing in review) | P1-2 | Interim: owner password login + `dochamster:owner` (old repo PR #27) until passkeys. Phone pairing by QR/short code handed to the Manager by the PO 2026-11-07 (#37), PR #89 |
+| P1-5 | Device token rotation, device list, revoke, step-up | Manager (device login, list, revoke) / Lead (rotation, step-up) | in review (first part) | P1-4 | PO 2026-11-07: phone connected once stays signed in; PR #89. Rotation with theft detection and step-up still open |
 | P1-6 | Org scope middleware, roles/policies, permission-matrix tests | Lead | done | P1-2 | Old repo PR #20 |
 | P1-7 | Security headers, CSRF, rate limiting, health endpoint | Lead | done | P1-1 | Old repo PR #21; proxy/scheme finding in issue #6 |
 | P1-8 | README install, HTTPS docs, backup docs v1 | Lead | todo | P1-1 | |

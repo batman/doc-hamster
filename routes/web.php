@@ -12,6 +12,7 @@ use App\Http\Controllers\FolderController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PhoneCheckController;
+use App\Http\Controllers\PhoneController;
 use App\Http\Controllers\PrintTrayController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ScanController;
@@ -47,6 +48,11 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('documents/{id}/tags', [DocumentController::class, 'updateTags'])->middleware('can:documents.edit')->name('documents.tags');
     Route::get('files/{id}', [DocumentController::class, 'file'])->name('documents.file');
     Route::get('phone-check/qr', [PhoneCheckController::class, 'qr'])->name('phone-check.qr');
+
+    // Handy verbinden: QR code once, then the phone stays signed in (PLAN §11.1).
+    Route::get('phone', [PhoneController::class, 'index'])->name('phone.index');
+    Route::post('phone/code', [PhoneController::class, 'start'])->middleware('throttle:10,1')->name('phone.start');
+    Route::post('phone/devices/{id}/revoke', [PhoneController::class, 'revoke'])->name('phone.revoke');
 
     // Druckerablage: what was printed on "Hamster" (print tray).
     Route::middleware('can:documents.upload')->prefix('print-tray')->name('print-tray.')->group(function (): void {
@@ -136,6 +142,10 @@ Route::middleware(['auth', 'org'])->group(function (): void {
 
 // A receipt handed out by link (A4): no login, until it expires or is revoked.
 Route::get('s/{token}', [ShareController::class, 'open'])->middleware('throttle:30,1')->name('shares.open');
+
+// The phone opens the QR code here; signed in or not (PhoneController::connect).
+Route::get('connect/{code?}', [PhoneController::class, 'connectForm'])->where('code', '[A-Za-z0-9-]{1,20}')->name('phone.connect');
+Route::post('connect', [PhoneController::class, 'connect'])->middleware('throttle:pairing')->name('phone.connect.save');
 
 // Temporary device probe (#37): open like the later home-screen page, holds no data.
 Route::get('phone-check', [PhoneCheckController::class, 'show'])->name('phone-check');

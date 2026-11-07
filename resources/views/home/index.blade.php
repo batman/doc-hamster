@@ -8,6 +8,10 @@
         <button type="button" class="icon-button" data-dialog-open="note-new" aria-label="{{ __('home.new') }}" data-tooltip="{{ __('home.new') }}"><x-icon name="plus" /></button>
     </div>
 
+    @if ($connectPhone)
+        <p class="notice"><x-icon name="device-mobile" /> {{ __('phone.home_hint') }} <a href="{{ route('phone.index') }}">{{ __('phone.start') }}</a></p>
+    @endif
+
     <datalist id="note-documents">
         @foreach ($documents as $document)
             <option value="{{ $document->title }}"></option>

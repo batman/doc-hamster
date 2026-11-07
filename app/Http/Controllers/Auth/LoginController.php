@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Auth;
 
+use App\Domain\Auth\Device;
+use App\Domain\Auth\DeviceLogin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,12 +32,18 @@ final class LoginController extends Controller
         return redirect()->intended(route('home'));
     }
 
-    public function logout(Request $request): RedirectResponse
+    /** Signing out on a connected phone also ends its device login; it has to be connected again. */
+    public function logout(Request $request, DeviceLogin $devices): RedirectResponse
     {
+        $deviceId = $request->session()->get(DeviceLogin::SESSION_KEY);
+        if (is_string($deviceId)) {
+            Device::query()->whereKey($deviceId)->whereNull('revoked_at')->update(['revoked_at' => now()]);
+        }
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login');
+        return redirect()->route('login')->withCookie($devices->forget($request));
     }
 }

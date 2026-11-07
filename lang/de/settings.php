@@ -26,6 +26,7 @@ return [
         'export' => ['title' => 'Export', 'text' => 'Belege als ZIP, zum Beispiel für den Steuerberater'],
         'shares' => ['title' => 'Links', 'text' => 'Gültigkeit und gültige Links zum Versenden'],
         'update' => ['title' => 'Update', 'text' => 'Neue Version suchen und installieren'],
-        'phone' => ['title' => 'Handy-Test', 'text' => 'Prüfen, ob dein Handy alles kann'],
+        'phone' => ['title' => 'Handy verbinden', 'text' => 'Handy einmal verbinden, dann bleibt es angemeldet'],
+        'phone_check' => ['title' => 'Handy-Test', 'text' => 'Prüfen, ob dein Handy alles kann'],
     ],
 ];

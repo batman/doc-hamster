@@ -22,6 +22,7 @@ return [
         'export' => ['title' => 'Export', 'text' => 'Receipts as ZIP, for example for the tax advisor'],
         'shares' => ['title' => 'Links', 'text' => 'Validity and valid links for sending'],
         'update' => ['title' => 'Update', 'text' => 'Look for a new version and install it'],
-        'phone' => ['title' => 'Phone test', 'text' => 'Check whether your phone can do everything'],
+        'phone' => ['title' => 'Connect phone', 'text' => 'Connect your phone once, then it stays signed in'],
+        'phone_check' => ['title' => 'Phone test', 'text' => 'Check whether your phone can do everything'],
     ],
 ];
