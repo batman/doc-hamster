@@ -812,3 +812,6 @@ button.col-strip:hover > .icon { color: var(--primary-ink); }
 .phone-rename > summary { cursor: pointer; list-style: none; }
 .phone-rename form { display: flex; gap: .4rem; margin-top: .4rem; }
 .camera-offline { position: absolute; top: calc(1rem + env(safe-area-inset-top)); left: 1rem; right: 1rem; margin: 0; padding: .6rem 1rem; border-radius: var(--radius); background: rgb(0 0 0 / .6); color: #fff; }
+.phone-row-print { margin: 0; }
+.phone-row-print button { display: flex; padding: .75rem; }
+.phone-row-print .icon { width: 1.4rem; height: 1.4rem; }

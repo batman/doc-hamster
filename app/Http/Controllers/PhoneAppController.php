@@ -37,7 +37,7 @@ final class PhoneAppController
     }
 
     /** Dokumente: the folders of one level and the documents in the open folder. */
-    public function documents(Request $request, CurrentOrg $org): View
+    public function documents(Request $request, CurrentOrg $org, NetworkPrinter $printer): View
     {
         $rows = collect(Folder::flat());
         $wanted = $request->query('folder');
@@ -61,6 +61,7 @@ final class PhoneAppController
             'allFolders' => $rows->all(),
             'documents' => $documents,
             'scanReady' => $this->scanReady($org),
+            'canPrint' => $printer->available(),
             'back' => route('app.documents', array_filter(['folder' => $current?->id]), false),
         ]);
     }

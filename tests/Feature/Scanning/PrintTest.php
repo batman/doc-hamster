@@ -81,6 +81,20 @@ it('prints straight on the printer in the home network', function (): void {
         && $request->header('Content-Type')[0] === 'application/ipp');
 });
 
+it('prints straight from the Dokumente list of the phone app and stays there', function (): void {
+    $this->get('/app/documents')->assertOk()->assertDontSee(route('documents.print', $this->file->id));
+
+    connectDirectPrinter($this->owner);
+    Http::fake(['http://192.168.0.20:631/ipp/print' => Http::sequence()
+        ->push(ippAnswer(0, ['image/jpeg']), 200, ['Content-Type' => 'application/ipp'])
+        ->push(ippAnswer(0), 200, ['Content-Type' => 'application/ipp'])]);
+
+    $this->get('/app/documents')->assertOk()->assertSee(route('documents.print', $this->file->id));
+    $this->post('/files/'.$this->file->id.'/print', ['app_back' => '/app/documents'])
+        ->assertRedirect('/app/documents')->assertSessionHas('status', __('print.sent'));
+    Http::assertSentCount(2);
+});
+
 it('says so when the printer cannot print the file', function (): void {
     connectDirectPrinter($this->owner);
     Http::fake(['http://192.168.0.20:631/ipp/print' => Http::response(ippAnswer(0, ['image/pwg-raster']), 200, ['Content-Type' => 'application/ipp'])]);

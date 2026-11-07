@@ -69,6 +69,14 @@
                     @endif
                     <span>{{ $document->title }}<small class="muted">{{ $document->created_at?->format('d.m.Y') }}</small></span>
                 </a>
+                @if ($canPrint && $file)
+                    {{-- A21: print straight from the list, without opening the document. --}}
+                    <form class="phone-row-print" method="post" action="{{ route('documents.print', $file->id) }}">
+                        @csrf
+                        <input type="hidden" name="app_back" value="{{ $back }}">
+                        <button type="submit" class="button-quiet" aria-label="{{ __('app.docs.print_named', ['name' => $document->title]) }}"><x-icon name="printer" /></button>
+                    </form>
+                @endif
             </li>
         @endforeach
     </ul>

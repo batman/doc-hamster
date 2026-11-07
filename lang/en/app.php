@@ -47,6 +47,7 @@ return [
         'download' => 'Download',
         'share' => 'Share',
         'print' => 'Print',
+        'print_named' => 'Print ":name"',
         'name' => 'Name',
         'no_folder' => 'No folder',
         'delete' => 'Delete',

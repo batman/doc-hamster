@@ -47,6 +47,7 @@ return [
         'download' => 'Herunterladen',
         'share' => 'Teilen',
         'print' => 'Drucken',
+        'print_named' => '„:name“ drucken',
         'name' => 'Name',
         'no_folder' => 'Kein Ordner',
         'delete' => 'Löschen',
