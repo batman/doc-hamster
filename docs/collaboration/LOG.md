@@ -282,3 +282,9 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done / next step: Browser/device reproduction and CI are pending before the preview can be offered.
 - Watch out: This change does not add file-content deduplication.
 - Branch/PR: lead/BUG-DROP-1-preview
+
+## 2026-11-07 · Lead · BUG-DROP-1 (preview ready)
+- Done: PR #86 passed lint, static analysis, license checks, secret scan, and tests on MariaDB and MySQL. The preview release package is published after the publisher workflow fix.
+- Not done / next step: The PO still needs to reproduce the original light upward drag on the server and confirm no copy is created.
+- Watch out: None.
+- Branch/PR: lead/BUG-DROP-1-preview (#86)
