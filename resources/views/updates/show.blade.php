@@ -59,16 +59,20 @@
                 </form>
             </h2>
             <p class="card-text">{{ __('updates.preview_explain') }}</p>
-            <form method="post" action="{{ route('updates.install-preview') }}" data-preview-form>
-                @csrf
-                <input type="hidden" name="confirm_preview" value="1">
-                <div id="preview-list">@include('updates._previews', ['branches' => $previewBranches])</div>
-                <p class="card-note">{{ __('updates.preview_warning') }}</p>
-                <button type="button" data-dialog-open="update-preview" data-preview-open data-label="{{ __('updates.preview_install_number', ['number' => '__N__']) }}" disabled>{{ __('updates.preview_install') }}</button>
+            <div id="preview-list">@include('updates._previews', ['branches' => $previewBranches])</div>
+        </section>
+    @endcan
 
-                <div class="dialog-backdrop" data-dialog="update-preview" hidden>
-                    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="update-preview-title">
-                        <h2 id="update-preview-title" data-preview-title>{{ __('updates.preview_install') }}</h2>
+    @if ($supported)
+        @can('system.update_preview')
+            <div class="dialog-backdrop" data-dialog="update-preview" hidden>
+                <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="update-preview-title">
+                    <form method="post" action="{{ route('updates.install-preview') }}">
+                        @csrf
+                        <input type="hidden" name="confirm_preview" value="1">
+                        <input type="hidden" name="preview_pr" value="" data-preview-pr-field>
+                        <h2 id="update-preview-title" data-dialog-heading>{{ __('updates.preview_install') }}</h2>
+                        <p>{{ __('updates.preview_warning') }}</p>
                         <p>{{ __('updates.password_hint') }}</p>
                         <label for="preview-password" class="visually-hidden">{{ __('exports.password') }}</label>
                         <input id="preview-password" type="password" name="password" autocomplete="current-password" placeholder="{{ __('exports.password') }}" required>
@@ -76,13 +80,10 @@
                             <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
                             <button type="submit">{{ __('updates.install_short') }}</button>
                         </div>
-                    </div>
+                    </form>
                 </div>
-            </form>
-        </section>
-    @endcan
-
-    @if ($supported)
+            </div>
+        @endcan
         @foreach (['update-release' => route('updates.install'), 'update-main' => route('updates.install-main')] as $key => $action)
             <div class="dialog-backdrop" data-dialog="{{ $key }}" hidden>
                 <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="{{ $key }}-title">

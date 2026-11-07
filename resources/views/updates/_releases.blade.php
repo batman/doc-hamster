@@ -9,7 +9,9 @@
             <li class="pick-row is-static">
                 <x-icon name="cloud-download" />
                 <span><strong>{{ __('updates.version_row', ['version' => $release['version']]) }}</strong><small>{{ $release['main'] ? __('updates.main_hint') : __('updates.keeps_data') }}</small></span>
-                @if ($supported ?? false)
+                @if ($release['version'] === (string) config('dochamster.version'))
+                    <span class="tag-outline">{{ __('updates.installed_label') }}</span>
+                @elseif ($supported ?? false)
                 <button type="button" class="button-small" data-dialog-open="update-{{ $release['main'] ? 'main' : 'release' }}" data-dialog-title="{{ __('updates.install_version', ['version' => $release['version']]) }}">{{ __('updates.install_short') }}</button>
                 @endif
             </li>

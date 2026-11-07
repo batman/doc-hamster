@@ -39,4 +39,5 @@ return [
     'main_hint' => 'Main, the recommended version',
     'install_version' => 'Install version :version',
     'preview_label' => 'Preview',
+    'installed_label' => 'Installed',
 ];

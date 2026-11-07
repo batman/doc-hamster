@@ -443,16 +443,58 @@
             });
         });
 
-        // A click on an entry takes its column down to the icons on the next page (point 12, A42, A43).
+        // Soft width changes (Go 2026-11-07, points 16-19): the arrow opens a column to its widest, folding and the
+        // automatic minimizing shrink it to the strip; ease-in-out, nothing moves with "reduce motion".
+        const still = matchMedia('(prefers-reduced-motion: reduce)');
+        const STRIP = 3.5 * rem;
+        const glide = (p, from, to) => new Promise(done => {
+            if (still.matches || !desktop.matches) {
+                done();
+                return;
+            }
+            p.style.width = `${from}px`;
+            p.classList.add('is-gliding');
+            p.getBoundingClientRect();
+            p.style.width = `${to}px`;
+            const end = () => {
+                p.classList.remove('is-gliding');
+                done();
+            };
+            p.addEventListener('transitionend', end, { once: true });
+            setTimeout(end, 400);
+        });
+        const fold = i => glide(pane(i), pane(i).offsetWidth, STRIP).then(() => {
+            set(i, false, false);
+            size(i, undefined);
+            delete widths[i];
+            keepWidths();
+        });
+        const unfold = i => {
+            const max = limits(i)[1];
+            set(i, true, false);
+            pane(i).classList.remove('is-icons');
+            return glide(pane(i), STRIP, max).then(() => {
+                size(i, max);
+                widths[i] = max;
+                keepWidths();
+            });
+        };
+
+        // A click on an entry folds its column to the strip before the next page opens (point 16).
         cols.addEventListener('click', event => {
             const item = event.target.closest('a.col-item');
             const col = item?.closest('[data-col]');
-            if (item && col && desktop.matches) {
-                const i = Number(col.dataset.col);
-                widths[i] = ICONS;
-                state[i] = 'open';
-                keepWidths();
-                try { localStorage.setItem(COLS, JSON.stringify(state)); } catch { /* not remembered */ }
+            if (!item || !col || event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) {
+                return;
+            }
+            const i = Number(col.dataset.col);
+            state[i] = 'closed';
+            delete widths[i];
+            keepWidths();
+            try { localStorage.setItem(COLS, JSON.stringify(state)); } catch { /* not remembered */ }
+            if (desktop.matches && !still.matches && foldable(i)) {
+                event.preventDefault();
+                fold(i).then(() => { location.href = item.href; });
             }
         });
 
@@ -460,16 +502,14 @@
             const folder = event.target.closest('[data-fold]');
             if (folder) {
                 const i = Number(folder.dataset.fold);
-                set(i, false);
-                strip(i).focus();
+                fold(i).then(() => strip(i).focus());
                 return;
             }
             const opener = event.target.closest('[data-strip]');
             if (opener) {
                 const i = Number(opener.dataset.strip);
-                set(i, true);
                 opened.push(i);
-                pane(i).querySelector('[data-fold]')?.focus();
+                unfold(i).then(() => pane(i).querySelector('[data-fold]')?.focus());
             }
         });
         // Capture phase: runs before dialogs and dropdowns close themselves on the same key.
@@ -481,8 +521,7 @@
             while (opened.length > 0) {
                 const i = opened.pop();
                 if (!pane(i).hidden) {
-                    set(i, false);
-                    strip(i).focus();
+                    fold(i).then(() => strip(i).focus());
                     return;
                 }
             }
@@ -654,25 +693,15 @@
         });
     };
 
-    // Update page: the install button wakes up once a preview row is picked and names it.
+    // Update page: a row's "Installieren" puts its pull request number into the password dialog (A54).
     const setupPreviewPick = () => {
-        const form = document.querySelector('[data-preview-form]');
-        if (!form) {
-            return;
-        }
-        const open = form.querySelector('[data-preview-open]');
-        const title = form.querySelector('[data-preview-title]');
-        const label = open.textContent;
-        form.addEventListener('change', () => {
-            const picked = form.querySelector('input[name="preview_pr"]:checked');
-            open.disabled = picked === null;
-            if (!picked) {
-                open.textContent = label;
-            } else {
-                open.textContent = open.dataset.label.replace('__N__', picked.value);
-                title.textContent = open.textContent;
+        document.addEventListener('click', event => {
+            const button = event.target.closest('[data-preview-pr]');
+            const field = document.querySelector('[data-preview-pr-field]');
+            if (button && field) {
+                field.value = button.dataset.previewPr;
             }
-        });
+        }, { capture: true });
     };
 
     // Forms with data-ajax="#target" send in the background and put the returned list into the target,
