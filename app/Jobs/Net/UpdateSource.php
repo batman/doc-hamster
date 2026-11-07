@@ -20,8 +20,11 @@ use RuntimeException;
 final class UpdateSource
 {
     private const RELEASES = 'https://api.github.com/repos/batman/doc-hamster/releases?per_page=20';
+
     private const PULLS = 'https://api.github.com/repos/batman/doc-hamster/pulls';
+
     private const REPO = 'batman/doc-hamster';
+
     private const PREVIEW_LABEL = 'preview-ready';
 
     /**
