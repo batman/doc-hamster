@@ -300,3 +300,9 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done / next step: Browser/device verification and CI are pending before the preview can be offered.
 - Watch out: PDF zoom enlarges the generated thumbnail, so sharpness depends on its available resolution.
 - Branch/PR: lead/UI-ZOOM-1-preview
+
+## 2026-11-07 · Lead · UI-ZOOM-1 (CI)
+- Done: PR #87 passed lint, static analysis, license checks, secret scan, and tests on MariaDB and MySQL. The change contains no database or stored-file changes and can be returned to stable Main safely.
+- Not done / next step: The PO needs to test the zoom controls in the document view on the server.
+- Watch out: PDF zoom uses the generated thumbnail.
+- Branch/PR: lead/UI-ZOOM-1-preview (#87)
