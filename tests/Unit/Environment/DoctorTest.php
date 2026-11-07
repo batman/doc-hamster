@@ -52,8 +52,10 @@ it('fails when memory or upload limits are too small', function (string $key, in
     expect(check($probe, $key)->status)->toBe(CheckStatus::Fail);
 })->with([
     'memory_limit 128 MB' => ['memory_limit', 128 * 1024 * 1024],
+    'memory_limit 0 (malformed value)' => ['memory_limit', 0],
     'upload_max_filesize 2 MB' => ['upload_max_filesize', 2 * 1024 * 1024],
     'upload_max_filesize 0 (no uploads)' => ['upload_max_filesize', 0],
+    'upload_max_filesize -2 (nonsense value)' => ['upload_max_filesize', -2],
     'post_max_size 8 MB' => ['post_max_size', 8 * 1024 * 1024],
 ]);
 
