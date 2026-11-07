@@ -270,3 +270,9 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done / next step: The app owner can now use “Nach Updates suchen” and install v0.1.18. The `preview.yml` package job is active for newly labelled eligible PRs.
 - Watch out: None.
 - Branch/PR: `main`, tag `v0.1.18`; PR #85
+
+## 2026-11-07 · Lead · PREVIEW-PUBLISHER
+- Done: Fixed the preview release publisher and cleanup commands to select the repository explicitly, since these jobs do not check out the repository.
+- Not done / next step: Verify CI, merge the fix and re-trigger preview builds for the open test PRs.
+- Watch out: Preview releases are still created only for same-repository open PRs labelled `preview-ready`.
+- Branch/PR: lead/PREVIEW-PUBLISHER-repo-context

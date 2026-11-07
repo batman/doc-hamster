@@ -96,8 +96,8 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           TAG: ${{ needs.package.outputs.tag }}
         run: |
-          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
-          gh release create "$TAG" --title "DocHamster preview PR #${PR_NUMBER}" --prerelease \
+          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "DocHamster preview PR #${PR_NUMBER}" --prerelease \
             --notes "Preview package for the open PR. Do not use as a production release." \
             preview/dochamster-preview.zip preview/manifest.json preview/install.php
 
@@ -114,4 +114,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: gh release delete "preview-pr-${PR_NUMBER}" --yes --cleanup-tag 2>/dev/null || true
+        run: gh release delete "preview-pr-${PR_NUMBER}" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
