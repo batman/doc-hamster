@@ -65,3 +65,53 @@ it('asks for address and database credentials, then finishes the installation', 
     Organization::query()->whereKey($owner->memberships()->pluck('org_id'))->delete();
     $owner->delete();
 })->group('db');
+
+it('writes a fresh app key to .env when none is set', function (): void {
+    config(['app.key' => '', 'database.connections.'.config('database.default').'.host' => 'db.invalid']);
+
+    $this->artisan('dochamster:setup', ['--no-interaction' => true])
+        ->assertExitCode(1);
+
+    $stored = Dotenv::parse((string) file_get_contents($this->envPath));
+    $key = $stored['APP_KEY'] ?? '';
+    $raw = str_starts_with($key, 'base64:') ? base64_decode(substr($key, 7), true) : false;
+
+    expect($raw)->not->toBeFalse()
+        ->and(strlen((string) $raw))->toBe(32)
+        ->and(config('app.key'))->toBe($key)
+        ->and($stored)->not->toHaveKey('DOCHAMSTER_INSTALLED');
+});
+
+it('stops with a translated error when the app key cannot be saved', function (): void {
+    $dir = sys_get_temp_dir().'/dochamster-env-'.uniqid();
+    mkdir($dir);
+    mkdir($dir.'/.env.tmp'); // blocks the atomic .env write
+    $this->app->instance(EnvFile::class, new EnvFile($dir.'/.env'));
+    config(['app.key' => '']);
+
+    try {
+        $this->artisan('dochamster:setup', ['--no-interaction' => true])
+            ->expectsOutputToContain(__('setup.key_failed', ['path' => $dir.'/.env']))
+            ->doesntExpectOutputToContain('base64:')
+            ->assertExitCode(1);
+
+        $stored = Dotenv::parse((string) file_get_contents($dir.'/.env'));
+
+        expect($stored['APP_KEY'] ?? '')->toBe('')
+            ->and($stored['DOCHAMSTER_INSTALLED'] ?? null)->not->toBe('true');
+    } finally {
+        @unlink($dir.'/.env');
+        @rmdir($dir.'/.env.tmp');
+        @rmdir($dir);
+    }
+});
+
+it('leaves an existing app key alone', function (): void {
+    config(['app.key' => 'base64:'.base64_encode(str_repeat('k', 32))]);
+    config(['database.connections.'.config('database.default').'.host' => 'db.invalid']);
+
+    $this->artisan('dochamster:setup', ['--no-interaction' => true])
+        ->assertExitCode(1);
+
+    expect(file_get_contents($this->envPath))->toBe('');
+});
