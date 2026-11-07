@@ -42,6 +42,7 @@
             <li class="note note-{{ $color }} @if ($note->locked) is-locked @endif"
                 @if ($open) data-note-look="{{ route('notes.look', $note->id) }}" @endif
                 @if ($note->pos_x !== null && $note->pos_y !== null) data-x="{{ $note->pos_x }}" data-y="{{ $note->pos_y }}" @endif
+                @if ($note->width !== null && $note->height !== null) data-w="{{ $note->width }}" data-h="{{ $note->height }}" @endif
                 @if ($note->opacity !== null) data-opacity="{{ $note->opacity }}" @endif>
                 <div class="note-head">
                     <span class="note-title">{{ $note->title ?: __('home.untitled') }}</span>
@@ -53,23 +54,11 @@
                     @endif
                 </div>
 
-                <div class="note-content">
-                    @if ($note->body)
-                        <p class="note-body">{{ $note->body }}</p>
-                    @endif
-
-                    @if ($note->checklist)
-                        <form method="post" action="{{ route('notes.check', $note->id) }}" data-autosubmit>
-                            @csrf
-                            <ul class="note-checklist">
-                                @foreach ($note->checklist as $i => $item)
-                                    <li><label><input type="checkbox" name="done[]" value="{{ $i }}" @checked($item['done']) @disabled(! $open)> <span>{{ $item['text'] }}</span></label></li>
-                                @endforeach
-                            </ul>
-                            @if ($open)
-                                <noscript><button type="submit">{{ __('home.save') }}</button></noscript>
-                            @endif
-                        </form>
+                {{-- Double click edits the text right here (app.js); the raw text waits in the template. --}}
+                <div class="note-content" @if ($open) data-note-text="{{ route('notes.text', $note->id) }}" title="{{ __('home.dblclick') }}" @endif>
+                    <div class="note-text">@include('home._body', ['note' => $note, 'open' => $open])</div>
+                    @if ($open)
+                        <template data-note-raw>{{ $note->body }}</template>
                     @endif
 
                     @if ($note->documents->isNotEmpty())

@@ -2,11 +2,14 @@
 <label for="title-{{ $key }}">{{ __('home.note_title') }}</label>
 <input id="title-{{ $key }}" name="title" maxlength="100" value="{{ $note?->title }}" placeholder="{{ __('home.untitled') }}">
 
-<label for="body-{{ $key }}">{{ __('home.body') }}</label>
-<textarea id="body-{{ $key }}" name="body" rows="3">{{ $note?->body }}</textarea>
-
-<label for="checklist-{{ $key }}">{{ __('home.checklist') }}</label>
-<textarea id="checklist-{{ $key }}" name="checklist" rows="3" placeholder="{{ __('home.checklist_hint') }}">{{ collect($note?->checklist ?? [])->map(fn ($item) => ($item['done'] ? '[x] ' : '').$item['text'])->implode("\n") }}</textarea>
+{{-- The text is written here only for a new note; afterwards it is changed on the note (double click). --}}
+@if ($note === null)
+    <label for="body-{{ $key }}">{{ __('home.body') }}</label>
+    <textarea id="body-{{ $key }}" name="body" rows="4"></textarea>
+@else
+    <p class="note-hint">{{ __('home.text_hint') }}</p>
+@endif
+<p class="note-hint">{{ __('home.list_hint') }}</p>
 
 <label for="link-{{ $key }}">{{ __('home.link') }}</label>
 <input id="link-{{ $key }}" name="link" list="note-documents" autocomplete="off" placeholder="{{ __('home.link_hint') }}">
@@ -27,6 +30,7 @@
 <input id="opacity-{{ $key }}" class="note-opacity" type="range" name="opacity" min="30" max="100" step="5" value="{{ $note?->opacity ?? 100 }}">
 
 @if ($canShare && ($note === null || $note->user_id === $userId))
-    <label><input type="checkbox" name="shared" value="1" @checked($note?->shared)> {{ __('home.share') }}</label>
-    <label><input type="checkbox" name="editable" value="1" @checked($note?->editable)> {{ __('home.let_edit') }}</label>
+    {{-- A new note is for everyone and changeable by default (Go of 2026-11-07). --}}
+    <label><input type="checkbox" name="shared" value="1" @checked($note?->shared ?? true)> {{ __('home.share') }}</label>
+    <label><input type="checkbox" name="editable" value="1" @checked($note?->editable ?? true)> {{ __('home.let_edit') }}</label>
 @endif

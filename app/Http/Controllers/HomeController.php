@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Documents\Document;
 use App\Domain\Notes\Note;
+use App\Domain\Notes\NoteText;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
 use Illuminate\Contracts\View\View;
@@ -18,8 +19,8 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 /**
- * Home: sticky notes (collected 2026-11-03). Text, a checklist and links to
- * receipts. A note is private; with the right "Notizen für alle zeigen" its
+ * Home: sticky notes (collected 2026-11-03). Text with inline lists
+ * ("[Milch, #Brot]", NoteText) and links to receipts. A note is private; with the right "Notizen für alle zeigen" its
  * author shows it to everyone and decides whether others may change it.
  */
 final class HomeController
@@ -60,8 +61,8 @@ final class HomeController
     }
 
     /**
-     * The look of a note: place on the board (dragged), colour, opacity,
-     * lock. Only the fields sent change. A locked note only unlocks.
+     * The look of a note: place and size on the board (dragged), colour,
+     * opacity, lock. Only the fields sent change. A locked note only unlocks.
      */
     public function look(Request $request, string $id, CurrentOrg $org): JsonResponse|RedirectResponse
     {
@@ -69,6 +70,8 @@ final class HomeController
         $data = $request->validate([
             'x' => ['sometimes', 'integer', 'min:0', 'max:20000'],
             'y' => ['sometimes', 'integer', 'min:0', 'max:20000'],
+            'w' => ['sometimes', 'integer', 'min:160', 'max:4000'],
+            'h' => ['sometimes', 'integer', 'min:120', 'max:4000'],
             'color' => ['sometimes', Rule::in(Note::COLORS)],
             'opacity' => ['sometimes', 'integer', 'min:30', 'max:100'],
             'locked' => ['sometimes', 'boolean'],
@@ -78,6 +81,8 @@ final class HomeController
         $note->fill(array_filter([
             'pos_x' => $data['x'] ?? null,
             'pos_y' => $data['y'] ?? null,
+            'width' => $data['w'] ?? null,
+            'height' => $data['h'] ?? null,
             'color' => $data['color'] ?? null,
             'opacity' => $data['opacity'] ?? null,
         ], static fn (mixed $value): bool => $value !== null));
@@ -89,19 +94,36 @@ final class HomeController
         return $request->expectsJson() ? response()->json(['ok' => true]) : redirect()->route('home');
     }
 
-    /** Ticks from the checklist; whoever may change the note may tick (A8). */
-    public function check(Request $request, string $id, CurrentOrg $org): RedirectResponse
+    /**
+     * Ticks or unticks one list entry by setting or removing its "#" in the
+     * text; whoever may change the note may tick (A8). 409 when the entry
+     * was changed meanwhile.
+     */
+    public function check(Request $request, string $id, CurrentOrg $org): JsonResponse|RedirectResponse
     {
         $note = $this->editable($id, $org, unlocked: true);
-        $done = array_map('intval', (array) $request->input('done', []));
+        $data = $request->validate([
+            'list' => ['required', 'integer', 'min:0'],
+            'item' => ['required', 'integer', 'min:0'],
+            'text' => ['required', 'string', 'max:5000'],
+        ]);
+        $body = NoteText::toggle((string) $note->body, (int) $data['list'], (int) $data['item'], (string) $data['text']);
+        abort_if($body === null, 409);
+        $note->update(['body' => $body]);
 
-        $note->update(['checklist' => array_map(
-            static fn (array $item, int $i): array => ['text' => $item['text'], 'done' => in_array($i, $done, true)],
-            $note->checklist ?? [],
-            array_keys($note->checklist ?? []),
-        )]);
+        return $request->expectsJson() ? response()->json(['body' => $body]) : redirect()->route('home');
+    }
 
-        return redirect()->route('home');
+    /** The text, changed right on the note (double click). Answers with the new content for the board. */
+    public function text(Request $request, string $id, CurrentOrg $org): JsonResponse|RedirectResponse
+    {
+        $note = $this->editable($id, $org, unlocked: true);
+        $data = $request->validate(['body' => ['nullable', 'string', 'max:5000']]);
+        $note->update(['body' => ($data['body'] ?? '') === '' ? null : $data['body']]);
+
+        return $request->expectsJson()
+            ? response()->json(['html' => view('home._body', ['note' => $note, 'open' => true])->render()])
+            : redirect()->route('home');
     }
 
     public function destroy(string $id, CurrentOrg $org): RedirectResponse
@@ -116,7 +138,6 @@ final class HomeController
         $data = $request->validate([
             'title' => ['nullable', 'string', 'max:100'],
             'body' => ['nullable', 'string', 'max:5000'],
-            'checklist' => ['nullable', 'string', 'max:5000'],
             'link' => ['nullable', 'string', 'max:250'],
             'unlink' => ['array'],
             'color' => ['nullable', Rule::in(Note::COLORS)],
@@ -124,15 +145,12 @@ final class HomeController
         ]);
         $isAuthor = $note->user_id === $request->user()?->getAuthIdentifier();
 
-        // One line per item; "[x] " in front marks it done.
-        $lines = array_filter(array_map('trim', preg_split('/\R/', (string) ($data['checklist'] ?? '')) ?: []), static fn (string $line): bool => $line !== '');
-        $checklist = array_values(array_map(static fn (string $line): array => [
-            'text' => (string) preg_replace('/^\[[xX ]?\]\s*/', '', $line),
-            'done' => preg_match('/^\[[xX]\]/', $line) === 1,
-        ], $lines));
-
+        // The edit dialog has no text (it is changed on the note itself), so the text only changes when sent.
+        if ($request->exists('body')) {
+            $note->body = $data['body'] ?? null;
+        }
         $note->fill([
-            'title' => $data['title'] ?? null, 'body' => $data['body'] ?? null, 'checklist' => $checklist,
+            'title' => $data['title'] ?? null,
             'color' => $data['color'] ?? $note->color, 'opacity' => $data['opacity'] ?? $note->opacity, 'locked' => $request->boolean('locked'),
         ]);
         // Only the author decides who sees and changes it, and only with the right.

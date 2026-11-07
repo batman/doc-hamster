@@ -31,19 +31,30 @@ it('keeps a quick note private, and with the right shows it to everyone', functi
     expect(Note::query()->withoutGlobalScope(OrgScope::class)->firstOrFail()->shared)->toBeFalse();
 
     $this->actingAs($this->admin->user)->get('/')->assertOk()->assertDontSee('Nur für mich');
-    $this->post('/notes', ['body' => 'Für alle', 'shared' => 1, 'checklist' => "Milch\n[x] Brot", 'link' => 'bon.jpg'])->assertRedirect();
+    $this->post('/notes', ['body' => 'Für alle [Milch, #Brot]', 'shared' => 1, 'link' => 'bon.jpg'])->assertRedirect();
 
-    $note = Note::query()->withoutGlobalScope(OrgScope::class)->where('body', 'Für alle')->firstOrFail();
-    expect($note->checklist)->toEqual([['text' => 'Milch', 'done' => false], ['text' => 'Brot', 'done' => true]])
-        ->and($note->documents()->pluck('documents.id')->all())->toBe([$this->doc->id]);
+    $note = Note::query()->withoutGlobalScope(OrgScope::class)->where('body', 'like', 'Für alle%')->firstOrFail();
+    expect($note->documents()->pluck('documents.id')->all())->toBe([$this->doc->id]);
 
     // The clerk may not see the Admin's receipt, so the shared note doesn't name it (#56).
     $this->actingAs($clerk->user)->get('/')->assertSee('Für alle')->assertDontSee('bon.jpg');
-    $this->post('/notes/'.$note->id.'/check', ['done' => [0]])->assertForbidden();
+    $this->post('/notes/'.$note->id.'/check', ['list' => 0, 'item' => 0, 'text' => 'Milch'])->assertForbidden();
 
-    $this->actingAs($this->admin->user)->post('/notes/'.$note->id, ['body' => 'Für alle', 'shared' => 1, 'editable' => 1, 'checklist' => "Milch\n[x] Brot"]);
-    $this->actingAs($clerk->user)->post('/notes/'.$note->id.'/check', ['done' => [0, 1]])->assertRedirect();
-    expect(array_column($note->fresh()->checklist, 'done'))->toBe([true, true]);
+    // The edit dialog sends no text, so the text stays.
+    $this->actingAs($this->admin->user)->post('/notes/'.$note->id, ['shared' => 1, 'editable' => 1]);
+    $this->actingAs($clerk->user)->postJson('/notes/'.$note->id.'/check', ['list' => 0, 'item' => 0, 'text' => 'Milch'])->assertJson(['body' => 'Für alle [#Milch, #Brot]']);
+    $this->postJson('/notes/'.$note->id.'/check', ['list' => 0, 'item' => 1, 'text' => 'Butter'])->assertStatus(409);
+});
+
+it('changes the text on the note and keeps its size', function (): void {
+    $this->actingAs($this->admin->user)->post('/notes', ['body' => 'alt']);
+    $note = Note::query()->withoutGlobalScope(OrgScope::class)->firstOrFail();
+
+    $this->postJson('/notes/'.$note->id.'/text', ['body' => 'neu [x, #y]'])->assertOk()->assertSee('data-text=\"y\"', false);
+    $this->postJson('/notes/'.$note->id.'/look', ['w' => 300, 'h' => 200])->assertOk();
+    $this->postJson('/notes/'.$note->id.'/look', ['w' => 50])->assertStatus(422);
+    expect($note->fresh()->only(['body', 'width', 'height']))->toBe(['body' => 'neu [x, #y]', 'width' => 300, 'height' => 200]);
+    $this->get('/')->assertSee('data-w="300"', false);
 });
 
 it('hands out a receipt by link until it is revoked', function (): void {
