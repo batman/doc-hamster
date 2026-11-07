@@ -49,15 +49,19 @@ function belegeOf(string $orgId): Folder
     return Folder::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $orgId)->where('is_default', true)->firstOrFail();
 }
 
-it('gives every organisation the folder "Belege", with bank matching on', function (): void {
+it('gives every organisation "Belege allgemein" and "Rechnungen", with bank matching on', function (): void {
     $org = Organization::factory()->create();
 
     $belege = belegeOf($org->id);
+    $invoices = Folder::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $org->id)->where('name', 'Rechnungen')->firstOrFail();
 
-    expect($belege->name)->toBe('Belege')
+    expect($belege->name)->toBe('Belege allgemein')
         ->and($belege->bank_matching)->toBeTrue()
         ->and($belege->parent_id)->toBeNull()
-        ->and(Folder::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $org->id)->count())->toBe(1);
+        ->and($invoices->is_default)->toBeFalse()
+        ->and($invoices->bank_matching)->toBeTrue()
+        ->and($invoices->iconName())->toBe('file-invoice')
+        ->and(Folder::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $org->id)->count())->toBe(2);
 });
 
 it('puts a receipt without a chosen folder into "Belege"', function (): void {
@@ -99,7 +103,7 @@ it('allows one name per level only, compared without case', function (): void {
     $this->post('/folders', ['name' => 'Privat', 'parent_id' => $top->id])->assertSessionDoesntHaveErrors();
     $this->post('/folders', ['name' => 'a/b'])->assertSessionHasErrors('name');
 
-    expect(Folder::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $this->orgId)->count())->toBe(3);
+    expect(Folder::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $this->orgId)->count())->toBe(4);
 });
 
 it('does not move a folder into itself, below itself or too deep, and keeps "Belege" on top', function (): void {
@@ -204,4 +208,98 @@ it('keeps folder management to people who may edit receipts', function (): void 
     $this->actingAs($viewer->user)->get('/folders')->assertForbidden();
     $this->post('/folders', ['name' => 'Heimlich'])->assertForbidden();
     $this->actingAs($editor->user)->get('/folders')->assertOk();
+});
+
+it('keeps the name of "Belege allgemein"; "Rechnungen" may be renamed and deleted', function (): void {
+    $belege = belegeOf($this->orgId);
+    $invoices = folderNamed('Rechnungen');
+    $this->actingAs($this->admin->user);
+
+    $this->post('/folders/'.$belege->id, ['name' => 'Anders', 'look' => '1', 'icon' => 'star'])->assertRedirect();
+    $this->post('/folders/'.$invoices->id, ['name' => 'Eingangsrechnungen'])->assertRedirect();
+
+    expect(folderRow($belege->id)?->name)->toBe('Belege allgemein')
+        ->and(folderRow($belege->id)?->icon)->toBe('star')
+        ->and(folderRow($invoices->id)?->name)->toBe('Eingangsrechnungen');
+
+    $this->post('/folders/'.$invoices->id.'/delete')->assertRedirect('/folders');
+    expect(folderRow($invoices->id))->toBeNull();
+});
+
+it('gives a folder a colour and a symbol from the fixed set, and serves the colour as CSS', function (): void {
+    $this->actingAs($this->admin->user);
+
+    $this->post('/folders', ['name' => 'Auto', 'look' => '1', 'color' => '#3fb68f', 'icon' => 'car'])->assertSessionDoesntHaveErrors();
+    $auto = folderNamed('Auto');
+    $this->post('/folders', ['name' => 'Eigen', 'look' => '1', 'color' => 'none', 'color_hex' => '#12AB34'])->assertSessionDoesntHaveErrors();
+
+    expect($auto->color)->toBe('#3fb68f')
+        ->and($auto->icon)->toBe('car')
+        ->and(folderNamed('Eigen')->color)->toBe('#12ab34');
+    $this->get('/tags.css')->assertOk()->assertSee('.fc-'.$auto->id.'{--folder:#3fb68f}', false);
+
+    $this->post('/folders', ['name' => 'Böse', 'look' => '1', 'icon' => 'skull'])->assertSessionHasErrors('icon');
+    $this->post('/folders', ['name' => 'Böse', 'look' => '1', 'color_hex' => 'red;}body{x'])->assertSessionHasErrors('color');
+
+    // A form without the look fields (the phone's rename) keeps colour and symbol.
+    $this->post('/folders/'.$auto->id, ['name' => 'Autos'])->assertRedirect();
+    expect(folderRow($auto->id)?->icon)->toBe('car')->and(folderRow($auto->id)?->color)->toBe('#3fb68f');
+});
+
+it('shows the folders under Belege in the menu, the Papierkorb last until moved', function (): void {
+    $this->actingAs($this->admin->user)->get('/documents')->assertOk()
+        ->assertSee('nav-sub', false)
+        ->assertSeeInOrder(['Belege allgemein', 'Rechnungen', 'Papierkorb']);
+});
+
+it('saves the order of one level by drag and drop, the Papierkorb included', function (): void {
+    $belege = belegeOf($this->orgId);
+    $invoices = folderNamed('Rechnungen');
+    $other = makeFolder($this->orgId, 'Zuerst');
+    $this->actingAs($this->admin->user);
+
+    $this->postJson('/folders/order', ['parent_id' => '', 'order' => [$other->id, 'trash', $invoices->id, $belege->id]])->assertOk();
+
+    expect(folderRow($other->id)?->position)->toBe(0)
+        ->and(folderRow($belege->id)?->position)->toBe(2)
+        ->and(data_get(Organization::query()->findOrFail($this->orgId)->settings_json, 'folders.trash_slot'))->toBe(1);
+    $this->get('/documents')->assertSeeInOrder(['Zuerst', 'Papierkorb', 'Rechnungen', 'Belege allgemein']);
+
+    $sub = makeFolder($this->orgId, 'Unter', $other->id);
+    $this->postJson('/folders/order', ['parent_id' => $other->id, 'order' => [$sub->id, 'trash']])->assertStatus(422);
+    $this->postJson('/folders/order', ['parent_id' => '', 'order' => [$sub->id]])->assertStatus(422);
+});
+
+it('imports a folder as a new folder with the same name, subfolders and all', function (): void {
+    $this->actingAs($this->admin->user);
+
+    $start = $this->postJson('/folders/import', ['name' => 'Steuer 2025'])->assertCreated();
+    $root = folderRow((string) $start->json('id'));
+    expect($root?->name)->toBe('Steuer 2025')->and($root?->parent_id)->toBeNull();
+    $url = '/folders/import/'.$root?->id.'/file';
+
+    $this->post($url, ['file' => UploadedFile::fake()->image('a.jpg'), 'path' => 'Tanken/Mai/a.jpg'], ['Accept' => 'application/json'])->assertCreated();
+    $this->post($url, ['file' => UploadedFile::fake()->image('b.jpg'), 'path' => 'b.jpg'], ['Accept' => 'application/json'])->assertCreated();
+    $this->post($url, ['file' => UploadedFile::fake()->image('c.jpg'), 'path' => 'Tanken/c.jpg'], ['Accept' => 'application/json'])->assertCreated();
+    $this->post($url, ['file' => UploadedFile::fake()->create('notiz.txt', 1, 'text/plain'), 'path' => 'notiz.txt'], ['Accept' => 'application/json'])->assertStatus(422);
+
+    $tanken = Folder::query()->withoutGlobalScope(OrgScope::class)->where('parent_id', $root?->id)->where('name', 'Tanken')->firstOrFail();
+    $mai = Folder::query()->withoutGlobalScope(OrgScope::class)->where('parent_id', $tanken->id)->where('name', 'Mai')->firstOrFail();
+    expect(titled('a.jpg')->folder_id)->toBe($mai->id)
+        ->and(titled('b.jpg')->folder_id)->toBe($root?->id)
+        ->and(titled('c.jpg')->folder_id)->toBe($tanken->id)
+        ->and(Folder::query()->withoutGlobalScope(OrgScope::class)->where('name', 'Tanken')->count())->toBe(1);
+
+    // The same folder again: a second folder "Steuer 2025 (2)", the first stays as it is.
+    expect($this->postJson('/folders/import', ['name' => 'Steuer 2025'])->assertCreated()->json('name'))->toBe('Steuer 2025 (2)');
+});
+
+it('keeps the folder import to people who may upload and edit, and to the own organisation', function (): void {
+    $viewer = Membership::factory()->accountant()->create(['org_id' => $this->orgId]);
+    $foreign = makeFolder(Organization::factory()->create()->id, 'Fremd');
+
+    $this->actingAs($viewer->user)->postJson('/folders/import', ['name' => 'X'])->assertForbidden();
+    $this->actingAs($this->admin->user)
+        ->post('/folders/import/'.$foreign->id.'/file', ['file' => UploadedFile::fake()->image('x.jpg'), 'path' => 'x.jpg'], ['Accept' => 'application/json'])
+        ->assertNotFound();
 });

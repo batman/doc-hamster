@@ -11,6 +11,9 @@
     <meta name="theme-color" content="#30302e">
     <title>@hasSection('title')@yield('title') – @endif{{ config('app.name') }}</title>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ config('dochamster.asset_version') }}">
+    @auth
+        <link rel="stylesheet" href="{{ route('tags.css') }}">
+    @endauth
     <link rel="manifest" href="{{ route('app.manifest') }}">
     <link rel="apple-touch-icon" href="{{ asset('img/apple-touch-icon.png') }}">
     <meta name="mobile-web-app-capable" content="yes">

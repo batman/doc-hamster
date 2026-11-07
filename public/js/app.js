@@ -521,7 +521,9 @@
         });
         radios.forEach(radio => radio.addEventListener('change', () => {
             hex.value = '';
-            picker.value = radio.value;
+            if (radio.value.startsWith('#')) {
+                picker.value = radio.value;
+            }
         }));
     };
 
@@ -1055,6 +1057,186 @@
         });
     };
 
+    // Folder menu under Belege (PO, 2026-11-07): open/close subfolders; drag the handle to change the order of one level.
+    // Pointer events, so it works with mouse, pen and finger alike; the new order is saved right away.
+    const setupFolderMenu = () => {
+        const menu = document.querySelector('.nav-sub');
+        if (!menu) {
+            return;
+        }
+        menu.querySelectorAll('[data-folder-toggle]').forEach(button => button.addEventListener('click', () => {
+            const item = button.closest('.nav-folder');
+            const open = item.classList.toggle('is-open');
+            button.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }));
+
+        const url = menu.dataset.folderOrder;
+        if (!url) {
+            return;
+        }
+        const token = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+        const save = list => {
+            const body = new FormData();
+            body.append('parent_id', list.dataset.parent);
+            [...list.children].forEach(item => body.append('order[]', item.dataset.id));
+            fetch(url, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token, Accept: 'application/json' }, credentials: 'same-origin' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(String(response.status));
+                    }
+                })
+                .catch(() => {
+                    window.alert(menu.dataset.orderFailed);
+                    window.location.reload();
+                });
+        };
+
+        menu.querySelectorAll('[data-grip]').forEach(grip => {
+            grip.addEventListener('pointerdown', event => {
+                if (event.button !== 0) {
+                    return;
+                }
+                event.preventDefault();
+                const item = grip.closest('.nav-folder');
+                const list = item.parentElement;
+                const before = [...list.children].map(child => child.dataset.id).join();
+                // Listened on the document: moving the item in the DOM ends any pointer capture on the handle.
+                item.classList.add('is-dragging');
+                document.body.classList.add('is-dragging-folder');
+
+                const move = moveEvent => {
+                    if (moveEvent.pointerId !== event.pointerId) {
+                        return;
+                    }
+                    const siblings = [...list.children].filter(child => child !== item);
+                    const next = siblings.find(child => {
+                        const box = child.querySelector('.nav-folder-row').getBoundingClientRect();
+                        return moveEvent.clientY < box.top + box.height / 2;
+                    });
+                    if (next) {
+                        if (item.nextElementSibling !== next) {
+                            list.insertBefore(item, next);
+                        }
+                    } else if (list.lastElementChild !== item) {
+                        list.appendChild(item);
+                    }
+                };
+                const end = endEvent => {
+                    if (endEvent.pointerId !== event.pointerId) {
+                        return;
+                    }
+                    document.removeEventListener('pointermove', move);
+                    document.removeEventListener('pointerup', end);
+                    document.removeEventListener('pointercancel', end);
+                    item.classList.remove('is-dragging');
+                    document.body.classList.remove('is-dragging-folder');
+                    if ([...list.children].map(child => child.dataset.id).join() !== before) {
+                        save(list);
+                    }
+                };
+                document.addEventListener('pointermove', move);
+                document.addEventListener('pointerup', end);
+                document.addEventListener('pointercancel', end);
+            });
+            // Keyboard: arrow up/down moves the folder one place.
+            grip.addEventListener('keydown', event => {
+                if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') {
+                    return;
+                }
+                event.preventDefault();
+                const item = grip.closest('.nav-folder');
+                const list = item.parentElement;
+                if (event.key === 'ArrowUp' && item.previousElementSibling) {
+                    list.insertBefore(item, item.previousElementSibling);
+                } else if (event.key === 'ArrowDown' && item.nextElementSibling) {
+                    list.insertBefore(item.nextElementSibling, item);
+                } else {
+                    return;
+                }
+                grip.focus();
+                save(list);
+            });
+        });
+    };
+
+    // Folder import: the picked folder becomes a new folder of the same name; files go up one by one with their path.
+    const setupFolderImport = () => {
+        const form = document.querySelector('[data-folder-import]');
+        if (!form) {
+            return;
+        }
+        const input = form.querySelector('input[type="file"]');
+        const status = form.querySelector('[data-import-status]');
+        const bar = form.querySelector('progress');
+        const token = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+        const text = (key, values = {}) => Object.entries(values).reduce((out, [name, value]) => out.replaceAll(':' + name, String(value)), form.dataset[key] ?? '');
+        if (!('webkitdirectory' in input)) {
+            status.textContent = text('unsupported');
+            input.disabled = true;
+            return;
+        }
+        const wanted = /\.(pdf|jpe?g|png|gif|webp|heic|heif|tiff?|bmp)$/i;
+        const post = async (url, body) => {
+            const response = await fetch(url, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token, Accept: 'application/json' }, credentials: 'same-origin' });
+            const data = await response.json().catch(() => ({}));
+            return { ok: response.ok, status: response.status, data };
+        };
+
+        input.addEventListener('change', async () => {
+            const all = [...input.files].filter(file => file.webkitRelativePath && !file.webkitRelativePath.split('/').some(part => part.startsWith('.')));
+            if (all.length === 0) {
+                status.textContent = text('empty');
+                return;
+            }
+            const files = all.filter(file => wanted.test(file.name) || file.type.startsWith('image/') || file.type === 'application/pdf');
+            let skipped = all.length - files.length;
+            input.disabled = true;
+            bar.hidden = false;
+            bar.max = files.length || 1;
+            bar.value = 0;
+
+            const start = new FormData();
+            start.append('name', all[0].webkitRelativePath.split('/')[0]);
+            const parent = form.querySelector('[name="import_parent"]')?.value;
+            if (parent) {
+                start.append('parent_id', parent);
+            }
+            const made = await post(form.dataset.start, start).catch(() => ({ ok: false, data: {} }));
+            if (!made.ok) {
+                status.textContent = made.data?.message ?? text('failed');
+                input.disabled = false;
+                bar.hidden = true;
+                return;
+            }
+
+            let saved = 0;
+            for (const [index, file] of files.entries()) {
+                status.textContent = text('running', { done: index, total: files.length });
+                const body = new FormData();
+                body.append('file', file);
+                body.append('path', file.webkitRelativePath.split('/').slice(1).join('/'));
+                const result = await post(form.dataset.file.replace('__ID__', made.data.id), body).catch(() => ({ ok: false, status: 0 }));
+                if (result.ok) {
+                    saved++;
+                } else if (result.status === 422) {
+                    skipped++;
+                } else {
+                    status.textContent = text('failed');
+                    input.disabled = false;
+                    return;
+                }
+                bar.value = index + 1;
+            }
+
+            status.textContent = text('done', { saved }) + (skipped > 0 ? ' ' + text('skipped', { count: skipped }) : '');
+            const link = form.querySelector('[data-import-open]');
+            link.href = made.data.url;
+            link.hidden = false;
+            input.disabled = false;
+            input.value = '';
+        });
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
         setupServiceWorker();
         setupCamera(setupUploadQueue());
@@ -1072,6 +1254,8 @@
         setupBadges();
         setupTagSearch();
         setupColorField();
+        setupFolderMenu();
+        setupFolderImport();
         setupNotes();
     });
 })();

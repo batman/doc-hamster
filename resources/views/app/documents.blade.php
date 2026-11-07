@@ -31,8 +31,9 @@
     <ul class="phone-list" aria-label="{{ __('folders.title') }}">
         @foreach ($folders as $folder)
             <li class="phone-row">
-                <a class="phone-row-main" href="{{ route('app.documents', ['folder' => $folder->id]) }}"><x-icon name="folder" /><span>{{ $folder->name }}</span></a>
-                @can('documents.edit')
+                <a class="phone-row-main phone-folder {{ $folder->colorClass() }}" href="{{ route('app.documents', ['folder' => $folder->id]) }}"><x-icon :name="$folder->iconName()" /><span>{{ $folder->name }}</span></a>
+                {{-- "Belege allgemein" can be neither renamed nor deleted (PO, 2026-11-07). --}}
+                @if (! $folder->is_default && Gate::allows('documents.edit'))
                     <details class="phone-row-menu">
                         <summary aria-label="{{ __('app.docs.folder_menu', ['name' => $folder->name]) }}"><x-icon name="dots" /></summary>
                         <div class="phone-row-panel">
@@ -45,16 +46,14 @@
                                 <input id="rename-{{ $folder->id }}" name="name" value="{{ $folder->name }}" maxlength="100" required>
                                 <button type="submit">{{ __('app.docs.save') }}</button>
                             </form>
-                            @unless ($folder->is_default)
-                                <form method="post" action="{{ route('folders.destroy', $folder->id) }}" data-confirm="{{ __('app.docs.delete_folder_confirm', ['name' => $folder->name]) }}">
-                                    @csrf
-                                    <input type="hidden" name="app_back" value="{{ $back }}">
-                                    <button type="submit" class="button-danger"><x-icon name="trash" />{{ __('app.docs.delete_folder') }}</button>
-                                </form>
-                            @endunless
+                            <form method="post" action="{{ route('folders.destroy', $folder->id) }}" data-confirm="{{ __('app.docs.delete_folder_confirm', ['name' => $folder->name]) }}">
+                                @csrf
+                                <input type="hidden" name="app_back" value="{{ $back }}">
+                                <button type="submit" class="button-danger"><x-icon name="trash" />{{ __('app.docs.delete_folder') }}</button>
+                            </form>
                         </div>
                     </details>
-                @endcan
+                @endif
             </li>
         @endforeach
         @foreach ($documents as $document)
