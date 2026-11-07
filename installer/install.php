@@ -114,16 +114,16 @@ function http(string $url, ?string $file = null): string
     return $out === null ? (string) $body : '';
 }
 
-/** Newest release whose manifest fits this PHP version. */
-function chooseRelease(): array
+/**
+ * Newest release whose manifest fits this PHP version.
+ *
+ * The manifest fetch is injected so the choice logic is unit-testable; the
+ * installer passes a download, the tests pass canned responses.
+ */
+function selectRelease(array $releases, callable $fetchManifest, string $phpVersion): array
 {
-    if (DH_PREVIEW_PR > 0) {
-        return choosePreviewRelease();
-    }
-
-    $releases = json_decode(http('https://api.github.com/repos/'.DH_REPO.'/releases?per_page=20'), true);
-    foreach (is_array($releases) ? $releases : [] as $release) {
-        if (! empty($release['draft']) || ! empty($release['prerelease'])) {
+    foreach ($releases as $release) {
+        if (! is_array($release) || ! empty($release['draft']) || ! empty($release['prerelease'])) {
             continue;
         }
         $assets = [];
@@ -133,14 +133,28 @@ function chooseRelease(): array
         if (! isset($assets['manifest.json'])) {
             continue;
         }
-        $manifest = json_decode(http($assets['manifest.json']), true);
-        if (is_array($manifest) && isset($assets[$manifest['zip'] ?? '']) && version_compare(PHP_VERSION, (string) $manifest['php'], '>=')) {
+        $manifest = $fetchManifest($assets['manifest.json']);
+        if (is_array($manifest) && isset($assets[$manifest['zip'] ?? '']) && version_compare($phpVersion, (string) $manifest['php'], '>=')) {
             $manifest['url'] = $assets[$manifest['zip']];
 
             return $manifest;
         }
     }
-    throw new RuntimeException('Keine passende DocHamster-Version für PHP '.PHP_VERSION.' gefunden.');
+    throw new RuntimeException('Keine passende DocHamster-Version für PHP '.$phpVersion.' gefunden.');
+}
+
+/** Newest release whose manifest fits this PHP version. */
+function chooseRelease(): array
+{
+    if (DH_PREVIEW_PR > 0) {
+        return choosePreviewRelease();
+    }
+
+    $releases = json_decode(http('https://api.github.com/repos/'.DH_REPO.'/releases?per_page=20'), true);
+
+    return selectRelease(is_array($releases) ? $releases : [], static function (string $url) {
+        return json_decode(http($url), true);
+    }, PHP_VERSION);
 }
 
 /** The branch installer rechecks the PR label and exact commit before touching installed files. */
@@ -247,6 +261,16 @@ function placeFile(string $path, string $content, bool $keepOld): void
     file_put_contents($path, $content);
 }
 
+/**
+ * Rewrites public/index.php for a web root outside the app: every __DIR__.'/../
+ * becomes the absolute app path. var_export() quotes the path, so quotes or
+ * backslashes in the hoster's directory names cannot break the PHP syntax.
+ */
+function rewriteIndexPhp(string $index, string $appDir): string
+{
+    return str_replace("__DIR__.'/../", var_export($appDir.'/', true).".'", $index);
+}
+
 /** Puts everything from public/ into the web root; index.php gets the path to the app. */
 function wireWebRoot(string $appDir, string $webRoot, bool $keepOld): void
 {
@@ -266,7 +290,7 @@ function wireWebRoot(string $appDir, string $webRoot, bool $keepOld): void
     $copy($appDir.'/public', $webRoot);
 
     $index = (string) file_get_contents($appDir.'/public/index.php');
-    placeFile($webRoot.'/index.php', str_replace("__DIR__.'/../", var_export($appDir.'/', true).".'", $index), $keepOld);
+    placeFile($webRoot.'/index.php', rewriteIndexPhp($index, $appDir), $keepOld);
 }
 
 /**

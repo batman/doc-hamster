@@ -95,22 +95,30 @@ final class InstallerFixtures
         file_put_contents($docRoot.'/.dh-server-check', $token);
         $context = stream_context_create(['http' => ['timeout' => 2]]);
 
-        foreach (range(18931, 18971) as $port) {
-            $proc = proc_open(
-                [PHP_BINARY, '-S', '127.0.0.1:'.$port, '-t', $docRoot],
-                [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']],
-                $pipes
-            );
-            if (! is_resource($proc)) {
-                continue;
-            }
-            for ($i = 0; $i < 50; $i++) {
-                if (@file_get_contents('http://127.0.0.1:'.$port.'/.dh-server-check', false, $context) === $token) {
-                    return [$proc, 'http://127.0.0.1:'.$port];
+        // Polling hits refused connections until the server is up; swallow those.
+        set_error_handler(static function (): bool {
+            return true;
+        });
+        try {
+            foreach (range(18931, 18971) as $port) {
+                $proc = proc_open(
+                    [PHP_BINARY, '-S', '127.0.0.1:'.$port, '-t', $docRoot],
+                    [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']],
+                    $pipes
+                );
+                if (! is_resource($proc)) {
+                    continue;
                 }
-                usleep(100000);
+                for ($i = 0; $i < 50; $i++) {
+                    if (file_get_contents('http://127.0.0.1:'.$port.'/.dh-server-check', false, $context) === $token) {
+                        return [$proc, 'http://127.0.0.1:'.$port];
+                    }
+                    usleep(100000);
+                }
+                self::stopServer($proc);
             }
-            self::stopServer($proc);
+        } finally {
+            restore_error_handler();
         }
 
         throw new RuntimeException('No free port for the installer test server.');
@@ -166,5 +174,35 @@ final class InstallerFixtures
     public static function serveSharedZip(string $name, array $entries): array
     {
         return self::serveZip(self::$serverDir, self::$serverUrl, $name, $entries);
+    }
+
+    /** A GitHub release row shaped like the API returns it. */
+    public static function makeRelease(string $version, array $overrides = []): array
+    {
+        return array_merge([
+            'tag_name' => 'v'.$version,
+            'draft' => false,
+            'prerelease' => false,
+            'assets' => [
+                ['name' => 'manifest.json', 'browser_download_url' => 'https://example.com/'.$version.'/manifest.json'],
+                ['name' => 'dochamster-'.$version.'.zip', 'browser_download_url' => 'https://example.com/'.$version.'/dochamster-'.$version.'.zip'],
+            ],
+        ], $overrides);
+    }
+
+    public static function makeManifest(string $version, string $php = '8.3.0'): array
+    {
+        return ['version' => $version, 'php' => $php, 'zip' => 'dochamster-'.$version.'.zip', 'sha256' => str_repeat('a', 64)];
+    }
+
+    /** True when $phpCode passes php -l. */
+    public static function lints(string $phpCode): bool
+    {
+        $dir = self::makeTempDir('dh-lint');
+        file_put_contents($dir.'/check.php', $phpCode);
+        exec(PHP_BINARY.' -l '.escapeshellarg($dir.'/check.php').' 2>/dev/null', $ignored, $code);
+        self::removeDir($dir);
+
+        return $code === 0;
     }
 }
