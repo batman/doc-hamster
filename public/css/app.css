@@ -720,8 +720,6 @@ button.col-strip:hover > .icon { color: var(--primary-ink); }
 .card-note { max-width: 70ch; margin: .5rem 0 0; font-size: .8rem; color: var(--muted); }
 .card-row { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
 .card button { margin-top: 0; }
-.badge-pill { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .9rem; border-radius: 999px; background: var(--primary); color: var(--primary-text); font-weight: 600; font-size: .9rem; }
-.badge-pill .icon { width: 1.1rem; height: 1.1rem; }
 .button-small { display: inline-flex; align-items: center; gap: .45rem; min-height: 40px; padding: 0 1rem; font-size: .95rem; }
 .button-small .icon { width: 1.15rem; height: 1.15rem; }
 /* A list of rows to pick one from: the whole row is the choice, the picked one gets the orange bar (A20) */
@@ -790,4 +788,42 @@ ul.pick-list { margin: .75rem 0; }
     .cols > .col { width: auto !important; }
     .side { width: auto; }
 }
+
+/* One button for the whole app (Go 2026-11-07, point 14, A46-A52). Every button is clearly a button:
+   orange = the main action (one per area), outlined = side actions, red = delete, square = icon only.
+   Nothing else in the app is filled orange. Special controls (menu entries, strips, swatches, tags ...)
+   keep their own look and are left out here. */
+:root { --button-shadow: 0 1px 0 rgb(0 0 0 / .12), 0 2px 6px rgb(0 0 0 / .14); --primary-hover: #ee6410; --danger: #d92d20; --danger-hover: #b9251a; }
+@media (prefers-color-scheme: dark) { :root { --button-shadow: 0 1px 0 rgb(0 0 0 / .4), 0 2px 8px rgb(0 0 0 / .45); } }
+:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .col-item, .col-strip, .col-fold, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)) {
+    display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+    min-height: 48px; padding: 0 1.25rem; border: 2px solid transparent; border-radius: 10px;
+    background: var(--primary); color: var(--primary-text); box-shadow: var(--button-shadow);
+    font: inherit; font-size: 1rem; font-weight: 600; letter-spacing: 0; line-height: 1.2; text-decoration: none;
+    cursor: pointer; transition: background-color .12s, box-shadow .12s, translate .06s;
+}
+:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .col-item, .col-strip, .col-fold, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)):hover { background: var(--primary-hover); box-shadow: var(--button-shadow); }
+:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .col-item, .col-strip, .col-fold, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)):active:not(:disabled) { translate: 0 1px; box-shadow: none; }
+:is(button, .button):focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; box-shadow: none; }
+:is(button, .button):disabled { opacity: .45; box-shadow: none; cursor: not-allowed; translate: none; }
+button .icon, .button .icon { width: 1.25rem; height: 1.25rem; }
+/* Side action: outlined, no fill; in dark mode light text and a faint fill so it stays visible (A52) */
+:is(button, .button).button-quiet, .icon-button {
+    background: transparent; color: var(--text); border-color: color-mix(in srgb, currentColor 55%, transparent); box-shadow: none;
+}
+:is(button, .button).button-quiet:hover, .icon-button:hover { background: rgb(127 127 127 / .14); box-shadow: none; }
+@media (prefers-color-scheme: dark) {
+    :is(button, .button).button-quiet, .icon-button { background: rgb(255 255 255 / .06); border-color: rgb(245 244 238 / .7); }
+}
+:is(button, .button).button-danger { background: var(--danger); color: #fff; }
+:is(button, .button).button-danger:hover { background: var(--danger-hover); }
+/* Sizes: 48 px, small 40 px; icon buttons are square */
+:is(button, .button).button-small { min-height: 40px; padding: 0 .9rem; font-size: .95rem; }
+.icon-button { width: 48px; padding: 0; }
+.card-head .icon-button, .icon-button.button-small { width: 40px; min-height: 40px; }
+.icon-button[aria-expanded="true"], .icon-button.is-active { border-color: var(--primary); color: var(--primary-ink); }
+/* The upload in the menu keeps its layout, with the button corner and shadow */
+.sidebar .nav-action { border-radius: 10px; box-shadow: var(--button-shadow); }
+.sidebar .nav-action:hover { background: var(--primary-hover); }
+input[type="file"]::file-selector-button { border-radius: 10px; font-size: 1rem; letter-spacing: 0; box-shadow: var(--button-shadow); }
 
