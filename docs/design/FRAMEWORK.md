@@ -49,11 +49,16 @@ Every `<button>` and `.button` is a button by default. Do not reuse its look for
 - **Label** – `.tag-outline`: quiet, framed, not clickable ("Vorschau", "Installiert").
 - **Toast** – `<div class="toast" role="status" data-toast>…</div>`: top right (on phones at the bottom), closes itself after 5 s.
 - **Dialog** – `<div class="dialog-backdrop" data-dialog="name" hidden><div class="dialog" role="dialog" aria-modal="true">…</div></div>`, opened by any `[data-dialog-open="name"]` (also in windows loaded later). `data-dialog-title` on the opener sets `[data-dialog-heading]`. Close: `[data-dialog-close]`, the backdrop, Escape. Names must be unique on the page – put the record's id in them. Asking for the password happens only in a dialog.
+- **Dropdown** – `<div class="dropdown"><button type="button" class="icon-button" aria-expanded="false">…</button><div class="dropdown-panel" hidden>…</div></div>`. Works in every window, also in windows loaded later and several side by side; a click outside, on an entry or Escape closes it. A tag filter (`form.dropdown[data-kind="filter"]`) only filters the list of its own window.
+- **"⋯" menu** – `<x-more-menu><a class="menu-item" href="…" data-window><x-icon name="pencil" /><span>Bearbeiten</span></a>…</x-more-menu>`: entries with icon and text; an entry with `data-window` opens its target as a window on the right. Fits in a window's `actions`.
+- **Sortable list** – `<ul class="pick-list" data-sortable>` with rows `<li class="pick-row is-static" data-id="…"><button type="button" class="pick-handle" aria-label="Verschieben"><x-icon name="grip-vertical" /></button>…</li>`. Moved by the handle with mouse or finger, or with the keyboard (Space picks up, arrow keys move, Space drops, Escape puts back). Afterwards `DocHamster.on('list:sorted', ({ list, ids }) => …)` gets the list and the row ids in their new order; **the module saves**.
+- **Row colour** – a row's icon takes the record's colour: set `--row-color` on the row (or a class that sets `--folder`), otherwise orange.
 - **Tooltip** – `data-tooltip="…"`, to the right with `.tooltip-right`.
 - **Icons** – Tabler 3.49.0 outline, `<x-icon name="…" />`, files in `resources/icons/tabler/`.
 
 ## 4. Layout
 
+- **The main menu has no sub-items** (PO, 2026-11-07). Every sub-area, entry and record opens on the right as a window.
 - Left: the main menu. Its wall can be dragged: wide = open, narrow = icons only, too narrow = hidden (then a floating menu button). Phones: a drawer.
 - The content starts below a gap as high as the dark bar, so the floating menu button never covers a title; scrolling takes everything to the very top.
 - Width too small: the content area scrolls sideways (minimum width of the active window 30rem), with a shade at the edge.
@@ -93,7 +98,11 @@ The general logic of the app: **new windows open on the right, all earlier ones 
 
 **Links that open a window:** `<a href="…" data-window>`. The framework loads the target in the background with the header `X-DocHamster-Window: 1`; the layout then returns only the content (no menu, no frame), and the framework takes the page's last `section[data-window]`. If the target is already in the history, it is opened again instead of loaded twice. Modules need no extra route or controller code.
 
-**`<x-window>` props:** `title`, `icon` (Tabler name), `url` (this window's address; default the current one), `close` (where the X leads without JavaScript; leave out for a window that can't be closed), slot `actions` (buttons in the head), extra classes via `class="…"`.
+**`<x-window>` props:** `title`, `icon` (Tabler name), `url` (this window's address; default the current one), `close` (where the X leads without JavaScript; leave out for a window that can't be closed), `upload` (where an upload belongs while this window is active, as form fields, e.g. `upload="folder=01H…"`), slot `actions` (buttons in the head), extra classes via `class="…"`.
+
+**Head on phones:** the buttons from `actions` move into a "⋯" menu, so the title keeps its room; on wide screens they stand in the head.
+
+**Uploads:** "Beleg hochladen" in the menu and files dropped on the page take the `upload` fields of the **active** window and send them along. Which fields a window sets and what the server does with them is up to the module.
 
 **JavaScript of a module:** windows arrive after the page has loaded, so "run on DOMContentLoaded" is not enough. Register instead:
 
