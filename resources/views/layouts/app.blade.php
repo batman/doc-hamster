@@ -6,6 +6,7 @@
     <meta name="robots" content="noindex">
     <meta name="color-scheme" content="light dark">
     <meta name="theme-color" content="#30302e">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="48x48">
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     <link rel="apple-touch-icon" href="{{ asset('img/apple-touch-icon.png') }}">
@@ -31,6 +32,10 @@
                     @can('documents.upload')
                         <form class="nav-upload" method="post" action="{{ route('documents.store') }}" enctype="multipart/form-data" data-busy="{{ __('documents.uploading') }}">
                             @csrf
+                            {{-- Opened inside a folder: new uploads go there (issue #77). --}}
+                            @if (is_string(request()->query('folder')) && request()->query('folder') !== 'none')
+                                <input type="hidden" name="folder" value="{{ request()->query('folder') }}">
+                            @endif
                             <label class="nav-item nav-action tooltip-right" data-tooltip="{{ __('documents.upload') }}">
                                 <input class="visually-hidden" type="file" name="files[]" multiple accept="image/*,application/pdf">
                                 <x-icon name="upload" /><span class="nav-text">{{ __('documents.upload') }}</span>
@@ -45,10 +50,40 @@
                             ['documents.index', 'receipt', 'documents.title', null, ['documents.*'], null],
                             ['print-tray.index', 'printer', 'print_tray.title', 'documents.upload', ['print-tray.*'], \App\Http\Badges::PRINT_TRAY],
                             ['bank.index', 'building-bank', 'bank.title', 'banking.import', ['bank.index', 'bank.show'], null],
-                            ['settings.index', 'settings', 'settings.title', null, ['settings.*', 'members.*', 'roles.*', 'tags.*', 'exports.*', 'updates.*', 'bank.import*', 'bank.accounts.*', 'phone-check*'], null],
+                            ['settings.index', 'settings', 'settings.title', null, ['settings.*', 'members.*', 'roles.*', 'tags.*', 'exports.*', 'updates.*', 'bank.import*', 'bank.accounts.*', 'phone-check*', 'folders.*'], null],
                         ] as [$route, $icon, $label, $ability, $active, $badge])
                             @if ($ability === null || Gate::allows($ability))
-                                <li><a class="nav-item tooltip-right" href="{{ route($route) }}" data-tooltip="{{ __($label) }}" @if (request()->routeIs(...$active)) aria-current="page" @endif><x-icon :name="$icon" /><span class="nav-text">{{ __($label) }}</span> @if ($badge !== null) @php $count = $badges[$badge] ?? 0; @endphp <span class="nav-badge" data-badge="{{ $badge }}" @if ($count === 0) hidden @endif>{{ $count > 9 ? '9+' : $count }}</span> @endif</a></li>
+                                <li><a class="nav-item tooltip-right" href="{{ route($route) }}" data-tooltip="{{ __($label) }}" @if (request()->routeIs(...$active) && ! ($route === 'documents.index' && (request()->filled('folder') || request()->routeIs('documents.trash')))) aria-current="page" @endif><x-icon :name="$icon" /><span class="nav-text">{{ __($label) }}</span> @if ($badge !== null) @php $count = $badges[$badge] ?? 0; @endphp <span class="nav-badge" data-badge="{{ $badge }}" @if ($count === 0) hidden @endif>{{ $count > 9 ? '9+' : $count }}</span> @endif</a></li>
+                                @if ($route === 'documents.index' && app(\App\Domain\Org\CurrentOrg::class)->isSet())
+                                    {{-- Submenu "Ordner" under Belege (PO, 2026-11-07): the folders in their order, the Papierkorb among them, "+" for a new one. --}}
+                                    @php
+                                        $menuOrg = app(\App\Domain\Org\CurrentOrg::class)->organization();
+                                        $menuRows = \App\Domain\Documents\Folder::menu($menuOrg);
+                                        $menuFolders = collect($menuRows)->pluck('folder')->filter();
+                                        $menuOpen = [];
+                                        $menuWanted = request()->query('folder');
+                                        for ($menuStep = is_string($menuWanted) ? $menuFolders->firstWhere('id', $menuWanted) : null; $menuStep !== null; $menuStep = $menuFolders->firstWhere('id', $menuStep->parent_id)) {
+                                            $menuOpen[] = $menuStep->id;
+                                        }
+                                        $menuEdit = Gate::allows('documents.edit');
+                                    @endphp
+                                    <li class="nav-sub" data-folder-order="{{ $menuEdit ? route('folders.order') : '' }}" data-order-failed="{{ __('folders.order_invalid') }}">
+                                        <div class="nav-sub-head">
+                                            <span class="nav-text">{{ __('folders.title') }}</span>
+                                            @if ($menuEdit)
+                                                <a class="nav-folder-add is-visible" href="{{ route('folders.index') }}" aria-label="{{ __('folders.add') }}" title="{{ __('folders.add') }}"><x-icon name="plus" /></a>
+                                            @endif
+                                        </div>
+                                        @include('folders._menu', [
+                                            'items' => collect($menuRows)->where('depth', 0)->pluck('folder')->all(),
+                                            'children' => $menuFolders->filter(static fn ($f): bool => $f->parent_id !== null)->groupBy('parent_id'),
+                                            'open' => $menuOpen,
+                                            'edit' => $menuEdit,
+                                            'parent' => null,
+                                            'depth' => 0,
+                                        ])
+                                    </li>
+                                @endif
                             @endif
                         @endforeach
                     </ul>
