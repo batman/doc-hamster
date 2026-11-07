@@ -264,3 +264,9 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done / next step: Automated tests and local quality checks have not been run. Composer is unavailable in this environment; GitHub CI must pass before merge. The feature becomes available only after this PR is merged and the `preview.yml` workflow is active.
 - Watch out: The publisher and cleanup jobs need `contents:write`, approved by the PO for this workflow. The preview installer runs the selected PR's database migrations, so the `preview-ready` checklist requires that existing data remain safe and switching back to Main work.
 - Branch/PR: lead/PREVIEW-DEPLOY-branch-selection (#85)
+
+## 2026-11-07 · Lead · PREVIEW-DEPLOY (release)
+- Done: All CI jobs passed after a Pint formatting fix. Locally fast-forwarded PR #85 into `main`; pushed tag `v0.1.18`. The release workflow completed and published the stable ZIP, installer, and manifest. PR #85 is merged.
+- Not done / next step: The app owner can now use “Nach Updates suchen” and install v0.1.18. The `preview.yml` package job is active for newly labelled eligible PRs.
+- Watch out: None.
+- Branch/PR: `main`, tag `v0.1.18`; PR #85
