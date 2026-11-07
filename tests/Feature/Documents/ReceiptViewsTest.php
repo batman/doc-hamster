@@ -57,7 +57,10 @@ it('opens a receipt beside the list, saves title, note and tags, and deletes int
     $tag = Tag::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $this->admin->org_id)->firstOrFail();
 
     $this->actingAs($this->admin->user)->get('/documents/'.$document->id)->assertOk()
-        ->assertSee('class="split-detail"', false)->assertSee('Verlauf');
+        ->assertSee('win-detail', false)->assertSee('Verlauf');
+    // From the window system only the windows come back, without menu and frame (A73).
+    $this->get('/documents/'.$document->id, ['X-DocHamster-Window' => '1'])->assertOk()
+        ->assertSee('data-window-url', false)->assertDontSee('nav-toggle', false);
 
     $this->post('/documents/'.$document->id, ['title' => 'Tankquittung', 'note' => 'Fahrt nach Köln', 'tags' => [$tag->id]])->assertRedirect();
     $document->refresh();

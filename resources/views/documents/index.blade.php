@@ -2,18 +2,14 @@
 
 @section('title', $open?->title ?? __('documents.title'))
 
-@section('main_class', 'page page-split')
+@section('main_class', 'page-windows')
 
 @section('content')
-    <div class="split-main">
-        @php $openFolder = $folder !== null ? collect($folders)->pluck('folder')->firstWhere('id', $folder) : null; @endphp
-        <div class="page-head">
-            {{-- The folders themselves are in the menu under Belege (PO, 2026-11-07); here the open one, with edit and "new subfolder". --}}
-            @if ($openFolder)
-                <h1 class="folder-title {{ $openFolder->colorClass() }}"><x-icon :name="$openFolder->iconName()" />{{ $openFolder->name }}</h1>
-            @else
-                <h1>{{ __('documents.title') }}</h1>
-            @endif
+    @php $openFolder = $folder !== null ? collect($folders)->pluck('folder')->firstWhere('id', $folder) : null; @endphp
+    <div class="windows" data-windows>
+    {{-- The folders themselves are in the menu under Belege (PO, 2026-11-07); an open folder is the root window, with "new subfolder" and edit in its head. --}}
+    <x-window :title="$openFolder?->name ?? __('documents.title')" :icon="$openFolder?->iconName() ?? 'receipt'" :url="route('documents.index', request()->except('page'))" :class="$openFolder ? 'folder-win '.$openFolder->colorClass() : ''">
+        <x-slot:actions>
             <div class="toolbar">
                 @if ($openFolder && Gate::allows('documents.edit'))
                     @if ($openFolder->depth() < \App\Domain\Documents\Folder::MAX_DEPTH)
@@ -60,7 +56,7 @@
                     </div>
                 </form>
             </div>
-        </div>
+        </x-slot:actions>
 
         @if (session('status'))
             <p class="check-ok" role="status">{{ session('status') }}</p>
@@ -72,9 +68,10 @@
             @include('documents.views.'.(in_array($view, ['small', 'large'], true) ? 'tiles' : $view))
             <p class="muted" data-no-match @unless ($documents->isEmpty() && $selected !== []) hidden @endunless>{{ __('tags.no_match') }}</p>
         @endif
-    </div>
+    </x-window>
 
     @if ($open)
         @include('documents._detail', ['document' => $open])
     @endif
+    </div>
 @endsection

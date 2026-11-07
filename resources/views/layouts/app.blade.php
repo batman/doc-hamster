@@ -1,3 +1,7 @@
+{{-- A request from the window system (header X-DocHamster-Window) gets only the content, no menu or frame (A73). --}}
+@if (request()->header('X-DocHamster-Window') === '1')
+@yield('content')
+@else
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
@@ -118,3 +122,4 @@
     </div>
 </body>
 </html>
+@endif

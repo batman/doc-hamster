@@ -1,4 +1,5 @@
-{{-- The receipt next to the list (design point 17); below 80rem the CSS shows it as a dialog over the list.
+{{-- The receipt as a window right of the list (window system, A76). Its dialogs live inside the window, so
+     they come along when it is loaded in the background; their names carry the receipt's id.
      The document is only shown, never opened by a click: downloads go through the button. --}}
 @php
     $file = $document->files->first();
@@ -7,27 +8,21 @@
     $booking = $document->matches->map(fn ($match) => $match->transaction->booking_date->format('d.m.Y').' · '.$match->transaction->formattedAmount())->implode(', ');
     $shareUrl = session('share_url');
 @endphp
-<a class="split-backdrop" href="{{ $close }}" aria-label="{{ __('documents.close') }}"></a>
-<aside class="split-detail" aria-label="{{ $document->title }}">
-    <div class="detail-head">
-        <h2>{{ $document->title }}</h2>
-        <a class="icon-button" href="{{ $close }}" aria-label="{{ __('documents.close') }}" data-tooltip="{{ __('documents.close') }}"><x-icon name="x" /></a>
-    </div>
-
+<x-window :title="$document->title" icon="file-text" :url="route('documents.show', [$document->id, ...request()->query()])" :close="$close" class="win-detail">
     <div class="detail-actions">
         @if ($file)
             <a class="icon-button" href="{{ route('documents.download', $file->id) }}" aria-label="{{ __('documents.download') }}" data-tooltip="{{ __('documents.download') }}"><x-icon name="download" /></a>
         @endif
         @can('documents.edit')
-            <a class="icon-button" href="#title" aria-label="{{ __('documents.edit') }}" data-tooltip="{{ __('documents.edit') }}"><x-icon name="pencil" /></a>
+            <a class="icon-button" href="#title-{{ $document->id }}" aria-label="{{ __('documents.edit') }}" data-tooltip="{{ __('documents.edit') }}"><x-icon name="pencil" /></a>
         @endcan
         @if ($file)
             {{-- The device's share menu with the file itself (A2); where there is none, our dialog with mail and link (A3). --}}
             <button type="button" class="icon-button" aria-label="{{ __('documents.send') }}" data-tooltip="{{ __('documents.send') }}"
-                data-share="{{ route('documents.download', $file->id) }}" data-share-name="{{ $document->title }}" data-share-type="{{ $file->mime }}" data-dialog-open="share-document"><x-icon name="send" /></button>
+                data-share="{{ route('documents.download', $file->id) }}" data-share-name="{{ $document->title }}" data-share-type="{{ $file->mime }}" data-dialog-open="share-document-{{ $document->id }}"><x-icon name="send" /></button>
         @endif
         @can('documents.trash')
-            <button type="button" class="icon-button" aria-label="{{ __('documents.delete') }}" data-tooltip="{{ __('documents.delete') }}" data-dialog-open="delete-document"><x-icon name="trash" /></button>
+            <button type="button" class="icon-button" aria-label="{{ __('documents.delete') }}" data-tooltip="{{ __('documents.delete') }}" data-dialog-open="delete-document-{{ $document->id }}"><x-icon name="trash" /></button>
         @endcan
     </div>
 
@@ -41,8 +36,8 @@
         <form method="post" action="{{ route('documents.update', $document->id) }}">
             @csrf
             <section class="detail-section">
-                <h3><label for="title">{{ __('documents.name') }}</label></h3>
-                <input id="title" name="title" value="{{ old('title', $document->title) }}" maxlength="250" required>
+                <h3><label for="title-{{ $document->id }}">{{ __('documents.name') }}</label></h3>
+                <input id="title-{{ $document->id }}" name="title" value="{{ old('title', $document->title) }}" maxlength="250" required>
             </section>
             <section class="detail-section">
                 <h3><label for="folder">{{ __('folders.folder') }}</label></h3>
@@ -63,8 +58,8 @@
                 </section>
             @endif
             <section class="detail-section">
-                <h3><label for="note">{{ __('documents.note') }}</label></h3>
-                <textarea id="note" name="note" placeholder="{{ __('documents.note_placeholder') }}">{{ old('note', $document->note) }}</textarea>
+                <h3><label for="note-{{ $document->id }}">{{ __('documents.note') }}</label></h3>
+                <textarea id="note-{{ $document->id }}" name="note" placeholder="{{ __('documents.note_placeholder') }}">{{ old('note', $document->note) }}</textarea>
                 <button type="submit">{{ __('documents.save') }}</button>
             </section>
         </form>
@@ -89,18 +84,17 @@
             <dt>{{ __('documents.facts.booking') }}</dt><dd>{{ $booking !== '' ? $booking : '–' }}</dd>
         </dl>
     </section>
-</aside>
 
 @if ($file)
-    <div class="dialog-backdrop" data-dialog="share-document" @unless ($shareUrl) hidden @endunless>
-        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="share-document-title">
-            <h2 id="share-document-title">{{ __('documents.send') }}</h2>
+    <div class="dialog-backdrop" data-dialog="share-document-{{ $document->id }}" @unless ($shareUrl) hidden @endunless>
+        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="share-document-{{ $document->id }}-title">
+            <h2 id="share-document-{{ $document->id }}-title">{{ __('documents.send') }}</h2>
             @if ($shareUrl)
-                <label for="share-url" class="visually-hidden">{{ __('documents.share_copy') }}</label>
-                <input id="share-url" value="{{ $shareUrl }}" readonly data-share-url>
+                <label for="share-url-{{ $document->id }}" class="visually-hidden">{{ __('documents.share_copy') }}</label>
+                <input id="share-url-{{ $document->id }}" value="{{ $shareUrl }}" readonly data-share-url>
                 <div class="dialog-actions">
                     <a class="button button-quiet" href="mailto:?subject={{ rawurlencode(__('documents.share_mail_subject', ['title' => $document->title])) }}&amp;body={{ rawurlencode($shareUrl) }}">{{ __('documents.share_mail') }}</a>
-                    <button type="button" data-copy="share-url" data-copied="{{ __('documents.share_copied') }}">{{ __('documents.share_copy') }}</button>
+                    <button type="button" data-copy="share-url-{{ $document->id }}" data-copied="{{ __('documents.share_copied') }}">{{ __('documents.share_copy') }}</button>
                 </div>
             @else
                 @can('exports.create')
@@ -123,9 +117,9 @@
 @endif
 
 @can('documents.trash')
-    <div class="dialog-backdrop" data-dialog="delete-document" hidden>
-        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="delete-document-title">
-            <h2 id="delete-document-title">{{ __('documents.delete_title') }}</h2>
+    <div class="dialog-backdrop" data-dialog="delete-document-{{ $document->id }}" hidden>
+        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="delete-document-{{ $document->id }}-title">
+            <h2 id="delete-document-{{ $document->id }}-title">{{ __('documents.delete_title') }}</h2>
             <p>{{ __('documents.delete_text', ['title' => $document->title]) }}</p>
             <div class="dialog-actions">
                 <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
@@ -137,3 +131,4 @@
         </div>
     </div>
 @endcan
+</x-window>

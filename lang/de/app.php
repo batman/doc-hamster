@@ -11,4 +11,11 @@ return [
         'collapse' => 'Menü verkleinern',
         'expand' => 'Menü vergrößern',
     ],
+    'window' => [
+        'open' => 'Öffnen: :title',
+        'remove' => ':title aus dem Verlauf entfernen',
+        'remove_short' => 'Aus dem Verlauf entfernen',
+        'close' => 'Schließen',
+        'back' => 'Zurück',
+    ],
 ];
