@@ -117,19 +117,22 @@ it('keeps title, colour, opacity and place of a note, and a locked note stays as
     $note = Note::query()->withoutGlobalScope(OrgScope::class)->firstOrFail();
 
     $this->postJson('/notes/'.$note->id.'/look', ['x' => 120, 'y' => 40])->assertOk();
-    $this->post('/notes/'.$note->id.'/look', ['color' => 'blue', 'opacity' => 60])->assertRedirect(route('home'));
+    $this->post('/notes/'.$note->id, ['title' => 'Einkauf', 'body' => 'Milch', 'color' => 'blue', 'opacity' => 60])->assertRedirect(route('home'));
     $this->post('/notes/'.$note->id.'/look', ['color' => 'black'])->assertSessionHasErrors('color');
     expect($note->fresh()->only(['title', 'color', 'opacity', 'pos_x', 'pos_y']))
         ->toBe(['title' => 'Einkauf', 'color' => 'blue', 'opacity' => 60, 'pos_x' => 120, 'pos_y' => 40]);
     $this->get('/')->assertSee('Einkauf')->assertSee('note-blue')->assertSee('data-x="120"', false);
 
-    $this->post('/notes/'.$note->id.'/look', ['locked' => 1])->assertRedirect();
-    $this->post('/notes/'.$note->id, ['body' => 'Anders'])->assertStatus(423);
+    // Locked in the edit dialog (A13): the fields stay as they are, only the lock can change.
+    $this->post('/notes/'.$note->id, ['title' => 'Einkauf', 'body' => 'Milch', 'locked' => 1])->assertRedirect();
+    $this->post('/notes/'.$note->id, ['title' => 'Anders', 'body' => 'Anders', 'locked' => 1])->assertRedirect();
+    expect($note->fresh()->only(['title', 'body', 'locked']))->toBe(['title' => 'Einkauf', 'body' => 'Milch', 'locked' => true]);
     $this->postJson('/notes/'.$note->id.'/look', ['x' => 0, 'y' => 0])->assertStatus(423);
     $this->post('/notes/'.$note->id.'/delete')->assertStatus(423);
-    $this->get('/')->assertSee('Milch')->assertDontSee('data-note-look', false);
+    $this->get('/')->assertSee('Milch')->assertSee('note-lock')->assertDontSee('data-note-look', false);
 
-    $this->post('/notes/'.$note->id.'/look', ['locked' => 0])->assertRedirect();
+    $this->post('/notes/'.$note->id, [])->assertRedirect();
+    expect($note->fresh()->only(['body', 'locked']))->toBe(['body' => 'Milch', 'locked' => false]);
     $this->post('/notes/'.$note->id.'/delete')->assertRedirect();
     expect(Note::query()->withoutGlobalScope(OrgScope::class)->count())->toBe(0);
 });

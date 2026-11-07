@@ -20,11 +20,8 @@ return [
     'delete' => 'Notiz löschen',
     'delete_title' => 'Notiz löschen?',
     'untitled' => 'Notiz',
-    'menu' => 'Notiz-Menü',
     'color' => 'Farbe',
     'opacity' => 'Deckkraft',
-    'lock' => 'Sperren',
-    'unlock' => 'Entsperren',
     'locked' => 'Gesperrt',
     'note_title' => 'Titel',
     'colors' => [

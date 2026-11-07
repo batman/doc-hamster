@@ -47,7 +47,13 @@ final class HomeController
 
     public function update(Request $request, string $id, CurrentOrg $org): RedirectResponse
     {
-        $note = $this->editable($id, $org, unlocked: true);
+        $note = $this->editable($id, $org);
+        // A locked note only changes its lock; its fields come back once it is unlocked (A13).
+        if ($note->locked && ($request->boolean('locked') || ! $request->exists('title'))) {
+            $note->update(['locked' => $request->boolean('locked')]);
+
+            return redirect()->route('home');
+        }
         $this->fill($request, $note);
 
         return redirect()->route('home');
@@ -113,6 +119,8 @@ final class HomeController
             'checklist' => ['nullable', 'string', 'max:5000'],
             'link' => ['nullable', 'string', 'max:250'],
             'unlink' => ['array'],
+            'color' => ['nullable', Rule::in(Note::COLORS)],
+            'opacity' => ['nullable', 'integer', 'min:30', 'max:100'],
         ]);
         $isAuthor = $note->user_id === $request->user()?->getAuthIdentifier();
 
@@ -123,7 +131,10 @@ final class HomeController
             'done' => preg_match('/^\[[xX]\]/', $line) === 1,
         ], $lines));
 
-        $note->fill(['title' => $data['title'] ?? null, 'body' => $data['body'] ?? null, 'checklist' => $checklist]);
+        $note->fill([
+            'title' => $data['title'] ?? null, 'body' => $data['body'] ?? null, 'checklist' => $checklist,
+            'color' => $data['color'] ?? $note->color, 'opacity' => $data['opacity'] ?? $note->opacity, 'locked' => $request->boolean('locked'),
+        ]);
         // Only the author decides who sees and changes it, and only with the right.
         if ($isAuthor && Gate::allows(Permission::ShareNotes->value)) {
             $note->fill(['shared' => $request->boolean('shared'), 'editable' => $request->boolean('shared') && $request->boolean('editable')]);

@@ -20,11 +20,8 @@ return [
     'delete' => 'Delete note',
     'delete_title' => 'Delete note?',
     'untitled' => 'Note',
-    'menu' => 'Note menu',
     'color' => 'Colour',
     'opacity' => 'Opacity',
-    'lock' => 'Lock',
-    'unlock' => 'Unlock',
     'locked' => 'Locked',
     'note_title' => 'Title',
     'colors' => [

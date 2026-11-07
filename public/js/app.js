@@ -383,7 +383,7 @@
     };
 
     // Notes board (Home): on wide screens the notes sit where they were dragged; new ones take the next free slot.
-    // Dragging by the head saves the place; the opacity slider shows its value while it moves.
+    // Dragging by the head saves the place.
     const setupNotes = () => {
         const board = document.querySelector('[data-notes]');
         if (!board) {
@@ -396,9 +396,12 @@
             if (note.dataset.opacity) {
                 note.style.setProperty('--note-alpha', `${note.dataset.opacity}%`);
             }
-            note.querySelector('[data-note-opacity]')?.addEventListener('input', event => {
-                note.style.setProperty('--note-alpha', `${event.target.value}%`);
-            });
+        });
+        // Edit dialog of a locked note: unticking "Gesperrt" frees the fields right away.
+        document.querySelectorAll('[data-note-lock]').forEach(box => {
+            const fields = box.form.querySelector('[data-note-fields]');
+            const locked = fields.disabled;
+            box.addEventListener('change', () => { fields.disabled = locked && box.checked; });
         });
 
         const fit = () => {
