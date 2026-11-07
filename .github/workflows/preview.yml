@@ -1,0 +1,117 @@
+name: Preview package
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled, closed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: preview-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.action != 'closed' &&
+      github.event.action != 'unlabeled' &&
+      contains(github.event.pull_request.labels.*.name, 'preview-ready')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      tag: ${{ steps.package.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring, intl, sodium, fileinfo, exif, zip, gd
+          coverage: none
+          tools: composer:v2
+
+      - name: Build preview package
+        id: package
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          VERSION="preview-${PR_NUMBER}-${COMMIT_SHA:0:7}"
+          TAG="preview-pr-${PR_NUMBER}"
+          mkdir -p build
+          git archive HEAD | tar -x -C build --one-top-level=dochamster
+          cd build/dochamster
+          rm -rf tests .github .githooks docs scripts installer phpunit.xml phpstan.neon pint.json .gitleaks.toml AGENTS.md CLAUDE.md
+          composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+          echo "$VERSION" > VERSION
+          cd ..
+          zip -qr dochamster-preview.zip dochamster
+          SHA=$(sha256sum dochamster-preview.zip | cut -d' ' -f1)
+          PHP_MIN=$(php -r '$c=json_decode(file_get_contents("dochamster/composer.json"),true); preg_match("/(\d+\.\d+)/",$c["require"]["php"],$m); echo $m[1].".0";')
+          sed -e "s/const DH_INSTALLER_VERSION = 'dev';/const DH_INSTALLER_VERSION = '${VERSION}';/" \
+              -e "s/const DH_PREVIEW_PR = 0;/const DH_PREVIEW_PR = ${PR_NUMBER};/" \
+              -e "s/const DH_PREVIEW_SHA = '';/const DH_PREVIEW_SHA = '${COMMIT_SHA}';/" \
+              ../installer/install.php > install.php
+          grep -q "DH_PREVIEW_PR = ${PR_NUMBER}" install.php
+          INSTALLER_SHA=$(sha256sum install.php | cut -d' ' -f1)
+          printf '{"version":"%s","php":"%s","zip":"dochamster-preview.zip","sha256":"%s","installer_sha256":"%s","pr":%s,"commit_sha":"%s"}\n' \
+            "$VERSION" "$PHP_MIN" "$SHA" "$INSTALLER_SHA" "$PR_NUMBER" "$COMMIT_SHA" > manifest.json
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preview-${{ github.event.pull_request.number }}
+          path: |
+            build/dochamster-preview.zip
+            build/manifest.json
+            build/install.php
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: package
+    if: needs.package.result == 'success'
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: preview-${{ github.event.pull_request.number }}
+          path: preview
+
+      - name: Replace preview release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          TAG: ${{ needs.package.outputs.tag }}
+        run: |
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" --title "DocHamster preview PR #${PR_NUMBER}" --prerelease \
+            --notes "Preview package for the open PR. Do not use as a production release." \
+            preview/dochamster-preview.zip preview/manifest.json preview/install.php
+
+  remove:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (github.event.action == 'closed' ||
+      (github.event.action == 'unlabeled' && github.event.label.name == 'preview-ready'))
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Delete preview release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: gh release delete "preview-pr-${PR_NUMBER}" --yes --cleanup-tag 2>/dev/null || true

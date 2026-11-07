@@ -21,6 +21,7 @@ Author: <!-- Lead / Manager / PO -->
 - [ ] Security: org scope, permissions, escaping, CSRF, file access checked (if relevant)
 - [ ] Public-repo rules (AGENTS.md): no personal data, real documents, server details or secrets – incl. screenshots, fixtures, logs
 - [ ] TASKS.md status updated, LOG.md entry added
+- [ ] If applying `preview-ready`: CI is green, and installing this branch and switching back to Main will not risk existing user data
 - [ ] Plan/decision changes? → label `plan`, PO approves
 
 ## Notes for the reviewer

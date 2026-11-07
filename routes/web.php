@@ -70,7 +70,10 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::middleware('can:settings.manage')->group(function (): void {
         Route::get('update', [UpdateController::class, 'show'])->name('updates.show');
         Route::post('update/check', [UpdateController::class, 'check'])->middleware('throttle:10,1')->name('updates.check');
+        Route::post('update/previews', [UpdateController::class, 'checkPreviews'])->middleware('throttle:10,1')->name('updates.previews');
         Route::post('update/install', [UpdateController::class, 'install'])->middleware('throttle:10,1')->name('updates.install');
+        Route::post('update/install-main', [UpdateController::class, 'installMain'])->middleware('throttle:10,1')->name('updates.install-main');
+        Route::post('update/install-preview', [UpdateController::class, 'installPreview'])->middleware('throttle:10,1')->name('updates.install-preview');
     });
 
     Route::middleware('can:tags.manage')->group(function (): void {

@@ -314,6 +314,15 @@ code { word-break: break-all; background: var(--surface); padding: .1rem .3rem; 
 .dropdown-panel .dropdown-reset { width: 100%; margin: .25rem 0 0; min-height: 44px; background: none; color: var(--primary-ink); font-size: 1rem; letter-spacing: normal; }
 .dropdown-panel .dropdown-reset:hover { background: var(--surface); box-shadow: none; }
 .dropdown-title { margin: .25rem .5rem; font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.preview-branches { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.preview-branches h2 { margin: 0 0 .5rem; font-size: 1.15rem; }
+.preview-list { margin: 1rem 0; padding: .75rem; border: 1px solid var(--border); border-radius: var(--radius); }
+.preview-list legend { padding-inline: .4rem; font-weight: 600; }
+.preview-branch { display: flex; align-items: flex-start; gap: .75rem; margin: .35rem 0; padding: .75rem; border-radius: var(--radius); background: var(--surface); cursor: pointer; }
+input[type="radio"] { width: 1.25rem; height: 1.25rem; min-height: 0; max-width: none; flex: none; margin: .25rem 0 0; accent-color: var(--primary); }
+.preview-warning { margin-top: 1rem; }
+.preview-warning p { margin-top: 0; }
+.preview-warning label { display: flex; align-items: center; gap: .6rem; min-height: 48px; }
 
 /* Receipt views (like the Windows Explorer): details, list, small icons, large icons */
 .view-details { margin-top: 1rem; overflow-x: auto; }

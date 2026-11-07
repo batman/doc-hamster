@@ -15,6 +15,8 @@ declare(strict_types=1);
 
 const DH_REPO = 'batman/doc-hamster';
 const DH_INSTALLER_VERSION = 'dev'; // set by .github/workflows/release.yml
+const DH_PREVIEW_PR = 0; // set by .github/workflows/preview.yml; zero means stable release
+const DH_PREVIEW_SHA = '';
 const DH_MAX_AGE_SECONDS = 7200;
 const DH_USER_INI = "memory_limit = 256M\nupload_max_filesize = 32M\npost_max_size = 32M\n";
 const DH_WIPE_GROUPS = [
@@ -105,6 +107,10 @@ function http(string $url, ?string $file = null): string
 /** Newest release whose manifest fits this PHP version. */
 function chooseRelease(): array
 {
+    if (DH_PREVIEW_PR > 0) {
+        return choosePreviewRelease();
+    }
+
     $releases = json_decode(http('https://api.github.com/repos/'.DH_REPO.'/releases?per_page=20'), true);
     foreach (is_array($releases) ? $releases : [] as $release) {
         if (! empty($release['draft']) || ! empty($release['prerelease'])) {
@@ -125,6 +131,55 @@ function chooseRelease(): array
         }
     }
     throw new RuntimeException('Keine passende DocHamster-Version für PHP '.PHP_VERSION.' gefunden.');
+}
+
+/** The branch installer rechecks the PR label and exact commit before touching installed files. */
+function choosePreviewRelease(): array
+{
+    $pull = json_decode(http('https://api.github.com/repos/'.DH_REPO.'/pulls/'.DH_PREVIEW_PR), true);
+    $labelled = false;
+    foreach (is_array($pull['labels'] ?? null) ? $pull['labels'] : [] as $label) {
+        if (is_array($label) && ($label['name'] ?? null) === 'preview-ready') {
+            $labelled = true;
+            break;
+        }
+    }
+    if (! is_array($pull)
+        || ($pull['state'] ?? null) !== 'open'
+        || ! empty($pull['draft'])
+        || ($pull['base']['ref'] ?? null) !== 'main'
+        || ($pull['head']['repo']['full_name'] ?? null) !== DH_REPO
+        || ($pull['head']['sha'] ?? null) !== DH_PREVIEW_SHA
+        || ! $labelled) {
+        throw new RuntimeException('Dieser Branch ist nicht mehr für Vorschauen freigegeben. Es wurde nichts verändert.');
+    }
+
+    $tag = 'preview-pr-'.DH_PREVIEW_PR;
+    $release = json_decode(http('https://api.github.com/repos/'.DH_REPO.'/releases/tags/'.rawurlencode($tag)), true);
+    if (! is_array($release) || ! empty($release['draft']) || empty($release['prerelease'])) {
+        throw new RuntimeException('Das Vorschaupaket ist nicht verfügbar. Es wurde nichts verändert.');
+    }
+
+    $assets = [];
+    foreach (is_array($release['assets'] ?? null) ? $release['assets'] : [] as $asset) {
+        if (is_array($asset) && isset($asset['name'], $asset['browser_download_url'])) {
+            $assets[$asset['name']] = $asset['browser_download_url'];
+        }
+    }
+    if (! isset($assets['manifest.json'])) {
+        throw new RuntimeException('Das Vorschaupaket ist unvollständig. Es wurde nichts verändert.');
+    }
+    $manifest = json_decode(http($assets['manifest.json']), true);
+    if (! is_array($manifest)
+        || ($manifest['pr'] ?? null) !== DH_PREVIEW_PR
+        || ($manifest['commit_sha'] ?? null) !== DH_PREVIEW_SHA
+        || ! isset($assets[$manifest['zip'] ?? ''])
+        || version_compare(PHP_VERSION, (string) ($manifest['php'] ?? '99.0.0'), '<')) {
+        throw new RuntimeException('Das Vorschaupaket passt nicht zum Server oder zum freigegebenen Branch. Es wurde nichts verändert.');
+    }
+    $manifest['url'] = $assets[$manifest['zip']];
+
+    return $manifest;
 }
 
 function removeTree(string $dir): void

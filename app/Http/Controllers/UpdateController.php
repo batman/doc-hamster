@@ -24,6 +24,8 @@ final class UpdateController
         return view('updates.show', [
             'current' => (string) config('dochamster.version'),
             'available' => session('update.available'),
+            'previewBranches' => session('updates.preview_branches'),
+            'previewInstalled' => str_starts_with((string) config('dochamster.version'), 'preview-'),
             'supported' => $this->supported($request),
             'updated' => $request->query('updated') === '1',
         ]);
@@ -44,6 +46,17 @@ final class UpdateController
         return back()->with('update.available', $latest['version']);
     }
 
+    public function checkPreviews(UpdateSource $source): RedirectResponse
+    {
+        try {
+            $branches = $source->previewBranches();
+        } catch (Throwable) {
+            return back()->withErrors(['preview' => __('updates.unreachable')]);
+        }
+
+        return back()->with('updates.preview_branches', $branches)->with('status', __('updates.previews_refreshed'));
+    }
+
     public function install(Request $request, UpdateSource $source, AuditLog $audit, CurrentOrg $org): RedirectResponse
     {
         $request->validate(['password' => ['required', 'current_password']]);
@@ -60,6 +73,58 @@ final class UpdateController
             return back()->with('status', __('updates.up_to_date'));
         }
 
+        return $this->handoff($request, $installer, $audit, $org, ['version' => $latest['version'], 'channel' => 'stable']);
+    }
+
+    public function installMain(Request $request, UpdateSource $source, AuditLog $audit, CurrentOrg $org): RedirectResponse
+    {
+        $request->validate(['password' => ['required', 'current_password']]);
+        abort_unless($this->supported($request), 403);
+
+        try {
+            $latest = $source->latest(PHP_VERSION);
+            $installer = $latest === null ? null : $source->installer($latest);
+        } catch (Throwable) {
+            return back()->withErrors(['update' => __('updates.unreachable')]);
+        }
+
+        if ($latest === null || $installer === null) {
+            return back()->withErrors(['update' => __('updates.up_to_date')]);
+        }
+
+        return $this->handoff($request, $installer, $audit, $org, ['version' => $latest['version'], 'channel' => 'stable']);
+    }
+
+    public function installPreview(Request $request, UpdateSource $source, AuditLog $audit, CurrentOrg $org): RedirectResponse
+    {
+        $data = $request->validate([
+            'password' => ['required', 'current_password'],
+            'preview_pr' => ['required', 'integer', 'min:1'],
+            'confirm_preview' => ['accepted'],
+        ]);
+        abort_unless($this->supported($request), 403);
+
+        try {
+            $preview = $source->preview((int) $data['preview_pr']);
+            if (! version_compare(PHP_VERSION, $preview['php'], '>=')) {
+                return back()->withErrors(['preview' => __('updates.preview_php')]);
+            }
+            $installer = $source->installer($preview);
+        } catch (Throwable) {
+            return back()->withErrors(['preview' => __('updates.preview_unavailable')]);
+        }
+
+        return $this->handoff($request, $installer, $audit, $org, [
+            'version' => $preview['version'],
+            'channel' => 'preview',
+            'pull_request' => $preview['pr'],
+            'commit_sha' => $preview['commit_sha'],
+        ]);
+    }
+
+    /** @param array<string, int|string> $meta */
+    private function handoff(Request $request, string $installer, AuditLog $audit, CurrentOrg $org, array $meta): RedirectResponse
+    {
         $webRoot = $this->webRoot($request);
         $code = strtoupper(bin2hex(random_bytes(10)));
 
@@ -70,7 +135,7 @@ final class UpdateController
             return back()->withErrors(['update' => __('updates.not_writable')]);
         }
 
-        $audit->record('update.started', orgId: $org->id(), userId: $org->membership()->user_id, meta: ['version' => $latest['version']], ip: $request->ip());
+        $audit->record('update.started', orgId: $org->id(), userId: $org->membership()->user_id, meta: $meta, ip: $request->ip());
 
         return redirect()->to('/install.php?code='.$code.'&update=1');
     }
