@@ -1,9 +1,27 @@
 name: Try-out smoke
 
+# Only when the stack itself or its dependencies change: a full Docker build
+# takes minutes and the app is tested by ci.yml anyway.
 on:
   push:
     branches: [main]
+    paths:
+      - Dockerfile
+      - docker-compose.yml
+      - .dockerignore
+      - docker/**
+      - composer.json
+      - composer.lock
+      - .github/workflows/tryout.yml
   pull_request:
+    paths:
+      - Dockerfile
+      - docker-compose.yml
+      - .dockerignore
+      - docker/**
+      - composer.json
+      - composer.lock
+      - .github/workflows/tryout.yml
 
 permissions:
   contents: read
@@ -16,7 +34,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - run: docker compose up -d --build
 

@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Environment;
 
-use Symfony\Component\Process\Process;
-use Throwable;
-
 /**
  * What the footer and sidebar show as the version: the release number from
  * the VERSION file (written by release.yml), else the git short hash when
@@ -29,13 +26,12 @@ final class AppVersion
 
     private static function gitHash(string $basePath): ?string
     {
-        return self::readHeadFile($basePath) ?? self::revParse($basePath);
+        return self::readHeadFile($basePath);
     }
 
     /**
      * Plain .git/HEAD read: needs no git binary and trips no ownership
-     * check. Anything exotic (worktrees, packed-refs) falls through to
-     * rev-parse.
+     * check.
      */
     private static function readHeadFile(string $basePath): ?string
     {
@@ -50,33 +46,33 @@ final class AppVersion
         if (! str_starts_with($head, 'ref: ')) {
             return null;
         }
-        $refFile = $basePath.'/.git/'.substr($head, 5);
+        $ref = substr($head, 5);
+        $refFile = $basePath.'/.git/'.$ref;
         if (! is_file($refFile)) {
-            return null;
+            return self::packedRef($basePath, $ref);
         }
         $hash = trim((string) file_get_contents($refFile));
 
         return preg_match('/^[0-9a-f]{40}$/', $hash) === 1 ? substr($hash, 0, 7) : null;
     }
 
-    private static function revParse(string $basePath): ?string
+    /**
+     * After `git gc` a branch hash sits in .git/packed-refs instead of its
+     * own file. Read it there too, so no git process is ever started (this
+     * runs on every request without a config cache).
+     */
+    private static function packedRef(string $basePath, string $ref): ?string
     {
-        try {
-            $process = new Process(
-                ['git', 'rev-parse', '--short', 'HEAD'],
-                $basePath,
-                ['GIT_CONFIG_COUNT' => '1', 'GIT_CONFIG_KEY_0' => 'safe.directory', 'GIT_CONFIG_VALUE_0' => $basePath],
-                timeout: 5,
-            );
-            $process->run();
-            if (! $process->isSuccessful()) {
-                return null;
-            }
-            $hash = trim($process->getOutput());
-
-            return preg_match('/^[0-9a-f]{4,40}$/', $hash) === 1 ? $hash : null;
-        } catch (Throwable) {
+        $packed = $basePath.'/.git/packed-refs';
+        if (! is_file($packed)) {
             return null;
         }
+        foreach (file($packed, FILE_IGNORE_NEW_LINES) ?: [] as $line) {
+            if (preg_match('/^([0-9a-f]{40}) (\S+)$/', $line, $m) === 1 && $m[2] === $ref) {
+                return substr($m[1], 0, 7);
+            }
+        }
+
+        return null;
     }
 }
