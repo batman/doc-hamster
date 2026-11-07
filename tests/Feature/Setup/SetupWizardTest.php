@@ -125,6 +125,41 @@ it('writes the PHP limits to .user.ini and keeps other settings', function (): v
         ->not->toContain('64M');
 });
 
+it('sends expired setup sessions back to the code prompt', function (): void {
+    unlockWizard($this);
+    $this->get('/setup/server')->assertOk();
+
+    // The session lifetime passed: every protected step redirects instead of a bare 403.
+    $this->flushSession();
+
+    $this->get('/setup/server')->assertRedirect(route('setup.welcome'));
+    $this->get('/setup/database')->assertRedirect(route('setup.welcome'));
+    $this->get('/setup/finish')->assertRedirect(route('setup.welcome'));
+    $this->post('/setup/limits')->assertRedirect(route('setup.welcome'));
+    $this->post('/setup/database', [])->assertRedirect(route('setup.welcome'));
+    $this->post('/setup/finish', [])->assertRedirect(route('setup.welcome'));
+});
+
+it('sends a second finish submit back to the code prompt', function (): void {
+    unlockWizard($this);
+
+    $password = 'ein-langes-test-passwort';
+    $this->post('/setup/finish', [
+        'org' => 'Haushalt Doppel', 'username' => 'inhaber-double',
+        'password' => $password, 'password_confirmation' => $password,
+    ])->assertRedirect(route('login'));
+
+    // The finish invalidated the session: a repeated submit is a new visitor.
+    $this->post('/setup/finish', [])->assertRedirect(route('setup.welcome'));
+
+    // No RefreshDatabase here (the wizard purges the connection) – clean up by hand.
+    $user = User::query()->where('username', 'inhaber-double')->first();
+    if ($user !== null) {
+        Organization::query()->whereKey($user->memberships()->pluck('org_id'))->delete();
+        $user->delete();
+    }
+})->group('db');
+
 it('lets the web installer hand over the code by link', function (): void {
     $this->get('/setup')->assertOk();
     $code = trim((string) file_get_contents($this->codePath));

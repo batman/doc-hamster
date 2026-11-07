@@ -52,8 +52,10 @@ it('fails when memory or upload limits are too small', function (string $key, in
     expect(check($probe, $key)->status)->toBe(CheckStatus::Fail);
 })->with([
     'memory_limit 128 MB' => ['memory_limit', 128 * 1024 * 1024],
+    'memory_limit 0 (malformed value)' => ['memory_limit', 0],
     'upload_max_filesize 2 MB' => ['upload_max_filesize', 2 * 1024 * 1024],
     'upload_max_filesize 0 (no uploads)' => ['upload_max_filesize', 0],
+    'upload_max_filesize -2 (nonsense value)' => ['upload_max_filesize', -2],
     'post_max_size 8 MB' => ['post_max_size', 8 * 1024 * 1024],
 ]);
 
@@ -114,6 +116,15 @@ it('warns when cron never ran or stopped running', function (?int $heartbeatAge,
     '10 minutes ago' => [600, 'cron_stale'],
 ]);
 
+it('tells the admin the exact cron command when cron never ran', function (): void {
+    $probe = new FakeSystemProbe;
+    $probe->lastHeartbeat = null;
+    $probe->cronCommand = '/opt/php/bin/php /srv/dochamster/artisan schedule:run';
+
+    expect(check($probe, 'cron')->params)
+        ->toBe(['command' => '/opt/php/bin/php /srv/dochamster/artisan schedule:run']);
+});
+
 it('offers an add-on only when all its tools are present', function (): void {
     $probe = new FakeSystemProbe;
     $probe->executables = ['tesseract'];
@@ -135,4 +146,24 @@ it('turns off every tool-based add-on when proc_open is disabled, without failin
         ->and($doctor->isAvailable(Addon::Heic))->toBeFalse()
         ->and($doctor->isAvailable(Addon::Vips))->toBeTrue()
         ->and(Doctor::hasFailures($doctor->run()))->toBeFalse();
+});
+
+it('skips the database check in local-only mode, even when the database is down', function (): void {
+    $probe = new FakeSystemProbe;
+    $probe->databaseVersion = null;
+    $doctor = new Doctor($probe);
+
+    $keys = array_map(fn (CheckResult $result): string => $result->key, $doctor->run(localOnly: true));
+
+    expect($keys)->not->toContain('database')
+        ->and($keys)->toContain('php_version')
+        ->and($keys)->toContain('cron')
+        ->and(Doctor::hasFailures($doctor->run(localOnly: true)))->toBeFalse();
+});
+
+it('still fails on an unreachable database by default', function (): void {
+    $probe = new FakeSystemProbe;
+    $probe->databaseVersion = null;
+
+    expect(check($probe, 'database')->status)->toBe(CheckStatus::Fail);
 });

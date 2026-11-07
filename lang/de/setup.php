@@ -9,6 +9,7 @@ return [
     'done' => 'docHamster ist eingerichtet.',
     'cron_hint' => 'Noch nötig, falls nicht vorhanden – Cron-Eintrag: :command',
     'env_not_writable' => 'Einrichtung abgebrochen: :path kann nicht geschrieben werden. Bitte Schreibrechte geben.',
+    'key_failed' => 'Einrichtung abgebrochen: Der App-Schlüssel konnte nicht in :path gespeichert werden. Bitte Schreibrechte geben und den Befehl erneut starten.',
     'ask_url' => 'Unter welcher Adresse ist docHamster erreichbar? (feste Domain mit https://, später nicht mehr ändern)',
     'url_not_https' => 'Achtung: Ohne https:// funktionieren Passkeys und die Handy-App nicht (nur zum Testen auf dem eigenen Rechner).',
     'ask_db_intro' => 'Die Datenbank ist noch nicht erreichbar. Bitte die Zugangsdaten eingeben (MariaDB 10.11+ oder MySQL 8.4+):',

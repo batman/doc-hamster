@@ -11,3 +11,9 @@ parameters:
         # Test doubles and fixtures, e.g. the only user of BelongsToOrg until Phase 2.
         - tests/Support
     tmpDir: .phpstan-cache
+
+# D-020: what the arch test cannot see (remote URLs in stream-wrapper calls,
+# global facade aliases) is forbidden outside the net jobs instead.
+rules:
+    - Tests\Support\PhpStan\DisallowHttpStreamWrappersRule
+    - Tests\Support\PhpStan\DisallowNetworkFacadeAliasesRule
