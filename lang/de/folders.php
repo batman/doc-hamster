@@ -31,6 +31,7 @@ return [
     'import_empty' => 'In diesem Ordner sind keine Dateien.',
     'import_unsupported' => 'Dieser Browser kann keine Ordner auswählen. Nimm einen Computer mit Chrome, Edge, Firefox oder Safari.',
     'import_open' => 'Ordner öffnen',
+    'drop_denied' => 'Ordner kannst du nur hereinziehen, wenn du Belege bearbeiten darfst. Ziehe stattdessen die Dateien herein.',
     'imported' => 'Importiert',
     'bank_matching' => 'Belege aus diesem Ordner für den Bankabgleich verwenden',
     'bank_matching_hint' => 'Aus: Die Belege dieses Ordners tauchen beim Zuordnen zu Buchungen nicht auf. Gut für Dokumente, die du nur online haben willst, zum Beispiel Verträge.',

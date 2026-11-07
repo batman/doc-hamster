@@ -34,7 +34,10 @@
                 </header>
                 <nav id="nav" class="sidebar" aria-label="{{ __('app.nav.label') }}">
                     @can('documents.upload')
-                        <form class="nav-upload" method="post" action="{{ route('documents.store') }}" enctype="multipart/form-data" data-busy="{{ __('documents.uploading') }}">
+                        <form class="nav-upload" method="post" action="{{ route('documents.store') }}" enctype="multipart/form-data" data-busy="{{ __('documents.uploading') }}"
+                              {{-- Folders dropped from the computer become folders, like "Ordner importieren" (PO, 2026-11-07). --}}
+                              @can('documents.edit') data-folder-start="{{ route('folders.import') }}" data-folder-file="{{ route('folders.import.file', ['id' => '__ID__']) }}" @endcan
+                              data-folder-running="{{ __('folders.import_running') }}" data-folder-failed="{{ __('folders.import_failed') }}" data-folder-denied="{{ __('folders.drop_denied') }}">
                             @csrf
                             {{-- Opened inside a folder: new uploads go there (issue #77). --}}
                             @if (is_string(request()->query('folder')) && request()->query('folder') !== 'none')

@@ -193,9 +193,117 @@
             }
             event.preventDefault();
             depth = 0;
-            input.files = event.dataTransfer.files;
-            send();
+            // The entries must be read now: the browser empties the drop data once this handler returns.
+            const entries = [...event.dataTransfer.items].map(item => item.webkitGetAsEntry?.() ?? null);
+            if (!entries.some(entry => entry?.isDirectory)) {
+                input.files = event.dataTransfer.files;
+                send();
+                return;
+            }
+            dropFolders(entries.filter(entry => entry !== null));
         });
+
+        // Folders dropped from the computer (PO, 2026-11-07): each one becomes a new folder with its subfolders,
+        // like "Ordner importieren"; files go up one by one. Loose files dropped with them become receipts as usual.
+        const wanted = /\.(pdf|jpe?g|png|gif|webp|heic|heif|tiff?|bmp)$/i;
+        const isReceipt = file => wanted.test(file.name) || file.type.startsWith('image/') || file.type === 'application/pdf';
+        const token = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+        const say = (key, values = {}) => Object.entries(values).reduce((out, [name, value]) => out.replaceAll(':' + name, String(value)), form.dataset[key] ?? '');
+        const post = async (url, body) => {
+            const response = await fetch(url, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token, Accept: 'application/json' }, credentials: 'same-origin' });
+            const data = await response.json().catch(() => ({}));
+            return { ok: response.ok, status: response.status, data };
+        };
+        // readEntries() hands out a folder's entries in batches; an empty batch means the end.
+        const readAll = reader => new Promise((resolve, reject) => {
+            const out = [];
+            const next = () => reader.readEntries(batch => {
+                if (batch.length === 0) {
+                    resolve(out);
+                } else {
+                    out.push(...batch);
+                    next();
+                }
+            }, reject);
+            next();
+        });
+        const fileOf = entry => new Promise((resolve, reject) => entry.file(resolve, reject));
+        // Every file below a folder with its path below it, e.g. "2025/Tanken/beleg.pdf"; hidden files are left out.
+        const walk = async (dir, prefix = '') => {
+            const found = [];
+            for (const entry of await readAll(dir.createReader())) {
+                if (entry.name.startsWith('.')) {
+                    continue;
+                }
+                if (entry.isDirectory) {
+                    found.push(...await walk(entry, prefix + entry.name + '/'));
+                } else {
+                    found.push({ file: await fileOf(entry), path: prefix + entry.name });
+                }
+            }
+            return found;
+        };
+        const showStatus = message => {
+            overlay.querySelector('p').textContent = message;
+            overlay.hidden = false;
+        };
+        const dropFolders = async entries => {
+            if (!form.dataset.folderStart) {
+                overlay.hidden = true;
+                window.alert(say('folderDenied'));
+                return;
+            }
+            form.classList.add('is-busy');
+            showStatus(form.dataset.busy);
+            try {
+                const loose = (await Promise.all(entries.filter(entry => entry.isFile && !entry.name.startsWith('.')).map(fileOf))).filter(isReceipt);
+                const jobs = [];
+                for (const folder of entries.filter(entry => entry.isDirectory)) {
+                    jobs.push({ name: folder.name, files: (await walk(folder)).filter(({ file }) => isReceipt(file)) });
+                }
+                const total = jobs.reduce((sum, job) => sum + job.files.length, 0);
+                // Opened inside a folder: the dropped folders go into it.
+                const parent = form.querySelector('input[name="folder"]')?.value;
+                let done = 0;
+                let lastUrl = null;
+                for (const job of jobs) {
+                    const start = new FormData();
+                    start.append('name', job.name);
+                    if (parent) {
+                        start.append('parent_id', parent);
+                    }
+                    const made = await post(form.dataset.folderStart, start);
+                    if (!made.ok) {
+                        throw new Error(made.data?.message ?? say('folderFailed'));
+                    }
+                    lastUrl = made.data.url;
+                    for (const { file, path } of job.files) {
+                        showStatus(say('folderRunning', { done, total }));
+                        const body = new FormData();
+                        body.append('file', file);
+                        body.append('path', path);
+                        const result = await post(form.dataset.folderFile.replace('__ID__', made.data.id), body);
+                        // 422 = not a receipt file (wrong type, too big): skipped, like the folder import.
+                        if (!result.ok && result.status !== 422) {
+                            throw new Error(say('folderFailed'));
+                        }
+                        done++;
+                    }
+                }
+                if (loose.length > 0) {
+                    const list = new DataTransfer();
+                    loose.forEach(file => list.items.add(file));
+                    input.files = list.files;
+                    form.submit();
+                    return;
+                }
+                window.location.assign(jobs.length === 1 && lastUrl ? lastUrl : window.location.href);
+            } catch (error) {
+                overlay.hidden = true;
+                window.alert(error instanceof Error && error.message ? error.message : say('folderFailed'));
+                window.location.reload();
+            }
+        };
     };
 
     // Toolbar dropdowns (filter, view): the icon button opens its panel; Escape and a click outside close it.
