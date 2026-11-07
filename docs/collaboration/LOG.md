@@ -288,3 +288,9 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done / next step: The PO still needs to reproduce the original light upward drag on the server and confirm no copy is created.
 - Watch out: None.
 - Branch/PR: lead/BUG-DROP-1-preview (#86)
+
+## 2026-11-07 · Lead · BUG-DROP-1 (PO verification)
+- Done: The PO tested the PR #86 preview on the server, confirmed the duplicate is gone, and approved merging it into `main`.
+- Not done / next step: Merge after the updated PR's CI passes, then publish the stable update.
+- Watch out: Keep PR #87 open for the separate zoom preview.
+- Branch/PR: lead/BUG-DROP-1-preview (#86)
