@@ -294,3 +294,14 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done / next step: Merge after the updated PR's CI passes, then publish the stable update.
 - Watch out: Keep PR #87 open for the separate zoom preview.
 - Branch/PR: lead/BUG-DROP-1-preview (#86)
+
+## 2026-11-06 · Manager · SCAN (folders in the core)
+- Done (PO order: "just do it, I make the decisions"): D-026 recorded. Folders in the core: table `folders` + `documents.folder_id`, nested up to 5 levels, page under Einstellungen > Ordner (create, rename, move, delete), folder bar above the receipt list, folder choice in the receipt view, uploads inside a folder stay there. Every organisation has the folder "Belege" (undeletable, new receipts land there; existing receipts moved in by the migration). Bank matching only offers receipts of folders with "Bankabgleich" on (on for "Belege", off for new folders). 13 new folder tests plus one bank test; pint and PHPStan clean.
+- Not done: print button and zoom in the document view (next PR); the module itself. Full suite not run on MySQL/MariaDB here (CI does); on SQLite three tests fail the same way on clean main (SetupCommandTest x2, UpdateTest x1), unrelated.
+- Watch out: `Document::scopeMatchable()` still counts receipts without a folder (old data) as matchable. `Folder::defaultIdFor()` creates "Belege" for an organisation that has none.
+- Branch/PR: manager/SCAN-folders
+
+## 2026-11-07 · Manager · Folders on their own (preview)
+- Done (PO request): the folders commit from the SCAN/PHONE branch (#89) taken out into its own branch and PR so the PO can preview and release folders first: folders and subfolders, an automatic "Belege" folder for every organisation, a folder bar in Belege, "Ordner" in the receipt view, bank matching per folder. Applied cleanly on main; full suite on SQLite passes except the known 5 MySQL-only tests; pint/PHPStan clean.
+- Watch out (Lead): #89 still contains the same commit; once this is on main, rebasing #89 drops it.
+- Branch/PR: manager/SCAN-folders

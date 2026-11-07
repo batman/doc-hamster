@@ -41,11 +41,12 @@ final class DocumentIntake
     /**
      * @param  list<string>  $tagIds
      */
-    public static function store(UploadedFile $upload, string $mime, string $extension, string $orgId, string $userId, string $title, array $tagIds = [], bool $inPrintTray = false): Document
+    public static function store(UploadedFile $upload, string $mime, string $extension, string $orgId, string $userId, string $title, array $tagIds = [], bool $inPrintTray = false, ?string $folderId = null): Document
     {
-        $document = DB::transaction(static function () use ($upload, $mime, $extension, $orgId, $userId, $title, $tagIds, $inPrintTray): Document {
+        $document = DB::transaction(static function () use ($upload, $mime, $extension, $orgId, $userId, $title, $tagIds, $inPrintTray, $folderId): Document {
             $document = Document::query()->create([
                 'org_id' => $orgId,
+                'folder_id' => $folderId ?? Folder::defaultIdFor($orgId),
                 'uploaded_by' => $userId,
                 'title' => Str::limit($title, 250, ''),
                 'in_print_tray' => $inPrintTray,
