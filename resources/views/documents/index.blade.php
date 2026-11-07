@@ -5,10 +5,18 @@
 @section('main_class', 'page-windows')
 
 @section('content')
+    @php $openFolder = $folder !== null ? collect($folders)->pluck('folder')->firstWhere('id', $folder) : null; @endphp
     <div class="windows" data-windows>
-    <x-window :title="__('documents.title')" icon="receipt" :url="route('documents.index', request()->except('page'))">
+    {{-- The folders themselves are in the menu under Belege (PO, 2026-11-07); here the open one, with edit and "new subfolder". --}}
+    <x-window :title="$openFolder?->name ?? __('documents.title')" :icon="$openFolder?->iconName() ?? 'receipt'" :url="route('documents.index', request()->except('page'))" :class="$openFolder?->colorClass()">
         <x-slot:actions>
             <div class="toolbar">
+                @if ($openFolder && Gate::allows('documents.edit'))
+                    @if ($openFolder->depth() < \App\Domain\Documents\Folder::MAX_DEPTH)
+                        <a class="icon-button" href="{{ route('folders.index', ['parent' => $openFolder->id]) }}" aria-label="{{ __('folders.add_sub', ['name' => $openFolder->name]) }}" data-tooltip="{{ __('folders.add_sub', ['name' => $openFolder->name]) }}"><x-icon name="folder-plus" /></a>
+                    @endif
+                    <a class="icon-button" href="{{ route('folders.index', ['folder' => $openFolder->id]) }}" aria-label="{{ __('folders.edit') }}" data-tooltip="{{ __('folders.edit') }}"><x-icon name="pencil" /></a>
+                @endif
                 @if ($trashed > 0)
                     <a href="{{ route('documents.trash') }}">{{ __('documents.trash_count', ['count' => $trashed]) }}</a>
                 @endif

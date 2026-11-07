@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Domain\Audit\AuditLog;
+use App\Domain\Documents\Folder;
 use App\Domain\Documents\Tag;
 use App\Domain\Org\CurrentOrg;
 use Closure;
@@ -43,11 +44,14 @@ final class TagController
         return view('tags.index', ['tags' => $tags, 'tag' => is_string($wanted) ? $tags->firstWhere('id', $wanted) : null]);
     }
 
-    /** One rule per tag with its colour: the CSP allows no inline styles. */
+    /** One rule per tag and per coloured folder: the CSP allows no inline styles. */
     public function css(Request $request): Response
     {
         $css = Tag::query()->get(['id', 'color'])
             ->map(static fn (Tag $tag): string => sprintf('.tag-%s{--tag:%s;--tag-text:%s}', $tag->id, $tag->color, $tag->textColor()))
+            ->merge(Folder::query()->whereNotNull('color')->get(['id', 'color'])
+                ->filter(static fn (Folder $folder): bool => preg_match('/^#[0-9a-f]{6}$/', (string) $folder->color) === 1)
+                ->map(static fn (Folder $folder): string => sprintf('.fc-%s{--folder:%s}', $folder->id, $folder->color)))
             ->implode('
 ');
 

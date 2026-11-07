@@ -9,6 +9,7 @@ use App\Domain\Auth\User;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
 use App\Domain\Documents\DocumentIntake;
+use App\Domain\Documents\Folder;
 use App\Domain\Documents\Tag;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
@@ -72,6 +73,14 @@ final class DocumentController
             $query->whereHas('tags', static fn ($tag) => $tag->whereKey($tagId));
         }
 
+        // One folder, with everything below it (issue #77).
+        $folders = Folder::flat();
+        $wantedFolder = $request->query('folder');
+        $folder = is_string($wantedFolder) && collect($folders)->contains(static fn (array $row): bool => $row['folder']->id === $wantedFolder) ? $wantedFolder : null;
+        if ($folder !== null) {
+            $query->whereIn('folder_id', Folder::branchIds($folder));
+        }
+
         $saved = $this->user($request)->receipt_view;
         $view = $saved !== null && isset(self::VIEWS[$saved]) ? $saved : 'details';
 
@@ -85,13 +94,15 @@ final class DocumentController
             $documents = $query->latest()->limit(self::LIMIT + 1)->get();
         }
         // Filtering in the browser works only when the page holds every receipt (point 7).
-        $complete = $selected === [] && ($view === 'calendar' || $documents->count() <= self::LIMIT);
+        $complete = $selected === [] && $folder === null && ($view === 'calendar' || $documents->count() <= self::LIMIT);
 
         return [
             'open' => null,
             'documents' => $view === 'calendar' ? $documents : $documents->take(self::LIMIT),
             'tags' => $tags,
             'selected' => $selected,
+            'folders' => $folders,
+            'folder' => $folder,
             'view' => $view,
             'views' => self::VIEWS,
             'month' => $month,
@@ -118,6 +129,7 @@ final class DocumentController
             'files' => ['required_without:file', 'array', 'max:20'],
             'files.*' => ['file', 'max:25600'],
             ...self::tagRules(),
+            ...self::folderRule(),
         ]);
 
         $many = $request->file('files');
@@ -134,7 +146,7 @@ final class DocumentController
         /** @var list<string> $tagIds */
         $tagIds = array_values($data['tags'] ?? []);
         foreach ($checked as [$upload, $mime, $extension]) {
-            $document = DocumentIntake::store($upload, $mime, $extension, $org->id(), $userId, $upload->getClientOriginalName(), $tagIds);
+            $document = DocumentIntake::store($upload, $mime, $extension, $org->id(), $userId, $upload->getClientOriginalName(), $tagIds, folderId: $data['folder'] ?? null);
 
             $audit->record('document.uploaded', orgId: $org->id(), userId: $userId, subject: $document, ip: $request->ip());
         }
@@ -165,10 +177,16 @@ final class DocumentController
             'title' => ['sometimes', 'required', 'string', 'max:250'],
             'note' => ['nullable', 'string', 'max:5000'],
             ...self::tagRules(),
+            ...self::folderRule(),
         ]);
         $document = $this->visible($request)->whereKey($id)->firstOrFail();
 
-        $document->update(['note' => $data['note'] ?? null, ...(isset($data['title']) ? ['title' => $data['title']] : [])]);
+        // The folder changes only when the form has the field, so other forms never clear it.
+        $document->update([
+            'note' => $data['note'] ?? null,
+            ...(isset($data['title']) ? ['title' => $data['title']] : []),
+            ...($request->has('folder') ? ['folder_id' => $data['folder'] ?? Folder::defaultIdFor($org->id())] : []),
+        ]);
         $document->tags()->sync($data['tags'] ?? []);
         $audit->record('document.changed', orgId: $org->id(), userId: $this->userId($request), subject: $document, ip: $request->ip());
 
@@ -258,6 +276,16 @@ final class DocumentController
     private static function tagRules(): array
     {
         return ['tags' => ['array'], 'tags.*' => [Rule::in(Tag::query()->pluck('id')->all())]];
+    }
+
+    /**
+     * Only an existing folder of the active organisation (Folder is org-scoped); empty means "Belege".
+     *
+     * @return array<string, mixed>
+     */
+    private static function folderRule(): array
+    {
+        return ['folder' => ['nullable', 'string', Rule::in(Folder::query()->pluck('id')->all())]];
     }
 
     private function userId(Request $request): string
