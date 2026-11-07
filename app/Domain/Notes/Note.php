@@ -22,7 +22,7 @@ use Illuminate\Support\Carbon;
  * @property string $org_id
  * @property string $user_id
  * @property string|null $body
- * @property list<array{text: string, done: bool}>|null $checklist old checklist; since 2026-11-07 lists live in the body (NoteText)
+ * @property list<array{text: string, done: bool}>|null $checklist old checklist; since 2026-11-07 lists live in the body ("[a, #b]")
  * @property bool $shared
  * @property bool $editable
  * @property string|null $title

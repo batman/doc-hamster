@@ -2,10 +2,10 @@
 <label for="title-{{ $key }}">{{ __('home.note_title') }}</label>
 <input id="title-{{ $key }}" name="title" maxlength="100" value="{{ $note?->title }}" placeholder="{{ __('home.untitled') }}">
 
-{{-- The text is written here only for a new note; afterwards it is changed on the note (double click). --}}
+{{-- The text is written here only for a new note; afterwards right on the note. --}}
 @if ($note === null)
     <label for="body-{{ $key }}">{{ __('home.body') }}</label>
-    <textarea id="body-{{ $key }}" name="body" rows="4"></textarea>
+    <textarea id="body-{{ $key }}" class="note-new-text" name="body" rows="4"></textarea>
 @else
     <p class="note-hint">{{ __('home.text_hint') }}</p>
 @endif

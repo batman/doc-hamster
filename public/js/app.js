@@ -708,76 +708,189 @@
         }));
         notes.filter(note => note.dataset.noteLook).forEach(note => sized.observe(note));
 
-        // A click on a list entry ticks it (sets or removes its "#" in the text).
-        board.addEventListener('change', event => {
-            const box = event.target.closest('[data-note-check]');
-            if (!box) {
+        // Edit dialog: colour and opacity show on the note right away; closing without saving puts the old look back (A9).
+        document.querySelectorAll('[data-note-preview]').forEach(dialog => {
+            const note = board.querySelector(`[data-note-id="${dialog.dataset.notePreview}"]`);
+            const form = dialog.querySelector('form');
+            if (!note || !form) {
                 return;
             }
-            const { list, item, text } = box.dataset;
-            send(box.dataset.noteCheck, { list, item, text })
-                .then(response => (response.ok ? response.json() : Promise.reject(new Error('changed'))))
-                .then(data => {
-                    // Keep the raw text for the double click in step with the tick.
-                    const raw = box.closest('[data-note-text]')?.querySelector('template[data-note-raw]');
-                    if (raw) {
-                        raw.content.textContent = data.body;
-                    }
-                })
-                .catch(() => location.reload());
+            const colors = [...form.querySelectorAll('input[name="color"]')].map(input => `note-${input.value}`);
+            let before = null;
+            let saved = false;
+            const show = (color, alpha) => {
+                note.classList.remove(...colors);
+                note.classList.add(color);
+                note.style.setProperty('--note-alpha', alpha);
+            };
+            form.addEventListener('input', () => {
+                const color = form.querySelector('input[name="color"]:checked');
+                const opacity = form.querySelector('input[name="opacity"]');
+                show(color ? `note-${color.value}` : before.color, opacity ? `${opacity.value}%` : before.alpha);
+            });
+            form.addEventListener('submit', () => { saved = true; });
+            new MutationObserver(() => {
+                if (!dialog.hidden) {
+                    before = { color: colors.find(c => note.classList.contains(c)) ?? 'note-yellow', alpha: note.style.getPropertyValue('--note-alpha') || '100%' };
+                    saved = false;
+                } else if (before && !saved) {
+                    show(before.color, before.alpha);
+                    form.reset();
+                }
+            }).observe(dialog, { attributes: true, attributeFilter: ['hidden'] });
         });
 
-        // Double click edits the text right on the note. Click next to it or Ctrl+Enter saves, Esc cancels.
-        board.addEventListener('dblclick', event => {
-            const content = event.target.closest('[data-note-text]');
-            if (!content || content.classList.contains('is-editing') || event.target.closest('input, label, a, button')) {
+        // Text (Go of 2026-11-07, round 2): the note's text is always a text field in a monospace font.
+        // Lists "[a, b, #c]" are set one entry per line; a mirror with the same font lies exactly over the
+        // field and draws our own checkboxes in the first three columns. A click in the text writes right
+        // there (the field is underneath), a click on a box ticks. Leaving the field formats and saves.
+        const LIST = /\[([^[\]]*)\]/g;
+        const entries = inner => inner.split(',')
+            .map(part => part.replace(/\s+/g, ' ').trim())
+            .map(part => ({ done: part.startsWith('#'), text: (part.startsWith('#') ? part.slice(1) : part).trim() }))
+            .filter(entry => entry.text !== '');
+        const block = items => items.map((item, i) => `${i === 0 ? '[' : ' '} ${item.done ? '#' : ' '}${item.text}${i === items.length - 1 ? ']' : ','}`).join('\n');
+        // After a list the text goes on in the next line.
+        const after = rest => {
+            const text = rest.replace(/^[ \t]+/, '');
+            return text === '' || text.startsWith('\n') ? text : `\n${text}`;
+        };
+        const format = text => {
+            let out = '';
+            let pos = 0;
+            for (const match of text.matchAll(LIST)) {
+                const items = entries(match[1]);
+                if (items.length === 0) {
+                    continue;
+                }
+                let before = text.slice(pos, match.index);
+                before = (pos > 0 ? after(before) : before).replace(/[ \t]+$/, '');
+                if ((out + before) !== '' && !(out + before).endsWith('\n')) {
+                    before += '\n';
+                }
+                out += before + block(items);
+                pos = match.index + match[0].length;
+            }
+            return pos > 0 ? out + after(text.slice(pos)) : text;
+        };
+        const span = (cls, text) => {
+            const el = document.createElement('span');
+            el.className = cls;
+            el.textContent = text;
+            return el;
+        };
+        // The mirror holds exactly the field's characters; only their look differs.
+        const mirror = (wrap, area) => {
+            const view = wrap.querySelector('.note-mirror');
+            const text = area.value;
+            const open = !area.readOnly;
+            view.replaceChildren();
+            let pos = 0;
+            for (const match of text.matchAll(LIST)) {
+                if (entries(match[1]).length === 0) {
+                    continue;
+                }
+                view.append(text.slice(pos, match.index));
+                let at = match.index;
+                match[0].split('\n').forEach((line, i) => {
+                    if (i > 0) {
+                        view.append('\n');
+                        at += 1;
+                    }
+                    // Our layout: 3 columns for the box, the entry, then "," or "]". Anything else stays plain text.
+                    const ok = /^[[ ] [ #]\S/.test(line) && /[,\]]$/.test(line);
+                    if (!ok) {
+                        view.append(line);
+                    } else {
+                        const done = line[2] === '#';
+                        const slot = span('note-slot', line.slice(0, 3));
+                        const box = span(`note-box${done ? ' is-done' : ''}`, '');
+                        box.setAttribute('role', 'checkbox');
+                        box.setAttribute('aria-checked', String(done));
+                        box.setAttribute('aria-label', line.slice(3, -1));
+                        box.dataset.at = String(at + 2);
+                        if (open) {
+                            box.tabIndex = 0;
+                        }
+                        slot.append(box);
+                        view.append(slot, span(`note-entry${done ? ' is-done' : ''}`, line.slice(3, -1)), span('note-mark', line.slice(-1)));
+                    }
+                    at += line.length;
+                });
+                pos = match.index + match[0].length;
+            }
+            view.append(text.slice(pos), '\n');
+        };
+        const grow = area => {
+            area.style.height = 'auto';
+            area.style.height = `${area.scrollHeight}px`;
+        };
+        const save = (wrap, area) => {
+            if (area.value === area.dataset.saved || !wrap.dataset.noteText) {
                 return;
             }
-            const view = content.querySelector('.note-text');
-            const raw = content.querySelector('template[data-note-raw]');
-            const editor = document.createElement('textarea');
-            editor.className = 'note-editor';
-            editor.value = raw.content.textContent;
-            editor.setAttribute('aria-label', content.title);
-            content.classList.add('is-editing');
-            view.hidden = true;
-            content.append(editor);
-            editor.focus();
-            let open = true;
-            const close = () => {
-                open = false;
-                editor.remove();
-                view.hidden = false;
-                content.classList.remove('is-editing');
-            };
-            const save = () => {
-                if (!open) {
-                    return;
-                }
-                const body = editor.value;
-                close();
-                if (body === raw.content.textContent) {
-                    return;
-                }
-                send(content.dataset.noteText, { body })
-                    .then(response => (response.ok ? response.json() : Promise.reject(response)))
-                    .then(data => {
-                        view.innerHTML = data.html;
-                        raw.content.textContent = body;
-                    })
-                    .catch(() => location.reload());
-            };
-            editor.addEventListener('keydown', e => {
+            const body = area.value;
+            send(wrap.dataset.noteText, { body })
+                .then(response => (response.ok ? (area.dataset.saved = body) : Promise.reject(response)))
+                .catch(() => location.reload());
+        };
+        board.querySelectorAll('.note-text').forEach(wrap => {
+            const area = wrap.querySelector('.note-area');
+            area.value = format(area.value);
+            area.dataset.saved = area.value;
+            mirror(wrap, area);
+            grow(area);
+            area.addEventListener('input', () => grow(area));
+            area.addEventListener('keydown', e => {
                 if (e.key === 'Escape') {
                     e.preventDefault();
-                    close();
+                    area.value = area.dataset.saved;
+                    area.blur();
                 } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                     e.preventDefault();
-                    save();
+                    area.blur();
                 }
             });
-            editor.addEventListener('blur', save);
+            area.addEventListener('blur', () => {
+                area.value = format(area.value);
+                mirror(wrap, area);
+                grow(area);
+                save(wrap, area);
+            });
         });
+        const tick = box => {
+            const wrap = box.closest('.note-text');
+            const area = wrap.querySelector('.note-area');
+            if (area.readOnly) {
+                return;
+            }
+            const at = Number(box.dataset.at);
+            area.value = area.value.slice(0, at) + (area.value[at] === '#' ? ' ' : '#') + area.value.slice(at + 1);
+            mirror(wrap, area);
+            save(wrap, area);
+        };
+        // The box must not take the focus from nowhere into the field underneath.
+        board.addEventListener('pointerdown', event => {
+            if (event.target.closest('.note-box')) {
+                event.preventDefault();
+            }
+        });
+        board.addEventListener('click', event => {
+            const box = event.target.closest('.note-box');
+            if (box) {
+                tick(box);
+            }
+        });
+        board.addEventListener('keydown', event => {
+            const box = event.target.closest('.note-box');
+            if (box && (event.key === ' ' || event.key === 'Enter')) {
+                event.preventDefault();
+                tick(box);
+                board.querySelector(`.note-box[data-at="${box.dataset.at}"]`)?.focus();
+            }
+        });
+        addEventListener('resize', () => board.querySelectorAll('.note-area').forEach(grow));
+        new ResizeObserver(() => board.querySelectorAll('.note-area').forEach(grow)).observe(board);
 
         wide.addEventListener('change', layout);
         addEventListener('resize', () => wide.matches && fit());

@@ -38,19 +38,20 @@ it('keeps a quick note private, and with the right shows it to everyone', functi
 
     // The clerk may not see the Admin's receipt, so the shared note doesn't name it (#56).
     $this->actingAs($clerk->user)->get('/')->assertSee('Für alle')->assertDontSee('bon.jpg');
-    $this->post('/notes/'.$note->id.'/check', ['list' => 0, 'item' => 0, 'text' => 'Milch'])->assertForbidden();
+    $this->postJson('/notes/'.$note->id.'/text', ['body' => 'Für alle [#Milch, #Brot]'])->assertForbidden();
 
-    // The edit dialog sends no text, so the text stays.
+    // The edit dialog sends no text, so the text stays; then others may tick (write the text).
     $this->actingAs($this->admin->user)->post('/notes/'.$note->id, ['shared' => 1, 'editable' => 1]);
-    $this->actingAs($clerk->user)->postJson('/notes/'.$note->id.'/check', ['list' => 0, 'item' => 0, 'text' => 'Milch'])->assertJson(['body' => 'Für alle [#Milch, #Brot]']);
-    $this->postJson('/notes/'.$note->id.'/check', ['list' => 0, 'item' => 1, 'text' => 'Butter'])->assertStatus(409);
+    expect($note->fresh()->body)->toBe('Für alle [Milch, #Brot]');
+    $this->actingAs($clerk->user)->postJson('/notes/'.$note->id.'/text', ['body' => 'Für alle [#Milch, #Brot]'])->assertOk();
+    expect($note->fresh()->body)->toBe('Für alle [#Milch, #Brot]');
 });
 
 it('changes the text on the note and keeps its size', function (): void {
     $this->actingAs($this->admin->user)->post('/notes', ['body' => 'alt']);
     $note = Note::query()->withoutGlobalScope(OrgScope::class)->firstOrFail();
 
-    $this->postJson('/notes/'.$note->id.'/text', ['body' => 'neu [x, #y]'])->assertOk()->assertSee('data-text=\"y\"', false);
+    $this->postJson('/notes/'.$note->id.'/text', ['body' => 'neu [x, #y]'])->assertOk();
     $this->postJson('/notes/'.$note->id.'/look', ['w' => 300, 'h' => 200])->assertOk();
     $this->postJson('/notes/'.$note->id.'/look', ['w' => 50])->assertStatus(422);
     expect($note->fresh()->only(['body', 'width', 'height']))->toBe(['body' => 'neu [x, #y]', 'width' => 300, 'height' => 200]);

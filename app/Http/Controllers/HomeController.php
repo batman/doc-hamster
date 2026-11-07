@@ -6,7 +6,6 @@ namespace App\Http\Controllers;
 
 use App\Domain\Documents\Document;
 use App\Domain\Notes\Note;
-use App\Domain\Notes\NoteText;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
 use Illuminate\Contracts\View\View;
@@ -20,7 +19,7 @@ use Illuminate\Validation\Rule;
 
 /**
  * Home: sticky notes (collected 2026-11-03). Text with inline lists
- * ("[Milch, #Brot]", NoteText) and links to receipts. A note is private; with the right "Notizen für alle zeigen" its
+ * ("[Milch, #Brot]", set and drawn by app.js) and links to receipts. A note is private; with the right "Notizen für alle zeigen" its
  * author shows it to everyone and decides whether others may change it.
  */
 final class HomeController
@@ -95,35 +94,16 @@ final class HomeController
     }
 
     /**
-     * Ticks or unticks one list entry by setting or removing its "#" in the
-     * text; whoever may change the note may tick (A8). 409 when the entry
-     * was changed meanwhile.
+     * The text, written right on the note. Lists ("[a, #b]") and their ticks
+     * are part of the text; app.js sets and draws them.
      */
-    public function check(Request $request, string $id, CurrentOrg $org): JsonResponse|RedirectResponse
-    {
-        $note = $this->editable($id, $org, unlocked: true);
-        $data = $request->validate([
-            'list' => ['required', 'integer', 'min:0'],
-            'item' => ['required', 'integer', 'min:0'],
-            'text' => ['required', 'string', 'max:5000'],
-        ]);
-        $body = NoteText::toggle((string) $note->body, (int) $data['list'], (int) $data['item'], (string) $data['text']);
-        abort_if($body === null, 409);
-        $note->update(['body' => $body]);
-
-        return $request->expectsJson() ? response()->json(['body' => $body]) : redirect()->route('home');
-    }
-
-    /** The text, changed right on the note (double click). Answers with the new content for the board. */
     public function text(Request $request, string $id, CurrentOrg $org): JsonResponse|RedirectResponse
     {
         $note = $this->editable($id, $org, unlocked: true);
         $data = $request->validate(['body' => ['nullable', 'string', 'max:5000']]);
         $note->update(['body' => ($data['body'] ?? '') === '' ? null : $data['body']]);
 
-        return $request->expectsJson()
-            ? response()->json(['html' => view('home._body', ['note' => $note, 'open' => true])->render()])
-            : redirect()->route('home');
+        return $request->expectsJson() ? response()->json(['ok' => true]) : redirect()->route('home');
     }
 
     public function destroy(string $id, CurrentOrg $org): RedirectResponse
