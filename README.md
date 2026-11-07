@@ -45,6 +45,8 @@ You can also upload `install.php` again by hand. It finds the existing installat
 
 There is no backup function in DocHamster yet. Use your host's backups for the files and the database.
 
+Security note for operators: where PHP's Imagick extension is installed, DocHamster uses it (via Ghostscript) to thumbnail the first page of uploaded PDFs. Ghostscript has a history of code-execution CVEs — lock it down in ImageMagick's `policy.xml`, or disable PDF coders there if you want no PDF thumbnails at all.
+
 ## Try it in 2 minutes (Docker)
 
 The fastest way to see DocHamster running. You need only Docker — no PHP, no Composer, no database, no hosting.
