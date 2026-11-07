@@ -71,14 +71,14 @@ it('is for owners and people with the update box, and needs the password to inst
 
     // "System aktualisieren" opens the page; previews need their own box on top (PO 2026-11-07).
     $updater = Membership::factory()->withRights(RoleRight::Update)->create();
-    $this->actingAs($updater->user)->get('/update')->assertOk()->assertDontSee('preview-branches');
+    $this->actingAs($updater->user)->get('/update')->assertOk()->assertDontSee('update/previews');
     $this->post('/update/previews')->assertForbidden();
 
     $onlyPreview = Membership::factory()->withRights(RoleRight::UpdatePreview)->create();
     $this->actingAs($onlyPreview->user)->get('/update')->assertForbidden();
 
     $both = Membership::factory()->withRights(RoleRight::Update, RoleRight::UpdatePreview)->create();
-    $this->actingAs($both->user)->get('/update')->assertOk()->assertSee('preview-branches');
+    $this->actingAs($both->user)->get('/update')->assertOk()->assertSee('update/previews');
 });
 
 it('refuses an installer whose checksum does not match', function (): void {

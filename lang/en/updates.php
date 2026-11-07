@@ -28,4 +28,12 @@ return [
     'preview_php' => 'This branch requires a newer PHP version than the server has.',
     'main_recommended' => 'You are using a preview branch. Main is recommended for normal use.',
     'install_main' => 'Switch to recommended Main',
+    'installed' => 'Installed',
+    'updates_heading' => 'Updates',
+    'preview_badge' => 'Preview #:number',
+    'preview_state' => 'Commit :sha · Main is recommended for normal use.',
+    'back_to_main' => 'Back to Main',
+    'password_hint' => 'Confirm with your password.',
+    'install_short' => 'Install',
+    'preview_install_number' => 'Install preview #:number',
 ];

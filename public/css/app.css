@@ -612,17 +612,22 @@ a.col-item { text-decoration: none; }
 .tray-howto li { margin-bottom: .35rem; }
 
 /* Go of 2026-11-05: column menu */
-/* Desktop: everything right of the menu starts below the dark bar and scrolls in its own box, both ways (points 1, 4, 7). */
+/* Desktop: the area right of the menu scrolls in its own box, both ways (point 7). It starts with a gap as high
+   as the dark bar, so the menu button never covers the title; scrolling takes everything up to the very top
+   (Go 2026-11-07, point 4). Columns reach the top with their background and keep their content below the gap. */
 @media (min-width: 64rem) {
-    .shell:not(:has(> .side-plain)) .content { margin-top: 3.5rem; height: calc(100vh - 3.5rem); overflow: auto; }
+    .shell:not(:has(> .side-plain)) .content { height: 100vh; padding-top: 3.5rem; overflow: auto; }
     .page-split { min-height: 100%; }
+    .content > .page-split:has(> .cols) { margin-top: -3.5rem; min-height: calc(100% + 3.5rem); }
+    .content > .page-split > .cols > .col { padding-top: 4.75rem; }
+    .content > .page-split > .cols > button.col-strip { padding-top: 4.5rem; }
     /* Menu hidden: only the menu button is left, the first strip slides under it (point 5). */
     :is(html.nav-closed, .shell.nav-closed) .side:not(.side-plain) { position: fixed; top: 0; left: 0; height: 3.5rem; }
     .cols > .col-page, .cols > .col.is-last { min-width: 30rem; }
     .cols > .col-pane { min-width: 20rem; }
     /* A shade at the edge while there is more to scroll sideways (A6). */
     .shell::before, .shell::after {
-        content: ""; position: fixed; top: 3.5rem; bottom: var(--sbh, 0px); z-index: 15; width: .75rem;
+        content: ""; position: fixed; top: 0; bottom: var(--sbh, 0px); z-index: 15; width: .75rem;
         pointer-events: none; opacity: 0; transition: opacity .15s;
     }
     .shell::before { left: var(--content-left, 0px); background: linear-gradient(to right, rgb(0 0 0 / .18), transparent); }
@@ -672,3 +677,55 @@ button.col-strip:hover > .icon { color: var(--primary-ink); }
 @media (max-width: 63.99rem) {
     html:not(.nav-open) .nav-dot:not([hidden]) { display: block; }
 }
+
+/* Floating menu button (Go 2026-11-07, point 3, A24): with the menu folded away on desktop, and always on phones,
+   the button floats over the content with a shadow instead of sitting in a dark block. */
+@media (min-width: 64rem) {
+    :is(html.nav-closed, .shell.nav-closed) .side:not(.side-plain) .site-header { background: none; }
+    :is(html.nav-closed, .shell.nav-closed) .nav-toggle { margin: .5rem; width: 2.75rem; min-height: 2.75rem; border-radius: 12px; background: var(--secondary); box-shadow: 0 4px 14px rgb(0 0 0 / .3); }
+    :is(html.nav-closed, .shell.nav-closed) .nav-dot { top: .45rem; right: .45rem; }
+    :is(html.nav-closed, .shell.nav-closed) .nav-toggle .icon { width: 1.5rem; height: 1.5rem; }
+}
+@media (max-width: 63.99rem) {
+    .side:not(.side-plain) .site-header { background: none; }
+    .side:not(.side-plain) .nav-toggle { margin: .5rem; width: 2.75rem; min-height: 2.75rem; border-radius: 12px; background: var(--secondary); box-shadow: 0 4px 14px rgb(0 0 0 / .3); }
+    .nav-dot { top: .45rem; right: .45rem; }
+    .side:not(.side-plain) .nav-toggle .icon { width: 1.5rem; height: 1.5rem; }
+}
+
+/* Building blocks from the Update page (Go 2026-11-07, A16-A22), meant for every page */
+.card { max-width: 48rem; margin-top: 1rem; padding: 1rem 1.25rem 1.25rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); }
+.card-head { display: flex; align-items: center; gap: .5rem; margin: 0 0 .5rem; font-size: 1.05rem; }
+.card-head .icon { width: 1.35rem; height: 1.35rem; color: var(--primary); }
+.card-text { max-width: 70ch; margin: .25rem 0 .75rem; color: var(--muted); }
+.card-note { max-width: 70ch; margin: .5rem 0 0; font-size: .8rem; color: var(--muted); }
+.card-row { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+.card button { margin-top: 0; }
+.badge-pill { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .9rem; border-radius: 999px; background: var(--primary); color: var(--primary-text); font-weight: 600; font-size: .9rem; }
+.badge-pill .icon { width: 1.1rem; height: 1.1rem; }
+.button-small { display: inline-flex; align-items: center; gap: .45rem; min-height: 40px; padding: 0 1rem; font-size: .95rem; }
+.button-small .icon { width: 1.15rem; height: 1.15rem; }
+/* A list of rows to pick one from: the whole row is the choice, the picked one gets the orange bar (A20) */
+.pick-list { margin: 1rem 0; padding: 0; border: 0; display: grid; gap: .4rem; min-width: 0; }
+.pick-list label.pick-row { display: flex; align-items: flex-start; gap: .75rem; margin: 0; padding: .7rem .9rem; border-radius: calc(var(--radius) / 2); background: var(--surface); color: var(--text); font-weight: 400; cursor: pointer; }
+.pick-row > .icon { flex: none; width: 1.25rem; height: 1.25rem; margin-top: .1rem; color: var(--muted); }
+.pick-row strong { display: block; font-weight: 600; }
+.pick-row small { display: block; color: var(--muted); }
+.pick-row:hover { background: var(--bg); }
+.pick-row:has(input:checked) { box-shadow: inset 4px 0 0 var(--primary); background: var(--bg); }
+.pick-row:has(input:checked) > .icon, .pick-mark { color: var(--primary); }
+.pick-row:has(input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
+.pick-mark { display: none; margin-left: auto; }
+.pick-row:has(input:checked) .pick-mark { display: flex; }
+/* Toast: a short status top right that closes itself (A22) */
+.toast {
+    position: fixed; top: 1rem; right: 1rem; z-index: 60; display: flex; align-items: center; gap: .6rem; max-width: min(26rem, calc(100% - 2rem));
+    padding: .7rem 1rem; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: calc(var(--radius) / 2); box-shadow: var(--shadow);
+    animation: toast-in .2s ease-out;
+}
+.toast .icon { flex: none; color: var(--ok); }
+.toast.is-leaving { opacity: 0; translate: 0 -.5rem; transition: opacity .3s, translate .3s; }
+@keyframes toast-in { from { opacity: 0; translate: 0 -.5rem; } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } .toast.is-leaving { transition: none; } }
+@media (max-width: 63.99rem) { .toast { top: auto; bottom: 1rem; left: 1rem; right: 1rem; max-width: none; } }
+

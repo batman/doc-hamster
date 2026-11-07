@@ -485,6 +485,36 @@
         layout();
     };
 
+    // Toasts close themselves after a few seconds; a click closes them at once.
+    const setupToasts = () => {
+        document.querySelectorAll('[data-toast]').forEach(toast => {
+            const leave = () => {
+                toast.classList.add('is-leaving');
+                setTimeout(() => toast.remove(), 300);
+            };
+            toast.addEventListener('click', leave);
+            setTimeout(leave, 5000);
+        });
+    };
+
+    // Update page: the install button wakes up once a preview row is picked and names it.
+    const setupPreviewPick = () => {
+        const form = document.querySelector('[data-preview-form]');
+        if (!form) {
+            return;
+        }
+        const open = form.querySelector('[data-preview-open]');
+        const title = form.querySelector('[data-preview-title]');
+        form.addEventListener('change', () => {
+            const picked = form.querySelector('input[name="preview_pr"]:checked');
+            open.disabled = picked === null;
+            if (picked) {
+                open.textContent = open.dataset.label.replace('__N__', picked.value);
+                title.textContent = open.textContent;
+            }
+        });
+    };
+
     // Tags page: the search narrows the pills while typing, any letters inside the name.
     const setupTagSearch = () => {
         const search = document.querySelector('[data-tag-search]');
@@ -536,5 +566,7 @@
         setupTagSearch();
         setupColorField();
         setupNotes();
+        setupToasts();
+        setupPreviewPick();
     });
 })();
