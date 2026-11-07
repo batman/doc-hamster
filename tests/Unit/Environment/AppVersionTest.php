@@ -44,12 +44,12 @@ it('reads a detached HEAD too', function (): void {
 it('reads a branch hash from packed-refs without git', function (): void {
     $dir = sys_get_temp_dir().'/dochamster-version-'.uniqid();
     mkdir($dir.'/.git', 0777, true);
-    file_put_contents($dir.'/.git/HEAD', "ref: refs/heads/main
-");
-    file_put_contents($dir.'/.git/packed-refs', "# pack-refs with: peeled fully-peeled sorted
-".str_repeat('a', 40)." refs/heads/other
-".str_repeat('b', 40)." refs/heads/main
-");
+    file_put_contents($dir.'/.git/HEAD', 'ref: refs/heads/main
+');
+    file_put_contents($dir.'/.git/packed-refs', '# pack-refs with: peeled fully-peeled sorted
+'.str_repeat('a', 40).' refs/heads/other
+'.str_repeat('b', 40).' refs/heads/main
+');
 
     expect(AppVersion::current($dir))->toBe('bbbbbbb');
 
