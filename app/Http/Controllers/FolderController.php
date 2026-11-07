@@ -21,7 +21,8 @@ use Illuminate\Validation\Rule;
 /**
  * Folders for receipts (issue #77): create, rename, move, colour, symbol,
  * order, delete. Anyone who may edit receipts may manage folders. Deleting a
- * folder never deletes receipts: its receipts and subfolders move up one level.
+ * folder moves its receipts and subfolders up one level; "Mit Inhalt löschen"
+ * also deletes the subfolders and puts the receipts into the Papierkorb.
  * "Belege allgemein" keeps its name and place (PO, 2026-11-07).
  */
 final class FolderController
@@ -113,6 +114,10 @@ final class FolderController
         // Receipts move up; from a top folder they go to "Belege", so none is ever left without a folder.
         $target = $folder->parent_id ?? Folder::defaultIdFor($org->id());
 
+        if ($request->boolean('with_content')) {
+            return $this->destroyWithContent($request, $folder, $target, $org, $audit);
+        }
+
         DB::transaction(static function () use ($folder, $target): void {
             Document::query()->withPrintTray()->withTrashed()->where('folder_id', $folder->id)->update(['folder_id' => $target]);
             Folder::query()->where('parent_id', $folder->id)->update(['parent_id' => $folder->parent_id]);
@@ -121,6 +126,41 @@ final class FolderController
         $this->log($audit, $request, $org, 'folder.deleted', $folder);
 
         return redirect()->route('folders.index')->with('status', __('folders.deleted'));
+    }
+
+    /**
+     * Deletes the folder with everything in it (PO, 2026-11-07): its subfolders
+     * go, the receipts this person may see go into the Papierkorb. Nothing is
+     * lost for good: a receipt brought back from the Papierkorb, and any receipt
+     * this person may not see, lands one level above the deleted folder.
+     */
+    private function destroyWithContent(Request $request, Folder $folder, string $target, CurrentOrg $org, AuditLog $audit): RedirectResponse
+    {
+        if (! Gate::allows(Permission::TrashDocuments->value)) {
+            abort(403);
+        }
+
+        $branch = Folder::branchIds($folder->id);
+        $userId = $org->membership()->user_id;
+        $trashed = Document::query()->visibleTo($userId, Gate::allows(Permission::ViewAllDocuments->value))->whereIn('folder_id', $branch)->get();
+
+        DB::transaction(static function () use ($branch, $target, $trashed): void {
+            foreach ($trashed as $document) {
+                $document->delete();
+            }
+            Document::query()->withPrintTray()->withTrashed()->whereIn('folder_id', $branch)->update(['folder_id' => $target]);
+            // Deepest first, so no folder points at one that is already gone.
+            foreach (array_reverse($branch) as $id) {
+                Folder::query()->whereKey($id)->delete();
+            }
+        });
+
+        foreach ($trashed as $document) {
+            $audit->record('document.trashed', orgId: $org->id(), userId: $userId, subject: $document, ip: $request->ip());
+        }
+        $audit->record('folder.deleted', orgId: $org->id(), userId: $userId, subject: $folder, meta: ['name' => $folder->name, 'with_content' => true, 'folders' => count($branch), 'receipts' => $trashed->count()], ip: $request->ip());
+
+        return redirect()->route('folders.index')->with('status', trans_choice('folders.deleted_with_content', $trashed->count(), ['count' => $trashed->count()]));
     }
 
     /**

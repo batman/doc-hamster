@@ -71,7 +71,7 @@
                                         }
                                         $menuEdit = Gate::allows('documents.edit');
                                     @endphp
-                                    <li class="nav-sub" data-folder-order="{{ $menuEdit ? route('folders.order') : '' }}" data-order-failed="{{ __('folders.order_invalid') }}">
+                                    <li class="nav-sub" data-folder-order="{{ $menuEdit ? route('folders.order') : '' }}" data-order-failed="{{ __('folders.order_invalid') }}" data-selected-text="{{ __('folders.selected') }}">
                                         <div class="nav-sub-head">
                                             <span class="nav-text">{{ __('folders.title') }}</span>
                                             @if ($menuEdit)
@@ -86,6 +86,7 @@
                                             'parent' => null,
                                             'depth' => 0,
                                         ])
+                                        <span class="visually-hidden" data-folder-live aria-live="polite"></span>
                                     </li>
                                 @endif
                             @endif

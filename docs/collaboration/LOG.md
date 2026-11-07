@@ -294,3 +294,9 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done / next step: Merge after the updated PR's CI passes, then publish the stable update.
 - Watch out: Keep PR #87 open for the separate zoom preview.
 - Branch/PR: lead/BUG-DROP-1-preview (#86)
+
+## 2026-11-07 · Manager · FOLDERS-DELETE (PO request)
+- Done: Folder delete dialog offers "Nur Ordner löschen" (as before) and "Mit Inhalt löschen" (subfolders deleted, visible receipts to the Papierkorb; needs the trash right). Sidebar folders: tap/click the grip to select several on one level, drag one to move all; arrow keys move the selection.
+- Not done / next step: CI, then PO tests the preview on the server (incl. iPhone touch) before merge.
+- Watch out: Multi-select works per level only, because the order is saved per level.
+- Branch/PR: manager/FOLDERS-delete-multidrag

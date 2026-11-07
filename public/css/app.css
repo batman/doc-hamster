@@ -166,6 +166,8 @@ a { color: var(--primary-ink); }
 .nav-folder.is-open > .nav-folder-row > .nav-folder-toggle .icon { rotate: 0deg; }
 .nav-folder.is-dragging { opacity: .6; }
 .nav-folder.is-dragging > .nav-folder-row { background: var(--bg); border-radius: .4rem; box-shadow: var(--shadow); }
+.nav-folder.is-selected > .nav-folder-row { background: var(--bg); border-radius: .4rem; box-shadow: inset 3px 0 0 var(--primary); }
+.nav-folder.is-selected > .nav-folder-row > .nav-grip { opacity: 1; color: var(--primary-ink); }
 body.is-dragging-folder { cursor: grabbing; user-select: none; }
 @media (min-width: 64rem) {
     :is(html.nav-rail, .shell.nav-rail) .nav-sub { display: none; }

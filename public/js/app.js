@@ -1243,7 +1243,40 @@
                 });
         };
 
+        // Several folders at once (PO, 2026-11-07): a tap or click on the handle without moving selects the folder,
+        // more taps add folders of the same level; dragging a selected folder moves all selected ones together.
+        const live = menu.querySelector('[data-folder-live]');
+        const selected = () => [...menu.querySelectorAll('.nav-folder.is-selected')];
+        const announce = () => {
+            if (live) {
+                const count = selected().length;
+                live.textContent = count > 1 ? (menu.dataset.selectedText ?? '').replace(':count', String(count)) : '';
+            }
+        };
+        const clearSelection = () => {
+            selected().forEach(item => {
+                item.classList.remove('is-selected');
+                item.querySelector(':scope > .nav-folder-row > [data-grip]')?.setAttribute('aria-pressed', 'false');
+            });
+            announce();
+        };
+        const toggleSelection = item => {
+            // Only one level at a time: the order is saved per level.
+            if (selected().some(other => other.parentElement !== item.parentElement)) {
+                clearSelection();
+            }
+            const on = item.classList.toggle('is-selected');
+            item.querySelector(':scope > .nav-folder-row > [data-grip]')?.setAttribute('aria-pressed', on ? 'true' : 'false');
+            announce();
+        };
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+                clearSelection();
+            }
+        });
+
         menu.querySelectorAll('[data-grip]').forEach(grip => {
+            grip.setAttribute('aria-pressed', 'false');
             grip.addEventListener('pointerdown', event => {
                 if (event.button !== 0) {
                     return;
@@ -1252,25 +1285,35 @@
                 const item = grip.closest('.nav-folder');
                 const list = item.parentElement;
                 const before = [...list.children].map(child => child.dataset.id).join();
-                // Listened on the document: moving the item in the DOM ends any pointer capture on the handle.
-                item.classList.add('is-dragging');
-                document.body.classList.add('is-dragging-folder');
+                const startY = event.clientY;
+                let dragging = false;
+                let group = [item];
 
                 const move = moveEvent => {
                     if (moveEvent.pointerId !== event.pointerId) {
                         return;
                     }
-                    const siblings = [...list.children].filter(child => child !== item);
-                    const next = siblings.find(child => {
+                    if (!dragging) {
+                        // A few pixels of slack, so a tap selects instead of dragging.
+                        if (Math.abs(moveEvent.clientY - startY) < 5) {
+                            return;
+                        }
+                        dragging = true;
+                        if (!item.classList.contains('is-selected')) {
+                            clearSelection();
+                        }
+                        group = item.classList.contains('is-selected') ? [...list.children].filter(child => child.classList.contains('is-selected')) : [item];
+                        // Listened on the document: moving the item in the DOM ends any pointer capture on the handle.
+                        group.forEach(member => member.classList.add('is-dragging'));
+                        document.body.classList.add('is-dragging-folder');
+                    }
+                    const others = [...list.children].filter(child => !group.includes(child));
+                    const next = others.find(child => {
                         const box = child.querySelector('.nav-folder-row').getBoundingClientRect();
                         return moveEvent.clientY < box.top + box.height / 2;
-                    });
-                    if (next) {
-                        if (item.nextElementSibling !== next) {
-                            list.insertBefore(item, next);
-                        }
-                    } else if (list.lastElementChild !== item) {
-                        list.appendChild(item);
+                    }) ?? null;
+                    if (group[group.length - 1].nextElementSibling !== next || group.some((member, index) => index > 0 && member.previousElementSibling !== group[index - 1])) {
+                        group.forEach(member => list.insertBefore(member, next));
                     }
                 };
                 const end = endEvent => {
@@ -1280,7 +1323,13 @@
                     document.removeEventListener('pointermove', move);
                     document.removeEventListener('pointerup', end);
                     document.removeEventListener('pointercancel', end);
-                    item.classList.remove('is-dragging');
+                    if (!dragging) {
+                        if (endEvent.type === 'pointerup') {
+                            toggleSelection(item);
+                        }
+                        return;
+                    }
+                    group.forEach(member => member.classList.remove('is-dragging'));
                     document.body.classList.remove('is-dragging-folder');
                     if ([...list.children].map(child => child.dataset.id).join() !== before) {
                         save(list);
@@ -1290,7 +1339,12 @@
                 document.addEventListener('pointerup', end);
                 document.addEventListener('pointercancel', end);
             });
-            // Keyboard: arrow up/down moves the folder one place.
+            // Keyboard: Enter or Space selects (the click has no pointer); arrow up/down moves the folder, or all selected ones, one place.
+            grip.addEventListener('click', event => {
+                if (event.detail === 0) {
+                    toggleSelection(grip.closest('.nav-folder'));
+                }
+            });
             grip.addEventListener('keydown', event => {
                 if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') {
                     return;
@@ -1298,12 +1352,20 @@
                 event.preventDefault();
                 const item = grip.closest('.nav-folder');
                 const list = item.parentElement;
-                if (event.key === 'ArrowUp' && item.previousElementSibling) {
-                    list.insertBefore(item, item.previousElementSibling);
-                } else if (event.key === 'ArrowDown' && item.nextElementSibling) {
-                    list.insertBefore(item.nextElementSibling, item);
+                const group = item.classList.contains('is-selected') ? [...list.children].filter(child => child.classList.contains('is-selected')) : [item];
+                if (event.key === 'ArrowUp') {
+                    const above = group[0].previousElementSibling;
+                    if (!above || group.includes(above)) {
+                        return;
+                    }
+                    group.forEach(member => list.insertBefore(member, above));
                 } else {
-                    return;
+                    const below = group[group.length - 1].nextElementSibling;
+                    if (!below || group.includes(below)) {
+                        return;
+                    }
+                    const after = below.nextElementSibling;
+                    group.forEach(member => list.insertBefore(member, after));
                 }
                 grip.focus();
                 save(list);

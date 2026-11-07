@@ -179,6 +179,38 @@ it('moves receipts and subfolders up when a folder is deleted; a top folder hand
         ->and(folderRow($leaf->id)?->parent_id)->toBeNull();
 });
 
+it('deletes a folder with its content: subfolders go, receipts land in the Papierkorb', function (): void {
+    $top = makeFolder($this->orgId, 'Oben');
+    $middle = makeFolder($this->orgId, 'Mitte', $top->id);
+    $leaf = makeFolder($this->orgId, 'Unten', $middle->id);
+    $sibling = makeFolder($this->orgId, 'Daneben', $top->id);
+    $this->actingAs($this->admin->user);
+    $this->post('/documents', ['file' => UploadedFile::fake()->image('mitte.jpg'), 'folder' => $middle->id]);
+    $this->post('/documents', ['file' => UploadedFile::fake()->image('unten.jpg'), 'folder' => $leaf->id]);
+    $this->post('/documents', ['file' => UploadedFile::fake()->image('daneben.jpg'), 'folder' => $sibling->id]);
+
+    $this->post('/folders/'.$middle->id.'/delete', ['with_content' => '1'])->assertRedirect('/folders');
+
+    $inTrash = static fn (string $title): Document => Document::query()->withoutGlobalScope(OrgScope::class)->withTrashed()->where('title', $title)->firstOrFail();
+    expect(folderRow($middle->id))->toBeNull()
+        ->and(folderRow($leaf->id))->toBeNull()
+        ->and(folderRow($sibling->id))->not->toBeNull()
+        ->and($inTrash('mitte.jpg')->trashed())->toBeTrue()
+        ->and($inTrash('unten.jpg')->trashed())->toBeTrue()
+        // Brought back from the Papierkorb, they land in the folder above.
+        ->and($inTrash('unten.jpg')->folder_id)->toBe($top->id)
+        ->and(titled('daneben.jpg')->folder_id)->toBe($sibling->id);
+});
+
+it('deletes with content only for people who may put receipts into the Papierkorb', function (): void {
+    $folder = makeFolder($this->orgId, 'Geschützt');
+    $editor = Membership::factory()->withRights(RoleRight::Edit)->create(['org_id' => $this->orgId]);
+
+    $this->actingAs($editor->user)->post('/folders/'.$folder->id.'/delete', ['with_content' => '1'])->assertForbidden();
+
+    expect(folderRow($folder->id))->not->toBeNull();
+});
+
 it('cannot delete the folder "Belege"', function (): void {
     $belege = belegeOf($this->orgId);
 
