@@ -1,0 +1,232 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Domain\Auth\Device;
+use App\Domain\Documents\Document;
+use App\Domain\Documents\Folder;
+use App\Domain\Org\Membership;
+use App\Domain\Org\Organization;
+use App\Domain\Org\OrgScope;
+use App\Jobs\Net\ScannerDiscovery;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+
+/*
+| The phone app (PHONE, issue #37): /app opens the camera at once, the bottom
+| bar has only Belege and Dokumente, Dokumente holds folders, documents and
+| scanning. Forms use the website's routes and come back via app_back.
+*/
+uses(RefreshDatabase::class)->group('db');
+
+beforeEach(function (): void {
+    Storage::fake('local');
+    $this->owner = Membership::factory()->owner()->create();
+});
+
+function appFolder(string $name, ?string $parent = null): Folder
+{
+    return Folder::withoutGlobalScope(OrgScope::class)->where('name', $name)->when($parent !== null, fn ($q) => $q->where('parent_id', $parent))->firstOrFail();
+}
+
+it('opens the camera at once with only Belege and Dokumente in the bar', function (): void {
+    $this->actingAs($this->owner->user)->get('/app')->assertOk()
+        ->assertSee('data-live-camera', false)
+        ->assertSee('data-shutter', false)
+        ->assertSee('data-queue-upload', false)
+        ->assertSee('capture="environment"', false)
+        ->assertSee(__('app.bar.receipts'))
+        ->assertSee(__('app.bar.documents_app'))
+        ->assertDontSee('nav-toggle', false)
+        ->assertDontSee(__('phone.home_hint'));
+});
+
+it('keeps the website without the phone bar', function (): void {
+    $this->actingAs($this->owner->user)->get('/documents')->assertOk()
+        ->assertSee('rel="manifest"', false)
+        ->assertDontSee('phone-bar', false)
+        ->assertDontSee('data-queue-upload', false);
+});
+
+it('sends a photo from the camera into Belege and back to the camera', function (): void {
+    $this->actingAs($this->owner->user)
+        ->post('/documents', ['files' => [UploadedFile::fake()->image('beleg.jpg')], 'app_back' => '/app'])
+        ->assertRedirect('/app');
+
+    expect(Document::withoutGlobalScope(OrgScope::class)->count())->toBe(1);
+});
+
+it('creates, renames and deletes folders from Dokumente', function (): void {
+    $this->actingAs($this->owner->user);
+
+    $this->post('/folders', ['name' => 'Steuer', 'parent_id' => '', 'app_back' => '/app/documents'])->assertRedirect('/app/documents');
+    $steuer = appFolder('Steuer');
+    $this->post('/folders', ['name' => '2026', 'parent_id' => $steuer->id, 'app_back' => '/app/documents?folder='.$steuer->id])
+        ->assertRedirect('/app/documents?folder='.$steuer->id);
+
+    $this->get('/app/documents')->assertOk()->assertSee('Steuer')->assertDontSee('>2026<', false);
+    $this->get('/app/documents?folder='.$steuer->id)->assertOk()->assertSee('2026');
+
+    $this->post('/folders/'.$steuer->id, ['name' => 'Steuern', 'parent_id' => '', 'bank_matching' => '1', 'app_back' => '/app/documents'])
+        ->assertRedirect('/app/documents');
+    expect($steuer->fresh()?->name)->toBe('Steuern')->and($steuer->fresh()?->bank_matching)->toBeTrue();
+
+    $child = appFolder('2026');
+    $this->post('/folders/'.$child->id.'/delete', ['app_back' => '/app/documents?folder='.$steuer->id])
+        ->assertRedirect('/app/documents?folder='.$steuer->id);
+    expect(Folder::withoutGlobalScope(OrgScope::class)->whereKey($child->id)->exists())->toBeFalse();
+});
+
+it('shows a document with download, rename and delete, and returns to the list', function (): void {
+    $this->actingAs($this->owner->user)->post('/documents', ['file' => UploadedFile::fake()->image('bon.jpg')]);
+    $document = Document::withoutGlobalScope(OrgScope::class)->with('files')->firstOrFail();
+
+    $this->get('/app/documents/'.$document->id)->assertOk()
+        ->assertSee(route('documents.download', $document->files->first()->id), false)
+        ->assertSee('data-share', false)
+        ->assertSee('name="app_back"', false);
+
+    $this->post('/documents/'.$document->id, ['title' => 'Tankquittung', 'note' => '', 'folder' => '', 'app_back' => '/app/documents/'.$document->id])
+        ->assertRedirect('/app/documents/'.$document->id);
+    expect($document->fresh()?->title)->toBe('Tankquittung');
+
+    $this->post('/documents/'.$document->id.'/delete', ['app_back' => '/app/documents'])->assertRedirect('/app/documents');
+    expect(Document::withoutGlobalScope(OrgScope::class)->count())->toBe(0);
+});
+
+it('never sends anyone outside the app with app_back', function (string $back): void {
+    $this->actingAs($this->owner->user)
+        ->post('/folders', ['name' => 'Ordner '.md5($back), 'parent_id' => '', 'app_back' => $back])
+        ->assertRedirectContains('/folders');
+})->with(['https://evil.example/app', '//evil.example/app', '/settings', '/app/../settings', '/appx', '/app/documents?x=<b>']);
+
+/** Pretends DocHamster runs at this address: public = on the internet, private = in a home network. */
+function serverAt(string $address): void
+{
+    app()->instance(ScannerDiscovery::class, new ScannerDiscovery($address));
+}
+
+it('prints and scans without anything at home: phone print dialog and camera', function (): void {
+    $this->actingAs($this->owner->user)->post('/documents', ['file' => UploadedFile::fake()->image('bon.jpg')]);
+    $document = Document::withoutGlobalScope(OrgScope::class)->with('files')->firstOrFail();
+    $file = $document->files->first();
+
+    $this->get('/app/documents')->assertOk()
+        ->assertSee(__('app.scan.title'))
+        ->assertSee('data-phone-print="'.route('documents.file', $file->id).'"', false)
+        ->assertDontSee('/app/scanner', false);
+    $this->get('/app/documents/'.$document->id)->assertOk()->assertSee('data-phone-print', false);
+    $this->get('/app/settings')->assertOk()->assertDontSee(__('app.scanner.title'));
+    $this->get('/app/scanner')->assertNotFound();
+
+    $this->get('/app/scan')->assertOk()
+        ->assertSee(__('app.scan.one'))
+        ->assertSee(__('app.scan.many'))
+        ->assertSee('capture="environment"', false)
+        ->assertSee(route('scan.photo'), false)
+        ->assertDontSee(__('app.scan.with_printer'));
+});
+
+it('turns camera photos into pages and one PDF with a name and a folder', function (): void {
+    $this->actingAs($this->owner->user);
+    $this->post('/folders', ['name' => 'Verträge', 'parent_id' => '']);
+    $folder = appFolder('Verträge');
+
+    $this->post('/scan/photo', ['photo' => UploadedFile::fake()->image('seite1.jpg', 800, 1100)], ['Accept' => 'application/json'])
+        ->assertCreated()->assertJson(['pages' => 1]);
+    $this->post('/scan/photo', ['photo' => UploadedFile::fake()->image('seite2.png', 800, 1100)], ['Accept' => 'application/json'])
+        ->assertCreated()->assertJson(['pages' => 2]);
+    $this->post('/scan/photo', ['photo' => UploadedFile::fake()->create('x.txt', 1, 'text/plain')], ['Accept' => 'application/json'])
+        ->assertUnprocessable();
+
+    $this->get('/app/scan?mode=many&with=camera')->assertOk()->assertSee(__('app.scan.next'))->assertSee(__('app.scan.done_title'));
+    $this->post('/scan/finish', ['title' => 'Mietvertrag', 'folder' => $folder->id, 'app_back' => '/app/documents?folder='.$folder->id])
+        ->assertRedirect('/app/documents?folder='.$folder->id);
+
+    $document = Document::withoutGlobalScope(OrgScope::class)->with('files')->where('title', 'Mietvertrag')->firstOrFail();
+    expect($document->folder_id)->toBe($folder->id)
+        ->and($document->files->first()?->mime)->toBe('application/pdf');
+});
+
+it('asks camera or printer when a printer is connected on the website', function (): void {
+    Organization::query()->findOrFail($this->owner->org_id)->forceFill(['settings_json' => ['scanner' => ['url' => 'http://192.168.0.20', 'name' => 'Testdrucker']]])->save();
+
+    $this->actingAs($this->owner->user)->get('/app/scan')->assertOk()
+        ->assertSee(__('app.scan.with_camera'))
+        ->assertSee(__('app.scan.with_printer'))
+        ->assertSee('Testdrucker');
+    $this->get('/app/scan?with=printer')->assertOk()->assertSee(route('scan.page'), false)->assertDontSee(route('scan.photo'), false);
+    $this->get('/app/scan?with=camera')->assertOk()->assertSee(route('scan.photo'), false);
+});
+
+it('does not count a stored public scanner address as connected', function (): void {
+    Organization::query()->findOrFail($this->owner->org_id)->forceFill(['settings_json' => ['scanner' => ['url' => 'http://203.0.113.5']]])->save();
+
+    $this->actingAs($this->owner->user)->get('/app/scan')->assertOk()->assertDontSee(__('app.scan.with_printer'));
+});
+
+it('offers the network search on the website only when DocHamster runs in a home network', function (): void {
+    Http::fake(['*' => Http::response('', 404)]);
+    $this->actingAs($this->owner->user);
+
+    serverAt('203.0.113.7');
+    $this->get('/scanner')->assertOk()->assertSee(__('scan.settings_title'))->assertDontSee(__('app.scanner.search'));
+
+    serverAt('192.168.0.5');
+    $this->get('/scanner')->assertOk()->assertSee(__('app.scanner.search'));
+    $this->post('/scanner/search')->assertRedirect('/scanner');
+    expect(session('scanners_found'))->toBe([]);
+});
+
+it('lets every employee connect a printer or scanner on the website, only admins remove one', function (): void {
+    $member = Membership::factory()->create(['org_id' => $this->owner->org_id]);
+
+    $this->actingAs($member->user)->get('/scanner')->assertOk()->assertDontSee('/revoke', false);
+    $this->post('/scanner/stations')->assertRedirect('/scanner');
+    expect(session('station_code'))->toBeString();
+    $this->post('/scanner', ['url' => ''])->assertForbidden();
+});
+
+it('lets the tax advisor connect nothing', function (): void {
+    $advisor = Membership::factory()->accountant()->create(['org_id' => $this->owner->org_id]);
+
+    $this->actingAs($advisor->user)->get('/scanner')->assertForbidden();
+    $this->post('/scanner/stations')->assertForbidden();
+    $this->post('/scan/photo', ['photo' => UploadedFile::fake()->image('x.jpg')])->assertForbidden();
+});
+
+it('says only stored when the app sends a photo, and why not otherwise', function (): void {
+    $this->actingAs($this->owner->user);
+
+    $this->post('/documents', ['files' => [UploadedFile::fake()->image('beleg.jpg')]], ['Accept' => 'application/json'])
+        ->assertCreated()->assertJson(['saved' => 1]);
+    $this->post('/documents', ['files' => [UploadedFile::fake()->create('notiz.txt', 1, 'text/plain')]], ['Accept' => 'application/json'])
+        ->assertUnprocessable()->assertJson(['message' => __('documents.wrong_type')]);
+    $this->post('/documents', [], ['Accept' => 'application/json'])->assertUnprocessable();
+
+    expect(Document::withoutGlobalScope(OrgScope::class)->count())->toBe(1);
+});
+
+it('names a new phone by itself and lets the person rename it', function (): void {
+    $this->actingAs($this->owner->user)->post('/phone/code');
+    $code = (string) session('pairing_code');
+    Auth::logout();
+    $this->flushSession();
+
+    $this->withHeader('User-Agent', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)')
+        ->post('/connect', ['code' => $code])->assertRedirect('/app');
+    $device = Device::query()->firstOrFail();
+    expect($device->name)->toBe('iPhone');
+
+    $this->actingAs($this->owner->user)->post('/phone/devices/'.$device->id.'/rename', ['name' => 'Diensthandy'])->assertRedirect('/phone');
+    expect($device->fresh()?->name)->toBe('Diensthandy');
+});
+
+it('offers connecting with the phone on the login page', function (): void {
+    $this->get('/login')->assertOk()
+        ->assertSee(__('phone.login_button'))
+        ->assertSee(route('phone.connect'), false);
+});

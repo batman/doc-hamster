@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Domain\Auth\Device;
 use App\Domain\Documents\Document;
 use App\Domain\Notes\Note;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
+use App\Domain\Org\Role;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -34,6 +36,9 @@ final class HomeController
             'userId' => $userId,
             'canShare' => Gate::allows(Permission::ShareNotes->value),
             'documents' => $this->visibleDocuments()->latest()->limit(500)->get(['id', 'title']),
+            // First steps: until a phone is connected, home points to "Handy verbinden" (PLAN §11.1).
+            'connectPhone' => $org->membership()->role !== Role::Accountant
+                && ! Device::query()->where('user_id', $userId)->whereNull('revoked_at')->exists(),
         ]);
     }
 

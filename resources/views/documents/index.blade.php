@@ -6,6 +6,15 @@
 
 @section('content')
     <div class="split-main">
+        @if ($folders !== [] || $folder !== null)
+            {{-- Folders (issue #77): top level and the open branch; a folder shows everything below it. --}}
+            <ul class="folder-bar" aria-label="{{ __('folders.title') }}">
+                <li><a href="{{ route('documents.index') }}" @class(['is-selected' => $folder === null])><x-icon name="folder" />{{ __('folders.all') }}</a></li>
+                @foreach ($folders as $row)
+                    <li><a href="{{ route('documents.index', ['folder' => $row['folder']->id]) }}" @class(['is-selected' => $folder === $row['folder']->id])>{{ str_repeat('– ', $row['depth']) }}{{ $row['folder']->name }}</a></li>
+                @endforeach
+            </ul>
+        @endif
         <div class="page-head">
             <h1>{{ __('documents.title') }}</h1>
             <div class="toolbar">
@@ -53,6 +62,7 @@
         @if (session('status'))
             <p class="check-ok" role="status">{{ session('status') }}</p>
         @endif
+        @error('print')<p class="error" role="alert">{{ $message }}</p>@enderror
 
         @if ($documents->isEmpty() && $selected === [] && $view !== 'calendar')
             <div class="empty-state"><p class="muted">{{ __('documents.empty') }}</p></div>

@@ -8,6 +8,7 @@ use App\Domain\Banking\BankAccount;
 use App\Domain\Banking\Transaction;
 use App\Domain\Banking\TransactionMatch;
 use App\Domain\Documents\Document;
+use App\Domain\Documents\Folder;
 use App\Domain\Org\Membership;
 use App\Domain\Org\OrgScope;
 use App\Domain\Org\RoleRight;
@@ -230,4 +231,23 @@ it('lists the booking in the index of the export, without the purpose', function
     expect($index)->toContain('01.02.2026 -12,30 EUR Muster GmbH')
         ->and($index)->not->toContain('Rechnung 1')
         ->and($member->org_id)->not->toBe($this->orgId);
+});
+
+it('offers only receipts of folders with bank matching on (issue #77)', function (): void {
+    $this->actingAs($this->admin->user);
+    importStatement($this);
+    $transaction = transactions()->where('amount_minor', -1230)->firstOrFail();
+    $contracts = Folder::withoutEvents(static fn (): Folder => Folder::query()->withoutGlobalScope(OrgScope::class)->create(['org_id' => test()->orgId, 'name' => 'Verträge', 'bank_matching' => false]));
+    $document = receipt($this->orgId, $this->admin->user_id, 'vertrag.jpg');
+    $document->forceFill(['folder_id' => $contracts->id])->save();
+
+    $this->get('/bank?view=receipts')->assertDontSee('vertrag.jpg');
+    $this->post('/bank/transactions/'.$transaction->id.'/match', ['document_id' => $document->id])->assertSessionHasErrors('document_id');
+    expect(TransactionMatch::query()->count())->toBe(0);
+
+    $this->post('/folders/'.$contracts->id, ['name' => 'Verträge', 'bank_matching' => '1'])->assertRedirect();
+
+    $this->get('/bank?view=receipts')->assertSee('vertrag.jpg');
+    $this->post('/bank/transactions/'.$transaction->id.'/match', ['document_id' => $document->id])->assertRedirect(route('bank.index'));
+    expect(TransactionMatch::query()->count())->toBe(1);
 });

@@ -25,13 +25,22 @@ final class SettingsMenu
         'tags' => ['tags', [
             ['tags', 'tags.index', 'tags', 'tags.manage', ['tags.*']],
         ], true],
+        'folders' => ['folder', [
+            ['folders', 'folders.index', 'folder', 'documents.edit', ['folders.*']],
+        ], true],
+        'scanner' => ['printer', [
+            ['scanner', 'scanner.show', 'printer', 'documents.upload', ['scanner.*']],
+        ], false],
         'export' => ['file-export', [
             ['export', 'exports.form', 'file-export', 'exports.create', ['exports.*']],
             ['shares', 'shares.index', 'send', 'exports.create', ['shares.*']],
         ], false],
         'update' => ['cloud-download', [
             ['update', 'updates.show', 'cloud-download', 'system.update', ['updates.*']],
-            ['phone', 'phone-check.qr', 'device-mobile', null, ['phone-check*']],
+        ], true],
+        'phone' => ['device-mobile', [
+            ['phone', 'phone.index', 'device-mobile', null, ['phone.*']],
+            ['phone_check', 'phone-check.qr', 'device-mobile', null, ['phone-check*']],
         ], false],
     ];
 

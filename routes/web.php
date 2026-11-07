@@ -2,17 +2,22 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\AppShellController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\BankImportController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\FolderController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MemberController;
+use App\Http\Controllers\PhoneAppController;
 use App\Http\Controllers\PhoneCheckController;
+use App\Http\Controllers\PhoneController;
 use App\Http\Controllers\PrintTrayController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\ScanController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SetupController;
 use App\Http\Controllers\ShareController;
@@ -38,6 +43,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('documents/{id}', [DocumentController::class, 'update'])->middleware('can:documents.edit')->name('documents.update');
     Route::post('documents/{id}/delete', [DocumentController::class, 'destroy'])->middleware('can:documents.trash')->name('documents.destroy');
     Route::get('files/{id}/download', [DocumentController::class, 'download'])->name('documents.download');
+    Route::post('files/{id}/print', [DocumentController::class, 'printOnPrinter'])->middleware('throttle:20,1')->name('documents.print');
     Route::get('files/{id}/thumb', [DocumentController::class, 'thumb'])->name('documents.thumb');
     Route::get('tags.css', [TagController::class, 'css'])->name('tags.css');
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
@@ -45,6 +51,21 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('documents/{id}/tags', [DocumentController::class, 'updateTags'])->middleware('can:documents.edit')->name('documents.tags');
     Route::get('files/{id}', [DocumentController::class, 'file'])->name('documents.file');
     Route::get('phone-check/qr', [PhoneCheckController::class, 'qr'])->name('phone-check.qr');
+
+    // The phone app (PHONE, #37): opened from the home screen. Belege = camera, Dokumente = folders, documents, scanning.
+    Route::prefix('app')->name('app.')->controller(PhoneAppController::class)->group(function (): void {
+        Route::get('/', 'camera')->name('home');
+        Route::get('documents', 'documents')->name('documents');
+        Route::get('documents/{id}', 'document')->name('documents.show');
+        Route::get('scan', 'scan')->name('scan');
+        Route::get('settings', 'settings')->name('settings');
+    });
+
+    // Handy verbinden: QR code once, then the phone stays signed in (PLAN §11.1).
+    Route::get('phone', [PhoneController::class, 'index'])->name('phone.index');
+    Route::post('phone/code', [PhoneController::class, 'start'])->middleware('throttle:10,1')->name('phone.start');
+    Route::post('phone/devices/{id}/rename', [PhoneController::class, 'rename'])->name('phone.rename');
+    Route::post('phone/devices/{id}/revoke', [PhoneController::class, 'revoke'])->name('phone.revoke');
 
     // Druckerablage: what was printed on "Hamster" (print tray).
     Route::middleware('can:documents.upload')->prefix('print-tray')->name('print-tray.')->group(function (): void {
@@ -86,6 +107,35 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('tags/{id}/delete', [TagController::class, 'destroy'])->name('tags.destroy');
     });
 
+    Route::middleware('can:documents.upload')->prefix('scan')->name('scan.')->group(function (): void {
+        Route::get('/', [ScanController::class, 'index'])->name('index');
+        Route::post('page', [ScanController::class, 'scan'])->middleware('throttle:30,1')->name('page');
+        Route::post('photo', [ScanController::class, 'photo'])->middleware('throttle:60,1')->name('photo');
+        Route::post('finish', [ScanController::class, 'finish'])->name('finish');
+        Route::post('cancel', [ScanController::class, 'cancel'])->name('cancel');
+        Route::get('pages/{number}', [ScanController::class, 'page'])->whereNumber('number')->name('preview');
+        Route::post('pages/{number}/delete', [ScanController::class, 'remove'])->whereNumber('number')->name('remove');
+    });
+
+    // Drucker & Scanner (A33): everyone who may upload connects a device; removing one stays with admins.
+    Route::middleware('can:documents.upload')->group(function (): void {
+        Route::get('scanner', [ScanController::class, 'settings'])->name('scanner.show');
+        Route::post('scanner', [ScanController::class, 'save'])->middleware('throttle:10,1')->name('scanner.save');
+        Route::post('scanner/search', [ScanController::class, 'search'])->middleware('throttle:5,1')->name('scanner.search');
+        Route::post('scanner/stations', [ScanController::class, 'stationCreate'])->middleware('throttle:10,1')->name('scanner.station.create');
+        Route::get('scanner/station-download', [ScanController::class, 'stationDownload'])->name('scanner.station.download');
+    });
+    Route::middleware('can:settings.manage')->group(function (): void {
+        Route::post('scanner/stations/{id}/revoke', [ScanController::class, 'stationRevoke'])->name('scanner.station.revoke');
+    });
+
+    Route::middleware('can:documents.edit')->group(function (): void {
+        Route::get('folders', [FolderController::class, 'index'])->name('folders.index');
+        Route::post('folders', [FolderController::class, 'store'])->name('folders.store');
+        Route::post('folders/{id}', [FolderController::class, 'update'])->name('folders.update');
+        Route::post('folders/{id}/delete', [FolderController::class, 'destroy'])->name('folders.destroy');
+    });
+
     Route::middleware('can:banking.import')->prefix('bank')->name('bank.')->group(function (): void {
         Route::get('/', [BankController::class, 'index'])->name('index');
         Route::get('import', [BankImportController::class, 'form'])->name('import');
@@ -110,6 +160,14 @@ Route::middleware(['auth', 'org'])->group(function (): void {
 
 // A receipt handed out by link (A4): no login, until it expires or is revoked.
 Route::get('s/{token}', [ShareController::class, 'open'])->middleware('throttle:30,1')->name('shares.open');
+
+// The home-screen app (PHONE, #37): manifest and the page for "no connection"; no login, no data.
+Route::get('manifest.webmanifest', [AppShellController::class, 'manifest'])->name('app.manifest');
+Route::get('offline', [AppShellController::class, 'offline'])->name('app.offline');
+
+// The phone opens the QR code here; signed in or not (PhoneController::connect).
+Route::get('connect/{code?}', [PhoneController::class, 'connectForm'])->where('code', '[A-Za-z0-9-]{1,20}')->name('phone.connect');
+Route::post('connect', [PhoneController::class, 'connect'])->middleware('throttle:pairing')->name('phone.connect.save');
 
 // Temporary device probe (#37): open like the later home-screen page, holds no data.
 Route::get('phone-check', [PhoneCheckController::class, 'show'])->name('phone-check');

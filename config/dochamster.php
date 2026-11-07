@@ -10,6 +10,14 @@ return [
     'version' => is_file(base_path('VERSION')) ? trim((string) file_get_contents(base_path('VERSION'))) : 'dev',
 
     /*
+    | Appended to styles, scripts and the service worker: the version plus when
+    | they last changed, so a phone never keeps old app files after an update
+    | or a preview install with the same version number.
+    */
+    'asset_version' => (is_file(base_path('VERSION')) ? trim((string) file_get_contents(base_path('VERSION'))) : 'dev')
+        .'-'.max(array_map(static fn (string $file): int => is_file(base_path($file)) ? (int) filemtime(base_path($file)) : 0, ['public/css/app.css', 'public/js/app.js', 'public/js/hamster.js', 'public/sw.js'])),
+
+    /*
     | Set to true at the end of setup (browser wizard or `dochamster:setup`,
     | D-024). While false, every page leads to the setup wizard.
     */
