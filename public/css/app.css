@@ -312,8 +312,19 @@ a:hover { color: var(--ember-deep); }
 @media (max-width: 63.99rem) { .page { padding-inline: var(--space); } }
 .muted { color: var(--ink-dim); }
 
+/* Guests (login, setup, errors): a centered column on desktop. */
+@media (min-width: 64rem) {
+    .shell:has(> .side-plain) .content { max-width: 46rem; margin-inline: auto; }
+}
+
+/* Login: the form sits in an instrument panel, the button fills it. */
+.auth-form { margin-top: 1.5rem; padding: 1.5rem; background: var(--bg-2); border: 1px solid var(--line); border-top: 3px solid var(--ember); }
+.auth-form label:first-of-type { margin-top: 0; }
+.auth-form input { max-width: none; }
+.auth-form button[type="submit"] { width: 100%; }
+
 /* Forms */
-label { display: block; margin-top: var(--space); margin-bottom: 6px; font-size: 10px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-dim); }
+label { display: grid; gap: 6px; align-content: start; margin-top: var(--space); margin-bottom: 6px; font-size: 10px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-dim); }
 .rights { max-width: 40rem; margin-top: var(--space); border: 1px solid var(--line); border-radius: 0; }
 .rights label { margin-top: .25rem; font-weight: 400; }
 .chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }

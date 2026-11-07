@@ -4,7 +4,7 @@
 
 @section('content')
     <h1>{{ __('auth.login') }}</h1>
-    <form method="post" action="{{ route('login.attempt') }}">
+    <form class="auth-form" method="post" action="{{ route('login.attempt') }}">
         @csrf
         <label>{{ __('auth.username') }}
             <input name="username" value="{{ old('username') }}" autocomplete="username" required autofocus>

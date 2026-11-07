@@ -12,6 +12,7 @@ uses(RefreshDatabase::class)->group('db');
 
 it('offers guests the theme switch with local fonts only', function (): void {
     $this->get('/login')->assertOk()
+        ->assertSee('auth-form', false)
         ->assertSee('data-theme-toggle', false)
         ->assertSee('fonts/jetbrains-mono-normal-latin.woff2', false)
         ->assertSee('fonts/fraunces-italic-latin.woff2', false)
