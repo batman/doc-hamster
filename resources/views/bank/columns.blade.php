@@ -3,7 +3,7 @@
 @section('title', __('bank.columns_title'))
 
 @section('page')
-    <h1>{{ __('bank.columns_title') }}</h1>
+    <div class="page-head"><h1>{{ __('bank.columns_title') }}</h1></div>
     <p>{{ __('bank.columns_hint', ['account' => $accountName]) }}</p>
 
     @if ($errors->any())

@@ -35,7 +35,7 @@
                         <form class="nav-upload" method="post" action="{{ route('documents.store') }}" enctype="multipart/form-data" data-busy="{{ __('documents.uploading') }}">
                             @csrf
                             <label class="nav-item nav-action tooltip-right" data-tooltip="{{ __('documents.upload') }}">
-                                <input class="visually-hidden" type="file" name="files[]" multiple accept="image/*,application/pdf">
+                                <input id="upload-input" class="visually-hidden" type="file" name="files[]" multiple accept="image/*,application/pdf">
                                 <x-icon name="upload" /><span class="nav-text">{{ __('documents.upload') }}</span>
                             </label>
                             <noscript><button type="submit">{{ __('documents.upload') }}</button></noscript>
@@ -55,13 +55,18 @@
                             @endif
                         @endforeach
                     </ul>
-                    <form class="nav-logout" method="post" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="nav-item tooltip-right" data-tooltip="{{ __('auth.logout') }}"><x-icon name="power" /><span class="nav-text">{{ __('auth.logout') }}</span></button>
-                    </form>
-                    <small class="nav-version tooltip-right" data-tooltip="{{ __('app.version', ['version' => config('dochamster.version')]) }}"><span class="nav-text">{{ __('app.version', ['version' => config('dochamster.version')]) }}</span></small>
-                    <button type="button" class="nav-item nav-theme tooltip-right" data-theme-toggle data-tooltip="{{ __('app.theme.switch') }}" aria-label="{{ __('app.theme.switch') }}"><span class="theme-dark"><x-icon name="moon" /><span class="nav-text">{{ __('app.theme.dark') }}</span></span><span class="theme-light"><x-icon name="sun" /><span class="nav-text">{{ __('app.theme.light') }}</span></span></button>
-                    <button type="button" class="nav-collapse" aria-label="{{ __('app.nav.collapse') }}" data-collapse="{{ __('app.nav.collapse') }}" data-expand="{{ __('app.nav.expand') }}"><x-icon name="chevron-left" /></button>
+                    {{-- Foot: day/night and sign-out, then the version (below "Abmelden", point 11) with the fold arrow. --}}
+                    <div class="nav-foot">
+                        <button type="button" class="nav-item nav-theme tooltip-right" data-theme-toggle data-tooltip="{{ __('app.theme.switch') }}" aria-label="{{ __('app.theme.switch') }}"><span class="theme-dark"><x-icon name="moon" /><span class="nav-text">{{ __('app.theme.dark') }}</span></span><span class="theme-light"><x-icon name="sun" /><span class="nav-text">{{ __('app.theme.light') }}</span></span></button>
+                        <form class="nav-logout" method="post" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="nav-item tooltip-right" data-tooltip="{{ __('auth.logout') }}"><x-icon name="power" /><span class="nav-text">{{ __('auth.logout') }}</span></button>
+                        </form>
+                        <div class="nav-colophon">
+                            <small class="nav-version tooltip-right" data-tooltip="{{ __('app.version', ['version' => config('dochamster.version')]) }}"><span class="nav-text">{{ __('app.version', ['version' => config('dochamster.version')]) }}</span></small>
+                            <button type="button" class="nav-collapse" aria-label="{{ __('app.nav.collapse') }}" data-collapse="{{ __('app.nav.collapse') }}" data-expand="{{ __('app.nav.expand') }}"><x-icon name="chevron-left" /></button>
+                        </div>
+                    </div>
                 </nav>
             </aside>
             <div class="nav-backdrop"></div>

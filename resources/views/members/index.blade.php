@@ -3,7 +3,7 @@
 @section('title', __('members.title'))
 
 @section('page')
-    <h1>{{ __('members.title') }}</h1>
+    <div class="page-head"><h1>{{ __('members.title') }}</h1></div>
 
     @if (session('status'))
         <p class="check-ok" role="status">{{ session('status') }}</p>
@@ -29,20 +29,25 @@
                 @if (! $membership->isActive())
                     <span class="muted">· {{ __('members.removed') }}</span>
                 @elseif ($membership->user_id !== $selfId)
-                    <form method="post" action="{{ route('members.reset', $membership->id) }}">
+                    {{-- Role, password, then the three actions in one row; removing access is the red one. --}}
+                    <form class="row-form" method="post" action="{{ route('members.reset', $membership->id) }}">
                         @csrf
-                        <label for="role-{{ $membership->id }}">{{ __('members.role') }}</label>
-                        <select id="role-{{ $membership->id }}" name="role">
-                            <option value="{{ $adminValue }}" @selected($membership->org_role_id === null)>{{ __('members.roles.owner') }}</option>
-                            @foreach ($roles as $role)
-                                <option value="{{ $role->id }}" @selected($membership->org_role_id === $role->id)>{{ $role->name }}</option>
-                            @endforeach
-                        </select>
-                        <label for="reset-{{ $membership->id }}">{{ __('exports.password') }}</label>
-                        <input id="reset-{{ $membership->id }}" type="password" name="password" autocomplete="current-password" required>
-                        <button type="submit" formaction="{{ route('members.role', $membership->id) }}">{{ __('members.change_role') }}</button>
-                        <button type="submit">{{ __('members.reset') }}</button>
-                        <button type="submit" formaction="{{ route('members.revoke', $membership->id) }}">{{ __('members.revoke') }}</button>
+                        <div class="field">
+                            <label for="role-{{ $membership->id }}">{{ __('members.role') }}</label>
+                            <select id="role-{{ $membership->id }}" name="role">
+                                <option value="{{ $adminValue }}" @selected($membership->org_role_id === null)>{{ __('members.roles.owner') }}</option>
+                                @foreach ($roles as $role)
+                                    <option value="{{ $role->id }}" @selected($membership->org_role_id === $role->id)>{{ $role->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="reset-{{ $membership->id }}">{{ __('exports.password') }}</label>
+                            <input id="reset-{{ $membership->id }}" type="password" name="password" autocomplete="current-password" required>
+                        </div>
+                        <button type="submit" class="button-quiet" formaction="{{ route('members.role', $membership->id) }}">{{ __('members.change_role') }}</button>
+                        <button type="submit" class="button-quiet">{{ __('members.reset') }}</button>
+                        <button type="submit" class="button-danger" formaction="{{ route('members.revoke', $membership->id) }}">{{ __('members.revoke') }}</button>
                     </form>
                 @endif
             </li>

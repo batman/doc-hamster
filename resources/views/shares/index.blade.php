@@ -3,7 +3,7 @@
 @section('title', __('shares.title'))
 
 @section('page')
-    <h1>{{ __('shares.title') }}</h1>
+    <div class="page-head"><h1>{{ __('shares.title') }}</h1></div>
     @if (session('status'))
         <p class="check-ok" role="status">{{ session('status') }}</p>
     @endif
@@ -31,7 +31,7 @@
                     <span class="muted">{{ __('shares.until', ['date' => $link->expires_at->format('d.m.Y H:i')]) }}</span>
                     <form method="post" action="{{ route('shares.revoke', $link->id) }}">
                         @csrf
-                        <button type="submit" class="button-quiet">{{ __('shares.revoke') }}</button>
+                        <button type="submit" class="button-quiet button-small">{{ __('shares.revoke') }}</button>
                     </form>
                 </li>
             @endforeach

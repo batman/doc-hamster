@@ -55,7 +55,13 @@
         @endif
 
         @if ($documents->isEmpty() && $selected === [] && $view !== 'calendar')
-            <div class="empty-state"><p class="muted">{{ __('documents.empty') }}</p></div>
+            {{-- An empty list is an invitation: the button opens the same file picker as the menu. --}}
+            <div class="empty-state">
+                <p class="empty-title">{{ __('documents.empty') }}</p>
+                @can('documents.upload')
+                    <label class="button" for="upload-input"><x-icon name="upload" />{{ __('documents.upload') }}</label>
+                @endcan
+            </div>
         @else
             @include('documents.views.'.(in_array($view, ['small', 'large'], true) ? 'tiles' : $view))
             <p class="muted" data-no-match @unless ($documents->isEmpty() && $selected !== []) hidden @endunless>{{ __('tags.no_match') }}</p>

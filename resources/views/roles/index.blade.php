@@ -3,7 +3,7 @@
 @section('title', __('roles.title'))
 
 @section('page')
-    <h1>{{ __('roles.title') }}</h1>
+    <div class="page-head"><h1>{{ __('roles.title') }}</h1></div>
     <p class="muted">{{ __('roles.admin_hint') }}</p>
 
     @if (session('status'))
@@ -35,10 +35,12 @@
                     </p>
                     <label for="password-{{ $role->id }}">{{ __('exports.password') }}</label>
                     <input id="password-{{ $role->id }}" type="password" name="password" autocomplete="current-password" required>
-                    <button type="submit">{{ __('roles.save') }}</button>
-                    @if (! $role->isPreinstalled() && $role->memberships_count === 0)
-                        <button type="submit" formaction="{{ route('roles.destroy', $role->id) }}">{{ __('roles.delete') }}</button>
-                    @endif
+                    <div class="actions">
+                        <button type="submit">{{ __('roles.save') }}</button>
+                        @if (! $role->isPreinstalled() && $role->memberships_count === 0)
+                            <button type="submit" class="button-danger" formaction="{{ route('roles.destroy', $role->id) }}">{{ __('roles.delete') }}</button>
+                        @endif
+                    </div>
                 </form>
             </li>
         @endforeach

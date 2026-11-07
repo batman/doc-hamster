@@ -9,7 +9,7 @@
         $releases = $available ? [['version' => $available, 'main' => $previewInstalled]] : null;
     @endphp
 
-    <h1>{{ __('updates.title') }}</h1>
+    <div class="page-head"><h1>{{ __('updates.title') }}</h1></div>
 
     @if ($status)
         <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ $status }}</span></div>
