@@ -7,10 +7,42 @@
     const read = () => { try { return localStorage.getItem(KEY); } catch { return null; } };
     const save = value => { try { localStorage.setItem(KEY, value); } catch { /* private mode: not remembered */ } };
 
+    // A small event bus for modules (A74): DocHamster.on('window:open', root => …) runs for the first page and
+    // for every window loaded later; 'window:close' before a window goes. Pages without windows count as one.
+    const listeners = {};
+    const DocHamster = window.DocHamster = {
+        on(name, fn) {
+            (listeners[name] ??= []).push(fn);
+        },
+        emit(name, root) {
+            (listeners[name] ?? []).forEach(fn => fn(root));
+        },
+    };
+
     const saved = read();
     if (saved === 'closed' || saved === 'rail') {
         root.classList.add(`nav-${saved}`);
     }
+
+    // Settings columns as remembered, before the first paint (Go 2026-11-07, A57): <html> gets
+    // data-col0/1 = open|closed and --col0-w/--col1-w; the CSS draws them, so nothing jumps.
+    // setupColumns takes over once the page is there and removes these marks again.
+    try {
+        const cols = JSON.parse(localStorage.getItem('dh-cols')) ?? {};
+        const widths = JSON.parse(localStorage.getItem('dh-col-widths')) ?? {};
+        const rem = 16;
+        [0, 1].forEach(i => {
+            if (cols[i] === 'open' || cols[i] === 'closed') {
+                root.dataset[`col${i}`] = cols[i];
+            }
+            if (cols[i] !== 'closed' && typeof widths[i] === 'number') {
+                root.style.setProperty(`--col${i}-w`, `${widths[i]}px`);
+                if (widths[i] < 12 * rem) {
+                    root.dataset[`col${i}Icons`] = '';
+                }
+            }
+        });
+    } catch { /* nothing remembered */ }
 
     const setupMenu = () => {
         const nav = document.getElementById('nav');
@@ -269,9 +301,9 @@
             dialog.hidden = false;
             dialog.querySelector('[data-dialog-close], button, a, input')?.focus();
         };
-        // The file is fetched ahead: the share menu has to open right on the click.
+        // The file is fetched ahead: the share menu has to open right on the click. Per window, also for later ones.
         const shared = new Map();
-        document.querySelectorAll('[data-share]').forEach(button => {
+        DocHamster.on('window:open', root => root.querySelectorAll('[data-share]').forEach(button => {
             if (!navigator.canShare) {
                 return;
             }
@@ -284,7 +316,7 @@
                     }
                 })
                 .catch(() => { /* no share menu then, our dialog stays */ });
-        });
+        }));
         document.addEventListener('click', event => {
             const button = event.target.closest('[data-dialog-open]');
             if (!button || button.disabled) {
@@ -301,25 +333,214 @@
             }
             open(button);
         });
-        document.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', () => {
-            const field = document.getElementById(button.dataset.copy);
-            field.select();
-            navigator.clipboard?.writeText(field.value).then(() => { button.textContent = button.dataset.copied; });
-        }));
+        document.addEventListener('click', event => {
+            const button = event.target.closest('[data-copy]');
+            if (button) {
+                const field = document.getElementById(button.dataset.copy);
+                field.select();
+                navigator.clipboard?.writeText(field.value).then(() => { button.textContent = button.dataset.copied; });
+            }
+        });
         // Checklists save with every tick.
-        document.querySelectorAll('form[data-autosubmit]').forEach(form => form.addEventListener('change', () => form.submit()));
-        document.querySelectorAll('[data-dialog]').forEach(dialog => {
-            dialog.addEventListener('click', event => {
-                if (event.target === dialog || event.target.closest('[data-dialog-close]')) {
-                    shut(dialog);
-                }
-            });
+        document.addEventListener('change', event => event.target.closest('form[data-autosubmit]')?.submit());
+        document.addEventListener('click', event => {
+            const dialog = event.target.closest('[data-dialog]');
+            if (dialog && (event.target === dialog || event.target.closest('[data-dialog-close]'))) {
+                shut(dialog);
+            }
         });
         document.addEventListener('keydown', event => {
             if (event.key === 'Escape') {
                 document.querySelectorAll('[data-dialog]:not([hidden])').forEach(shut);
             }
         });
+    };
+
+
+    // ---------------------------------------------------------------------------------------------
+    // Window system (Go 2026-11-07, points 22 and 24; docs/design/FRAMEWORK.md).
+    // New windows open on the right, earlier ones collect on the left as strips (the history).
+    // Full: the active window and the one it was opened from; all others are strips. A click on a
+    // strip opens it again and only minimizes the ones right of it; the X removes a window. The
+    // address follows the active window; the history survives a reload (per tab).
+    // Modules only deliver <x-window> content and listen to DocHamster.on('window:open', root => …).
+    // ---------------------------------------------------------------------------------------------
+    const setupWindows = () => {
+        const box = document.querySelector('[data-windows]');
+        if (!box) {
+            return;
+        }
+        const KEY = 'dh-windows';
+        const wins = () => [...box.querySelectorAll(':scope > section[data-window]')];
+        const byUrl = url => wins().find(win => win.dataset.windowUrl === url);
+        const phone = matchMedia('(max-width: 63.99rem)');
+        const smooth = change => (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches
+            ? document.startViewTransition(change).finished : Promise.resolve(change()));
+        let seq = 0;
+        const name = win => {
+            win.dataset.windowId ??= `w${++seq}`;
+            win.style.viewTransitionName = `win-${win.dataset.windowId}`;
+        };
+
+        const remember = () => {
+            try {
+                sessionStorage.setItem(KEY, JSON.stringify({
+                    list: wins().map(win => ({ url: win.dataset.windowUrl, title: win.dataset.windowTitle, icon: win.querySelector('.win-strip .icon')?.outerHTML ?? '', opener: win.dataset.opener ?? null, closable: win.querySelector('[data-window-close]') !== null })),
+                    active: box.querySelector(':scope > .is-active')?.dataset.windowUrl ?? null,
+                }));
+            } catch { /* not remembered */ }
+        };
+
+        const show = (active, push = true) => {
+            const opener = active.dataset.opener ? byUrl(active.dataset.opener) : null;
+            const prev = opener && wins().indexOf(opener) < wins().indexOf(active) ? opener : active.previousElementSibling;
+            wins().forEach(win => {
+                win.classList.toggle('is-active', win === active);
+                win.classList.toggle('is-prev', win === prev && win !== active);
+                win.classList.toggle('is-min', win !== active && win !== prev);
+                win.querySelector('[data-window-back]')?.toggleAttribute('hidden', !(win === active && prev));
+            });
+            document.title = `${active.dataset.windowTitle} – ${document.title.split(' – ').pop()}`;
+            if (push && location.href !== active.dataset.windowUrl) {
+                history.pushState({ window: active.dataset.windowUrl }, '', active.dataset.windowUrl);
+            }
+            remember();
+            document.dispatchEvent(new Event('dh:cols'));
+        };
+
+        const load = url => fetch(url, { credentials: 'same-origin', headers: { 'X-DocHamster-Window': '1', Accept: 'text/html' } })
+            .then(response => (response.ok ? response.text() : Promise.reject(response)))
+            .then(html => {
+                const found = [...new DOMParser().parseFromString(html, 'text/html').querySelectorAll('section[data-window]')].pop();
+                return found ? document.importNode(found, true) : Promise.reject(new Error('no window'));
+            });
+
+        // A strip from the stored history, filled when it is opened
+        const placeholder = item => {
+            const win = document.createElement('section');
+            win.className = 'win is-min';
+            win.dataset.window = '';
+            win.dataset.windowUrl = item.url;
+            win.dataset.windowTitle = item.title;
+            win.dataset.lazy = '';
+            if (item.opener) {
+                win.dataset.opener = item.opener;
+            }
+            const strip = document.createElement('button');
+            strip.type = 'button';
+            strip.className = 'win-strip';
+            strip.dataset.windowActivate = '';
+            strip.innerHTML = `${item.icon}<span></span>`;
+            strip.querySelector('span').textContent = item.title;
+            win.append(strip);
+            if (item.closable) {
+                const x = document.querySelector('.win-strip-x')?.cloneNode(true);
+                if (x) {
+                    win.append(x);
+                }
+            }
+            return win;
+        };
+
+        const activate = (win, push = true) => {
+            if (win.dataset.lazy === undefined) {
+                return smooth(() => show(win, push));
+            }
+            return load(win.dataset.windowUrl).then(full => {
+                full.dataset.opener = win.dataset.opener ?? '';
+                name(full);
+                win.replaceWith(full);
+                DocHamster.emit('window:open', full);
+                return smooth(() => show(full, push));
+            }).catch(() => { location.href = win.dataset.windowUrl; });
+        };
+
+        const open = (url, from) => {
+            const known = byUrl(url);
+            if (known) {
+                return activate(known);
+            }
+            return load(url).then(win => {
+                win.dataset.opener = from?.dataset.windowUrl ?? '';
+                name(win);
+                return smooth(() => {
+                    box.append(win);
+                    show(win);
+                }).then(() => {
+                    DocHamster.emit('window:open', win);
+                    win.scrollIntoView({ inline: 'end', block: 'nearest' });
+                });
+            }).catch(() => { location.href = url; });
+        };
+
+        const close = win => {
+            const wasActive = win.classList.contains('is-active');
+            const next = (win.dataset.opener && byUrl(win.dataset.opener)) || win.previousElementSibling || win.nextElementSibling;
+            DocHamster.emit('window:close', win);
+            return smooth(() => {
+                win.remove();
+                if (wasActive && next) {
+                    show(next, false);
+                    history.replaceState({ window: next.dataset.windowUrl }, '', next.dataset.windowUrl);
+                } else {
+                    remember();
+                }
+            });
+        };
+
+        // Start: the windows from the server, plus the rest of this tab's history as strips (A62)
+        wins().forEach(win => {
+            name(win);
+            if (win.previousElementSibling?.matches('section[data-window]')) {
+                win.dataset.opener ??= win.previousElementSibling.dataset.windowUrl;
+            }
+        });
+        try {
+            const saved = JSON.parse(sessionStorage.getItem(KEY));
+            const current = wins().at(-1)?.dataset.windowUrl;
+            if (saved && saved.list.some(item => item.url === current)) {
+                const order = saved.list.map(item => byUrl(item.url) ?? placeholder(item));
+                wins().filter(win => !order.includes(win)).forEach(win => order.push(win));
+                order.forEach(win => {
+                    name(win);
+                    box.append(win);
+                });
+            }
+        } catch { /* fresh history */ }
+        wins().filter(win => win.dataset.lazy === undefined).forEach(win => DocHamster.emit('window:open', win));
+        show(wins().at(-1), false);
+        history.replaceState({ window: wins().at(-1).dataset.windowUrl }, '', location.href);
+
+        box.addEventListener('click', event => {
+            const win = event.target.closest('section[data-window]');
+            if (event.target.closest('[data-window-close]')) {
+                event.preventDefault();
+                close(win);
+            } else if (event.target.closest('[data-window-activate]')) {
+                activate(win);
+            } else if (event.target.closest('[data-window-back]')) {
+                const prev = box.querySelector(':scope > .is-prev');
+                if (prev) {
+                    activate(prev);
+                }
+            } else {
+                const link = event.target.closest('a[data-window]');
+                if (link && !event.ctrlKey && !event.metaKey && !event.shiftKey && event.button === 0) {
+                    event.preventDefault();
+                    open(link.href, win);
+                }
+            }
+        });
+        // A click into a minimized-looking previous window makes it the active one again
+        addEventListener('popstate', event => {
+            const win = byUrl(event.state?.window ?? location.href);
+            if (win) {
+                activate(win, false);
+            } else {
+                location.reload();
+            }
+        });
+        phone.addEventListener('change', () => show(box.querySelector(':scope > .is-active') ?? wins().at(-1), false));
     };
 
     // Einstellungen columns: every pane folds to its strip and opens again on its own; the page gives way.
@@ -350,6 +571,11 @@
             }
         });
         cols.addEventListener('animationend', event => event.target.classList.remove('is-opening'));
+        const dropEarlyMarks = () => [0, 1].forEach(i => {
+            delete root.dataset[`col${i}`];
+            delete root.dataset[`col${i}Icons`];
+            root.style.removeProperty(`--col${i}-w`);
+        });
 
         // Walls between the columns (Go 2026-11-07, points 11-13): drag a column wider or narrower. Narrow shows
         // only the icons, too narrow snaps to the strip like the arrow; a strip can be dragged open again.
@@ -379,6 +605,7 @@
                 size(i, widths[i]);
             }
         });
+        dropEarlyMarks();
         [0, 1].filter(foldable).forEach(i => {
             const wall = document.createElement('div');
             wall.className = 'col-wall';
@@ -492,10 +719,7 @@
             delete widths[i];
             keepWidths();
             try { localStorage.setItem(COLS, JSON.stringify(state)); } catch { /* not remembered */ }
-            if (desktop.matches && !still.matches && foldable(i)) {
-                event.preventDefault();
-                fold(i).then(() => { location.href = item.href; });
-            }
+            // The page change itself is soft (view transitions in the CSS, A58): the column glides into its strip.
         });
 
         cols.addEventListener('click', event => {
@@ -979,8 +1203,190 @@
         });
         radios.forEach(radio => radio.addEventListener('change', () => {
             hex.value = '';
-            picker.value = radio.value;
+            if (radio.value.startsWith('#')) {
+                picker.value = radio.value;
+            }
         }));
+    };
+
+    // Folder menu under Belege (PO, 2026-11-07): open/close subfolders; drag the handle to change the order of one level.
+    // Pointer events, so it works with mouse, pen and finger alike; the new order is saved right away.
+    const setupFolderMenu = () => {
+        const menu = document.querySelector('.nav-sub');
+        if (!menu) {
+            return;
+        }
+        menu.querySelectorAll('[data-folder-toggle]').forEach(button => button.addEventListener('click', () => {
+            const item = button.closest('.nav-folder');
+            const open = item.classList.toggle('is-open');
+            button.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }));
+
+        const url = menu.dataset.folderOrder;
+        if (!url) {
+            return;
+        }
+        const token = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+        const save = list => {
+            const body = new FormData();
+            body.append('parent_id', list.dataset.parent);
+            [...list.children].forEach(item => body.append('order[]', item.dataset.id));
+            fetch(url, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token, Accept: 'application/json' }, credentials: 'same-origin' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(String(response.status));
+                    }
+                })
+                .catch(() => {
+                    window.alert(menu.dataset.orderFailed);
+                    window.location.reload();
+                });
+        };
+
+        menu.querySelectorAll('[data-grip]').forEach(grip => {
+            grip.addEventListener('pointerdown', event => {
+                if (event.button !== 0) {
+                    return;
+                }
+                event.preventDefault();
+                const item = grip.closest('.nav-folder');
+                const list = item.parentElement;
+                const before = [...list.children].map(child => child.dataset.id).join();
+                // Listened on the document: moving the item in the DOM ends any pointer capture on the handle.
+                item.classList.add('is-dragging');
+                document.body.classList.add('is-dragging-folder');
+
+                const move = moveEvent => {
+                    if (moveEvent.pointerId !== event.pointerId) {
+                        return;
+                    }
+                    const siblings = [...list.children].filter(child => child !== item);
+                    const next = siblings.find(child => {
+                        const box = child.querySelector('.nav-folder-row').getBoundingClientRect();
+                        return moveEvent.clientY < box.top + box.height / 2;
+                    });
+                    if (next) {
+                        if (item.nextElementSibling !== next) {
+                            list.insertBefore(item, next);
+                        }
+                    } else if (list.lastElementChild !== item) {
+                        list.appendChild(item);
+                    }
+                };
+                const end = endEvent => {
+                    if (endEvent.pointerId !== event.pointerId) {
+                        return;
+                    }
+                    document.removeEventListener('pointermove', move);
+                    document.removeEventListener('pointerup', end);
+                    document.removeEventListener('pointercancel', end);
+                    item.classList.remove('is-dragging');
+                    document.body.classList.remove('is-dragging-folder');
+                    if ([...list.children].map(child => child.dataset.id).join() !== before) {
+                        save(list);
+                    }
+                };
+                document.addEventListener('pointermove', move);
+                document.addEventListener('pointerup', end);
+                document.addEventListener('pointercancel', end);
+            });
+            // Keyboard: arrow up/down moves the folder one place.
+            grip.addEventListener('keydown', event => {
+                if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') {
+                    return;
+                }
+                event.preventDefault();
+                const item = grip.closest('.nav-folder');
+                const list = item.parentElement;
+                if (event.key === 'ArrowUp' && item.previousElementSibling) {
+                    list.insertBefore(item, item.previousElementSibling);
+                } else if (event.key === 'ArrowDown' && item.nextElementSibling) {
+                    list.insertBefore(item.nextElementSibling, item);
+                } else {
+                    return;
+                }
+                grip.focus();
+                save(list);
+            });
+        });
+    };
+
+    // Folder import: the picked folder becomes a new folder of the same name; files go up one by one with their path.
+    const setupFolderImport = () => {
+        const form = document.querySelector('[data-folder-import]');
+        if (!form) {
+            return;
+        }
+        const input = form.querySelector('input[type="file"]');
+        const status = form.querySelector('[data-import-status]');
+        const bar = form.querySelector('progress');
+        const token = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+        const text = (key, values = {}) => Object.entries(values).reduce((out, [name, value]) => out.replaceAll(':' + name, String(value)), form.dataset[key] ?? '');
+        if (!('webkitdirectory' in input)) {
+            status.textContent = text('unsupported');
+            input.disabled = true;
+            return;
+        }
+        const wanted = /\.(pdf|jpe?g|png|gif|webp|heic|heif|tiff?|bmp)$/i;
+        const post = async (url, body) => {
+            const response = await fetch(url, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token, Accept: 'application/json' }, credentials: 'same-origin' });
+            const data = await response.json().catch(() => ({}));
+            return { ok: response.ok, status: response.status, data };
+        };
+
+        input.addEventListener('change', async () => {
+            const all = [...input.files].filter(file => file.webkitRelativePath && !file.webkitRelativePath.split('/').some(part => part.startsWith('.')));
+            if (all.length === 0) {
+                status.textContent = text('empty');
+                return;
+            }
+            const files = all.filter(file => wanted.test(file.name) || file.type.startsWith('image/') || file.type === 'application/pdf');
+            let skipped = all.length - files.length;
+            input.disabled = true;
+            bar.hidden = false;
+            bar.max = files.length || 1;
+            bar.value = 0;
+
+            const start = new FormData();
+            start.append('name', all[0].webkitRelativePath.split('/')[0]);
+            const parent = form.querySelector('[name="import_parent"]')?.value;
+            if (parent) {
+                start.append('parent_id', parent);
+            }
+            const made = await post(form.dataset.start, start).catch(() => ({ ok: false, data: {} }));
+            if (!made.ok) {
+                status.textContent = made.data?.message ?? text('failed');
+                input.disabled = false;
+                bar.hidden = true;
+                return;
+            }
+
+            let saved = 0;
+            for (const [index, file] of files.entries()) {
+                status.textContent = text('running', { done: index, total: files.length });
+                const body = new FormData();
+                body.append('file', file);
+                body.append('path', file.webkitRelativePath.split('/').slice(1).join('/'));
+                const result = await post(form.dataset.file.replace('__ID__', made.data.id), body).catch(() => ({ ok: false, status: 0 }));
+                if (result.ok) {
+                    saved++;
+                } else if (result.status === 422) {
+                    skipped++;
+                } else {
+                    status.textContent = text('failed');
+                    input.disabled = false;
+                    return;
+                }
+                bar.value = index + 1;
+            }
+
+            status.textContent = text('done', { saved }) + (skipped > 0 ? ' ' + text('skipped', { count: skipped }) : '');
+            const link = form.querySelector('[data-import-open]');
+            link.href = made.data.url;
+            link.hidden = false;
+            input.disabled = false;
+            input.value = '';
+        });
     };
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -988,14 +1394,21 @@
         setupDropdowns();
         setupFilter();
         setupDialogs();
+        setupWindows();
         setupColumns();
         setupScrollHint();
         setupBadges();
         setupTagSearch();
         setupColorField();
+        setupFolderMenu();
+        setupFolderImport();
         setupNotes();
         setupToasts();
         setupAjaxForms();
         setupPreviewPick();
+        // Pages without the window system: the whole page is the one window
+        if (!document.querySelector('[data-windows]')) {
+            DocHamster.emit('window:open', document);
+        }
     });
 })();

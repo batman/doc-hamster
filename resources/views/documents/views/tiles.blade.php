@@ -2,7 +2,7 @@
 <ul class="view-tiles view-{{ $view }}">
     @foreach ($documents as $document)
         <li data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" @if ($open?->id === $document->id) class="is-open" @endif>
-            <a href="{{ route('documents.show', [$document->id, ...request()->query()]) }}">
+            <a href="{{ route('documents.show', [$document->id, ...request()->query()]) }}" data-window>
                 @if ($view === 'large')
                     @include('documents._thumb')
                 @else

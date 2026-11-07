@@ -8,6 +8,8 @@ use App\Http\Controllers\BankController;
 use App\Http\Controllers\BankImportController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\FolderController;
+use App\Http\Controllers\FolderImportController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PhoneCheckController;
@@ -84,6 +86,16 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('tags', [TagController::class, 'store'])->name('tags.store');
         Route::post('tags/{id}', [TagController::class, 'update'])->name('tags.update');
         Route::post('tags/{id}/delete', [TagController::class, 'destroy'])->name('tags.destroy');
+    });
+
+    Route::middleware('can:documents.edit')->group(function (): void {
+        Route::get('folders', [FolderController::class, 'index'])->name('folders.index');
+        Route::post('folders', [FolderController::class, 'store'])->name('folders.store');
+        Route::post('folders/order', [FolderController::class, 'order'])->name('folders.order');
+        Route::post('folders/import', [FolderImportController::class, 'start'])->middleware('can:documents.upload')->name('folders.import');
+        Route::post('folders/import/{id}/file', [FolderImportController::class, 'file'])->middleware(['can:documents.upload', 'throttle:600,1'])->name('folders.import.file');
+        Route::post('folders/{id}', [FolderController::class, 'update'])->name('folders.update');
+        Route::post('folders/{id}/delete', [FolderController::class, 'destroy'])->name('folders.destroy');
     });
 
     Route::middleware('can:banking.import')->prefix('bank')->name('bank.')->group(function (): void {
