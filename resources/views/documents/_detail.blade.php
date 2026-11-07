@@ -31,8 +31,22 @@
         @endcan
     </div>
 
-    @if ($file?->isImage())
-        <span class="thumb-frame detail-doc"><img class="thumb" src="{{ route('documents.file', $file->id) }}" alt="" draggable="false"></span>
+    @if ($file?->isImage() || $file?->thumb_path)
+        <div class="document-zoom" data-document-zoom>
+            <div class="document-zoom-controls" role="group" aria-label="{{ __('documents.zoom') }}">
+                <button type="button" class="icon-button" data-zoom-out aria-label="{{ __('documents.zoom_out') }}" title="{{ __('documents.zoom_out') }}" disabled><span aria-hidden="true">−</span></button>
+                <output class="zoom-level" data-zoom-level aria-live="polite" aria-atomic="true">100%</output>
+                <button type="button" class="icon-button" data-zoom-in aria-label="{{ __('documents.zoom_in') }}" title="{{ __('documents.zoom_in') }}"><span aria-hidden="true">+</span></button>
+                <button type="button" class="button-quiet zoom-reset" data-zoom-reset>{{ __('documents.zoom_reset') }}</button>
+            </div>
+            <div class="thumb-frame detail-doc document-zoom-viewport" data-zoom-viewport>
+                @if ($file->isImage())
+                    <img class="thumb" src="{{ route('documents.file', $file->id) }}" alt="" draggable="false" data-zoom-image>
+                @else
+                    <img class="thumb" src="{{ route('documents.thumb', $file->id) }}" alt="" draggable="false" data-zoom-image>
+                @endif
+            </div>
+        </div>
     @elseif ($file)
         @include('documents._thumb', ['frameClass' => 'detail-doc'])
     @endif

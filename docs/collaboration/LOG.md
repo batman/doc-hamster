@@ -294,3 +294,9 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done / next step: Merge after the updated PR's CI passes, then publish the stable update.
 - Watch out: Keep PR #87 open for the separate zoom preview.
 - Branch/PR: lead/BUG-DROP-1-preview (#86)
+
+## 2026-11-07 · Lead · UI-ZOOM-1
+- Done: Prepared the document preview zoom controls, zoom level and 100% reset. Image documents use their original file; PDF previews use their generated thumbnail. Added German and English labels.
+- Not done / next step: Browser/device verification and CI are pending before the preview can be offered.
+- Watch out: PDF zoom enlarges the generated thumbnail, so sharpness depends on its available resolution.
+- Branch/PR: lead/UI-ZOOM-1-preview

@@ -422,6 +422,56 @@
         }));
     };
 
+    // Zoom the full-size image (or the PDF preview) in the open document detail.
+    const setupDocumentZoom = () => {
+        document.querySelectorAll('[data-document-zoom]').forEach(viewer => {
+            const viewport = viewer.querySelector('[data-zoom-viewport]');
+            const image = viewport?.querySelector('[data-zoom-image]');
+            const level = viewer.querySelector('[data-zoom-level]');
+            const zoomOut = viewer.querySelector('[data-zoom-out]');
+            const zoomIn = viewer.querySelector('[data-zoom-in]');
+            const reset = viewer.querySelector('[data-zoom-reset]');
+            if (!viewport || !image || !level || !zoomOut || !zoomIn || !reset) {
+                return;
+            }
+
+            const min = 0.5;
+            const max = 4;
+            const step = 0.25;
+            let zoom = 1;
+            const update = () => {
+                const style = getComputedStyle(viewport);
+                const width = viewport.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+                const height = viewport.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+                if (image.naturalWidth > 0 && image.naturalHeight > 0 && width > 0 && height > 0) {
+                    const fit = Math.min(width / image.naturalWidth, height / image.naturalHeight);
+                    image.style.width = `${Math.round(image.naturalWidth * fit * zoom)}px`;
+                    image.style.height = `${Math.round(image.naturalHeight * fit * zoom)}px`;
+                }
+                level.textContent = `${Math.round(zoom * 100)}%`;
+                zoomOut.disabled = zoom <= min;
+                zoomIn.disabled = zoom >= max;
+            };
+            const setZoom = value => {
+                zoom = Math.max(min, Math.min(max, value));
+                update();
+            };
+
+            zoomOut.addEventListener('click', () => setZoom(zoom - step));
+            zoomIn.addEventListener('click', () => setZoom(zoom + step));
+            reset.addEventListener('click', () => setZoom(1));
+            image.addEventListener('load', update);
+            if (typeof ResizeObserver !== 'undefined') {
+                new ResizeObserver(update).observe(viewport);
+            } else {
+                window.addEventListener('resize', update);
+            }
+            if (image.complete) {
+                update();
+            }
+        });
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
         setupMenu();
         setupDropdowns();
@@ -432,5 +482,6 @@
         setupBadges();
         setupTagSearch();
         setupColorField();
+        setupDocumentZoom();
     });
 })();
