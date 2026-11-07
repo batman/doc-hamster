@@ -31,6 +31,8 @@ it('forbids outbound stream wrappers and network aliases outside net jobs (D-020
 
         $decoded = json_decode($process->getOutput(), true);
         expect($decoded)->toBeArray('PHPStan produced no JSON output: '.$process->getErrorOutput());
+        $general = $decoded['errors'] ?? [];
+        expect($general)->toBe([], 'PHPStan itself errored: '.implode('; ', $general));
 
         /** @var array<string, list<string>> $byFile */
         $byFile = [];

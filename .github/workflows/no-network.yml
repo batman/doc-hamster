@@ -46,17 +46,24 @@ jobs:
           cp .env.example .env
           php artisan key:generate --force
 
-      # If this step ever passes, the sandbox is broken and the proof below
-      # is worthless – fail loudly instead of testing with network.
+      # Loopback stays up inside the namespace: PHPStan's parallel workers
+      # coordinate over loopback TCP and die without it. Loopback is not
+      # egress – there are still no interfaces, routes, or DNS, as proven
+      # below. If this proof ever passes, the sandbox is broken and the
+      # tests below are worthless – fail loudly instead.
       - name: Prove the sandbox has no network
         run: |
-          if sudo unshare --net getent hosts packagist.org; then
+          if sudo unshare --net sh -c 'ip link set lo up; getent hosts packagist.org'; then
             echo 'Network sandbox leaks: DNS resolves inside unshare --net.' >&2
+            exit 1
+          fi
+          if sudo unshare --net sh -c 'ip link set lo up; ip route get 8.8.8.8' 2>/dev/null; then
+            echo 'Network sandbox leaks: a route exists inside unshare --net.' >&2
             exit 1
           fi
 
       - name: Doctor (local-only) without network
-        run: sudo unshare --net php artisan dochamster:doctor --local-only
+        run: sudo unshare --net sh -c 'ip link set lo up && exec php artisan dochamster:doctor --local-only'
 
       - name: Local test group without network
-        run: sudo unshare --net vendor/bin/pest --group=no-network
+        run: sudo unshare --net sh -c 'ip link set lo up && exec vendor/bin/pest --group=no-network'
