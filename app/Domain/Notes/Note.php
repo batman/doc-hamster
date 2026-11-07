@@ -39,7 +39,8 @@ final class Note extends Model
     use BelongsToOrg;
     use HasUlids;
 
-    public const COLORS = ['yellow', 'orange', 'green', 'blue', 'pink', 'purple'];
+    /** The PO's 20 sticky-note colours (2026-11-07); the values live in app.css (.note-<key>). */
+    public const COLORS = ['white', 'black', 'gray', 'red', 'bordeaux', 'orange', 'yellow', 'lightgreen', 'green', 'turquoise', 'lightblue', 'blue', 'navy', 'purple', 'lavender', 'pink', 'brown', 'beige', 'gold', 'mint'];
 
     protected $fillable = ['org_id', 'user_id', 'body', 'checklist', 'shared', 'editable', 'title', 'color', 'opacity', 'locked', 'pos_x', 'pos_y'];
 
