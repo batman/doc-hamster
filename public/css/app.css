@@ -142,6 +142,51 @@ a { color: var(--primary-ink); }
     .nav-collapse { display: none; }
 }
 
+/* Submenu "Ordner" under Belege: folders in their order, drag handle, "+" for a subfolder */
+.nav-sub { margin: 0 0 .25rem; }
+.nav-sub-head { display: flex; align-items: center; justify-content: space-between; min-height: 2rem; padding: 0 .25rem 0 2.6rem; color: var(--muted); font-size: .8rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.nav-folders { margin: 0; padding: 0 0 0 1.4rem; list-style: none; }
+.nav-folders .nav-folders { padding-left: 1rem; display: none; }
+.nav-folder.is-open > .nav-folders { display: block; }
+.nav-folder-row { position: relative; display: flex; align-items: center; gap: .1rem; }
+.nav-folder-row .nav-item { min-height: 40px; padding: 0 .5rem; gap: .5rem; flex: 1; min-width: 0; font-weight: 400; }
+.nav-folder-row .nav-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-folder-link .icon { color: var(--folder, currentColor); }
+.nav-grip, .nav-folder-toggle, .nav-folder-add {
+    display: inline-grid; place-items: center; flex: none; width: 1.75rem; min-height: 1.75rem; margin: 0; padding: 0;
+    border: 0; border-radius: .4rem; background: none; color: var(--muted); box-shadow: none; text-decoration: none;
+}
+.nav-grip { position: absolute; left: -1.5rem; width: 1.4rem; cursor: grab; touch-action: none; opacity: 0; }
+.nav-folder-add { opacity: 0; }
+.nav-folder-row:hover > .nav-grip, .nav-folder-row:hover > .nav-folder-add, .nav-folder-row:focus-within > .nav-grip, .nav-folder-row:focus-within > .nav-folder-add, .nav-folder-add.is-visible { opacity: 1; }
+@media (hover: none) { .nav-grip, .nav-folder-add { opacity: .7; } }
+.nav-grip:hover, .nav-folder-toggle:hover, .nav-folder-add:hover { color: var(--text); background: var(--bg); }
+.nav-grip .icon, .nav-folder-toggle .icon, .nav-folder-add .icon { width: 1.1rem; height: 1.1rem; }
+.nav-folder-toggle .icon { transition: rotate .15s; rotate: -90deg; }
+.nav-folder.is-open > .nav-folder-row > .nav-folder-toggle .icon { rotate: 0deg; }
+.nav-folder.is-dragging { opacity: .6; }
+.nav-folder.is-dragging > .nav-folder-row { background: var(--bg); border-radius: .4rem; box-shadow: var(--shadow); }
+body.is-dragging-folder { cursor: grabbing; user-select: none; }
+@media (min-width: 64rem) {
+    :is(html.nav-rail, .shell.nav-rail) .nav-sub { display: none; }
+}
+
+/* Folder colour and symbol pickers, folder import */
+.folder-icon, .folder-link .icon, .phone-folder .icon:first-child, .folder-title .icon { color: var(--folder, currentColor); }
+.folder-icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr)); gap: .35rem; margin-top: .5rem; }
+.folder-icon-choice { position: relative; margin: 0; }
+.folder-icon-choice input { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; margin: 0; opacity: 0; cursor: pointer; }
+.folder-icon-choice span { display: grid; place-items: center; height: 2.75rem; border: 1px solid var(--border); border-radius: .5rem; }
+.folder-icon-choice input:checked + span { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary); }
+.folder-icon-choice input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: 2px; }
+.tag-color .no-color { background: repeating-linear-gradient(45deg, var(--bg) 0 4px, var(--border) 4px 6px); }
+.folder-import { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.folder-import progress { width: 100%; }
+.folder-import label.button { display: inline-flex; gap: .5rem; color: var(--primary-text); }
+.folder-import label.button:has(+ input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
+.page-head .folder-title { display: flex; align-items: center; gap: .5rem; }
+.page-head .folder-title .icon { width: 1.6rem; height: 1.6rem; }
+
 /* Files dragged over the page: drop anywhere to upload */
 .drop-overlay {
     position: fixed; inset: .75rem; z-index: 50; display: grid; place-content: center;
@@ -737,6 +782,171 @@ button.col-strip:hover > .icon { color: var(--primary-ink); }
 @media (max-width: 63.99rem) {
     html:not(.nav-open) .nav-dot:not([hidden]) { display: block; }
 }
+
+/* Folders (issue #77): indented list and the bar above the receipt list; classes, because the CSP allows no inline styles. */
+.folder-list { margin: 0; padding: 0; list-style: none; }
+.folder-link { display: flex; align-items: center; gap: .5rem; padding: .4rem .5rem; border-radius: .5rem; text-decoration: none; color: inherit; }
+.folder-link span:nth-child(2) { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.folder-link.is-selected { background: rgba(127, 127, 127, .15); font-weight: 600; }
+.folder-d1 { padding-left: 1rem; }
+.folder-d2 { padding-left: 2rem; }
+.folder-d3 { padding-left: 3rem; }
+.folder-d4 { padding-left: 4rem; }
+.folder-bar { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1rem; padding: 0; list-style: none; }
+.folder-bar a { display: inline-flex; align-items: center; gap: .35rem; padding: .25rem .7rem; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; color: inherit; opacity: .8; }
+.folder-bar a.is-selected, .folder-bar a:hover { opacity: 1; font-weight: 600; }
+
+/* Print and zoom in the receipt view: hidden print frame, large viewer (CSSOM sets the image width; the CSP allows no inline style attributes). */
+.print-frame { position: fixed; width: 0; height: 0; border: 0; opacity: 0; pointer-events: none; }
+.viewer { z-index: 60; }
+.viewer-box { box-sizing: border-box; display: flex; flex-direction: column; width: min(96vw, 90rem); height: 92vh; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.viewer-bar { display: flex; align-items: center; gap: .5rem; padding: .5rem .75rem; border-bottom: 1px solid var(--border); }
+.viewer-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.viewer-level { min-width: 3.5rem; text-align: center; font-variant-numeric: tabular-nums; }
+.viewer-stage { flex: 1; overflow: auto; display: block; }
+.viewer-img { display: block; width: 100%; max-width: none; height: auto; margin: 0 auto; }
+.viewer-frame { display: block; width: 100%; height: 100%; border: 0; }
+.viewer-pdf-mode .zoom-only { display: none; }
+@media print { .viewer, .print-frame { display: none; } }
+
+/* Scanning: the pages scanned so far (issue #77). */
+.scan-strip { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0 0 1rem; padding: 0; list-style: none; }
+.scan-strip li { display: flex; flex-direction: column; align-items: center; gap: .35rem; }
+.scan-strip .thumb-frame { height: 9rem; }
+
+/* Phone app (PHONE, issue #37): /app from the home screen – Belege (camera) and Dokumente; layouts/phone.blade.php */
+.inline-form { display: inline; margin: 0; }
+.icon-button .icon + .icon { margin-left: -.35rem; }
+.queue-status[hidden] { display: none; }
+.queue-status {
+    position: fixed; left: 50%; bottom: calc(5.5rem + env(safe-area-inset-bottom)); z-index: 30; translate: -50% 0;
+    display: flex; align-items: center; gap: .5rem; max-width: calc(100vw - 2rem); padding: .4rem 1rem .4rem .5rem;
+    border-radius: 999px; background: var(--tooltip-bg); color: var(--tooltip-text); box-shadow: var(--shadow); font-weight: 600;
+}
+.queue-hamster { display: block; width: 3rem; height: 2rem; }
+.queue-hamster svg { width: 100%; height: 100%; }
+.phone-app { min-height: 100dvh; margin: 0; background: var(--bg); }
+.phone-head {
+    position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: .5rem;
+    padding: calc(.5rem + env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) .5rem max(1rem, env(safe-area-inset-left));
+    background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.phone-head h1 { flex: 1; min-width: 0; margin: 0; overflow: hidden; font-size: 1.15rem; text-overflow: ellipsis; white-space: nowrap; }
+.phone-head a { display: inline-flex; padding: .5rem; color: var(--text); }
+.phone-head .icon { width: 1.5rem; height: 1.5rem; }
+.phone-main { padding: 1rem max(1rem, env(safe-area-inset-right)) calc(6rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)); }
+.phone-main h2 { font-size: 1.05rem; }
+.phone-flash { margin-top: 0; }
+.phone-bar {
+    position: fixed; inset: auto 0 0; z-index: 25; display: flex;
+    padding: .25rem max(.5rem, env(safe-area-inset-right)) calc(.25rem + env(safe-area-inset-bottom)) max(.5rem, env(safe-area-inset-left));
+    background: var(--surface); border-top: 1px solid var(--border);
+}
+.phone-bar-item {
+    display: flex; flex: 1 1 0; flex-direction: column; align-items: center; justify-content: center; gap: .15rem; min-height: 3.5rem;
+    border-radius: var(--radius); color: var(--muted); font-size: .8rem; font-weight: 600; text-decoration: none;
+}
+.phone-bar-item .icon { width: 1.6rem; height: 1.6rem; }
+.phone-bar-item[aria-current="page"] { color: var(--primary-ink); }
+.phone-list { margin: 0 0 1rem; padding: 0; list-style: none; }
+.phone-row { display: flex; align-items: center; gap: .5rem; border-bottom: 1px solid var(--border); }
+.phone-row-main { display: flex; flex: 1; align-items: center; gap: .75rem; min-width: 0; min-height: 3.5rem; margin: 0; color: var(--text); text-decoration: none; }
+.phone-row-main > span { display: flex; flex: 1; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.phone-row-main .icon { flex: none; width: 1.6rem; height: 1.6rem; color: var(--muted); }
+.phone-thumb { flex: none; width: 2.75rem; height: 2.75rem; border-radius: calc(var(--radius) / 3); object-fit: cover; }
+.phone-row-menu { position: relative; }
+.phone-row-menu > summary { display: flex; padding: .75rem; list-style: none; cursor: pointer; }
+.phone-row-menu > summary::-webkit-details-marker { display: none; }
+.phone-row-panel {
+    position: absolute; right: 0; z-index: 15; display: grid; gap: .75rem; width: min(18rem, calc(100vw - 2rem)); padding: 1rem;
+    border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow);
+}
+.phone-row-panel form { display: grid; gap: .4rem; margin: 0; }
+.phone-new { margin: 1rem 0; }
+.phone-new > summary { display: flex; align-items: center; gap: .5rem; padding: .75rem 0; color: var(--primary-ink); font-weight: 600; cursor: pointer; }
+.phone-new form, .phone-form { display: grid; gap: .4rem; margin: 0 0 1rem; }
+.phone-action {
+    display: flex; align-items: center; justify-content: center; gap: .5rem; min-height: 3rem; margin: 0 0 1rem; padding: .5rem 1rem;
+    border: 0; border-radius: var(--radius); background: var(--primary); color: var(--primary-text); font: inherit; font-weight: 700; text-decoration: none; cursor: pointer;
+}
+.phone-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: .5rem; margin-bottom: 1rem; }
+.phone-actions form { margin: 0; }
+.phone-actions .phone-action { width: 100%; margin: 0; }
+.phone-wide { width: 100%; }
+.phone-trail { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: 1rem; font-size: .9rem; }
+.phone-empty { text-align: center; }
+.phone-preview { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem; min-height: 8rem; margin-bottom: 1rem; border-radius: var(--radius); background: var(--surface); }
+.phone-preview img { display: block; max-width: 100%; max-height: 60vh; border-radius: var(--radius); }
+.phone-preview .icon { width: 3rem; height: 3rem; }
+.phone-strip .thumb-frame { height: 7rem; }
+.scan-choice { display: grid; gap: 1rem; }
+.scan-choice form { margin: 0; }
+.scan-big {
+    display: flex; flex-direction: column; align-items: center; gap: .35rem; width: 100%; padding: 1.5rem 1rem;
+    border: 0; border-radius: var(--radius); background: var(--surface); color: var(--text); font: inherit; cursor: pointer; box-shadow: var(--shadow);
+}
+.scan-big .icon { width: 2.5rem; height: 2.5rem; color: var(--primary-ink); }
+.scan-big span { font-size: 1.15rem; font-weight: 700; }
+.scan-big small { color: var(--muted); }
+/* Belege: the camera fills the screen above the bar. */
+.phone-camera { background: #000; }
+.phone-camera .phone-main { padding: 0; }
+.camera { position: fixed; inset: 0 0 calc(4rem + env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: center; background: #000; }
+.camera-view { width: 100%; height: 100%; object-fit: cover; }
+.camera-hint { max-width: 22rem; padding: 1rem; color: #fff; text-align: center; }
+.camera-flash { position: absolute; inset: 0; background: #fff; opacity: .7; pointer-events: none; }
+.camera-controls {
+    position: fixed; left: 0; right: 0; bottom: calc(4.5rem + env(safe-area-inset-bottom)); z-index: 26;
+    display: flex; align-items: center; justify-content: space-evenly; margin: 0;
+}
+.shutter {
+    width: 4.75rem; height: 4.75rem; padding: 0; border: .3rem solid #fff; border-radius: 50%;
+    background: var(--primary); box-shadow: 0 0 0 .2rem rgb(0 0 0 / .35); cursor: pointer;
+}
+.shutter:active { scale: .92; }
+.shutter:disabled { opacity: .5; }
+.camera-pick, .camera-native {
+    display: flex; align-items: center; justify-content: center; width: 3rem; height: 3rem; border-radius: 50%;
+    background: rgb(0 0 0 / .45); color: #fff; cursor: pointer;
+}
+.camera-pick .icon, .camera-native .icon { width: 1.5rem; height: 1.5rem; color: #fff; }
+.camera-controls:focus-within label:has(input:focus-visible) { outline: 2px solid var(--primary); }
+.phone-camera .queue-status { bottom: calc(11rem + env(safe-area-inset-bottom)); }
+/* The website: the "connect your phone" hint only makes sense on the computer. */
+@media (max-width: 63.99rem) { .connect-hint { display: none; } }
+.offline-hamster { width: 8rem; height: 5.5rem; margin-inline: auto; }
+.offline-hamster svg { width: 100%; height: 100%; }
+.pairing-code { font-size: 1.5rem; letter-spacing: .1em; }
+.login-phone { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.login-phone a { display: inline-flex; align-items: center; gap: .4rem; }
+.phone-rename > summary { cursor: pointer; list-style: none; }
+.phone-rename form { display: flex; gap: .4rem; margin-top: .4rem; }
+.camera-offline { position: absolute; top: calc(1rem + env(safe-area-inset-top)); left: 1rem; right: 1rem; margin: 0; padding: .6rem 1rem; border-radius: var(--radius); background: rgb(0 0 0 / .6); color: #fff; }
+.phone-row-print { margin: 0; }
+.phone-row-print button { display: flex; padding: .75rem; }
+.phone-row-print .icon { width: 1.4rem; height: 1.4rem; }
+.camera-view::-webkit-media-controls, .camera-view::-webkit-media-controls-start-playback-button, .camera-view::-webkit-media-controls-overlay-play-button { display: none !important; -webkit-appearance: none; }
+.camera-ready { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 1rem; color: #fff; text-align: center; font-size: 1.1rem; font-weight: 600; }
+.camera-ready[hidden], .camera-allow[hidden] { display: none; }
+.camera-ready-hamster { display: block; width: 9rem; height: 6rem; }
+.camera-ready-hamster svg { width: 100%; height: 100%; }
+.camera-allow { position: absolute; left: 1rem; right: 1rem; bottom: 8.5rem; margin: 0; padding: .6rem 1rem; border-radius: var(--radius); background: rgb(0 0 0 / .6); color: #fff; }
+.camera-spacer { width: 3rem; height: 3rem; }
+.queue-actions { display: flex; gap: .25rem; }
+.queue-actions button { padding: .25rem .6rem; color: inherit; font-weight: 700; text-decoration: underline; }
+.queue-actions button[hidden] { display: none; }
+.queue-status.is-failed { flex-wrap: wrap; justify-content: center; border-radius: var(--radius); background: #8a1c1c; color: #fff; }
+.phone-action-quiet { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.phone-steps ol { padding-left: 1.25rem; }
+.phone-steps pre { overflow-x: auto; font-size: .75rem; white-space: pre; }
+a.phone-row-print, .phone-row-print button { display: flex; padding: .75rem; border: 0; background: none; color: var(--muted); }
+a.phone-row-print .icon { width: 1.4rem; height: 1.4rem; }
+.scan-choice a.scan-big { text-decoration: none; }
+.scan-photo { margin: 0; }
+.scan-photo label { cursor: pointer; }
+.scan-photo.is-busy { opacity: .6; pointer-events: none; }
+.phone-row-print { display: flex; margin: 0; padding: .75rem; border: 0; background: none; color: var(--muted); cursor: pointer; }
+.phone-row-print .icon { width: 1.4rem; height: 1.4rem; }
 
 /* Floating menu button (Go 2026-11-07, point 3, A24): with the menu folded away on desktop, and always on phones,
    the button floats over the content with a shadow instead of sitting in a dark block. */

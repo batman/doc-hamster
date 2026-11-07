@@ -9,18 +9,22 @@ use App\Domain\Auth\User;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
 use App\Domain\Documents\DocumentIntake;
+use App\Domain\Documents\Folder;
 use App\Domain\Documents\Tag;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
+use App\Domain\Scanning\NetworkPrinter;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -72,6 +76,14 @@ final class DocumentController
             $query->whereHas('tags', static fn ($tag) => $tag->whereKey($tagId));
         }
 
+        // One folder, with everything below it (issue #77).
+        $folders = Folder::flat();
+        $wantedFolder = $request->query('folder');
+        $folder = is_string($wantedFolder) && collect($folders)->contains(static fn (array $row): bool => $row['folder']->id === $wantedFolder) ? $wantedFolder : null;
+        if ($folder !== null) {
+            $query->whereIn('folder_id', Folder::branchIds($folder));
+        }
+
         $saved = $this->user($request)->receipt_view;
         $view = $saved !== null && isset(self::VIEWS[$saved]) ? $saved : 'details';
 
@@ -85,13 +97,15 @@ final class DocumentController
             $documents = $query->latest()->limit(self::LIMIT + 1)->get();
         }
         // Filtering in the browser works only when the page holds every receipt (point 7).
-        $complete = $selected === [] && ($view === 'calendar' || $documents->count() <= self::LIMIT);
+        $complete = $selected === [] && $folder === null && ($view === 'calendar' || $documents->count() <= self::LIMIT);
 
         return [
             'open' => null,
             'documents' => $view === 'calendar' ? $documents : $documents->take(self::LIMIT),
             'tags' => $tags,
             'selected' => $selected,
+            'folders' => $folders,
+            'folder' => $folder,
             'view' => $view,
             'views' => self::VIEWS,
             'month' => $month,
@@ -110,7 +124,12 @@ final class DocumentController
         return back();
     }
 
-    public function store(Request $request, AuditLog $audit, CurrentOrg $org): RedirectResponse
+    /**
+     * The phone app's queue asks for JSON (Accept: application/json): it gets
+     * 201 only when the receipt is really stored, 422 with the reason
+     * otherwise, so it never says "Gesendet" for a refused photo.
+     */
+    public function store(Request $request, AuditLog $audit, CurrentOrg $org): RedirectResponse|JsonResponse
     {
         // One file ("file") or several from the menu ("files[]", picked or dropped).
         $data = $request->validate([
@@ -118,6 +137,7 @@ final class DocumentController
             'files' => ['required_without:file', 'array', 'max:20'],
             'files.*' => ['file', 'max:25600'],
             ...self::tagRules(),
+            ...self::folderRule(),
         ]);
 
         $many = $request->file('files');
@@ -125,7 +145,9 @@ final class DocumentController
         foreach (is_array($many) ? $many : [$request->file('file')] as $upload) {
             $type = DocumentIntake::detect($upload);
             if (! $upload instanceof UploadedFile || $type === null) {
-                return back()->withErrors(['file' => __('documents.wrong_type')]);
+                return $request->expectsJson()
+                    ? response()->json(['message' => __('documents.wrong_type')], 422)
+                    : back()->withErrors(['file' => __('documents.wrong_type')]);
             }
             $checked[] = [$upload, ...$type];
         }
@@ -134,9 +156,13 @@ final class DocumentController
         /** @var list<string> $tagIds */
         $tagIds = array_values($data['tags'] ?? []);
         foreach ($checked as [$upload, $mime, $extension]) {
-            $document = DocumentIntake::store($upload, $mime, $extension, $org->id(), $userId, $upload->getClientOriginalName(), $tagIds);
+            $document = DocumentIntake::store($upload, $mime, $extension, $org->id(), $userId, $upload->getClientOriginalName(), $tagIds, folderId: $data['folder'] ?? null);
 
             $audit->record('document.uploaded', orgId: $org->id(), userId: $userId, subject: $document, ip: $request->ip());
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['saved' => count($checked), 'message' => trans_choice('documents.saved', count($checked))], 201);
         }
 
         return redirect()->route('documents.index')->with('status', trans_choice('documents.saved', count($checked)));
@@ -165,10 +191,16 @@ final class DocumentController
             'title' => ['sometimes', 'required', 'string', 'max:250'],
             'note' => ['nullable', 'string', 'max:5000'],
             ...self::tagRules(),
+            ...self::folderRule(),
         ]);
         $document = $this->visible($request)->whereKey($id)->firstOrFail();
 
-        $document->update(['note' => $data['note'] ?? null, ...(isset($data['title']) ? ['title' => $data['title']] : [])]);
+        // The folder changes only when the form has the field, so other forms never clear it.
+        $document->update([
+            'note' => $data['note'] ?? null,
+            ...(isset($data['title']) ? ['title' => $data['title']] : []),
+            ...($request->has('folder') ? ['folder_id' => $data['folder'] ?? Folder::defaultIdFor($org->id())] : []),
+        ]);
         $document->tags()->sync($data['tags'] ?? []);
         $audit->record('document.changed', orgId: $org->id(), userId: $this->userId($request), subject: $document, ip: $request->ip());
 
@@ -208,7 +240,12 @@ final class DocumentController
         [$file, $document] = $this->visibleFile($request, $id);
         $document->forceFill(['last_opened_at' => now()])->saveQuietly();
 
-        return Storage::disk('local')->response($file->path, null, ['Content-Type' => $file->mime]);
+        return Storage::disk('local')->response($file->path, null, [
+            'Content-Type' => $file->mime,
+            // Our own pages may show it in a frame (print and zoom); nobody else (clickjacking stays closed).
+            'Content-Security-Policy' => "frame-ancestors 'self'",
+            'X-Frame-Options' => 'SAMEORIGIN',
+        ]);
     }
 
     public function download(Request $request, string $id): Response
@@ -217,6 +254,22 @@ final class DocumentController
         $document->forceFill(['last_downloaded_at' => now()])->saveQuietly();
 
         return Storage::disk('local')->download($file->path, $file->downloadName($document->title), ['Content-Type' => $file->mime]);
+    }
+
+    /** "Auf Drucker drucken": straight to the network printer, or through the Scan Station at home. */
+    public function printOnPrinter(Request $request, string $id, NetworkPrinter $printer, AuditLog $audit): RedirectResponse
+    {
+        [$file, $document] = $this->visibleFile($request, $id);
+        try {
+            $outcome = $printer->send($file, $document);
+        } catch (RuntimeException $error) {
+            $key = $error->getMessage();
+
+            return back()->withErrors(['print' => str_starts_with($key, 'print.') && trans($key) !== $key ? __($key) : __('print.failed')]);
+        }
+        $audit->record('document.printed', orgId: $document->org_id, userId: $this->userId($request), subject: $document, ip: $request->ip());
+
+        return back()->with('status', __($outcome));
     }
 
     /** The stored small image; it never changes, so the browser may keep it. */
@@ -258,6 +311,16 @@ final class DocumentController
     private static function tagRules(): array
     {
         return ['tags' => ['array'], 'tags.*' => [Rule::in(Tag::query()->pluck('id')->all())]];
+    }
+
+    /**
+     * Only an existing folder of the active organisation (Folder is org-scoped); empty means "Belege".
+     *
+     * @return array<string, mixed>
+     */
+    private static function folderRule(): array
+    {
+        return ['folder' => ['nullable', 'string', Rule::in(Folder::query()->pluck('id')->all())]];
     }
 
     private function userId(Request $request): string

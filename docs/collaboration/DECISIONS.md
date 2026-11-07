@@ -78,7 +78,7 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
 - **Decision:** answered by the plan itself: **several organisations per instance, with the roles owner, member and tax advisor, in v1** – PLAN §2 (roles, permission matrix), §4.6 (AK-4.6.1/2), §6.1 (`memberships`), D-012 and the v0.1 test list ("Mitglied einladen", "Mitglied sieht andere Org nicht") already require it, and Phase 1 builds it (P1-2, P1-6). Typical first users (Q-4) are the ones PLAN §2 names: households, freelancers, small businesses, clubs. The core flow stays focused on one person capturing and one owner checking; team extras (e.g. approval workflows) are not in v1.
 
 ### D-015 · Capture channel: phone web app, no hardware scanner — Owner: PO
-- **Status:** decided (PO, 2026-10-29) – **amendment requested by the PO on 2026-11-06, see Q-30 / issue #77**
+- **Status:** decided (PO, 2026-10-29) – **amended by the PO on 2026-11-06, see D-026**
 - **Decision:** The **phone web app (camera)** is the capture channel. No hardware document scanner. PDF upload from files stays.
 - **How the phone app delivers photos to the server** (upload protocol, offline queue, limits) is technical → Lead, see D-017.
 
@@ -235,6 +235,17 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
 | D-013 | AI in the app | PO | – | superseded by D-019 | (was: no AI features at all) |
 | D-014 | When does the repo go public? | Lead | anytime | proposed – milestone asked as Q-17 | **Criteria (Lead, all required):** P0-8 history scan clean; gitleaks in CI + GitHub secret scanning and push protection on; Revolut's answer received (P0-10, D-021) **and** Revolut-specific details moved out of the core docs unless that answer allows them; D-000 final. **Milestone:** operator question Q-17 (recommendation: v0.3 = bank import + matching, the first version that is useful to others). Going public before v1.0 moves the P8-3 items (security check, history scan, Revolut docs move) before that milestone – P0-1c updates PLAN P8-3. Flipping the switch is a PO action (`to:po`) |
 
+### D-026 · Printer/scanner module, folders, "Belege" folder, print and zoom — Owner: PO
+- **Status:** decided (PO, 2026-11-06, in the Claude chat; issue #77, Q-30). The PO decides these himself; the Lead builds on them and may only raise concerns.
+- **Decision:**
+  - **D-015 is amended:** a hardware scanner/printer is allowed as an **optional, separately installable module** (own repo, MIT, like D-021). The phone web app stays the main capture channel; with a printer or scanner connected, its capture screen also offers "Scan from printer/scanner".
+  - **Folders are a core feature** (per organisation, nested up to 5 levels, create/rename/move/delete). Every organisation has the folder **"Belege"** automatically: it cannot be deleted or moved, new receipts land there, so someone who only wants receipts never has to make a folder.
+  - **Bank matching only uses receipts of folders with "Bankabgleich" switched on.** On for "Belege", off for every new folder, switchable per folder. The other folders are for documents people want online (contracts, letters), not for matching.
+  - **Print from documents:** a Print button in the document view (browser print first, printer module later). **Zoom** in the document view.
+  - The module scans through open protocols only (eSCL, later IPP), no vendor software, no e-mail, no vendor-private interfaces (see `docs/proposals/printer-scan-station.md`).
+- **Order:** folders in the core (this entry's PR) → print + zoom in the document view → module with scan page and phone button → Scan Station → receiver for printers that push → IPP printing.
+- **Changed 2026-11-06:** D-015 amended; `folders` table and `documents.folder_id` added (data model, hence label `plan`).
+
 ## Open questions
 
 | # | From → To | Question | Answer |
@@ -260,4 +271,4 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
 | Q-19 | Lead → operator | D-018: how should the receipt pack look? | asked with the layout draft P0-5 |
 | Q-20 | Lead → operator | Tax advisor without shares (Phase 7): may they see and export all receipts of the organisation read-only for now, or nothing until shares exist (PLAN §2.1)? | **All receipts read-only incl. export** until shares exist (operator, 2026-10-30) |
 | Q-21 | Lead → operator | PLAN §2.1: members see only their own receipts unless the organisation setting `members_see_all_documents` is on (default off, no switch in the UI yet). Add a switch for the owner on the people page? | Superseded (operator, 2026-10-30): owners create and name roles with permission checkboxes; Admin may always do everything; defaults: employee (like Admin except people, roles, updates) and tax advisor (read-only) |
-| Q-30 | Manager → Lead | PO request: printer/scanner module (own repo, MIT): multi-page scan into folders, scan button in the phone web app, printing, receiver for printers that push; amends D-015 (no hardware scanner). Decide: D-015 amendment, folders in core, interface shape + Scan Station pairing, order in the roadmap (issue #77, proposal `docs/proposals/printer-scan-station.md`) | **Open** – technical except D-015 (PO already asked for it); the Lead decides |
+| Q-30 | Manager → Lead | PO request: printer/scanner module (own repo, MIT): multi-page scan into folders, scan button in the phone web app, printing, receiver for printers that push; amends D-015 (no hardware scanner). Decide: D-015 amendment, folders in core, interface shape + Scan Station pairing, order in the roadmap (issue #77, proposal `docs/proposals/printer-scan-station.md`) | Decided by the PO on 2026-11-06 in **D-026** (D-015 amended, folders in core, "Belege" folder, bank matching per folder); interface shape and Scan Station pairing stay with the Lead |

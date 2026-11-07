@@ -66,7 +66,7 @@ final class BankController
     {
         $transaction = Transaction::query()->whereKey($id)->firstOrFail();
         $data = $request->validate(['document_id' => ['required', 'string']]);
-        $document = $this->visible($org)->whereKey($data['document_id'])->first()
+        $document = $this->visible($org)->matchable()->whereKey($data['document_id'])->first()
             ?? throw ValidationException::withMessages(['document_id' => __('bank.receipt_gone')]);
 
         $userId = $org->membership()->user_id;
@@ -110,7 +110,7 @@ final class BankController
      */
     private function receiptsWithoutBooking(CurrentOrg $org): Paginator
     {
-        return $this->visible($org)->with('files')->doesntHave('matches')->latest()->simplePaginate(self::PER_PAGE)->withQueryString();
+        return $this->visible($org)->matchable()->with('files')->doesntHave('matches')->latest()->simplePaginate(self::PER_PAGE)->withQueryString();
     }
 
     /**
@@ -122,7 +122,7 @@ final class BankController
     private function candidates(Transaction $transaction, CurrentOrg $org): Collection
     {
         $day = $transaction->booking_date->copy()->endOfDay();
-        $free = fn () => $this->visible($org)->with('files')->doesntHave('matches');
+        $free = fn () => $this->visible($org)->matchable()->with('files')->doesntHave('matches');
 
         return collect($free()->where('created_at', '<=', $day)->latest()->limit(self::PER_PAGE)->get()->all())
             ->concat($free()->where('created_at', '>', $day)->oldest()->limit(self::PER_PAGE)->get()->all())

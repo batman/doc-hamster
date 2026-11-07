@@ -979,11 +979,730 @@
         });
         radios.forEach(radio => radio.addEventListener('change', () => {
             hex.value = '';
-            picker.value = radio.value;
+            if (radio.value.startsWith('#')) {
+                picker.value = radio.value;
+            }
         }));
     };
 
+    // Print: the file goes into a hidden frame of our own page and the browser's print dialog opens (nothing leaves the server).
+    // Zoom: the viewer loads its file only when it opens; images zoom by buttons, Ctrl + wheel, double click and + / -.
+    const setupPrintAndZoom = () => {
+        document.querySelectorAll('[data-print]').forEach(button => button.addEventListener('click', () => {
+            const frame = document.createElement('iframe');
+            frame.className = 'print-frame';
+            frame.setAttribute('aria-hidden', 'true');
+            frame.tabIndex = -1;
+            frame.addEventListener('load', () => {
+                try {
+                    frame.contentWindow.focus();
+                    frame.contentWindow.print();
+                } catch {
+                    window.open(button.dataset.print, '_blank', 'noopener');
+                }
+            });
+            frame.src = button.dataset.print;
+            document.body.append(frame);
+            setTimeout(() => frame.remove(), 120000);
+        }));
+
+        const viewer = document.querySelector('[data-dialog="viewer"]');
+        if (!viewer) {
+            return;
+        }
+        const image = viewer.querySelector('[data-zoom-image]');
+        const level = viewer.querySelector('[data-zoom-level]');
+        const MIN = 0.25;
+        const MAX = 8;
+        let zoom = 1;
+        const apply = next => {
+            zoom = Math.min(MAX, Math.max(MIN, next));
+            if (image) {
+                image.style.width = `${zoom * 100}%`;
+                level.textContent = `${Math.round(zoom * 100)} %`;
+            }
+        };
+        const factor = { in: 1.25, out: 0.8 };
+        viewer.querySelectorAll('[data-zoom]').forEach(button => button.addEventListener('click', () => {
+            apply(button.dataset.zoom === 'fit' ? 1 : zoom * factor[button.dataset.zoom]);
+        }));
+        image?.addEventListener('dblclick', () => apply(zoom > 1 ? 1 : 2.5));
+        viewer.addEventListener('wheel', event => {
+            if (image && event.ctrlKey) {
+                event.preventDefault();
+                apply(zoom * (event.deltaY < 0 ? 1.1 : 0.9));
+            }
+        }, { passive: false });
+        document.addEventListener('keydown', event => {
+            if (viewer.hidden || !image || event.ctrlKey || event.metaKey) {
+                return;
+            }
+            if (event.key === '+' || event.key === '=') {
+                apply(zoom * 1.25);
+            } else if (event.key === '-') {
+                apply(zoom * 0.8);
+            } else if (event.key === '0') {
+                apply(1);
+            }
+        });
+        document.querySelectorAll('[data-dialog-open="viewer"]').forEach(button => button.addEventListener('click', () => {
+            viewer.querySelectorAll('[data-src]').forEach(element => {
+                if (!element.getAttribute('src')) {
+                    element.setAttribute('src', element.dataset.src);
+                }
+            });
+            apply(1);
+        }));
+    };
+
+    // A scan through a Scan Station takes a while: the scan page looks again every few seconds until it is over.
+    const setupScanWait = () => {
+        if (document.querySelector('[data-scan-wait]')) {
+            setTimeout(() => window.location.reload(), 3000);
+        }
+    };
+
+    // ---- Phone app (PHONE, issue #37) -------------------------------------------------
+
+    // Home-screen app: the service worker keeps the app's files and the offline page (public/sw.js).
+    const setupServiceWorker = () => {
+        const meta = document.querySelector('meta[name="dh-sw"]');
+        if (!meta || !('serviceWorker' in navigator) || !window.isSecureContext) {
+            return;
+        }
+        navigator.serviceWorker.register(meta.content).catch(() => { /* works without it, only no offline page */ });
+    };
+
+    // Without the queue (no IndexedDB, private mode): put the files into the form and send it the normal way.
+    const submitDirectly = (form, files) => {
+        const input = form.querySelector('input[type="file"]');
+        if (input && typeof DataTransfer === 'function') {
+            const transfer = new DataTransfer();
+            files.forEach(file => transfer.items.add(file));
+            input.files = transfer.files;
+        }
+        form.submit();
+    };
+
+    // Photos are made smaller before sending: a receipt stays easy to read at 2000 pixels,
+    // the upload is quick and fits the server's limits. PDFs and anything the phone
+    // cannot draw are sent as they are.
+    const shrinkPhoto = file => new Promise(resolve => {
+        if (!file.type.startsWith('image/') || file.type === 'image/gif') {
+            resolve(file);
+            return;
+        }
+        const url = URL.createObjectURL(file);
+        const image = new Image();
+        image.onload = () => {
+            URL.revokeObjectURL(url);
+            const scale = Math.min(1, 2000 / Math.max(image.naturalWidth, image.naturalHeight));
+            if (scale === 1 && file.type === 'image/jpeg' && file.size < 900 * 1024) {
+                resolve(file);
+                return;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(image.naturalWidth * scale);
+            canvas.height = Math.round(image.naturalHeight * scale);
+            canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(blob => {
+                const name = (file.name || 'foto').replace(/\.[^.]+$/, '') + '.jpg';
+                resolve(blob ? new File([blob], name, { type: 'image/jpeg' }) : file);
+            }, 'image/jpeg', 0.85);
+        };
+        image.onerror = () => {
+            URL.revokeObjectURL(url);
+            resolve(file);
+        };
+        image.src = url;
+    });
+
+    // Photos from the app go into a queue on the phone first (IndexedDB) and are sent
+    // from there: without a connection they wait and go out when it is back. "Gesendet"
+    // only when the server answers 201 (stored); a refusal shows its reason, the photo
+    // stays and can be sent again or thrown away.
+    // Returns enqueue(form, files) for the camera, or a plain form submit without the queue.
+    const setupUploadQueue = () => {
+        const forms = [...document.querySelectorAll('form[data-queue-upload]')];
+        const status = document.querySelector('.queue-status');
+        if (!('indexedDB' in window) || !status) {
+            return async (form, files) => submitDirectly(form, await Promise.all(files.map(shrinkPhoto)));
+        }
+        const text = status.querySelector('.queue-text');
+        const retry = status.querySelector('[data-queue-retry]');
+        const drop = status.querySelector('[data-queue-drop]');
+        let hamster = null;
+        let hideTimer = null;
+        const show = (message, mood, failed = false) => {
+            clearTimeout(hideTimer);
+            text.textContent = message;
+            status.hidden = false;
+            status.classList.toggle('is-failed', failed);
+            retry.hidden = !failed;
+            drop.hidden = !failed;
+            const host = status.querySelector('.queue-hamster');
+            if (!hamster && window.docHamster && host) {
+                hamster = window.docHamster.mount(host, { mood: mood || 'awake' });
+            } else if (hamster && mood) {
+                hamster.mood(mood);
+            }
+        };
+        const hideLater = () => {
+            hideTimer = setTimeout(() => { status.hidden = true; }, 3500);
+        };
+
+        const open = () => new Promise((resolve, reject) => {
+            const request = indexedDB.open('dochamster', 1);
+            request.onupgradeneeded = () => request.result.createObjectStore('queue', { keyPath: 'id', autoIncrement: true });
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+        const store = async mode => (await open()).transaction('queue', mode).objectStore('queue');
+        const done = request => new Promise((resolve, reject) => {
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+        const all = async () => done((await store('readonly')).getAll());
+        const add = async item => done((await store('readwrite')).add(item));
+        const remove = async id => done((await store('readwrite')).delete(id));
+
+        const tokenFrom = html => new DOMParser().parseFromString(html, 'text/html').querySelector('meta[name="csrf-token"]')?.content || null;
+        let token = document.querySelector('meta[name="csrf-token"]')?.content || null;
+        const freshToken = async () => {
+            const response = await fetch(status.dataset.home, { credentials: 'same-origin', cache: 'no-store' });
+            token = tokenFrom(await response.text());
+            return token;
+        };
+        const waiting = count => (count === 1 ? status.dataset.waiting : status.dataset.waitingMany).replace(/\d+/, String(count));
+        const reason = async response => {
+            if (response.status === 413) {
+                return status.dataset.tooBig;
+            }
+            try {
+                const answer = await response.json();
+                const first = answer.errors ? Object.values(answer.errors)[0] : null;
+                return (Array.isArray(first) ? first[0] : null) || answer.message || status.dataset.failed;
+            } catch {
+                return status.dataset.failed;
+            }
+        };
+
+        let busy = false;
+        let failedId = null;
+        const flush = async () => {
+            if (busy) {
+                return;
+            }
+            busy = true;
+            failedId = null;
+            let sent = 0;
+            let refused = null;
+            try {
+                for (const item of await all()) {
+                    if (!navigator.onLine) {
+                        break;
+                    }
+                    show(status.dataset.sending, 'eat');
+                    const post = async () => {
+                        const body = new FormData();
+                        body.append('_token', token || await freshToken() || '');
+                        body.append('files[]', item.blob, item.name);
+                        if (item.folder) {
+                            body.append('folder', item.folder);
+                        }
+                        return fetch(item.action, { method: 'POST', body, credentials: 'same-origin', headers: { Accept: 'application/json' } });
+                    };
+                    let response = await post();
+                    if (response.status === 419) { // the session was renewed meanwhile
+                        await freshToken();
+                        response = await post();
+                    }
+                    if (response.status === 401 || (response.redirected && new URL(response.url).pathname.endsWith('/login'))) {
+                        show(status.dataset.login, 'sleep', false);
+                        return;
+                    }
+                    if (response.status === 201) {
+                        await remove(item.id);
+                        sent++;
+                        continue;
+                    }
+                    if (response.status >= 400 && response.status < 500) {
+                        // The server said no: sending it again the same way will not help.
+                        refused = await reason(response);
+                        failedId = item.id;
+                        break;
+                    }
+                    throw new Error(`upload ${response.status}`); // server away or broken: try later
+                }
+            } catch {
+                // offline or the server is away: the photos stay in the queue
+            } finally {
+                busy = false;
+            }
+            const left = (await all()).length;
+            if (refused !== null) {
+                show(refused, 'sleep', true);
+            } else if (left > 0) {
+                show(waiting(left), 'sleep');
+            } else if (sent > 0) {
+                show(status.dataset.sent, 'awake');
+                hideLater();
+            }
+        };
+        retry.addEventListener('click', () => flush());
+        drop.addEventListener('click', async () => {
+            if (failedId !== null) {
+                await remove(failedId);
+                failedId = null;
+            }
+            status.hidden = true;
+            flush();
+        });
+
+        const enqueue = async (form, files) => {
+            const folder = form.querySelector('input[name="folder"]')?.value || null;
+            const photos = await Promise.all(files.map(shrinkPhoto));
+            try {
+                for (const file of photos) {
+                    await add({ action: form.action, name: file.name || 'foto.jpg', type: file.type, blob: file, folder, added: Date.now() });
+                }
+            } catch {
+                submitDirectly(form, photos); // no storage on this phone: send directly
+                return;
+            }
+            flush();
+        };
+
+        forms.forEach(form => form.querySelectorAll('input[type="file"]').forEach(input => {
+            input.addEventListener('change', () => {
+                const files = [...input.files];
+                input.value = '';
+                if (files.length > 0) {
+                    enqueue(form, files);
+                }
+            });
+        }));
+        window.addEventListener('online', flush);
+        flush();
+        return enqueue;
+    };
+
+    // iPhone and iPad: home-screen apps there forget the camera permission and ask on every
+    // start, so the phone's own camera is used instead (one tap on the shutter, no question).
+    const isApple = () => /iPhone|iPad|iPod/.test(navigator.userAgent)
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    // Belege: the camera. Elsewhere the live camera is open at once; one tap takes the
+    // picture and hands it to the queue, the camera stays open. No live camera (iPhone,
+    // no permission): the shutter opens the phone's own camera.
+    const setupCamera = enqueue => {
+        const box = document.querySelector('[data-live-camera]');
+        const form = document.querySelector('[data-camera-form]');
+        if (!box || !form) {
+            return;
+        }
+        const video = box.querySelector('[data-camera-view]');
+        const hint = box.querySelector('[data-camera-hint]');
+        const ready = box.querySelector('[data-camera-ready]');
+        const allow = box.querySelector('[data-camera-allow]');
+        const flash = box.querySelector('[data-camera-flash]');
+        const shutter = form.querySelector('[data-shutter]');
+        const native = form.querySelector('[data-camera-native]');
+        let stream = null;
+
+        const useNative = denied => {
+            video.hidden = true;
+            hint.hidden = !denied;
+            ready.hidden = denied;
+        };
+        const stop = () => {
+            stream?.getTracks().forEach(track => track.stop());
+            stream = null;
+        };
+        const start = async () => {
+            if (stream) {
+                if (video.paused) {
+                    video.play().catch(() => {});
+                }
+                return;
+            }
+            if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) {
+                useNative(false);
+                return;
+            }
+            // First start in a browser that asks: say once how to make it stop asking.
+            try {
+                const state = await navigator.permissions?.query({ name: 'camera' });
+                if (state?.state === 'prompt' && allow) {
+                    allow.hidden = false;
+                }
+            } catch {
+                // the browser cannot tell, nothing to show
+            }
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    audio: false,
+                    video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1440 } },
+                });
+                if (allow) {
+                    allow.hidden = true;
+                }
+                video.srcObject = stream;
+                video.hidden = false;
+                hint.hidden = true;
+                ready.hidden = true;
+                // The picture must never stand still with a "play" sign: restart it.
+                stream.getVideoTracks().forEach(track => track.addEventListener('ended', () => {
+                    stop();
+                    if (!document.hidden) {
+                        start();
+                    }
+                }));
+                await video.play().catch(() => {});
+            } catch {
+                stop();
+                useNative(true);
+            }
+        };
+        video.addEventListener('pause', () => {
+            if (stream && !document.hidden) {
+                video.play().catch(() => {});
+            }
+        });
+
+        shutter.addEventListener('click', () => {
+            if (!stream || !video.videoWidth) {
+                native?.click();
+                return;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            flash.hidden = false;
+            setTimeout(() => { flash.hidden = true; }, 150);
+            if (navigator.vibrate) {
+                navigator.vibrate(30);
+            }
+            const stamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+            canvas.toBlob(blob => {
+                if (blob) {
+                    enqueue(form, [new File([blob], `beleg-${stamp}.jpg`, { type: 'image/jpeg' })]);
+                }
+            }, 'image/jpeg', 0.85);
+        });
+
+        if (isApple()) {
+            useNative(false);
+            return;
+        }
+        // The camera is switched off while the app is in the background.
+        document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
+        window.addEventListener('pagehide', stop);
+        start();
+    };
+
+    // Scannen with the phone camera (A35): the photo is made smaller and sent as the next
+    // page; then the scan page opens again with the new page in the strip.
+    const setupScanPhotos = () => {
+        document.querySelectorAll('form[data-scan-photo]').forEach(form => {
+            const input = form.querySelector('input[type="file"]');
+            const label = form.querySelector('label span');
+            input.addEventListener('change', async () => {
+                const file = input.files[0];
+                if (!file) {
+                    return;
+                }
+                const original = label.textContent;
+                label.textContent = form.dataset.busy;
+                form.classList.add('is-busy');
+                try {
+                    const photo = await shrinkPhoto(file);
+                    const body = new FormData();
+                    body.append('_token', form.querySelector('input[name="_token"]').value);
+                    body.append('photo', photo, photo.name || 'seite.jpg');
+                    const response = await fetch(form.action, { method: 'POST', body, credentials: 'same-origin', headers: { Accept: 'application/json' } });
+                    if (response.status === 201) {
+                        window.location.href = form.querySelector('input[name="app_back"]').value;
+                        return;
+                    }
+                    let message = '';
+                    try {
+                        message = (await response.json()).message || '';
+                    } catch {
+                        // no JSON: the plain message below
+                    }
+                    window.alert(message || response.statusText);
+                } catch {
+                    window.alert(navigator.onLine ? form.dataset.unreachable : form.dataset.offline);
+                }
+                label.textContent = original;
+                form.classList.remove('is-busy');
+                input.value = '';
+            });
+        });
+    };
+
+    // Drucken in the phone app (A34): the phone's own print dialog lists the printers in its
+    // Wi-Fi – nothing to set up. Photos are printed from a hidden frame; a PDF goes through
+    // the share menu where available (iPhone: "Drucken" there prints every page).
+    const setupPhonePrint = () => {
+        const printFrame = url => {
+            const frame = document.createElement('iframe');
+            frame.className = 'print-frame';
+            frame.setAttribute('aria-hidden', 'true');
+            frame.tabIndex = -1;
+            frame.addEventListener('load', () => {
+                try {
+                    frame.contentWindow.focus();
+                    frame.contentWindow.print();
+                } catch {
+                    window.print();
+                }
+            });
+            frame.src = url;
+            document.body.append(frame);
+            setTimeout(() => frame.remove(), 120000);
+        };
+        document.querySelectorAll('[data-phone-print]').forEach(button => button.addEventListener('click', async () => {
+            const url = button.dataset.phonePrint;
+            const type = button.dataset.printType || '';
+            if (type === 'application/pdf' && navigator.canShare) {
+                try {
+                    const blob = await (await fetch(url, { credentials: 'same-origin' })).blob();
+                    const file = new File([blob], `${button.dataset.printTitle || 'dokument'}.pdf`, { type: 'application/pdf' });
+                    if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({ files: [file], title: button.dataset.printTitle });
+                        return;
+                    }
+                } catch (error) {
+                    if (error && error.name === 'AbortError') {
+                        return; // closed by the person
+                    }
+                }
+            }
+            printFrame(url);
+        }));
+    };
+
+    // Phone app: "really delete?" before forms marked data-confirm, and sharing a document.
+    const setupPhoneActions = () => {
+        document.querySelectorAll('form[data-confirm]').forEach(form => form.addEventListener('submit', event => {
+            if (!window.confirm(form.dataset.confirm)) {
+                event.preventDefault();
+            }
+        }));
+        document.querySelectorAll('[data-share]').forEach(button => {
+            if (!navigator.share) {
+                return;
+            }
+            button.hidden = false;
+            button.addEventListener('click', async () => {
+                try {
+                    const response = await fetch(button.dataset.share, { credentials: 'same-origin' });
+                    const blob = await response.blob();
+                    const extension = (button.dataset.shareType || '').split('/')[1] || 'pdf';
+                    const file = new File([blob], `${button.dataset.shareTitle || 'dokument'}.${extension}`, { type: blob.type });
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({ files: [file], title: button.dataset.shareTitle });
+                    } else {
+                        await navigator.share({ title: button.dataset.shareTitle, url: button.dataset.share });
+                    }
+                } catch {
+                    // cancelled by the person, nothing to do
+                }
+            });
+        });
+    };
+
+    // Folder menu under Belege (PO, 2026-11-07): open/close subfolders; drag the handle to change the order of one level.
+    // Pointer events, so it works with mouse, pen and finger alike; the new order is saved right away.
+    const setupFolderMenu = () => {
+        const menu = document.querySelector('.nav-sub');
+        if (!menu) {
+            return;
+        }
+        menu.querySelectorAll('[data-folder-toggle]').forEach(button => button.addEventListener('click', () => {
+            const item = button.closest('.nav-folder');
+            const open = item.classList.toggle('is-open');
+            button.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }));
+
+        const url = menu.dataset.folderOrder;
+        if (!url) {
+            return;
+        }
+        const token = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+        const save = list => {
+            const body = new FormData();
+            body.append('parent_id', list.dataset.parent);
+            [...list.children].forEach(item => body.append('order[]', item.dataset.id));
+            fetch(url, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token, Accept: 'application/json' }, credentials: 'same-origin' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(String(response.status));
+                    }
+                })
+                .catch(() => {
+                    window.alert(menu.dataset.orderFailed);
+                    window.location.reload();
+                });
+        };
+
+        menu.querySelectorAll('[data-grip]').forEach(grip => {
+            grip.addEventListener('pointerdown', event => {
+                if (event.button !== 0) {
+                    return;
+                }
+                event.preventDefault();
+                const item = grip.closest('.nav-folder');
+                const list = item.parentElement;
+                const before = [...list.children].map(child => child.dataset.id).join();
+                // Listened on the document: moving the item in the DOM ends any pointer capture on the handle.
+                item.classList.add('is-dragging');
+                document.body.classList.add('is-dragging-folder');
+
+                const move = moveEvent => {
+                    if (moveEvent.pointerId !== event.pointerId) {
+                        return;
+                    }
+                    const siblings = [...list.children].filter(child => child !== item);
+                    const next = siblings.find(child => {
+                        const box = child.querySelector('.nav-folder-row').getBoundingClientRect();
+                        return moveEvent.clientY < box.top + box.height / 2;
+                    });
+                    if (next) {
+                        if (item.nextElementSibling !== next) {
+                            list.insertBefore(item, next);
+                        }
+                    } else if (list.lastElementChild !== item) {
+                        list.appendChild(item);
+                    }
+                };
+                const end = endEvent => {
+                    if (endEvent.pointerId !== event.pointerId) {
+                        return;
+                    }
+                    document.removeEventListener('pointermove', move);
+                    document.removeEventListener('pointerup', end);
+                    document.removeEventListener('pointercancel', end);
+                    item.classList.remove('is-dragging');
+                    document.body.classList.remove('is-dragging-folder');
+                    if ([...list.children].map(child => child.dataset.id).join() !== before) {
+                        save(list);
+                    }
+                };
+                document.addEventListener('pointermove', move);
+                document.addEventListener('pointerup', end);
+                document.addEventListener('pointercancel', end);
+            });
+            // Keyboard: arrow up/down moves the folder one place.
+            grip.addEventListener('keydown', event => {
+                if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') {
+                    return;
+                }
+                event.preventDefault();
+                const item = grip.closest('.nav-folder');
+                const list = item.parentElement;
+                if (event.key === 'ArrowUp' && item.previousElementSibling) {
+                    list.insertBefore(item, item.previousElementSibling);
+                } else if (event.key === 'ArrowDown' && item.nextElementSibling) {
+                    list.insertBefore(item.nextElementSibling, item);
+                } else {
+                    return;
+                }
+                grip.focus();
+                save(list);
+            });
+        });
+    };
+
+    // Folder import: the picked folder becomes a new folder of the same name; files go up one by one with their path.
+    const setupFolderImport = () => {
+        const form = document.querySelector('[data-folder-import]');
+        if (!form) {
+            return;
+        }
+        const input = form.querySelector('input[type="file"]');
+        const status = form.querySelector('[data-import-status]');
+        const bar = form.querySelector('progress');
+        const token = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+        const text = (key, values = {}) => Object.entries(values).reduce((out, [name, value]) => out.replaceAll(':' + name, String(value)), form.dataset[key] ?? '');
+        if (!('webkitdirectory' in input)) {
+            status.textContent = text('unsupported');
+            input.disabled = true;
+            return;
+        }
+        const wanted = /\.(pdf|jpe?g|png|gif|webp|heic|heif|tiff?|bmp)$/i;
+        const post = async (url, body) => {
+            const response = await fetch(url, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token, Accept: 'application/json' }, credentials: 'same-origin' });
+            const data = await response.json().catch(() => ({}));
+            return { ok: response.ok, status: response.status, data };
+        };
+
+        input.addEventListener('change', async () => {
+            const all = [...input.files].filter(file => file.webkitRelativePath && !file.webkitRelativePath.split('/').some(part => part.startsWith('.')));
+            if (all.length === 0) {
+                status.textContent = text('empty');
+                return;
+            }
+            const files = all.filter(file => wanted.test(file.name) || file.type.startsWith('image/') || file.type === 'application/pdf');
+            let skipped = all.length - files.length;
+            input.disabled = true;
+            bar.hidden = false;
+            bar.max = files.length || 1;
+            bar.value = 0;
+
+            const start = new FormData();
+            start.append('name', all[0].webkitRelativePath.split('/')[0]);
+            const parent = form.querySelector('[name="import_parent"]')?.value;
+            if (parent) {
+                start.append('parent_id', parent);
+            }
+            const made = await post(form.dataset.start, start).catch(() => ({ ok: false, data: {} }));
+            if (!made.ok) {
+                status.textContent = made.data?.message ?? text('failed');
+                input.disabled = false;
+                bar.hidden = true;
+                return;
+            }
+
+            let saved = 0;
+            for (const [index, file] of files.entries()) {
+                status.textContent = text('running', { done: index, total: files.length });
+                const body = new FormData();
+                body.append('file', file);
+                body.append('path', file.webkitRelativePath.split('/').slice(1).join('/'));
+                const result = await post(form.dataset.file.replace('__ID__', made.data.id), body).catch(() => ({ ok: false, status: 0 }));
+                if (result.ok) {
+                    saved++;
+                } else if (result.status === 422) {
+                    skipped++;
+                } else {
+                    status.textContent = text('failed');
+                    input.disabled = false;
+                    return;
+                }
+                bar.value = index + 1;
+            }
+
+            status.textContent = text('done', { saved }) + (skipped > 0 ? ' ' + text('skipped', { count: skipped }) : '');
+            const link = form.querySelector('[data-import-open]');
+            link.href = made.data.url;
+            link.hidden = false;
+            input.disabled = false;
+            input.value = '';
+        });
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
+        setupServiceWorker();
+        setupCamera(setupUploadQueue());
+        setupPhoneActions();
+        setupScanPhotos();
+        setupPhonePrint();
+        setupScanWait();
+        setupPrintAndZoom();
         setupMenu();
         setupDropdowns();
         setupFilter();
@@ -993,6 +1712,8 @@
         setupBadges();
         setupTagSearch();
         setupColorField();
+        setupFolderMenu();
+        setupFolderImport();
         setupNotes();
         setupToasts();
         setupAjaxForms();
