@@ -35,7 +35,7 @@
     </x-window>
 
     @if ($folder)
-        <x-window :title="$folder->name" :icon="$folder->iconName()" :url="route('folders.index', ['folder' => $folder->id])" :close="route('folders.index')" :class="'folder-win '.$folder->colorClass()">
+        <x-window :title="$folder->name" :icon="$folder->iconName()" :url="route('folders.index', ['folder' => $folder->id])" :close="route('folders.index')" :class="$folder->colorClass()">
             @if (session('status'))
                 <p class="check-ok" role="status">{{ session('status') }}</p>
             @endif

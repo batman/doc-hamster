@@ -173,8 +173,6 @@ body.is-dragging-folder { cursor: grabbing; user-select: none; }
 
 /* Folder colour and symbol pickers, folder import */
 .folder-icon, .folder-link .icon { color: var(--folder, currentColor); }
-/* A folder window shows the folder's own colour on its symbol (head and strip); without one the framework's orange stays. */
-.folder-win > .win-frame > .win-head > .icon, .win.is-min.folder-win .win-strip .icon { color: var(--folder, var(--primary)); }
 .folder-icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr)); gap: .35rem; margin-top: .5rem; }
 .folder-icon-choice { position: relative; margin: 0; }
 .folder-icon-choice input { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; margin: 0; opacity: 0; cursor: pointer; }
@@ -982,7 +980,7 @@ input[type="file"]::file-selector-button { border-radius: 10px; font-size: 1rem;
     display: flex; align-items: center; gap: .6rem; min-height: 48px;
     padding: 4.75rem 1.5rem .75rem; /* below the gap for the menu button, like the columns */
 }
-.win-head > .icon { flex: none; width: 1.5rem; height: 1.5rem; color: var(--primary); }
+.win-head > .icon { flex: none; width: 1.5rem; height: 1.5rem; color: var(--folder, var(--primary)); }
 .win-title { flex: 1; min-width: 0; margin: 0; font-size: 1.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .win-actions { display: flex; align-items: center; gap: .5rem; }
 .win-actions .toolbar { margin: 0; }

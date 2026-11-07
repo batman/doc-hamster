@@ -7,8 +7,8 @@
 @section('content')
     @php $openFolder = $folder !== null ? collect($folders)->pluck('folder')->firstWhere('id', $folder) : null; @endphp
     <div class="windows" data-windows>
-    {{-- The folders themselves are in the menu under Belege (PO, 2026-11-07); an open folder is the root window, with "new subfolder" and edit in its head. --}}
-    <x-window :title="$openFolder?->name ?? __('documents.title')" :icon="$openFolder?->iconName() ?? 'receipt'" :url="route('documents.index', request()->except('page'))" :class="$openFolder ? 'folder-win '.$openFolder->colorClass() : ''">
+    {{-- The folders themselves are in the menu under Belege (PO, 2026-11-07); here the open one, with edit and "new subfolder". --}}
+    <x-window :title="$openFolder?->name ?? __('documents.title')" :icon="$openFolder?->iconName() ?? 'receipt'" :url="route('documents.index', request()->except('page'))" :class="$openFolder?->colorClass()">
         <x-slot:actions>
             <div class="toolbar">
                 @if ($openFolder && Gate::allows('documents.edit'))
