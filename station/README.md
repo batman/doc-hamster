@@ -82,4 +82,6 @@ stops; it needs no code and is a quick test.
   home network.
 - Remove a station in DocHamster and its key stops working at once; the station
   then tells you to link it again with a new code.
-- It never prints and never stores scanned pages: they go straight to DocHamster.
+- It prints only what you send with **"Auf dem Drucker drucken"** in DocHamster
+  (IPP, the open printing protocol; PDF or JPEG, whatever the printer takes) and
+  never stores scanned pages or printed files: they go straight through.

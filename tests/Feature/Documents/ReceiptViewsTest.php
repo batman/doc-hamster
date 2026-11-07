@@ -43,12 +43,12 @@ it('refuses unknown views and moves the calendar by month', function (): void {
 
 it('shows only the settings a person may open', function (): void {
     $this->actingAs($this->admin->user)->get('/settings')->assertOk()->assertSee('Personen &amp; Rollen', false)->assertSee('Update');
-    $this->get('/settings/update')->assertOk()->assertSee('Handy-Test');
+    $this->get('/settings/phone')->assertOk()->assertSee('Handy-Test')->assertSee('Handy verbinden');
     $this->get('/settings/tags')->assertRedirect(route('tags.index'));
 
     $clerk = Membership::factory()->withRights(RoleRight::Upload)->create(['org_id' => $this->admin->org_id]);
     $this->actingAs($clerk->user)->get('/settings')->assertOk()
-        ->assertDontSee('Personen &amp; Rollen', false)->assertDontSee('Bank</span>', false)->assertSee('Update');
+        ->assertDontSee('Personen &amp; Rollen', false)->assertDontSee('Bank</span>', false)->assertSee('Handy');
     $this->get('/settings/people')->assertNotFound();
 });
 

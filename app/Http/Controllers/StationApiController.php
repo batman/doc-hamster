@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Domain\Audit\AuditLog;
+use App\Domain\Documents\Document;
+use App\Domain\Documents\DocumentFile;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Membership;
 use App\Domain\Org\OrgScope;
@@ -16,6 +18,7 @@ use App\Domain\Scanning\ScanStation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 
 /**
@@ -33,6 +36,8 @@ final class StationApiController
 
     /** The only errors a station may report; anything else becomes the general one. */
     private const ERRORS = ['scan.busy', 'scan.job_refused', 'scan.job_failed', 'scan.feeder_empty', 'scan.no_page', 'scan.timeout', 'scan.unreachable', 'scan.not_a_scanner'];
+
+    private const PRINT_ERRORS = ['print.unreachable', 'print.not_a_printer', 'print.refused', 'print.format_unsupported'];
 
     public function pair(Request $request, AuditLog $audit): JsonResponse
     {
@@ -81,7 +86,25 @@ final class StationApiController
             return response()->noContent();
         }
 
-        return response()->json(['id' => $next->id, 'source' => $next->source, 'color' => $next->color, 'dpi' => $next->dpi]);
+        if ($next->kind === 'print') {
+            return response()->json(['id' => $next->id, 'kind' => 'print', 'file' => route('api.station.file', $next->id, false)]);
+        }
+
+        return response()->json(['id' => $next->id, 'kind' => 'scan', 'source' => $next->source, 'color' => $next->color, 'dpi' => $next->dpi]);
+    }
+
+    /** The file of a running print job, for the station to send to the printer. */
+    public function file(Request $request, string $id): Response
+    {
+        $station = $this->station($request);
+        $job = $this->running($station, $id);
+        abort_unless($job->kind === 'print' && $job->file_id !== null, 404);
+        $this->mayView($job);
+        $file = DocumentFile::query()->withoutGlobalScope(OrgScope::class)->whereKey($job->file_id)->where('org_id', $job->org_id)->firstOrFail();
+        $bytes = Storage::disk('local')->get($file->path);
+        abort_unless(is_string($bytes), 404);
+
+        return response($bytes, 200, ['Content-Type' => $file->mime, 'Cache-Control' => 'no-store']);
     }
 
     /** One scanned page (the raw JPEG as the request body), added to the pages of the person who asked. */
@@ -89,6 +112,7 @@ final class StationApiController
     {
         $station = $this->station($request);
         $scan = $this->running($station, $id);
+        abort_unless($scan->kind === 'scan', 404);
         $this->mayUpload($scan);
 
         $jpeg = $request->getContent();
@@ -113,7 +137,10 @@ final class StationApiController
         $scan = $this->running($station, $id);
         $error = $request->input('error');
 
-        if (is_string($error) && $error !== '') {
+        if ($scan->kind === 'print') {
+            $failed = is_string($error) && $error !== '';
+            $scan->forceFill(['status' => $failed ? 'failed' : 'done', 'error' => $failed ? (in_array($error, self::PRINT_ERRORS, true) ? $error : 'print.failed') : null])->save();
+        } elseif (is_string($error) && $error !== '') {
             $scan->forceFill(['status' => 'failed', 'error' => in_array($error, self::ERRORS, true) ? $error : 'scan.failed'])->save();
         } elseif ($scan->pages > 0) {
             $scan->forceFill(['status' => 'done', 'error' => null])->save();
@@ -138,6 +165,19 @@ final class StationApiController
     {
         return ScanRequest::query()->withoutGlobalScope(OrgScope::class)
             ->whereKey($id)->where('station_id', $station->id)->where('status', 'running')->firstOrFail();
+    }
+
+    /** The person who asked to print must still be in the organisation and see the document. */
+    private function mayView(ScanRequest $job): void
+    {
+        $membership = Membership::query()->where('org_id', $job->org_id)->where('user_id', $job->user_id)->whereNull('revoked_at')->first();
+        abort_if($membership === null, 403);
+        $org = app(CurrentOrg::class);
+        $org->set($membership);
+        $file = DocumentFile::query()->whereKey($job->file_id)->first();
+        abort_if($file === null, 404);
+        $visible = Document::query()->visibleTo($job->user_id, $org->allows(Permission::ViewAllDocuments))->withPrintTray()->whereKey($file->document_id)->exists();
+        abort_unless($visible, 403);
     }
 
     /** The person must still be in the organisation and allowed to upload. */

@@ -9,7 +9,8 @@ declare(strict_types=1);
  * to a printer or scanner that can scan over the network (eSCL / AirScan).
  * It connects OUT to your DocHamster over HTTPS, so nothing at home has to be
  * opened in the router. When someone presses "Scannen" in DocHamster, this
- * program scans on the printer and sends the pages back.
+ * program scans on the printer and sends the pages back; "Auf dem Drucker
+ * drucken" sends a document the other way, to the printer (IPP).
  *
  * Needs only PHP 8.1+ with the curl and SimpleXML extensions (the official
  * php:8-cli Docker image has both). No other software, no vendor tools.
@@ -124,6 +125,92 @@ function http(string $method, string $url, ?string $body, array $headers, bool $
     curl_close($curl);
 
     return [$status, (string) $answer, $received];
+}
+
+// ---- the printer: IPP (printing) ----------------------------------------------------
+
+/** One IPP request (RFC 8010): version 2.0, operation, the usual attributes, then the document. */
+function ippRequest(int $operation, string $uri, array $extra, string $document = ''): string
+{
+    $attributes = [[0x47, 'attributes-charset', 'utf-8'], [0x48, 'attributes-natural-language', 'en'], [0x45, 'printer-uri', $uri], [0x42, 'requesting-user-name', 'DocHamster'], ...$extra];
+    $out = pack('CCnN', 2, 0, $operation, 1).chr(0x01);
+    foreach ($attributes as [$tag, $name, $value]) {
+        $out .= chr($tag).pack('n', strlen($name)).$name.pack('n', strlen($value)).$value;
+    }
+
+    return $out.chr(0x03).$document;
+}
+
+/** @return array{status: int, attributes: array<string, list<string>>} */
+function ippDecode(string $body): array
+{
+    if (strlen($body) < 9) {
+        throw new RuntimeException('print.not_a_printer');
+    }
+    $status = unpack('n', substr($body, 2, 2))[1];
+    $attributes = [];
+    $last = null;
+    $at = 8;
+    while ($at < strlen($body)) {
+        $tag = ord($body[$at++]);
+        if ($tag === 0x03) {
+            break;
+        }
+        if ($tag < 0x10 || $at + 2 > strlen($body)) {
+            continue;
+        }
+        $nameLength = unpack('n', substr($body, $at, 2))[1];
+        $name = substr($body, $at + 2, $nameLength);
+        $at += 2 + $nameLength;
+        $valueLength = unpack('n', substr($body, $at, 2))[1] ?? 0;
+        $value = substr($body, $at + 2, $valueLength);
+        $at += 2 + $valueLength;
+        $key = $nameLength > 0 ? $name : $last;
+        if ($key !== null) {
+            $last = $key;
+            $attributes[$key][] = $value;
+        }
+    }
+
+    return ['status' => $status, 'attributes' => $attributes];
+}
+
+/** Calls the printer over IPP: port 631 first, then HTTPS on its web port. */
+function ippCall(string $printer, int $operation, array $extra, string $document = ''): array
+{
+    $host = (string) parse_url($printer, PHP_URL_HOST);
+    foreach ([['http://'.$host.':631/ipp/print', 'ipp://'.$host.':631/ipp/print'], ['https://'.$host.'/ipp/print', 'ipps://'.$host.'/ipp/print']] as [$url, $uri]) {
+        try {
+            [$status, $answer, $headers] = http('POST', $url, ippRequest($operation, $uri, $extra, $document), ['Content-Type: application/ipp'], false);
+        } catch (RuntimeException) {
+            continue;
+        }
+        if ($status === 200 && str_starts_with($headers['content-type'] ?? '', 'application/ipp')) {
+            return ippDecode($answer);
+        }
+    }
+    throw new RuntimeException('print.unreachable');
+}
+
+/** Prints one file; uses a format the printer takes. */
+function printFile(string $printer, string $bytes, string $mime, string $title): void
+{
+    $info = ippCall($printer, 0x000B, [[0x44, 'requested-attributes', 'document-format-supported']]);
+    if ($info['status'] >= 0x0100) {
+        throw new RuntimeException('print.not_a_printer');
+    }
+    $formats = $info['attributes']['document-format-supported'] ?? [];
+    if (! in_array($mime, $formats, true)) {
+        if (in_array('application/octet-stream', $formats, true)) {
+            $mime = 'application/octet-stream';
+        } else {
+            throw new RuntimeException('print.format_unsupported');
+        }
+    }
+    $answer = ippCall($printer, 0x0002, [[0x42, 'job-name', substr($title, 0, 200)], [0x49, 'document-format', $mime]], $bytes);
+    if ($answer['status'] >= 0x0100) {
+        throw new RuntimeException($answer['status'] === 0x040A ? 'print.format_unsupported' : 'print.refused');
+    }
 }
 
 // ---- the printer: eSCL ------------------------------------------------------------
@@ -576,6 +663,9 @@ function handle(string $server, ?string $printer, string $token, array $job): bo
     if (preg_match('/^[0-9a-z]{26}$/', $id) !== 1) {
         return false;
     }
+    if (($job['kind'] ?? 'scan') === 'print') {
+        return printJob($server, $printer, $token, $id, (string) ($job['file'] ?? ''));
+    }
     say('Scan request '.$id.' ('.($job['source'] ?? '?').', '.($job['dpi'] ?? '?').' dpi)');
 
     $unreachable = false;
@@ -605,4 +695,41 @@ function handle(string $server, ?string $printer, string $token, array $job): bo
     }
 
     return $unreachable;
+}
+
+/**
+ * One print job: fetch the file from DocHamster, send it to the printer, report the end.
+ *
+ * @return bool true when the printer could not be reached (look for it again)
+ */
+function printJob(string $server, ?string $printer, string $token, string $id, string $path): bool
+{
+    say('Print job '.$id);
+    try {
+        if ($printer === null) {
+            throw new RuntimeException('print.unreachable');
+        }
+        if (preg_match('#^/api/station/requests/[0-9a-z]{26}/file$#', $path) !== 1) {
+            throw new RuntimeException('print.failed');
+        }
+        [$status, $bytes, $headers] = http('GET', $server.$path, null, ['Authorization: Bearer '.$token], true);
+        if ($status !== 200 || $bytes === '') {
+            throw new RuntimeException('print.failed');
+        }
+        printFile($printer, $bytes, strtolower(trim(explode(';', $headers['content-type'] ?? 'application/pdf')[0])), 'DocHamster');
+        dochamster($server, '/api/station/requests/'.$id.'/finish', $token, new stdClass);
+        say('Printed.');
+
+        return false;
+    } catch (RuntimeException $error) {
+        $key = str_starts_with($error->getMessage(), 'print.') ? $error->getMessage() : 'print.failed';
+        say('Failed: '.$key);
+        try {
+            dochamster($server, '/api/station/requests/'.$id.'/finish', $token, ['error' => $key]);
+        } catch (RuntimeException) {
+            // DocHamster gives the job up by itself after a few minutes.
+        }
+
+        return $key === 'print.unreachable';
+    }
 }

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\AppShellController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\BankController;
@@ -41,6 +42,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('documents/{id}', [DocumentController::class, 'update'])->middleware('can:documents.edit')->name('documents.update');
     Route::post('documents/{id}/delete', [DocumentController::class, 'destroy'])->middleware('can:documents.trash')->name('documents.destroy');
     Route::get('files/{id}/download', [DocumentController::class, 'download'])->name('documents.download');
+    Route::post('files/{id}/print', [DocumentController::class, 'printOnPrinter'])->middleware('throttle:20,1')->name('documents.print');
     Route::get('files/{id}/thumb', [DocumentController::class, 'thumb'])->name('documents.thumb');
     Route::get('tags.css', [TagController::class, 'css'])->name('tags.css');
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
@@ -142,6 +144,10 @@ Route::middleware(['auth', 'org'])->group(function (): void {
 
 // A receipt handed out by link (A4): no login, until it expires or is revoked.
 Route::get('s/{token}', [ShareController::class, 'open'])->middleware('throttle:30,1')->name('shares.open');
+
+// The home-screen app (PHONE, #37): manifest and the page for "no connection"; no login, no data.
+Route::get('manifest.webmanifest', [AppShellController::class, 'manifest'])->name('app.manifest');
+Route::get('offline', [AppShellController::class, 'offline'])->name('app.offline');
 
 // The phone opens the QR code here; signed in or not (PhoneController::connect).
 Route::get('connect/{code?}', [PhoneController::class, 'connectForm'])->where('code', '[A-Za-z0-9-]{1,20}')->name('phone.connect');

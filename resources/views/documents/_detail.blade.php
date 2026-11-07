@@ -20,6 +20,13 @@
             {{-- Zoom: the whole document in a large viewer. Print: through the browser's print dialog, from a hidden frame (scripts/ app.js). --}}
             <button type="button" class="icon-button" aria-label="{{ __('documents.zoom') }}" data-tooltip="{{ __('documents.zoom') }}" data-dialog-open="viewer"><x-icon name="zoom-in" /></button>
             <button type="button" class="icon-button" aria-label="{{ __('documents.print') }}" data-tooltip="{{ __('documents.print') }}" data-print="{{ route('documents.file', $file->id) }}"><x-icon name="printer" /></button>
+            {{-- Straight to the network printer at home (IPP), also from the phone (PHONE, issue #37). --}}
+            @if (app(\App\Domain\Scanning\NetworkPrinter::class)->available())
+                <form method="post" action="{{ route('documents.print', $file->id) }}" class="inline-form">
+                    @csrf
+                    <button type="submit" class="icon-button" aria-label="{{ __('print.on_printer') }}" data-tooltip="{{ __('print.on_printer') }}"><x-icon name="send" /><x-icon name="printer" /></button>
+                </form>
+            @endif
         @endif
         @can('documents.edit')
             <a class="icon-button" href="#title" aria-label="{{ __('documents.edit') }}" data-tooltip="{{ __('documents.edit') }}"><x-icon name="pencil" /></a>

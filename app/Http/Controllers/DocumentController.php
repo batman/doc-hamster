@@ -13,6 +13,7 @@ use App\Domain\Documents\Folder;
 use App\Domain\Documents\Tag;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
+use App\Domain\Scanning\NetworkPrinter;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -22,6 +23,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -240,6 +242,22 @@ final class DocumentController
         $document->forceFill(['last_downloaded_at' => now()])->saveQuietly();
 
         return Storage::disk('local')->download($file->path, $file->downloadName($document->title), ['Content-Type' => $file->mime]);
+    }
+
+    /** "Auf Drucker drucken": straight to the network printer, or through the Scan Station at home. */
+    public function printOnPrinter(Request $request, string $id, NetworkPrinter $printer, AuditLog $audit): RedirectResponse
+    {
+        [$file, $document] = $this->visibleFile($request, $id);
+        try {
+            $outcome = $printer->send($file, $document);
+        } catch (RuntimeException $error) {
+            $key = $error->getMessage();
+
+            return back()->withErrors(['print' => str_starts_with($key, 'print.') && trans($key) !== $key ? __($key) : __('print.failed')]);
+        }
+        $audit->record('document.printed', orgId: $document->org_id, userId: $this->userId($request), subject: $document, ip: $request->ip());
+
+        return back()->with('status', __($outcome));
     }
 
     /** The stored small image; it never changes, so the browser may keep it. */

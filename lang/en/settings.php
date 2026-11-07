@@ -13,6 +13,7 @@ return [
         'tags' => 'Tags',
         'export' => 'Export',
         'update' => 'Update',
+        'phone' => 'Phone',
     ],
     'links' => [
         'members' => ['title' => 'People', 'text' => 'Who has access'],

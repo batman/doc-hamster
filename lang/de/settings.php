@@ -15,6 +15,7 @@ return [
         'scanner' => 'Scanner',
         'export' => 'Export',
         'update' => 'Update',
+        'phone' => 'Handy',
     ],
     'links' => [
         'members' => ['title' => 'Personen', 'text' => 'Wer Zugang hat'],

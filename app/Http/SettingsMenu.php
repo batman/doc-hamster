@@ -37,6 +37,8 @@ final class SettingsMenu
         ], false],
         'update' => ['cloud-download', [
             ['update', 'updates.show', 'cloud-download', 'system.update', ['updates.*']],
+        ], true],
+        'phone' => ['device-mobile', [
             ['phone', 'phone.index', 'device-mobile', null, ['phone.*']],
             ['phone_check', 'phone-check.qr', 'device-mobile', null, ['phone-check*']],
         ], false],

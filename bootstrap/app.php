@@ -37,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 Route::post('pair', [StationApiController::class, 'pair'])->middleware('throttle:pairing')->name('pair');
                 Route::post('poll', [StationApiController::class, 'poll'])->middleware('throttle:60,1')->name('poll');
                 Route::post('requests/{id}/pages', [StationApiController::class, 'page'])->middleware('throttle:300,1')->name('page');
+                Route::get('requests/{id}/file', [StationApiController::class, 'file'])->middleware('throttle:60,1')->name('file');
                 Route::post('requests/{id}/finish', [StationApiController::class, 'finish'])->middleware('throttle:60,1')->name('finish');
             });
         },

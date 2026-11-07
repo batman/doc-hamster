@@ -602,7 +602,159 @@
         }
     };
 
+    // ---- Phone app (PHONE, issue #37) -------------------------------------------------
+
+    // Home-screen app: the service worker keeps the app's files and the offline page (public/sw.js).
+    const setupServiceWorker = () => {
+        const meta = document.querySelector('meta[name="dh-sw"]');
+        if (!meta || !('serviceWorker' in navigator) || !window.isSecureContext) {
+            return;
+        }
+        navigator.serviceWorker.register(meta.content).catch(() => { /* works without it, only no offline page */ });
+    };
+
+    // "Mehr" in the app bar opens the side menu (settings, logout, everything else).
+    const setupAppBar = () => {
+        const more = document.querySelector('[data-app-more]');
+        const toggle = document.querySelector('.nav-toggle');
+        if (more && toggle) {
+            more.addEventListener('click', () => toggle.click());
+        }
+    };
+
+    // Photos from the app bar go into a queue on the phone first (IndexedDB) and are
+    // sent from there: without a connection they wait and go out when it is back.
+    const setupUploadQueue = () => {
+        const forms = [...document.querySelectorAll('form[data-queue-upload]')];
+        const status = document.querySelector('.queue-status');
+        if (!('indexedDB' in window) || !status) {
+            return; // the form is sent the normal way
+        }
+        const text = status.querySelector('.queue-text');
+        let hamster = null;
+        let hideTimer = null;
+        const show = (message, mood) => {
+            clearTimeout(hideTimer);
+            text.textContent = message;
+            status.hidden = false;
+            const host = status.querySelector('.queue-hamster');
+            if (!hamster && window.docHamster && host) {
+                hamster = window.docHamster.mount(host, { mood: mood || 'awake' });
+            } else if (hamster && mood) {
+                hamster.mood(mood);
+            }
+        };
+        const hideLater = () => {
+            hideTimer = setTimeout(() => { status.hidden = true; }, 3500);
+        };
+
+        const open = () => new Promise((resolve, reject) => {
+            const request = indexedDB.open('dochamster', 1);
+            request.onupgradeneeded = () => request.result.createObjectStore('queue', { keyPath: 'id', autoIncrement: true });
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+        const store = async mode => (await open()).transaction('queue', mode).objectStore('queue');
+        const done = request => new Promise((resolve, reject) => {
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+        const all = async () => done((await store('readonly')).getAll());
+        const add = async item => done((await store('readwrite')).add(item));
+        const remove = async id => done((await store('readwrite')).delete(id));
+
+        const tokenFrom = html => new DOMParser().parseFromString(html, 'text/html').querySelector('meta[name="csrf-token"]')?.content || null;
+        let token = document.querySelector('meta[name="csrf-token"]')?.content || null;
+        const freshToken = async () => {
+            const response = await fetch(status.dataset.home, { credentials: 'same-origin', cache: 'no-store' });
+            token = tokenFrom(await response.text());
+            return token;
+        };
+        const waiting = count => (count === 1 ? status.dataset.waiting : status.dataset.waitingMany).replace(/\d+/, String(count));
+
+        let busy = false;
+        const flush = async () => {
+            if (busy) {
+                return;
+            }
+            busy = true;
+            let sent = 0;
+            try {
+                for (const item of await all()) {
+                    if (!navigator.onLine) {
+                        break;
+                    }
+                    show(status.dataset.sending, 'eat');
+                    const post = async () => {
+                        const body = new FormData();
+                        body.append('_token', token || await freshToken() || '');
+                        body.append('files[]', item.blob, item.name);
+                        if (item.folder) {
+                            body.append('folder', item.folder);
+                        }
+                        return fetch(item.action, { method: 'POST', body, credentials: 'same-origin' });
+                    };
+                    let response = await post();
+                    if (response.status === 419) { // the session was renewed meanwhile
+                        await freshToken();
+                        response = await post();
+                    }
+                    if (response.redirected && new URL(response.url).pathname.endsWith('/login')) {
+                        show(status.dataset.login, 'sleep');
+                        return;
+                    }
+                    if (!response.ok) {
+                        throw new Error(`upload ${response.status}`);
+                    }
+                    await remove(item.id);
+                    sent++;
+                }
+            } catch {
+                // offline or the server is away: the photos stay in the queue
+            } finally {
+                busy = false;
+            }
+            const left = (await all()).length;
+            if (left > 0) {
+                show(waiting(left), 'sleep');
+            } else if (sent > 0) {
+                show(status.dataset.sent, 'awake');
+                hideLater();
+                // The new receipt shows up in the list.
+                if (document.querySelector('.view-list, .empty-state') && !document.body.classList.contains('offline-page')) {
+                    setTimeout(() => window.location.reload(), 1200);
+                }
+            }
+        };
+
+        forms.forEach(form => {
+            const input = form.querySelector('input[type="file"]');
+            input.addEventListener('change', async () => {
+                const files = [...input.files];
+                if (files.length === 0) {
+                    return;
+                }
+                const folder = form.querySelector('input[name="folder"]')?.value || null;
+                try {
+                    for (const file of files) {
+                        await add({ action: form.action, name: file.name || 'foto.jpg', type: file.type, blob: file, folder, added: Date.now() });
+                    }
+                } catch {
+                    form.submit(); // no storage on this phone (private mode): send directly
+                    return;
+                }
+                input.value = '';
+                flush();
+            });
+        });
+        window.addEventListener('online', flush);
+        flush();
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
+        setupServiceWorker();
+        setupAppBar();
+        setupUploadQueue();
         setupScanWait();
         setupPrintAndZoom();
         setupMenu();

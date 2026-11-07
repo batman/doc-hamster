@@ -43,7 +43,7 @@ final class ScanController
 
         // A scan through a Scan Station: wait while it runs, tell the end once.
         ScanRequest::expireStale();
-        $latest = ScanRequest::query()->where('user_id', $userId)->where('acknowledged', false)->orderByDesc('id')->first();
+        $latest = ScanRequest::query()->where('kind', 'scan')->where('user_id', $userId)->where('acknowledged', false)->orderByDesc('id')->first();
         $waiting = $latest?->isActive() ?? false;
         $ended = $latest !== null && ! $waiting ? $latest : null;
         $ended?->forceFill(['acknowledged' => true])->save();
@@ -106,7 +106,7 @@ final class ScanController
         }
         $userId = $org->membership()->user_id;
         ScanRequest::expireStale();
-        if (ScanRequest::query()->where('user_id', $userId)->whereIn('status', ['queued', 'running'])->exists()) {
+        if (ScanRequest::query()->where('kind', 'scan')->where('user_id', $userId)->whereIn('status', ['queued', 'running'])->exists()) {
             return redirect()->route('scan.index', array_filter(['folder' => $request->input('folder')]));
         }
 

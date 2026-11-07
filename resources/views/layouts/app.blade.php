@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="robots" content="noindex">
     <meta name="color-scheme" content="light dark">
     <meta name="theme-color" content="#30302e">
@@ -11,7 +11,21 @@
     @auth
         <link rel="stylesheet" href="{{ route('tags.css') }}">
     @endauth
+    {{-- On the home screen DocHamster opens like an app (PHONE, issue #37). --}}
+    @unless (request()->routeIs('phone-check'))
+        <link rel="manifest" href="{{ route('app.manifest') }}">
+    @endunless
+    <link rel="apple-touch-icon" href="{{ asset('img/apple-touch-icon.png') }}">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="{{ config('app.name') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="dh-sw" content="{{ asset('sw.js') }}?v={{ config('dochamster.version') }}">
     <script src="{{ asset('js/app.js') }}?v={{ config('dochamster.version') }}"></script>
+    @auth
+        <script src="{{ asset('js/hamster.js') }}?v={{ config('dochamster.version') }}" defer></script>
+    @endauth
     @stack('head')
 </head>
 <body>
@@ -46,7 +60,7 @@
                             ['documents.index', 'receipt', 'documents.title', null, ['documents.*'], null],
                             ['print-tray.index', 'printer', 'print_tray.title', 'documents.upload', ['print-tray.*'], \App\Http\Badges::PRINT_TRAY],
                             ['bank.index', 'building-bank', 'bank.title', 'banking.import', ['bank.index', 'bank.show'], null],
-                            ['settings.index', 'settings', 'settings.title', null, ['settings.*', 'members.*', 'roles.*', 'tags.*', 'exports.*', 'updates.*', 'bank.import*', 'bank.accounts.*', 'phone-check*', 'scanner.*', 'folders.*'], null],
+                            ['settings.index', 'settings', 'settings.title', null, ['settings.*', 'members.*', 'roles.*', 'tags.*', 'exports.*', 'updates.*', 'bank.import*', 'bank.accounts.*', 'phone-check*', 'phone.*', 'scanner.*', 'folders.*'], null],
                         ] as [$route, $icon, $label, $ability, $active, $badge])
                             @if ($ability === null || Gate::allows($ability))
                                 <li><a class="nav-item tooltip-right" href="{{ route($route) }}" data-tooltip="{{ __($label) }}" @if (request()->routeIs(...$active)) aria-current="page" @endif><x-icon :name="$icon" /><span class="nav-text">{{ __($label) }}</span> @if ($badge !== null) @php $count = $badges[$badge] ?? 0; @endphp <span class="nav-badge" data-badge="{{ $badge }}" @if ($count === 0) hidden @endif>{{ $count > 9 ? '9+' : $count }}</span> @endif</a></li>
@@ -67,6 +81,38 @@
                 </nav>
             </aside>
             <div class="nav-backdrop"></div>
+            {{-- Phones: the app bar at the bottom (PHONE, issue #37). "Foto" opens the camera; the photo waits on the phone while it is offline. --}}
+            @php
+                $scanReady = Gate::allows('documents.upload') && app(\App\Domain\Org\CurrentOrg::class)->isSet()
+                    && (data_get(app(\App\Domain\Org\CurrentOrg::class)->organization()->settings_json, 'scanner.url') || \App\Domain\Scanning\ScanStation::linked());
+            @endphp
+            <nav class="app-bar" aria-label="{{ __('app.bar.label') }}">
+                <a class="app-bar-item" href="{{ route('documents.index') }}" @if (request()->routeIs('documents.*')) aria-current="page" @endif><x-icon name="receipt" /><span>{{ __('app.bar.documents') }}</span></a>
+                @can('documents.upload')
+                    <form class="app-bar-photo" method="post" action="{{ route('documents.store') }}" enctype="multipart/form-data" data-queue-upload>
+                        @csrf
+                        @if (is_string(request()->query('folder')) && request()->query('folder') !== 'none')
+                            <input type="hidden" name="folder" value="{{ request()->query('folder') }}">
+                        @endif
+                        <label class="app-bar-item app-bar-main">
+                            <input class="visually-hidden" type="file" name="files[]" accept="image/*,application/pdf" capture="environment" data-camera>
+                            <x-icon name="camera" /><span>{{ __('app.bar.photo') }}</span>
+                        </label>
+                        <noscript><button type="submit">{{ __('documents.upload') }}</button></noscript>
+                    </form>
+                @endcan
+                @if ($scanReady)
+                    <a class="app-bar-item" href="{{ route('scan.index') }}" @if (request()->routeIs('scan.*')) aria-current="page" @endif><x-icon name="scan" /><span>{{ __('app.bar.scan') }}</span></a>
+                @elseif (Gate::allows('documents.upload'))
+                    <a class="app-bar-item" href="{{ route('print-tray.index') }}" @if (request()->routeIs('print-tray.*')) aria-current="page" @endif><x-icon name="printer" /><span>{{ __('app.bar.print_tray') }}</span></a>
+                @endif
+                <button type="button" class="app-bar-item" data-app-more><x-icon name="dots" /><span>{{ __('app.bar.more') }}</span></button>
+            </nav>
+            <div class="queue-status" role="status" hidden data-home="{{ route('home') }}"
+                data-sending="{{ __('app.queue.sending') }}" data-sent="{{ __('app.queue.sent') }}"
+                data-waiting="{{ trans_choice('app.queue.waiting', 1) }}" data-waiting-many="{{ trans_choice('app.queue.waiting', 2) }}" data-login="{{ __('app.queue.login') }}">
+                <span class="queue-hamster" aria-hidden="true"></span><span class="queue-text"></span>
+            </div>
             @can('documents.upload')
                 <div class="drop-overlay" hidden><p>{{ __('documents.drop') }}</p></div>
             @endcan

@@ -18,6 +18,8 @@ use Illuminate\Support\Carbon;
  * @property string $org_id
  * @property string $user_id
  * @property string $station_id
+ * @property string $kind scan or print
+ * @property string|null $file_id the stored file to print (kind print)
  * @property string $source
  * @property string $color
  * @property int $dpi
@@ -39,7 +41,7 @@ final class ScanRequest extends Model
     /** Nobody takes a request that has waited in the queue longer than this (station offline). */
     public const QUEUE_SECONDS = 120;
 
-    protected $fillable = ['org_id', 'user_id', 'station_id', 'source', 'color', 'dpi', 'status', 'error', 'pages', 'acknowledged'];
+    protected $fillable = ['org_id', 'user_id', 'station_id', 'kind', 'file_id', 'source', 'color', 'dpi', 'status', 'error', 'pages', 'acknowledged'];
 
     /**
      * @return array<string, string>

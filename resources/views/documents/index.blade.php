@@ -62,6 +62,7 @@
         @if (session('status'))
             <p class="check-ok" role="status">{{ session('status') }}</p>
         @endif
+        @error('print')<p class="error" role="alert">{{ $message }}</p>@enderror
 
         @if ($documents->isEmpty() && $selected === [] && $view !== 'calendar')
             <div class="empty-state"><p class="muted">{{ __('documents.empty') }}</p></div>
