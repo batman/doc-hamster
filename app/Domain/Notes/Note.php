@@ -22,7 +22,7 @@ use Illuminate\Support\Carbon;
  * @property string $org_id
  * @property string $user_id
  * @property string|null $body
- * @property list<array{text: string, done: bool}>|null $checklist
+ * @property list<array{text: string, done: bool}>|null $checklist old checklist; since 2026-11-07 lists live in the body (NoteText)
  * @property bool $shared
  * @property bool $editable
  * @property string|null $title
@@ -31,6 +31,8 @@ use Illuminate\Support\Carbon;
  * @property bool $locked nobody changes, moves or deletes it until it is unlocked
  * @property int|null $pos_x place on the board in px; null = next free slot
  * @property int|null $pos_y
+ * @property int|null $width size on the board in px; null = default
+ * @property int|null $height
  * @property Carbon $created_at
  * @property-read User $author
  */
@@ -42,14 +44,14 @@ final class Note extends Model
     /** The PO's 20 sticky-note colours (2026-11-07); the values live in app.css (.note-<key>). */
     public const COLORS = ['white', 'black', 'gray', 'red', 'bordeaux', 'orange', 'yellow', 'lightgreen', 'green', 'turquoise', 'lightblue', 'blue', 'navy', 'purple', 'lavender', 'pink', 'brown', 'beige', 'gold', 'mint'];
 
-    protected $fillable = ['org_id', 'user_id', 'body', 'checklist', 'shared', 'editable', 'title', 'color', 'opacity', 'locked', 'pos_x', 'pos_y'];
+    protected $fillable = ['org_id', 'user_id', 'body', 'checklist', 'shared', 'editable', 'title', 'color', 'opacity', 'locked', 'pos_x', 'pos_y', 'width', 'height'];
 
     /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
-        return ['checklist' => 'array', 'shared' => 'boolean', 'editable' => 'boolean', 'locked' => 'boolean', 'opacity' => 'integer', 'pos_x' => 'integer', 'pos_y' => 'integer'];
+        return ['checklist' => 'array', 'shared' => 'boolean', 'editable' => 'boolean', 'locked' => 'boolean', 'opacity' => 'integer', 'pos_x' => 'integer', 'pos_y' => 'integer', 'width' => 'integer', 'height' => 'integer'];
     }
 
     /**

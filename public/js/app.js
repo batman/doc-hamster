@@ -606,10 +606,15 @@
         const layout = () => {
             board.classList.toggle('is-board', wide.matches);
             if (!wide.matches) {
-                notes.forEach(note => { note.style.left = ''; note.style.top = ''; });
+                // Phones: full width, the saved size waits for the board (A3).
+                notes.forEach(note => { note.style.left = ''; note.style.top = ''; note.style.width = ''; note.style.height = ''; });
                 board.style.height = '';
                 return;
             }
+            notes.filter(note => note.dataset.w !== undefined).forEach(note => {
+                note.style.width = `${note.dataset.w}px`;
+                note.style.height = `${note.dataset.h}px`;
+            });
             const taken = [];
             const put = (note, x, y) => {
                 note.style.left = `${x}px`;
@@ -674,6 +679,104 @@
             head.addEventListener('pointermove', move);
             head.addEventListener('pointerup', done, { once: true });
             head.addEventListener('pointercancel', done, { once: true });
+        });
+
+        // Size (Go of 2026-11-07): the browser's corner handle sets width/height inline; a moment after the last change it is saved.
+        const send = (url, fields) => {
+            const body = new FormData();
+            body.append('_token', board.dataset.csrf);
+            Object.entries(fields).forEach(([key, value]) => body.append(key, value));
+            return fetch(url, { method: 'POST', body, credentials: 'same-origin', headers: { Accept: 'application/json' } });
+        };
+        const timers = new Map();
+        const sized = new ResizeObserver(entries => entries.forEach(({ target: note }) => {
+            if (!wide.matches || !note.style.width || !note.style.height) {
+                return;
+            }
+            const w = String(Math.round(note.offsetWidth));
+            const h = String(Math.round(note.offsetHeight));
+            if (w === note.dataset.w && h === note.dataset.h) {
+                return;
+            }
+            clearTimeout(timers.get(note));
+            timers.set(note, setTimeout(() => {
+                note.dataset.w = w;
+                note.dataset.h = h;
+                fit();
+                send(note.dataset.noteLook, { w, h }).catch(() => { /* offline: kept until the next reload */ });
+            }, 500));
+        }));
+        notes.filter(note => note.dataset.noteLook).forEach(note => sized.observe(note));
+
+        // A click on a list entry ticks it (sets or removes its "#" in the text).
+        board.addEventListener('change', event => {
+            const box = event.target.closest('[data-note-check]');
+            if (!box) {
+                return;
+            }
+            const { list, item, text } = box.dataset;
+            send(box.dataset.noteCheck, { list, item, text })
+                .then(response => (response.ok ? response.json() : Promise.reject(new Error('changed'))))
+                .then(data => {
+                    // Keep the raw text for the double click in step with the tick.
+                    const raw = box.closest('[data-note-text]')?.querySelector('template[data-note-raw]');
+                    if (raw) {
+                        raw.content.textContent = data.body;
+                    }
+                })
+                .catch(() => location.reload());
+        });
+
+        // Double click edits the text right on the note. Click next to it or Ctrl+Enter saves, Esc cancels.
+        board.addEventListener('dblclick', event => {
+            const content = event.target.closest('[data-note-text]');
+            if (!content || content.classList.contains('is-editing') || event.target.closest('input, label, a, button')) {
+                return;
+            }
+            const view = content.querySelector('.note-text');
+            const raw = content.querySelector('template[data-note-raw]');
+            const editor = document.createElement('textarea');
+            editor.className = 'note-editor';
+            editor.value = raw.content.textContent;
+            editor.setAttribute('aria-label', content.title);
+            content.classList.add('is-editing');
+            view.hidden = true;
+            content.append(editor);
+            editor.focus();
+            let open = true;
+            const close = () => {
+                open = false;
+                editor.remove();
+                view.hidden = false;
+                content.classList.remove('is-editing');
+            };
+            const save = () => {
+                if (!open) {
+                    return;
+                }
+                const body = editor.value;
+                close();
+                if (body === raw.content.textContent) {
+                    return;
+                }
+                send(content.dataset.noteText, { body })
+                    .then(response => (response.ok ? response.json() : Promise.reject(response)))
+                    .then(data => {
+                        view.innerHTML = data.html;
+                        raw.content.textContent = body;
+                    })
+                    .catch(() => location.reload());
+            };
+            editor.addEventListener('keydown', e => {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    close();
+                } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    save();
+                }
+            });
+            editor.addEventListener('blur', save);
         });
 
         wide.addEventListener('change', layout);
