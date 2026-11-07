@@ -24,7 +24,7 @@ final class Tag extends Model
     use HasUlids;
 
     /** The six colours of the design, offered first and given to new tags. */
-    public const PALETTE = ['#ff7622', '#3fb68f', '#6f9cf2', '#a97df0', '#ee7aa6', '#d9a826'];
+    public const PALETTE = ['#e85d2b', '#6fb57e', '#6ca8c7', '#a98ae0', '#e07360', '#d9a23a'];
 
     protected $fillable = ['org_id', 'name', 'color'];
 

@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
     <meta name="color-scheme" content="light dark">
-    <meta name="theme-color" content="#30302e">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f0e7d2">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a0805">
     <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="48x48">
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     <link rel="apple-touch-icon" href="{{ asset('img/apple-touch-icon.png') }}">
     <title>@hasSection('title')@yield('title') – @endif{{ config('app.name') }}</title>
+    <link rel="preload" href="{{ asset('fonts/jetbrains-mono-normal-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="{{ asset('fonts/fraunces-italic-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ config('dochamster.version') }}">
     @auth
         <link rel="stylesheet" href="{{ route('tags.css') }}">
@@ -57,6 +60,7 @@
                         <button type="submit" class="nav-item tooltip-right" data-tooltip="{{ __('auth.logout') }}"><x-icon name="power" /><span class="nav-text">{{ __('auth.logout') }}</span></button>
                     </form>
                     <small class="nav-version tooltip-right" data-tooltip="{{ __('app.version', ['version' => config('dochamster.version')]) }}"><span class="nav-text">{{ __('app.version', ['version' => config('dochamster.version')]) }}</span></small>
+                    <button type="button" class="nav-item nav-theme tooltip-right" data-theme-toggle data-tooltip="{{ __('app.theme.switch') }}" aria-label="{{ __('app.theme.switch') }}"><span class="theme-dark"><x-icon name="moon" /><span class="nav-text">{{ __('app.theme.dark') }}</span></span><span class="theme-light"><x-icon name="sun" /><span class="nav-text">{{ __('app.theme.light') }}</span></span></button>
                     <button type="button" class="nav-collapse" aria-label="{{ __('app.nav.collapse') }}" data-collapse="{{ __('app.nav.collapse') }}" data-expand="{{ __('app.nav.expand') }}"><x-icon name="chevron-left" /></button>
                 </nav>
             </aside>
@@ -77,7 +81,7 @@
                 @yield('content')
             </main>
             @guest
-                <footer class="site-footer"><small class="muted">{{ config('app.name') }} {{ __('app.version', ['version' => config('dochamster.version')]) }}</small></footer>
+                <footer class="site-footer"><small class="muted">{{ config('app.name') }} {{ __('app.version', ['version' => config('dochamster.version')]) }}</small><br><button type="button" class="theme-pill" data-theme-toggle aria-label="{{ __('app.theme.switch') }}"><span class="theme-dark"><x-icon name="moon" /><span>{{ __('app.theme.dark') }}</span></span><span class="theme-light"><x-icon name="sun" /><span>{{ __('app.theme.light') }}</span></span></button></footer>
             @endguest
         </div>
     </div>

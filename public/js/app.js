@@ -1,3 +1,43 @@
+// Day/night theme ([data-theme] on <html>). Runs in <head> so the theme
+// applies before the first paint. An explicit choice wins and is kept in
+// localStorage; otherwise the system setting applies and is followed live.
+(() => {
+    const root = document.documentElement;
+    const KEY = 'dh-theme';
+    const LIGHT = '#f0e7d2', DARK = '#0a0805';
+    const read = () => { try { return localStorage.getItem(KEY); } catch { return null; } };
+    const save = value => { try { localStorage.setItem(KEY, value); } catch { /* private mode: not remembered */ } };
+    const system = matchMedia('(prefers-color-scheme: light)');
+
+    const apply = theme => {
+        root.dataset.theme = theme;
+        const metas = [...document.querySelectorAll('meta[name="theme-color"]')];
+        metas.slice(1).forEach(meta => meta.remove());
+        if (metas[0]) {
+            metas[0].removeAttribute('media');
+            metas[0].setAttribute('content', theme === 'light' ? LIGHT : DARK);
+        }
+    };
+
+    const saved = read();
+    apply(saved === 'light' || saved === 'dark' ? saved : (system.matches ? 'light' : 'dark'));
+    system.addEventListener('change', event => {
+        if (read() === null) {
+            apply(event.matches ? 'light' : 'dark');
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('[data-theme-toggle]').forEach(button => {
+            button.addEventListener('click', () => {
+                const next = root.dataset.theme === 'light' ? 'dark' : 'light';
+                save(next);
+                apply(next);
+            });
+        });
+    });
+})();
+
 // Side menu, receipt upload, dropdowns and the receipt filter (layouts/app).
 // Loaded in <head> so the saved menu state applies before the first paint;
 // the rest waits for the DOM.

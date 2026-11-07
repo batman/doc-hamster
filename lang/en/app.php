@@ -11,4 +11,9 @@ return [
         'collapse' => 'Shrink menu',
         'expand' => 'Widen menu',
     ],
+    'theme' => [
+        'switch' => 'Switch day / night',
+        'dark' => 'Dark',
+        'light' => 'Light',
+    ],
 ];
