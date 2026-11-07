@@ -551,18 +551,37 @@ a.col-item { text-decoration: none; }
 .notes.is-board { display: block; position: relative; }
 .notes.is-board > .note { position: absolute; width: 16rem; }
 .note {
-    --note: #fff275; --note-ink: #2b2a1f; --note-alpha: 100%;
+    --note: #fdd835; --note-ink: #2b2a1f; --note-alpha: 100%;
     --note-bg: color-mix(in srgb, var(--note) var(--note-alpha), transparent);
     display: flex; flex-direction: column; min-height: 16rem; padding: 0;
     background: var(--note-bg); color: var(--note-ink);
     box-shadow: 2px 4px 12px rgb(0 0 0 / .2); overflow-wrap: anywhere;
 }
 .note:hover, .note:focus-within { z-index: 5; }
-.note-orange { --note: #ffc785; }
-.note-green { --note: #b8eda0; }
-.note-blue { --note: #a8d8ff; }
-.note-pink { --note: #ffb8d4; }
-.note-purple { --note: #d8c6ff; }
+/* The PO's 20 colours (2026-11-07). Dark ones get light ink so the text stays readable. */
+.note-white { --note: #ffffff; }
+.note-black { --note: #000000; }
+.note-gray { --note: #808080; }
+.note-red { --note: #e53935; }
+.note-bordeaux { --note: #800020; }
+.note-orange { --note: #fb8c00; }
+.note-yellow { --note: #fdd835; }
+.note-lightgreen { --note: #7cb342; }
+.note-green { --note: #2e7d32; }
+.note-turquoise { --note: #00acc1; }
+.note-lightblue { --note: #4fc3f7; }
+.note-blue { --note: #1e5bc6; }
+.note-navy { --note: #0d1b4c; }
+.note-purple { --note: #8e24aa; }
+.note-lavender { --note: #b39ddb; }
+.note-pink { --note: #ec407a; }
+.note-brown { --note: #6d4c41; }
+.note-beige { --note: #e8d8b9; }
+.note-gold { --note: #d4af37; }
+.note-mint { --note: #a5e6c8; }
+.note:is(.note-black, .note-red, .note-bordeaux, .note-green, .note-blue, .note-navy, .note-purple, .note-pink, .note-brown) { --note-ink: #fff; }
+.note:is(.note-black, .note-red, .note-bordeaux, .note-green, .note-blue, .note-navy, .note-purple, .note-pink, .note-brown) a { color: inherit; text-decoration: underline; }
+.note:is(.note-black, .note-red, .note-bordeaux, .note-green, .note-blue, .note-navy, .note-purple, .note-pink, .note-brown) .note-tool:hover { background: rgb(255 255 255 / .15); }
 .note-head { display: flex; align-items: center; gap: .25rem; min-height: 2.75rem; padding: .25rem .25rem 0 .75rem; }
 .is-board [data-note-look] .note-head { cursor: grab; touch-action: none; }
 .note.is-dragging { z-index: 10; box-shadow: 4px 10px 24px rgb(0 0 0 / .3); }
