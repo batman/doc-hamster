@@ -35,8 +35,7 @@ const DH_MAX_ZIP_ENTRIES = 60000;
 // The test suite defines DH_TESTING and includes this file for its functions only;
 // the installer body below the function definitions is skipped then.
 if (! defined('DH_TESTING')) {
-    $https = (! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-        || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+    $https = isHttpsRequest($_SERVER);
     session_set_cookie_params(['httponly' => true, 'samesite' => 'Strict', 'secure' => $https]);
     session_start();
     header('X-Frame-Options: DENY');
@@ -56,6 +55,13 @@ if (! defined('DH_TESTING')) {
 function h(string $s): string
 {
     return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+}
+
+/** True when the request came over HTTPS, directly or via a forwarding proxy. */
+function isHttpsRequest(array $server): bool
+{
+    return (! empty($server['HTTPS']) && $server['HTTPS'] !== 'off')
+        || strtolower((string) ($server['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
 }
 
 function page(string $title, string $body): void
