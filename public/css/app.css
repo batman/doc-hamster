@@ -629,7 +629,6 @@ a.col-item { text-decoration: none; }
 }
 .note-area:focus, .note-area:focus-visible { outline: none; box-shadow: none; color: var(--note-ink); }
 .note-area[readonly] { pointer-events: none; }
-.note-text:focus-within { outline: 1px dashed color-mix(in srgb, var(--note-ink) 45%, transparent); outline-offset: 4px; }
 .note-text:focus-within .note-mirror { visibility: hidden; }
 .note-mirror { position: absolute; inset: 0; pointer-events: none; color: var(--note-ink); }
 .note-slot, .note-mark { color: transparent; }
