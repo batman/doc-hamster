@@ -261,6 +261,6 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 
 ## 2026-11-07 · Lead · PREVIEW-DEPLOY
 - Done: Added the updater flow for open, non-draft PRs targeting `main` with the `preview-ready` label. The update page lists eligible branches, warns and requires confirmation before installing one, and offers a direct return to the recommended stable Main release. Preview packages are checksum-verified; both the app and installer recheck the PR label and exact commit before swapping files. Added a package workflow with read-only build and separate release publisher jobs; preview releases are removed when the label is removed or the PR closes. Added the label safety criterion to the PR template and cached branch discovery for five minutes.
-- Not done / next step: Automated tests and local quality checks have not been run. The feature becomes available only after this branch is merged and the `preview.yml` workflow is active.
+- Not done / next step: Automated tests and local quality checks have not been run. Composer is unavailable in this environment; GitHub CI must pass before merge. The feature becomes available only after this PR is merged and the `preview.yml` workflow is active.
 - Watch out: The publisher and cleanup jobs need `contents:write`, approved by the PO for this workflow. The preview installer runs the selected PR's database migrations, so the `preview-ready` checklist requires that existing data remain safe and switching back to Main work.
-- Branch/PR: lead/PREVIEW-DEPLOY-branch-selection
+- Branch/PR: lead/PREVIEW-DEPLOY-branch-selection (#85)
