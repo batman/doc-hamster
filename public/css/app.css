@@ -906,3 +906,61 @@ input[type="file"]::file-selector-button { border-radius: 10px; font-size: 1rem;
     @view-transition { navigation: none; }
 }
 
+
+/* Window system (Go 2026-11-07, points 22 and 24; docs/design/FRAMEWORK.md).
+   .windows holds the windows; .win is one window: is-active = open and widest, is-prev = the one it was
+   opened from, is-min = a strip in the history on the left. Without JavaScript all windows stand open. */
+.page-windows { min-height: 100%; }
+.windows { display: flex; align-items: stretch; min-height: 100%; }
+@media (min-width: 64rem) {
+    .content > .page-windows { margin-top: -3.5rem; min-height: calc(100% + 3.5rem); }
+}
+.win { position: relative; flex: 1 1 0; min-width: 0; display: flex; border-right: 1px solid var(--border); background: var(--bg); }
+.win:last-child { border-right: 0; }
+.win.is-active { flex: 1 1 0; min-width: 30rem; }
+.win.is-prev { flex: 0 0 26rem; }
+.win.is-min { flex: 0 0 3.5rem; background: var(--surface); }
+.win-frame { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.win-head {
+    display: flex; align-items: center; gap: .6rem; min-height: 48px;
+    padding: 4.75rem 1.5rem .75rem; /* below the gap for the menu button, like the columns */
+}
+.win-head > .icon { flex: none; width: 1.5rem; height: 1.5rem; color: var(--primary); }
+.win-title { flex: 1; min-width: 0; margin: 0; font-size: 1.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.win-actions { display: flex; align-items: center; gap: .5rem; }
+.win-actions .toolbar { margin: 0; }
+.win-close { flex: none; }
+.win-body { flex: 1; min-width: 0; padding: 0 1.5rem 3rem; overflow-x: auto; }
+.win.is-prev .win-title { font-size: 1.15rem; }
+/* The strip of a window in the history: icon and title turned like the column strips, X to remove (A65) */
+.win-strip, .win-strip-x { display: none; }
+.win.is-min .win-frame { display: none; }
+.win.is-min .win-strip {
+    display: flex; flex-direction: column; align-items: center; gap: .6rem; width: 100%; min-height: 0; margin: 0;
+    padding: 4.5rem 0 1rem; border: 0; border-radius: 0; background: none; box-shadow: none; color: var(--text);
+    font: inherit; font-size: .95rem; font-weight: 600; cursor: pointer;
+}
+.win.is-min .win-strip:hover { background: var(--bg); }
+.win.is-min .win-strip .icon { rotate: 90deg; color: var(--primary); }
+.win.is-min .win-strip span { writing-mode: vertical-rl; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-height: 70vh; }
+.win.is-min .win-strip-x {
+    display: flex; position: absolute; top: 1rem; left: 50%; translate: -50% 0; width: 2rem; min-height: 2rem; margin: 0; padding: 0;
+    border: 0; border-radius: 8px; background: none; box-shadow: none; color: var(--muted); opacity: 0;
+}
+.win.is-min:hover .win-strip-x, .win.is-min .win-strip-x:focus-visible { opacity: 1; }
+.win.is-min .win-strip-x:hover { background: rgb(127 127 127 / .14); color: var(--text); }
+@media (hover: none) { .win.is-min .win-strip-x { opacity: 1; } }
+/* Window changes glide (view transitions where the browser has them) */
+::view-transition-group(*) { animation-duration: .25s; animation-timing-function: cubic-bezier(.45, 0, .55, 1); }
+/* Phone: one window, with a back arrow (A63) */
+@media (max-width: 63.99rem) {
+    .windows:has(> .is-active) > .win:not(.is-active) { display: none; }
+    .win.is-active { min-width: 0; }
+    .win-head { padding: 1rem var(--space) .75rem 4rem; flex-wrap: wrap; }
+    .win-body { padding-inline: var(--space); }
+}
+/* The receipt window keeps its old look inside */
+.win-detail .win-body { max-width: none; }
+.win-detail .detail-doc { height: 28rem; }
+.win-back { display: none; }
+@media (max-width: 63.99rem) { .win-back:not([hidden]) { display: inline-flex; } }

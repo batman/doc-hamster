@@ -11,4 +11,11 @@ return [
         'collapse' => 'Shrink menu',
         'expand' => 'Widen menu',
     ],
+    'window' => [
+        'open' => 'Open: :title',
+        'remove' => 'Remove :title from the history',
+        'remove_short' => 'Remove from the history',
+        'close' => 'Close',
+        'back' => 'Back',
+    ],
 ];

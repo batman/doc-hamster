@@ -2,12 +2,12 @@
 
 @section('title', $open?->title ?? __('documents.title'))
 
-@section('main_class', 'page page-split')
+@section('main_class', 'page-windows')
 
 @section('content')
-    <div class="split-main">
-        <div class="page-head">
-            <h1>{{ __('documents.title') }}</h1>
+    <div class="windows" data-windows>
+    <x-window :title="__('documents.title')" icon="receipt" :url="route('documents.index', request()->except('page'))">
+        <x-slot:actions>
             <div class="toolbar">
                 @if ($trashed > 0)
                     <a href="{{ route('documents.trash') }}">{{ __('documents.trash_count', ['count' => $trashed]) }}</a>
@@ -48,7 +48,7 @@
                     </div>
                 </form>
             </div>
-        </div>
+        </x-slot:actions>
 
         @if (session('status'))
             <p class="check-ok" role="status">{{ session('status') }}</p>
@@ -60,9 +60,10 @@
             @include('documents.views.'.(in_array($view, ['small', 'large'], true) ? 'tiles' : $view))
             <p class="muted" data-no-match @unless ($documents->isEmpty() && $selected !== []) hidden @endunless>{{ __('tags.no_match') }}</p>
         @endif
-    </div>
+    </x-window>
 
     @if ($open)
         @include('documents._detail', ['document' => $open])
     @endif
+    </div>
 @endsection

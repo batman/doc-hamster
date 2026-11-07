@@ -7,6 +7,18 @@
     const read = () => { try { return localStorage.getItem(KEY); } catch { return null; } };
     const save = value => { try { localStorage.setItem(KEY, value); } catch { /* private mode: not remembered */ } };
 
+    // A small event bus for modules (A74): DocHamster.on('window:open', root => …) runs for the first page and
+    // for every window loaded later; 'window:close' before a window goes. Pages without windows count as one.
+    const listeners = {};
+    const DocHamster = window.DocHamster = {
+        on(name, fn) {
+            (listeners[name] ??= []).push(fn);
+        },
+        emit(name, root) {
+            (listeners[name] ?? []).forEach(fn => fn(root));
+        },
+    };
+
     const saved = read();
     if (saved === 'closed' || saved === 'rail') {
         root.classList.add(`nav-${saved}`);
@@ -289,9 +301,9 @@
             dialog.hidden = false;
             dialog.querySelector('[data-dialog-close], button, a, input')?.focus();
         };
-        // The file is fetched ahead: the share menu has to open right on the click.
+        // The file is fetched ahead: the share menu has to open right on the click. Per window, also for later ones.
         const shared = new Map();
-        document.querySelectorAll('[data-share]').forEach(button => {
+        DocHamster.on('window:open', root => root.querySelectorAll('[data-share]').forEach(button => {
             if (!navigator.canShare) {
                 return;
             }
@@ -304,7 +316,7 @@
                     }
                 })
                 .catch(() => { /* no share menu then, our dialog stays */ });
-        });
+        }));
         document.addEventListener('click', event => {
             const button = event.target.closest('[data-dialog-open]');
             if (!button || button.disabled) {
@@ -321,25 +333,214 @@
             }
             open(button);
         });
-        document.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', () => {
-            const field = document.getElementById(button.dataset.copy);
-            field.select();
-            navigator.clipboard?.writeText(field.value).then(() => { button.textContent = button.dataset.copied; });
-        }));
+        document.addEventListener('click', event => {
+            const button = event.target.closest('[data-copy]');
+            if (button) {
+                const field = document.getElementById(button.dataset.copy);
+                field.select();
+                navigator.clipboard?.writeText(field.value).then(() => { button.textContent = button.dataset.copied; });
+            }
+        });
         // Checklists save with every tick.
-        document.querySelectorAll('form[data-autosubmit]').forEach(form => form.addEventListener('change', () => form.submit()));
-        document.querySelectorAll('[data-dialog]').forEach(dialog => {
-            dialog.addEventListener('click', event => {
-                if (event.target === dialog || event.target.closest('[data-dialog-close]')) {
-                    shut(dialog);
-                }
-            });
+        document.addEventListener('change', event => event.target.closest('form[data-autosubmit]')?.submit());
+        document.addEventListener('click', event => {
+            const dialog = event.target.closest('[data-dialog]');
+            if (dialog && (event.target === dialog || event.target.closest('[data-dialog-close]'))) {
+                shut(dialog);
+            }
         });
         document.addEventListener('keydown', event => {
             if (event.key === 'Escape') {
                 document.querySelectorAll('[data-dialog]:not([hidden])').forEach(shut);
             }
         });
+    };
+
+
+    // ---------------------------------------------------------------------------------------------
+    // Window system (Go 2026-11-07, points 22 and 24; docs/design/FRAMEWORK.md).
+    // New windows open on the right, earlier ones collect on the left as strips (the history).
+    // Full: the active window and the one it was opened from; all others are strips. A click on a
+    // strip opens it again and only minimizes the ones right of it; the X removes a window. The
+    // address follows the active window; the history survives a reload (per tab).
+    // Modules only deliver <x-window> content and listen to DocHamster.on('window:open', root => …).
+    // ---------------------------------------------------------------------------------------------
+    const setupWindows = () => {
+        const box = document.querySelector('[data-windows]');
+        if (!box) {
+            return;
+        }
+        const KEY = 'dh-windows';
+        const wins = () => [...box.querySelectorAll(':scope > section[data-window]')];
+        const byUrl = url => wins().find(win => win.dataset.windowUrl === url);
+        const phone = matchMedia('(max-width: 63.99rem)');
+        const smooth = change => (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches
+            ? document.startViewTransition(change).finished : Promise.resolve(change()));
+        let seq = 0;
+        const name = win => {
+            win.dataset.windowId ??= `w${++seq}`;
+            win.style.viewTransitionName = `win-${win.dataset.windowId}`;
+        };
+
+        const remember = () => {
+            try {
+                sessionStorage.setItem(KEY, JSON.stringify({
+                    list: wins().map(win => ({ url: win.dataset.windowUrl, title: win.dataset.windowTitle, icon: win.querySelector('.win-strip .icon')?.outerHTML ?? '', opener: win.dataset.opener ?? null, closable: win.querySelector('[data-window-close]') !== null })),
+                    active: box.querySelector(':scope > .is-active')?.dataset.windowUrl ?? null,
+                }));
+            } catch { /* not remembered */ }
+        };
+
+        const show = (active, push = true) => {
+            const opener = active.dataset.opener ? byUrl(active.dataset.opener) : null;
+            const prev = opener && wins().indexOf(opener) < wins().indexOf(active) ? opener : active.previousElementSibling;
+            wins().forEach(win => {
+                win.classList.toggle('is-active', win === active);
+                win.classList.toggle('is-prev', win === prev && win !== active);
+                win.classList.toggle('is-min', win !== active && win !== prev);
+                win.querySelector('[data-window-back]')?.toggleAttribute('hidden', !(win === active && prev));
+            });
+            document.title = `${active.dataset.windowTitle} – ${document.title.split(' – ').pop()}`;
+            if (push && location.href !== active.dataset.windowUrl) {
+                history.pushState({ window: active.dataset.windowUrl }, '', active.dataset.windowUrl);
+            }
+            remember();
+            document.dispatchEvent(new Event('dh:cols'));
+        };
+
+        const load = url => fetch(url, { credentials: 'same-origin', headers: { 'X-DocHamster-Window': '1', Accept: 'text/html' } })
+            .then(response => (response.ok ? response.text() : Promise.reject(response)))
+            .then(html => {
+                const found = [...new DOMParser().parseFromString(html, 'text/html').querySelectorAll('section[data-window]')].pop();
+                return found ? document.importNode(found, true) : Promise.reject(new Error('no window'));
+            });
+
+        // A strip from the stored history, filled when it is opened
+        const placeholder = item => {
+            const win = document.createElement('section');
+            win.className = 'win is-min';
+            win.dataset.window = '';
+            win.dataset.windowUrl = item.url;
+            win.dataset.windowTitle = item.title;
+            win.dataset.lazy = '';
+            if (item.opener) {
+                win.dataset.opener = item.opener;
+            }
+            const strip = document.createElement('button');
+            strip.type = 'button';
+            strip.className = 'win-strip';
+            strip.dataset.windowActivate = '';
+            strip.innerHTML = `${item.icon}<span></span>`;
+            strip.querySelector('span').textContent = item.title;
+            win.append(strip);
+            if (item.closable) {
+                const x = document.querySelector('.win-strip-x')?.cloneNode(true);
+                if (x) {
+                    win.append(x);
+                }
+            }
+            return win;
+        };
+
+        const activate = (win, push = true) => {
+            if (win.dataset.lazy === undefined) {
+                return smooth(() => show(win, push));
+            }
+            return load(win.dataset.windowUrl).then(full => {
+                full.dataset.opener = win.dataset.opener ?? '';
+                name(full);
+                win.replaceWith(full);
+                DocHamster.emit('window:open', full);
+                return smooth(() => show(full, push));
+            }).catch(() => { location.href = win.dataset.windowUrl; });
+        };
+
+        const open = (url, from) => {
+            const known = byUrl(url);
+            if (known) {
+                return activate(known);
+            }
+            return load(url).then(win => {
+                win.dataset.opener = from?.dataset.windowUrl ?? '';
+                name(win);
+                return smooth(() => {
+                    box.append(win);
+                    show(win);
+                }).then(() => {
+                    DocHamster.emit('window:open', win);
+                    win.scrollIntoView({ inline: 'end', block: 'nearest' });
+                });
+            }).catch(() => { location.href = url; });
+        };
+
+        const close = win => {
+            const wasActive = win.classList.contains('is-active');
+            const next = (win.dataset.opener && byUrl(win.dataset.opener)) || win.previousElementSibling || win.nextElementSibling;
+            DocHamster.emit('window:close', win);
+            return smooth(() => {
+                win.remove();
+                if (wasActive && next) {
+                    show(next, false);
+                    history.replaceState({ window: next.dataset.windowUrl }, '', next.dataset.windowUrl);
+                } else {
+                    remember();
+                }
+            });
+        };
+
+        // Start: the windows from the server, plus the rest of this tab's history as strips (A62)
+        wins().forEach(win => {
+            name(win);
+            if (win.previousElementSibling?.matches('section[data-window]')) {
+                win.dataset.opener ??= win.previousElementSibling.dataset.windowUrl;
+            }
+        });
+        try {
+            const saved = JSON.parse(sessionStorage.getItem(KEY));
+            const current = wins().at(-1)?.dataset.windowUrl;
+            if (saved && saved.list.some(item => item.url === current)) {
+                const order = saved.list.map(item => byUrl(item.url) ?? placeholder(item));
+                wins().filter(win => !order.includes(win)).forEach(win => order.push(win));
+                order.forEach(win => {
+                    name(win);
+                    box.append(win);
+                });
+            }
+        } catch { /* fresh history */ }
+        wins().filter(win => win.dataset.lazy === undefined).forEach(win => DocHamster.emit('window:open', win));
+        show(wins().at(-1), false);
+        history.replaceState({ window: wins().at(-1).dataset.windowUrl }, '', location.href);
+
+        box.addEventListener('click', event => {
+            const win = event.target.closest('section[data-window]');
+            if (event.target.closest('[data-window-close]')) {
+                event.preventDefault();
+                close(win);
+            } else if (event.target.closest('[data-window-activate]')) {
+                activate(win);
+            } else if (event.target.closest('[data-window-back]')) {
+                const prev = box.querySelector(':scope > .is-prev');
+                if (prev) {
+                    activate(prev);
+                }
+            } else {
+                const link = event.target.closest('a[data-window]');
+                if (link && !event.ctrlKey && !event.metaKey && !event.shiftKey && event.button === 0) {
+                    event.preventDefault();
+                    open(link.href, win);
+                }
+            }
+        });
+        // A click into a minimized-looking previous window makes it the active one again
+        addEventListener('popstate', event => {
+            const win = byUrl(event.state?.window ?? location.href);
+            if (win) {
+                activate(win, false);
+            } else {
+                location.reload();
+            }
+        });
+        phone.addEventListener('change', () => show(box.querySelector(':scope > .is-active') ?? wins().at(-1), false));
     };
 
     // Einstellungen columns: every pane folds to its strip and opens again on its own; the page gives way.
@@ -1011,6 +1212,7 @@
         setupDropdowns();
         setupFilter();
         setupDialogs();
+        setupWindows();
         setupColumns();
         setupScrollHint();
         setupBadges();
@@ -1020,5 +1222,9 @@
         setupToasts();
         setupAjaxForms();
         setupPreviewPick();
+        // Pages without the window system: the whole page is the one window
+        if (!document.querySelector('[data-windows]')) {
+            DocHamster.emit('window:open', document);
+        }
     });
 })();

@@ -1,5 +1,7 @@
 # UI redesign: hand-over from the PO's design session
 
+> **Superseded for building UI:** the valid rules are in [`FRAMEWORK.md`](FRAMEWORK.md) (2026-11-07). This file is the history of how they came about.
+
 The PO went through the old styleguide page by page and collected twelve points. The result is a **new styleguide** and a **new stylesheet**. Both live next to the running app and change nothing in it yet:
 
 | File | What it is |

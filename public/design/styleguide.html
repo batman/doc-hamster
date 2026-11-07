@@ -49,6 +49,45 @@
 <aside class="side side-plain"><header class="site-header"><a class="brand" href="#"><img src="../img/logo.png" alt="docHamster" width="476" height="186"></a></header></aside>
 <div class="content">
 <main id="main" class="page sg-main">
+        <section class="sg-section" id="framework">
+            <h2>Framework (Stand 2026-11-07)</h2>
+            <p class="sg-note">Die verbindlichen Bausteine. Regeln und Einbindung für Module: <code>docs/design/FRAMEWORK.md</code>. Ältere Abschnitte weiter unten sind Entwürfe.</p>
+
+            <h3>Knöpfe</h3>
+            <div class="sg-row">
+                <button type="button">Speichern</button>
+                <button type="button" class="button-quiet">Abbrechen</button>
+                <button type="button" class="button-danger">Löschen</button>
+                <button type="button" class="button-small">Installieren</button>
+                <button type="button" class="icon-button" aria-label="Neu laden" data-tooltip="Neu laden"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg></button>
+                <button type="button" disabled>Gesperrt</button>
+                <a href="#framework">Link bleibt Text</a>
+            </div>
+
+            <h3 class="sg-pad">Karte mit Liste</h3>
+            <section class="card">
+                <h2 class="card-head"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/></svg>Updates
+                    <span class="card-action"><button type="button" class="icon-button" aria-label="Auf neue Version prüfen" data-tooltip="Auf neue Version prüfen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg></button></span>
+                </h2>
+                <p class="card-text">Fließtext in einer Karte bleibt bei einer lesbaren Zeilenlänge.</p>
+                <ul class="pick-list">
+                    <li class="pick-row is-static"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/></svg><span><strong>Version 1.2.3</strong><small>Main, die empfohlene Version</small></span><button type="button" class="button-small">Installieren</button></li>
+                    <li class="pick-row is-static"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/></svg><span><strong>#97 · lead/framework</strong><small>Läuft gerade</small></span><span class="tag-outline">Installiert</span></li>
+                </ul>
+                <ul class="pick-list"><li class="list-empty">Keine Einträge</li></ul>
+            </section>
+
+            <h3 class="sg-pad">Fenstersystem</h3>
+            <p class="sg-note">Neue Fenster rechts, der Verlauf links als Leisten. Aktiv und das öffnende Fenster sind voll, alle anderen Leisten.</p>
+            <div class="sg-frame" style="height: 22rem; overflow: auto;">
+                <div class="windows" style="min-height: 100%;">
+                    <section class="win is-min"><button type="button" class="win-strip"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/></svg><span>Hotel Köln</span></button><button type="button" class="win-strip-x" aria-label="Aus dem Verlauf entfernen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></button></section>
+                    <section class="win is-prev"><div class="win-frame"><header class="win-head" style="padding-top: 1rem;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/></svg><h1 class="win-title">Belege</h1></header><div class="win-body"><p>Liste …</p></div></div></section>
+                    <section class="win is-active"><div class="win-frame"><header class="win-head" style="padding-top: 1rem;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/></svg><h1 class="win-title">Tankquittung</h1><a class="icon-button win-close" href="#framework" aria-label="Schließen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></a></header><div class="win-body"><p>Beleg …</p></div></div></section>
+                </div>
+            </div>
+        </section>
+
         <h1>Styleguide</h1>
         <p class="muted">Alle Bausteine aus <code>css/app.css</code>, danach alle Seiten der App. Hell/dunkel folgt der Systemeinstellung.</p>
 
