@@ -8,8 +8,10 @@ use App\Domain\Audit\AuditLog;
 use App\Domain\Org\CurrentOrg;
 use App\Jobs\Net\UpdateSource;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 /**
@@ -19,6 +21,8 @@ use Throwable;
  */
 final class UpdateController
 {
+    private const PREVIEW_INFO = 'preview-installed.json';
+
     public function show(Request $request): View
     {
         return view('updates.show', [
@@ -26,35 +30,46 @@ final class UpdateController
             'available' => session('update.available'),
             'previewBranches' => session('updates.preview_branches'),
             'previewInstalled' => str_starts_with((string) config('dochamster.version'), 'preview-'),
+            'previewInfo' => $this->previewInfo(),
             'supported' => $this->supported($request),
             'updated' => $request->query('updated') === '1',
         ]);
     }
 
-    public function check(UpdateSource $source): RedirectResponse
+    /**
+     * "Auf neue Version prüfen": asks GitHub once. With a preview installed the
+     * Main release always shows, as the way back (A36). The page asks by Ajax
+     * and puts the list into its card; without JavaScript it reloads.
+     */
+    public function check(Request $request, UpdateSource $source): JsonResponse|RedirectResponse
     {
         try {
             $latest = $source->latest(PHP_VERSION);
         } catch (Throwable) {
-            return back()->withErrors(['update' => __('updates.unreachable')]);
+            return $this->answer($request, 'updates._releases', ['releases' => null, 'failed' => true], fn () => back()->withErrors(['update' => __('updates.unreachable')]));
         }
 
-        if ($latest === null || ! version_compare($latest['version'], (string) config('dochamster.version'), '>')) {
-            return back()->with('status', __('updates.up_to_date'));
-        }
+        $current = (string) config('dochamster.version');
+        $onPreview = str_starts_with($current, 'preview-');
+        $offer = $latest !== null && ($onPreview || version_compare($latest['version'], $current, '>'));
+        $releases = $offer ? [['version' => $latest['version'], 'main' => $onPreview]] : [];
 
-        return back()->with('update.available', $latest['version']);
+        return $this->answer($request, 'updates._releases', ['releases' => $releases, 'failed' => false], fn () => $offer
+            ? back()->with('update.available', $latest['version'])
+            : back()->with('status', __('updates.up_to_date')));
     }
 
-    public function checkPreviews(UpdateSource $source): RedirectResponse
+    public function checkPreviews(Request $request, UpdateSource $source): JsonResponse|RedirectResponse
     {
         try {
             $branches = $source->previewBranches();
         } catch (Throwable) {
-            return back()->withErrors(['preview' => __('updates.unreachable')]);
+            return $this->answer($request, 'updates._previews', ['branches' => null, 'failed' => true], fn () => back()->withErrors(['preview' => __('updates.unreachable')]));
         }
+        // Kept for the install, which names the branch afterwards (point 6).
+        session()->put('updates.preview_list', $branches);
 
-        return back()->with('updates.preview_branches', $branches)->with('status', __('updates.previews_refreshed'));
+        return $this->answer($request, 'updates._previews', ['branches' => $branches, 'failed' => false], fn () => back()->with('updates.preview_branches', $branches));
     }
 
     public function install(Request $request, UpdateSource $source, AuditLog $audit, CurrentOrg $org): RedirectResponse
@@ -114,12 +129,49 @@ final class UpdateController
             return back()->withErrors(['preview' => __('updates.preview_unavailable')]);
         }
 
+        // Name and description of the branch, so "Installiert" can show them later without asking GitHub.
+        $listed = collect((array) session('updates.preview_list', []))->firstWhere('number', $preview['pr']);
+        Storage::disk('local')->put(self::PREVIEW_INFO, (string) json_encode([
+            'number' => $preview['pr'],
+            'sha' => $preview['commit_sha'],
+            'branch' => is_array($listed) ? (string) ($listed['branch'] ?? '') : '',
+            'title' => is_array($listed) ? (string) ($listed['title'] ?? '') : '',
+        ]));
+
         return $this->handoff($request, $installer, $audit, $org, [
             'version' => $preview['version'],
             'channel' => 'preview',
             'pull_request' => $preview['pr'],
             'commit_sha' => $preview['commit_sha'],
         ]);
+    }
+
+    /**
+     * The list for one card as HTML for the Ajax call, or the old page reload without JavaScript.
+     *
+     * @param  view-string  $view
+     * @param  array<string, mixed>  $data
+     * @param  callable(): RedirectResponse  $fallback
+     */
+    private function answer(Request $request, string $view, array $data, callable $fallback): JsonResponse|RedirectResponse
+    {
+        return $request->expectsJson() ? response()->json(['html' => view($view, $data + ['supported' => $this->supported($request)])->render()]) : $fallback();
+    }
+
+    /**
+     * What the installed preview is, if the stored note matches the running version.
+     *
+     * @return array{number: int, sha: string, branch: string, title: string}|null
+     */
+    private function previewInfo(): ?array
+    {
+        if (preg_match('/^preview-(\d+)-([0-9a-f]+)$/', (string) config('dochamster.version'), $m) !== 1) {
+            return null;
+        }
+        $info = json_decode((string) Storage::disk('local')->get(self::PREVIEW_INFO), true);
+        $info = is_array($info) && (int) ($info['number'] ?? 0) === (int) $m[1] ? $info : [];
+
+        return ['number' => (int) $m[1], 'sha' => $m[2], 'branch' => (string) ($info['branch'] ?? ''), 'title' => (string) ($info['title'] ?? '')];
     }
 
     /** @param array<string, int|string> $meta */

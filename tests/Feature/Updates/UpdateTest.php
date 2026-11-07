@@ -46,7 +46,10 @@ it('reports a newer version only after the click', function (): void {
     fakeRelease('1.1.0');
 
     $this->post('/update/check')->assertRedirect();
-    $this->get('/update')->assertSee('Version 1.1.0 ist verfügbar');
+    $this->get('/update')->assertSee('Version 1.1.0');
+
+    // The page asks by Ajax and gets the list for its card only (point 8).
+    $this->postJson('/update/check')->assertOk()->assertJsonPath('html', fn (string $html): bool => str_contains($html, 'Version 1.1.0'));
 });
 
 it('says so when already up to date', function (): void {
