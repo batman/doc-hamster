@@ -29,7 +29,7 @@ final class SettingsMenu
             ['folders', 'folders.index', 'folder', 'documents.edit', ['folders.*']],
         ], true],
         'scanner' => ['printer', [
-            ['scanner', 'scanner.show', 'printer', 'settings.manage', ['scanner.*']],
+            ['scanner', 'scanner.show', 'printer', 'documents.upload', ['scanner.*']],
         ], false],
         'export' => ['file-export', [
             ['export', 'exports.form', 'file-export', 'exports.create', ['exports.*']],

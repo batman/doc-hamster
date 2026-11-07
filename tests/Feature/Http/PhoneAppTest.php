@@ -148,15 +148,26 @@ it('offers the network search when DocHamster runs in a home network', function 
     $this->post('/scanner/search')->assertRedirect('/scanner');
 });
 
-it('lets only admins connect a printer or scanner', function (): void {
+it('lets every employee connect a printer or scanner, only admins remove one', function (): void {
     serverAt('192.168.0.5');
+    Http::fake(['*' => Http::response('', 404)]);
     $member = Membership::factory()->create(['org_id' => $this->owner->org_id]);
 
     $this->actingAs($member->user)->get('/app/scanner')->assertOk()
-        ->assertSee(__('app.scanner.ask_admin'))
-        ->assertDontSee(__('app.scanner.search'))
-        ->assertDontSee(__('app.scanner.station_start'));
-    $this->post('/scanner/search', ['app_back' => '/app/scanner'])->assertForbidden();
+        ->assertSee(__('app.scanner.search'))
+        ->assertSee(__('app.scanner.station_title'));
+    $this->get('/scanner')->assertOk()->assertDontSee('/revoke', false);
+    $this->post('/scanner/search', ['app_back' => '/app/scanner'])->assertRedirect('/app/scanner');
+    $this->post('/scanner/stations', ['app_back' => '/app/scanner'])->assertRedirect('/app/scanner');
+    expect(session('station_code'))->toBeString();
+    $this->post('/scanner', ['url' => ''])->assertForbidden();
+});
+
+it('lets the tax advisor connect nothing', function (): void {
+    $advisor = Membership::factory()->accountant()->create(['org_id' => $this->owner->org_id]);
+
+    $this->actingAs($advisor->user)->get('/scanner')->assertForbidden();
+    $this->post('/scanner/stations')->assertForbidden();
 });
 
 it('says only stored when the app sends a photo, and why not otherwise', function (): void {

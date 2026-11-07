@@ -8,6 +8,7 @@ use App\Domain\Audit\AuditLog;
 use App\Domain\Documents\DocumentIntake;
 use App\Domain\Documents\Folder;
 use App\Domain\Org\CurrentOrg;
+use App\Domain\Org\Permission;
 use App\Domain\Scanning\ScannerAddress;
 use App\Domain\Scanning\ScanRequest;
 use App\Domain\Scanning\ScanSession;
@@ -20,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 use RuntimeException;
@@ -242,6 +244,8 @@ final class ScanController
         $settings = $organization->settings_json ?? [];
 
         if (trim((string) ($data['url'] ?? '')) === '') {
+            // Removing the device stays with admins (A33); connecting is for everyone.
+            abort_unless(Gate::allows(Permission::ManageSettings->value), 403);
             unset($settings['scanner']);
             $organization->update(['settings_json' => $settings]);
 

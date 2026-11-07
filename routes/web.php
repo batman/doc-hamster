@@ -117,13 +117,16 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('pages/{number}/delete', [ScanController::class, 'remove'])->whereNumber('number')->name('remove');
     });
 
-    Route::middleware('can:settings.manage')->group(function (): void {
+    // Drucker & Scanner (A33): everyone who may upload connects a device; removing one stays with admins.
+    Route::middleware('can:documents.upload')->group(function (): void {
         Route::get('scanner', [ScanController::class, 'settings'])->name('scanner.show');
         Route::post('scanner', [ScanController::class, 'save'])->middleware('throttle:10,1')->name('scanner.save');
         Route::post('scanner/search', [ScanController::class, 'search'])->middleware('throttle:5,1')->name('scanner.search');
         Route::post('scanner/stations', [ScanController::class, 'stationCreate'])->middleware('throttle:10,1')->name('scanner.station.create');
-        Route::post('scanner/stations/{id}/revoke', [ScanController::class, 'stationRevoke'])->name('scanner.station.revoke');
         Route::get('scanner/station-download', [ScanController::class, 'stationDownload'])->name('scanner.station.download');
+    });
+    Route::middleware('can:settings.manage')->group(function (): void {
+        Route::post('scanner/stations/{id}/revoke', [ScanController::class, 'stationRevoke'])->name('scanner.station.revoke');
     });
 
     Route::middleware('can:documents.edit')->group(function (): void {

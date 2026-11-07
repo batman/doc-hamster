@@ -100,7 +100,8 @@ final class PhoneAppController
      */
     public function scanner(CurrentOrg $org, ScannerDiscovery $discovery): View
     {
-        $admin = Gate::allows(Permission::ManageSettings->value);
+        // A33: everyone who may upload connects a device, no admin needed.
+        $admin = Gate::allows(Permission::UploadDocuments->value);
 
         return view('app.scanner', [
             'admin' => $admin,

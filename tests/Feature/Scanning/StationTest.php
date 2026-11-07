@@ -230,7 +230,7 @@ it('lists stations, removes one for good, and its key stops working', function (
     $this->get('/documents')->assertDontSee('href="'.route('scan.index').'"', false);
 });
 
-it('keeps stations to the organisation and the setup to Admins, but scanning to people who may upload', function (): void {
+it('keeps stations to the organisation, lets people who may upload link one, and only Admins remove one (A33)', function (): void {
     $token = linkStation($this, $this->admin);
     poll($this, $token);
     $stranger = Membership::factory()->owner()->create();
@@ -238,9 +238,11 @@ it('keeps stations to the organisation and the setup to Admins, but scanning to 
 
     $this->actingAs($stranger->user)->post('/scan/page', ['source' => 'platen', 'color' => 'color', 'dpi' => 200])->assertSessionHasErrors('scan');
     $this->get('/documents')->assertDontSee('href="'.route('scan.index').'"', false);
-    $this->actingAs($uploader->user)->get('/scanner')->assertForbidden();
-    $this->post('/scanner/stations', ['name' => 'Heimlich'])->assertForbidden();
-    $this->get('/scanner/station-download')->assertForbidden();
+    $this->actingAs($uploader->user)->get('/scanner')->assertOk();
+    $this->post('/scanner/stations', ['name' => 'Zweiter Rechner'])->assertRedirect('/scanner');
+    $this->get('/scanner/station-download')->assertOk();
+    $station = ScanStation::query()->withoutGlobalScope(OrgScope::class)->whereNotNull('token_hash')->firstOrFail();
+    $this->post('/scanner/stations/'.$station->id.'/revoke')->assertForbidden();
     $this->post('/scan/page', ['source' => 'platen', 'color' => 'color', 'dpi' => 200])->assertRedirect('/scan');
     $this->get('/documents')->assertSee('href="'.route('scan.index').'"', false);
 });

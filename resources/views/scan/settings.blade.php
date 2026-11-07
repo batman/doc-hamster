@@ -41,10 +41,12 @@
                     <strong>{{ $station->name }}</strong>
                     <span class="muted">{{ $station->printer_name ?? __('scan.station_no_printer') }}</span>
                     <span class="@if ($station->isOnline()) check-ok @else muted @endif">{{ $station->isOnline() ? __('scan.station_online') : __('scan.station_offline_state') }}</span>
+                    @can('settings.manage')
                     <form method="post" action="{{ route('scanner.station.revoke', $station->id) }}">
                         @csrf
                         <button type="submit" class="button-danger">{{ __('scan.station_remove') }}</button>
                     </form>
+                    @endcan
                 </li>
             @endforeach
         </ul>

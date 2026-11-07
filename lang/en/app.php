@@ -67,7 +67,6 @@ return [
     ],
     'scanner' => [
         'title' => 'Printer & scanner',
-        'ask_admin' => 'No printer or scanner connected yet. Please ask an admin.',
         'intro' => 'DocHamster looks for the printer or scanner in the network. It must be switched on.',
         'search' => 'Search the network',
         'searching' => 'Searching …',

@@ -204,7 +204,7 @@ it('keeps scanned pages private to the person and the organisation', function ()
     $this->actingAs($this->admin->user)->get('/scan/pages/1')->assertOk();
 });
 
-it('lets only people who may upload scan, and only Admins set the scanner up', function (): void {
+it('lets only people who may upload scan and connect a device, and only Admins remove it (A33)', function (): void {
     connectScanner($this->orgId);
     $viewer = Membership::factory()->accountant()->create(['org_id' => $this->orgId]);
     $uploader = Membership::factory()->withRights(RoleRight::Upload)->create(['org_id' => $this->orgId]);
@@ -212,8 +212,9 @@ it('lets only people who may upload scan, and only Admins set the scanner up', f
     $this->actingAs($viewer->user)->get('/scan')->assertForbidden();
     $this->post('/scan/page', ['source' => 'platen', 'color' => 'color', 'dpi' => 200])->assertForbidden();
     $this->actingAs($uploader->user)->get('/scan')->assertOk();
-    $this->get('/scanner')->assertForbidden();
-    $this->post('/scanner', ['url' => '10.0.0.5'])->assertForbidden();
+    $this->get('/scanner')->assertOk();
+    $this->post('/scanner', ['url' => ''])->assertForbidden();
+    $this->actingAs($viewer->user)->get('/scanner')->assertForbidden();
 });
 
 it('shows the scan entry only when a scanner is connected', function (): void {

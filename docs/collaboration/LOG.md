@@ -352,3 +352,8 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done: not tried on a real iPhone or a real Scan Station from the app.
 - Watch out (Lead): `DocumentController::store` returns JSON when the request expects JSON. `ScannerDiscovery` takes an optional own address (tests pretend internet vs. home network with it).
 - Branch/PR: manager/SCAN-phone-once (#89)
+
+## 2026-11-07 · Manager · Drucker & Scanner for everyone (A32, A33)
+- Done (PO go): connecting a printer/scanner needs no extra right any more – everyone who may upload can open "Drucker & Scanner" (website and app), search the network, enter an address, link a Scan Station and download its program. Removing a device (empty address, station "Entfernen") stays with admins; tax advisors (no upload) connect nothing. "Bitte fragen Sie einen Admin" is gone. ScanTest/StationTest follow the new rule; new PhoneAppTest cases for employee and advisor. Full suite on SQLite 336/341 (the known 5 MySQL-only tests).
+- Watch out (Lead): this changes who may set up scanning (was admins only, issue #77). PO decision 2026-11-07; the Scan Station gets only files of print jobs the person may see, as before.
+- Branch/PR: manager/SCAN-phone-once (#89)

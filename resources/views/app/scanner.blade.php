@@ -29,11 +29,7 @@
         <a class="phone-action phone-wide" href="{{ route('app.scan') }}"><x-icon name="scan" />{{ __('app.scan.title') }}</a>
     @endif
 
-    @unless ($admin)
-        @if (! $direct && $stations->isEmpty())
-            <p class="notice">{{ __('app.scanner.ask_admin') }}</p>
-        @endif
-    @else
+    @if ($admin)
         @if ($code)
             {{-- The Scan Station's one-time code and the steps, shown once. --}}
             <div class="notice phone-steps" role="status">
@@ -113,5 +109,5 @@
                 </form>
             </details>
         @endif
-    @endunless
+    @endif
 @endsection
