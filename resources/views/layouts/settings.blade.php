@@ -29,7 +29,9 @@
             </div>
             <ul class="col-list">
                 @foreach ($groups as $key => $entry)
-                    <li><a class="col-item tooltip-right" data-tooltip="{{ __('settings.groups.'.$key) }}" href="{{ route('settings.group', $key) }}" @if ($key === $group) aria-current="true" @endif><x-icon :name="$entry['icon']" /><span>{{ __('settings.groups.'.$key) }}</span><span class="go"><x-icon name="chevron-right" /></span></a></li>
+                    {{-- Below the group's name: what is inside, unless that only repeats the name (Tags). --}}
+                    @php($inside = collect($entry['items'])->map(fn ($link) => __('settings.links.'.$link['key'].'.title'))->implode(', '))
+                    <li><a class="col-item tooltip-right" data-tooltip="{{ __('settings.groups.'.$key) }}" href="{{ route('settings.group', $key) }}" @if ($key === $group) aria-current="true" @endif><x-icon :name="$entry['icon']" /><span class="col-text"><span>{{ __('settings.groups.'.$key) }}</span>@if ($inside !== __('settings.groups.'.$key))<small>{{ $inside }}</small>@endif</span><span class="go"><x-icon name="chevron-right" /></span></a></li>
                 @endforeach
             </ul>
         </nav>
@@ -51,7 +53,7 @@
                     </div>
                     <ul class="col-list">
                         @foreach ($current['items'] as $entry)
-                            <li><a class="col-item tooltip-right" data-tooltip="{{ __('settings.links.'.$entry['key'].'.title') }}" href="{{ route($entry['route']) }}" @if ($entry['key'] === $item) aria-current="true" @endif><x-icon :name="$entry['icon']" /><span>{{ __('settings.links.'.$entry['key'].'.title') }}</span><span class="go"><x-icon name="chevron-right" /></span></a></li>
+                            <li><a class="col-item tooltip-right" data-tooltip="{{ __('settings.links.'.$entry['key'].'.title') }}" href="{{ route($entry['route']) }}" @if ($entry['key'] === $item) aria-current="true" @endif><x-icon :name="$entry['icon']" /><span class="col-text"><span>{{ __('settings.links.'.$entry['key'].'.title') }}</span><small>{{ __('settings.links.'.$entry['key'].'.text') }}</small></span><span class="go"><x-icon name="chevron-right" /></span></a></li>
                         @endforeach
                     </ul>
                 @endif

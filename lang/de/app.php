@@ -11,4 +11,9 @@ return [
         'collapse' => 'Menü verkleinern',
         'expand' => 'Menü vergrößern',
     ],
+    'theme' => [
+        'switch' => 'Tag / Nacht wechseln',
+        'dark' => 'Dunkel',
+        'light' => 'Hell',
+    ],
 ];

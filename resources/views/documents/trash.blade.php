@@ -5,7 +5,7 @@
 @section('content')
     <div class="page-head">
         <h1>{{ __('documents.trash') }}</h1>
-        <a href="{{ route('documents.index') }}">{{ __('bank.back') }}</a>
+        <a class="button button-quiet button-small" href="{{ route('documents.index') }}"><x-icon name="chevron-left" />{{ __('bank.back') }}</a>
     </div>
     @if (session('status'))
         <p class="check-ok" role="status">{{ session('status') }}</p>

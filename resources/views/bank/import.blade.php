@@ -3,7 +3,7 @@
 @section('title', __('bank.import'))
 
 @section('page')
-    <h1>{{ __('bank.import') }}</h1>
+    <div class="page-head"><h1>{{ __('bank.import') }}</h1></div>
 
     @if (session('status'))
         <p class="check-ok" role="status">{{ session('status') }}</p>
@@ -15,7 +15,7 @@
             <form method="post" action="{{ route('bank.accounts.destroy', $confirm['id']) }}">
                 @csrf
                 <input type="hidden" name="confirmed" value="1">
-                <button type="submit">{{ __('bank.delete_account') }}</button>
+                <button type="submit" class="button-danger">{{ __('bank.delete_account') }}</button>
             </form>
         </div>
     @endif
@@ -58,7 +58,7 @@
                     <span class="muted">{{ $account->currency }} · {{ trans_choice('bank.transactions_count', $account->transactions_count, ['count' => $account->transactions_count]) }}</span>
                     <form method="post" action="{{ route('bank.accounts.destroy', $account->id) }}">
                         @csrf
-                        <button type="submit">{{ __('bank.delete_account') }}</button>
+                        <button type="submit" class="button-quiet button-small">{{ __('bank.delete_account') }}</button>
                     </form>
                 </li>
             @endforeach

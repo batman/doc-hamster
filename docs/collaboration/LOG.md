@@ -294,3 +294,9 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done / next step: Merge after the updated PR's CI passes, then publish the stable update.
 - Watch out: Keep PR #87 open for the separate zoom preview.
 - Branch/PR: lead/BUG-DROP-1-preview (#86)
+
+## 2026-11-07 · Contributor · THEME-OLD-FORGE (navigation)
+- Done: Rebuilt `public/css/app.css` on main's complete rule set in the Old Forge tokens; the reskin had dropped about 130 live rules (note editor and colours, Update cards and lists, toasts, resize walls, icon columns, gliding, floating menu button). New navigation system: the chosen entry is a register tab on every level (side menu, Einstellungen columns, Bank views) and every pane starts with one header row level with the dark block. Bank list as a ledger, settings entries with descriptions, empty receipt list offers the upload.
+- Not done / next step: PO look at the theme branch as a preview; PO decisions (dark block only above the menu, floating button, columns, one button design) are kept.
+- Watch out: Markup changed in the settings pages (title in `.page-head`), `bank/index` (ledger, tabs below the header) and `bank/_pages` (`.pager`).
+- Branch/PR: theme/old-forge

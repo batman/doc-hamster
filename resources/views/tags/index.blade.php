@@ -18,6 +18,14 @@
 @endsection
 
 @section('page')
+    @if ($tag)
+        <div class="page-head">
+            <h1><span class="tag tag-{{ $tag->id }} is-selected">{{ $tag->name }}</span></h1>
+            <a class="icon-button button-small" href="{{ route('tags.index') }}" aria-label="{{ __('documents.close') }}" data-tooltip="{{ __('documents.close') }}"><x-icon name="x" /></a>
+        </div>
+    @else
+        <div class="page-head"><h1>{{ __('tags.new') }}</h1></div>
+    @endif
     @if (session('status'))
         <p class="check-ok" role="status">{{ session('status') }}</p>
     @endif
@@ -36,10 +44,6 @@
     @endif
 
     @if ($tag)
-        <div class="col-head">
-            <h1><span class="tag tag-{{ $tag->id }} is-selected">{{ $tag->name }}</span></h1>
-            <a class="icon-button" href="{{ route('tags.index') }}" aria-label="{{ __('documents.close') }}" data-tooltip="{{ __('documents.close') }}"><x-icon name="x" /></a>
-        </div>
         <p><a href="{{ route('documents.index', ['tags' => [$tag->id]]) }}">{{ trans_choice('tags.used', $tag->documents_count, ['count' => $tag->documents_count]) }}</a></p>
         <form method="post" action="{{ route('tags.update', $tag->id) }}">
             @csrf
@@ -65,7 +69,6 @@
             </div>
         </div>
     @else
-        <div class="col-head"><h1>{{ __('tags.new') }}</h1></div>
         <form method="post" action="{{ route('tags.store') }}">
             @csrf
             @include('tags._fields', ['name' => '', 'color' => null])

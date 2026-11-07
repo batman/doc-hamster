@@ -71,16 +71,17 @@ function page(string $title, string $body): void
 {
     echo '<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
         .'<meta name="robots" content="noindex"><title>'.h($title).' – DocHamster</title><style>'
-        .':root{color-scheme:light dark;--p:#ff7622;--ink:#dd4000;--bg:#faf9f5;--sf:#f0eee6;--tx:#1f1e1d;--bd:#d9d6cc;--ok:#10a65b;--err:#ee1717}'
-        .'@media (prefers-color-scheme:dark){:root{--ink:#ff7622;--bg:#262624;--sf:#30302e;--tx:#f5f4ee;--bd:#4a4945;--ok:#68d391;--err:#fc8181}}'
-        .'*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}'
-        .'header{display:flex;align-items:center;height:3.5rem;padding:0 1rem;background:#30302e;color:#faf9f5;font-weight:700}header small{margin-left:auto;font-weight:400;opacity:.8}'
-        .'main{max-width:40rem;padding:1.5rem 2rem 3rem}a{color:var(--ink)}label{display:block;margin-top:1rem;font-weight:600;color:var(--p)}'
-        .'input{width:100%;max-width:32rem;min-height:48px;padding:.6rem .75rem;font:inherit;color:var(--tx);background:var(--bg);border:2px solid var(--p);border-radius:20px}'
-        .'input[type=checkbox]{width:auto;min-height:0;accent-color:var(--p)}label:has(input[type=checkbox]){color:var(--tx);font-weight:400}'
-        .'button,.button{display:inline-flex;align-items:center;min-height:48px;margin-top:1.5rem;padding:.7rem 1.4rem;border:0;border-radius:20px;background:var(--p);color:#fff;'
-        .'font:inherit;font-size:1.125rem;font-weight:600;letter-spacing:.07em;text-decoration:none;cursor:pointer}'
-        .'.ok{color:var(--ok)}.fail{color:var(--err)}code{background:var(--sf);padding:.1rem .3rem;border-radius:4px;word-break:break-all}</style></head><body>'
+        .':root{color-scheme:light dark;--p:#c8441c;--ptx:#f0e7d2;--ink:#c8441c;--bg:#f0e7d2;--sf:#eadec0;--tx:#181511;--bd:#b9a77c;--ok:#4f7a3a;--err:#a8261b}'
+        .'@media (prefers-color-scheme:dark){:root{--p:#e85d2b;--ptx:#0a0805;--ink:#e85d2b;--bg:#0a0805;--sf:#14110d;--tx:#f0e7d2;--bd:#2a251d;--ok:#6fb57e;--err:#e07360}}'
+        .'*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:13px/1.55 "JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace}'
+        .'header{display:flex;align-items:center;height:3.5rem;padding:0 1rem;background:#14110d;color:#f0e7d2;font-weight:700}header small{margin-left:auto;font-weight:400;opacity:.8}'
+        .'main{max-width:40rem;padding:1.5rem 2rem 3rem}h1{font-family:Georgia,"Times New Roman",serif;font-style:italic;letter-spacing:-0.015em}a{color:var(--ink)}'
+        .'label{display:block;margin-top:1rem;margin-bottom:6px;font-size:10px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--tx);opacity:.75}'
+        .'input{width:100%;max-width:32rem;min-height:48px;padding:9px 12px;font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:0}'
+        .'input:focus{outline:none;border-color:var(--p)}input[type=checkbox]{width:auto;min-height:0;accent-color:var(--p)}label:has(input[type=checkbox]){font-size:13px;letter-spacing:normal;text-transform:none;opacity:1}'
+        .'button,.button{display:inline-flex;align-items:center;min-height:48px;margin-top:1.5rem;padding:.7rem 1.4rem;border:1px solid var(--p);border-radius:0;background:var(--p);color:var(--ptx);'
+        .'font:inherit;font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;text-decoration:none;cursor:pointer}'
+        .'.ok{color:var(--ok)}.fail{color:var(--err)}code{background:var(--sf);padding:.1rem .3rem;border-radius:0;word-break:break-all}</style></head><body>'
         .'<header>docHamster<small>Installation · Version '.h(DH_INSTALLER_VERSION).'</small></header><main><h1>'.h($title).'</h1>'.$body.'</main></body></html>';
     exit;
 }
