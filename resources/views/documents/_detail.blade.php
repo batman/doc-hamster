@@ -40,8 +40,8 @@
                 <input id="title-{{ $document->id }}" name="title" value="{{ old('title', $document->title) }}" maxlength="250" required>
             </section>
             <section class="detail-section">
-                <h3><label for="folder">{{ __('folders.folder') }}</label></h3>
-                <select id="folder" name="folder">
+                <h3><label for="folder-{{ $document->id }}">{{ __('folders.folder') }}</label></h3>
+                <select id="folder-{{ $document->id }}" name="folder">
                     @foreach ($folders as $row)
                         <option value="{{ $row['folder']->id }}" @selected(old('folder', $document->folder_id) === $row['folder']->id)>{{ str_repeat('– ', $row['depth']) }}{{ $row['folder']->name }}</option>
                     @endforeach

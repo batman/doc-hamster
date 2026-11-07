@@ -75,7 +75,7 @@
                                         <div class="nav-sub-head">
                                             <span class="nav-text">{{ __('folders.title') }}</span>
                                             @if ($menuEdit)
-                                                <a class="nav-folder-add is-visible" href="{{ route('folders.index') }}" aria-label="{{ __('folders.add') }}" title="{{ __('folders.add') }}"><x-icon name="plus" /></a>
+                                                <a class="nav-folder-add is-visible" href="{{ route('folders.index', ['new' => 1]) }}" aria-label="{{ __('folders.add') }}" title="{{ __('folders.add') }}"><x-icon name="plus" /></a>
                                             @endif
                                         </div>
                                         @include('folders._menu', [

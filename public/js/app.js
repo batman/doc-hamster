@@ -1182,11 +1182,9 @@
     };
 
     // Tag colour: a palette colour, or any colour from the picker or typed as #rrggbb.
-    const setupColorField = () => {
-        const field = document.querySelector('[data-color-field]');
-        if (!field) {
-            return;
-        }
+    // Colour field (tags, folders): set up in every window, also in windows loaded later (window system).
+    const setupColorField = root => root.querySelectorAll('[data-color-field]:not([data-ready])').forEach(field => {
+        field.dataset.ready = '';
         const picker = field.querySelector('[data-color-picker]');
         const hex = field.querySelector('[data-color-hex]');
         const radios = [...field.querySelectorAll('input[type="radio"]')];
@@ -1207,7 +1205,8 @@
                 picker.value = radio.value;
             }
         }));
-    };
+    });
+    DocHamster.on('window:open', setupColorField);
 
     // Folder menu under Belege (PO, 2026-11-07): open/close subfolders; drag the handle to change the order of one level.
     // Pointer events, so it works with mouse, pen and finger alike; the new order is saved right away.
@@ -1312,11 +1311,9 @@
     };
 
     // Folder import: the picked folder becomes a new folder of the same name; files go up one by one with their path.
-    const setupFolderImport = () => {
-        const form = document.querySelector('[data-folder-import]');
-        if (!form) {
-            return;
-        }
+    // The import form sits in a window of the Ordner page, which may be loaded later (window system).
+    const setupFolderImport = root => root.querySelectorAll('[data-folder-import]:not([data-ready])').forEach(form => {
+        form.dataset.ready = '';
         const input = form.querySelector('input[type="file"]');
         const status = form.querySelector('[data-import-status]');
         const bar = form.querySelector('progress');
@@ -1387,7 +1384,8 @@
             input.disabled = false;
             input.value = '';
         });
-    };
+    });
+    DocHamster.on('window:open', setupFolderImport);
 
     document.addEventListener('DOMContentLoaded', () => {
         setupMenu();
@@ -1399,9 +1397,7 @@
         setupScrollHint();
         setupBadges();
         setupTagSearch();
-        setupColorField();
         setupFolderMenu();
-        setupFolderImport();
         setupNotes();
         setupToasts();
         setupAjaxForms();

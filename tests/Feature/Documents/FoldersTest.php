@@ -303,3 +303,17 @@ it('keeps the folder import to people who may upload and edit, and to the own or
         ->post('/folders/import/'.$foreign->id.'/file', ['file' => UploadedFile::fake()->image('x.jpg'), 'path' => 'x.jpg'], ['Accept' => 'application/json'])
         ->assertNotFound();
 });
+
+it('shows folders as windows: the list as root, a folder or a new one to its right with ids that carry the folder', function (): void {
+    $this->actingAs($this->admin->user);
+    $travel = makeFolder($this->orgId, 'Reisen');
+
+    $this->get('/folders')->assertOk()->assertSee('data-windows', false)->assertDontSee('data-folder-import', false);
+    $this->get('/folders?new=1')->assertOk()->assertSee('Neuen Ordner anlegen')->assertSee('data-folder-import', false)->assertSee('id="name-new"', false);
+    $this->get('/folders?parent='.$travel->id)->assertOk()->assertSee('data-folder-import', false);
+    $this->get('/folders?folder='.$travel->id)->assertOk()
+        ->assertSee('data-dialog="delete-folder-'.$travel->id.'"', false)
+        ->assertSee('id="name-'.$travel->id.'"', false)
+        ->assertSee('data-window-url="'.route('folders.index', ['folder' => $travel->id]).'"', false);
+    $this->get('/documents?folder='.$travel->id)->assertOk()->assertSee('data-window-title="Reisen"', false);
+});

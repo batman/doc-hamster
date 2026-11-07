@@ -26,7 +26,7 @@ use Illuminate\Validation\Rule;
  */
 final class FolderController
 {
-    /** The tree on the left, the editor on the right; `?folder=` opens one. */
+    /** The list as root window; `?folder=` opens one to its right, `?new=1` / `?parent=` the window for a new one. */
     public function index(Request $request, CurrentOrg $org): View
     {
         $rows = Folder::flat();
@@ -36,6 +36,8 @@ final class FolderController
         return view('folders.index', [
             'rows' => $rows,
             'folder' => $current['folder'] ?? null,
+            // "+" in the menu or in a folder: the window for a new folder (or subfolder) opens right of the list.
+            'creating' => $current === null && ($request->filled('new') || $request->filled('parent')),
             // Only receipts this person may see (PLAN §2.1), so counts don't reveal others' uploads.
             'counts' => Document::query()->visibleTo($org->membership()->user_id, Gate::allows(Permission::ViewAllDocuments->value))->whereNotNull('folder_id')->selectRaw('folder_id, count(*) as total')->groupBy('folder_id')->pluck('total', 'folder_id'),
         ]);
