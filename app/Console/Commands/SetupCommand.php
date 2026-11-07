@@ -62,8 +62,24 @@ final class SetupCommand extends Command
 
         if (blank(config('app.key'))) {
             $key = 'base64:'.base64_encode(Encrypter::generateKey('aes-256-cbc'));
-            $env->set(['APP_KEY' => $key]);
+
+            try {
+                $env->set(['APP_KEY' => $key]);
+            } catch (Throwable) {
+                // "Set up" without a key would break sessions and encryption – stop here.
+                $this->error(__('setup.key_failed', ['path' => $env->path()]));
+
+                return self::FAILURE;
+            }
+
             config(['app.key' => $key]);
+        }
+
+        // The key must exist before anything else trusts it (sessions, encryption).
+        if (blank(config('app.key'))) {
+            $this->error(__('setup.key_failed', ['path' => $env->path()]));
+
+            return self::FAILURE;
         }
 
         $this->askForAddress($env);
