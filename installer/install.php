@@ -26,6 +26,11 @@ const DH_WIPE_GROUPS = [
     'tags' => ['label' => 'Tags (die Belege bleiben erhalten)', 'tables' => ['document_tags', 'tags']],
 ];
 const DH_EXTENSIONS = ['pdo_mysql', 'mbstring', 'intl', 'sodium', 'fileinfo', 'exif', 'zip', 'gd', 'curl'];
+// Package size caps. Far above the real release (v0.1.0: 29 MB unpacked, 7606 entries,
+// biggest file 0.7 MB), far below what would exhaust a shared hoster's disk or memory.
+const DH_MAX_ZIP_BYTES = 268435456; // 256 MiB unpacked in total
+const DH_MAX_ZIP_FILE_BYTES = 16777216; // 16 MiB per file
+const DH_MAX_ZIP_ENTRIES = 60000;
 
 // The test suite defines DH_TESTING and includes this file for its functions only;
 // the installer body below the function definitions is skipped then.
@@ -293,17 +298,85 @@ function wireWebRoot(string $appDir, string $webRoot, bool $keepOld): void
     placeFile($webRoot.'/index.php', rewriteIndexPhp($index, $appDir), $keepOld);
 }
 
-/**
- * Rejects ZIP entries that would escape the app folder: only dochamster/...
- * names without parent references are allowed. Runs before extractTo(), so a
- * hostile or corrupt package never lands outside the temp folder.
- */
-function assertZipPaths(ZipArchive $zip): void
+/** One package entry name: only dochamster/... without parent references. */
+function assertZipEntry(string $name): void
 {
+    if (strpos($name, 'dochamster/') !== 0 || strpos($name, '..') !== false || strpos($name, "\0") !== false) {
+        throw new RuntimeException('Unerwarteter Inhalt im Paket.');
+    }
+}
+
+/** True when the entry headers flag a symlink (some libzip versions restore those on disk). */
+function isZipSymlink(ZipArchive $zip, int $index): bool
+{
+    $opsys = 0;
+    $attr = 0;
+    if (! $zip->getExternalAttributesIndex($index, $opsys, $attr)) {
+        return false;
+    }
+
+    return $opsys === ZipArchive::OPSYS_UNIX && (($attr >> 16) & 0170000) === 0120000;
+}
+
+/**
+ * Pre-scan of the whole package before anything is written: entry names, symlink
+ * flags and size caps. The caps default to the DH_MAX_ZIP_* constants; the tests
+ * pass small values to exercise the logic without building huge archives.
+ */
+function assertZipPaths(ZipArchive $zip, int $maxBytes = DH_MAX_ZIP_BYTES, int $maxFileBytes = DH_MAX_ZIP_FILE_BYTES, int $maxEntries = DH_MAX_ZIP_ENTRIES): void
+{
+    if ($zip->numFiles > $maxEntries) {
+        throw new RuntimeException('Das Paket ist zu groß und wurde abgewiesen.');
+    }
+    $total = 0;
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        assertZipEntry((string) $zip->getNameIndex($i));
+        if (isZipSymlink($zip, $i)) {
+            throw new RuntimeException('Unerwarteter Inhalt im Paket.');
+        }
+        $stat = $zip->statIndex($i);
+        $size = is_array($stat) ? (int) ($stat['size'] ?? 0) : 0;
+        if ($size > $maxFileBytes) {
+            throw new RuntimeException('Das Paket ist zu groß und wurde abgewiesen.');
+        }
+        $total += $size;
+        if ($total > $maxBytes) {
+            throw new RuntimeException('Das Paket ist zu groß und wurde abgewiesen.');
+        }
+    }
+}
+
+/**
+ * Extracts the package entry by entry (libzip streams each entry to disk, so no
+ * entry content is ever held in memory) and re-checks every entry as it lands:
+ * name, symlink refusal, and on-disk sizes against the caps. The header sizes in
+ * assertZipPaths() fail fast, but headers can lie – the filesize() accounting here
+ * is the ground truth. Anything already written stays inside $tmpDir; the caller
+ * wipes it when this throws.
+ */
+function extractZipEntries(ZipArchive $zip, string $tmpDir, int $maxBytes = DH_MAX_ZIP_BYTES, int $maxFileBytes = DH_MAX_ZIP_FILE_BYTES): void
+{
+    $total = 0;
     for ($i = 0; $i < $zip->numFiles; $i++) {
         $name = (string) $zip->getNameIndex($i);
-        if (strpos($name, 'dochamster/') !== 0 || strpos($name, '..') !== false) {
+        assertZipEntry($name);
+        if (! $zip->extractTo($tmpDir, $name)) {
+            throw new RuntimeException('Entpacken fehlgeschlagen (Speicherplatz?).');
+        }
+        $path = $tmpDir.'/'.$name;
+        // A symlink entry would let later entries – or the app itself – write through it.
+        if (is_link($path) || ! file_exists($path)) {
             throw new RuntimeException('Unerwarteter Inhalt im Paket.');
+        }
+        if (is_file($path)) {
+            $size = filesize($path);
+            if ($size === false || $size > $maxFileBytes) {
+                throw new RuntimeException('Das Paket ist zu groß und wurde abgewiesen.');
+            }
+            $total += $size;
+            if ($total > $maxBytes) {
+                throw new RuntimeException('Das Paket ist zu groß und wurde abgewiesen.');
+            }
         }
     }
 }
@@ -317,7 +390,9 @@ function assertZipPaths(ZipArchive $zip): void
  */
 function unpackRelease(array $release, string $tmpDir, string $zipFile): string
 {
-    removeTree($tmpDir);
+    if (file_exists($tmpDir) || is_link($tmpDir)) {
+        removeTree($tmpDir);
+    }
     http($release['url'], $zipFile);
     if (! hash_equals((string) $release['sha256'], (string) hash_file('sha256', $zipFile))) {
         throw new RuntimeException('Die heruntergeladene Datei ist beschädigt (Prüfsumme stimmt nicht). Bitte erneut versuchen.');
@@ -328,9 +403,7 @@ function unpackRelease(array $release, string $tmpDir, string $zipFile): string
         throw new RuntimeException('ZIP-Datei lässt sich nicht öffnen.');
     }
     assertZipPaths($zip);
-    if (! $zip->extractTo($tmpDir)) {
-        throw new RuntimeException('Entpacken fehlgeschlagen (Speicherplatz?).');
-    }
+    extractZipEntries($zip, $tmpDir);
     $zip->close();
     @unlink($zipFile);
 
