@@ -1,0 +1,62 @@
+# D-020 / AK-4.7.2 proof: the `local` code paths run with no network at all.
+# Anything here that tried an outbound connection would fail the build.
+# This job is intentionally independent: no database service, no shared setup
+# with CI – just PHP, the dependencies, and a network namespace without
+# interfaces. Local-queue job tests (OCR, STT, geocoding, PDF) join the
+# `no-network` Pest group once those jobs exist; until then the group holds
+# the D-020 arch tests plus the unit tests.
+name: No-network (D-020)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: no-network-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PHP_EXTENSIONS: pdo_mysql, mbstring, intl, sodium, fileinfo, exif, zip, gd
+  # Minimum limits from D-010, so `dochamster:doctor` sees a compliant server.
+  PHP_INI: memory_limit=512M, upload_max_filesize=32M, post_max_size=32M
+
+jobs:
+  no-network:
+    name: Local paths without network
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: ${{ env.PHP_EXTENSIONS }}
+          ini-values: ${{ env.PHP_INI }}
+          coverage: none
+          tools: composer:v2
+
+      - run: composer validate --strict
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Prepare .env
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+
+      # If this step ever passes, the sandbox is broken and the proof below
+      # is worthless – fail loudly instead of testing with network.
+      - name: Prove the sandbox has no network
+        run: |
+          if sudo unshare --net getent hosts packagist.org; then
+            echo 'Network sandbox leaks: DNS resolves inside unshare --net.' >&2
+            exit 1
+          fi
+
+      - name: Doctor (local-only) without network
+        run: sudo unshare --net php artisan dochamster:doctor --local-only
+
+      - name: Local test group without network
+        run: sudo unshare --net vendor/bin/pest --group=no-network

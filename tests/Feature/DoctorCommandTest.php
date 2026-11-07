@@ -33,3 +33,24 @@ it('stops setup before touching the database when requirements fail', function (
         ->doesntExpectOutputToContain('db.example.com')
         ->assertExitCode(1);
 });
+
+it('passes with --local-only when only the database is unreachable', function (): void {
+    $probe = new FakeSystemProbe;
+    $probe->databaseVersion = null;
+    $this->app->instance(SystemProbe::class, $probe);
+
+    $this->artisan('dochamster:doctor', ['--local-only' => true])
+        ->expectsOutputToContain('Alle Mindestanforderungen sind erfüllt.')
+        ->doesntExpectOutputToContain('db.example.com')
+        ->assertExitCode(0);
+});
+
+it('fails without --local-only when the database is unreachable', function (): void {
+    $probe = new FakeSystemProbe;
+    $probe->databaseVersion = null;
+    $this->app->instance(SystemProbe::class, $probe);
+
+    $this->artisan('dochamster:doctor')
+        ->doesntExpectOutputToContain('db.example.com')
+        ->assertExitCode(1);
+});
