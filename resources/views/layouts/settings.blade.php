@@ -12,7 +12,7 @@
         $hasPage = trim($__env->yieldContent('page')) !== '';
         $toGroup = $hasPage && $current && ! $current['leaf'];
     @endphp
-    <div class="cols" data-cols>
+    <div class="cols" data-cols data-wall-label="{{ __('settings.wall') }}">
         @if ($current)
             <a class="col-back" href="{{ $toGroup ? route('settings.group', $group) : route('settings.index') }}"><x-icon name="chevron-left" /><span>{{ $toGroup ? __('settings.groups.'.$group) : __('settings.title') }}</span></a>
         @endif
@@ -29,7 +29,7 @@
             </div>
             <ul class="col-list">
                 @foreach ($groups as $key => $entry)
-                    <li><a class="col-item" href="{{ route('settings.group', $key) }}" @if ($key === $group) aria-current="true" @endif><x-icon :name="$entry['icon']" /><span>{{ __('settings.groups.'.$key) }}</span><span class="go"><x-icon name="chevron-right" /></span></a></li>
+                    <li><a class="col-item tooltip-right" data-tooltip="{{ __('settings.groups.'.$key) }}" href="{{ route('settings.group', $key) }}" @if ($key === $group) aria-current="true" @endif><x-icon :name="$entry['icon']" /><span>{{ __('settings.groups.'.$key) }}</span><span class="go"><x-icon name="chevron-right" /></span></a></li>
                 @endforeach
             </ul>
         </nav>
@@ -51,7 +51,7 @@
                     </div>
                     <ul class="col-list">
                         @foreach ($current['items'] as $entry)
-                            <li><a class="col-item" href="{{ route($entry['route']) }}" @if ($entry['key'] === $item) aria-current="true" @endif><x-icon :name="$entry['icon']" /><span>{{ __('settings.links.'.$entry['key'].'.title') }}</span><span class="go"><x-icon name="chevron-right" /></span></a></li>
+                            <li><a class="col-item tooltip-right" data-tooltip="{{ __('settings.links.'.$entry['key'].'.title') }}" href="{{ route($entry['route']) }}" @if ($entry['key'] === $item) aria-current="true" @endif><x-icon :name="$entry['icon']" /><span>{{ __('settings.links.'.$entry['key'].'.title') }}</span><span class="go"><x-icon name="chevron-right" /></span></a></li>
                         @endforeach
                     </ul>
                 @endif

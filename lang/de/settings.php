@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 return [
     'title' => 'Einstellungen',
+    'wall' => 'Spaltenbreite ändern',
     'fold' => 'Zuklappen',
     'expand' => ':name aufklappen',
     'open' => 'Aufklappen',
