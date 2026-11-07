@@ -39,11 +39,39 @@ final class NativeSystemProbe implements SystemProbe
     {
         $value = ini_get($key);
 
-        if ($value === false || $value === '') {
+        if ($value === false || trim($value) === '') {
             return 0;
         }
 
-        return trim($value) === '-1' ? -1 : ini_parse_quantity($value);
+        $normalized = trim($value);
+
+        if ($normalized === '-1') {
+            return -1;
+        }
+
+        // A broken php.ini value (e.g. "huge") must fail the check, not crash
+        // the doctor with an ini_parse_quantity() warning – fail closed as 0.
+        if (preg_match('/^[+-]?\d+[KMG]?$/i', $normalized) !== 1) {
+            return 0;
+        }
+
+        $warned = false;
+        set_error_handler(static function () use (&$warned): bool {
+            $warned = true;
+
+            return true;
+        });
+
+        try {
+            $bytes = ini_parse_quantity($normalized);
+        } catch (Throwable) {
+            return 0;
+        } finally {
+            restore_error_handler();
+        }
+
+        // Absurdly large values overflow (and would misread as "unlimited") – fail closed.
+        return $warned ? 0 : $bytes;
     }
 
     public function functionEnabled(string $name): bool
