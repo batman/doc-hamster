@@ -11,6 +11,7 @@ return [
         'collapse' => 'Menü verkleinern',
         'expand' => 'Menü vergrößern',
     ],
+    'more' => 'Mehr',
     'window' => [
         'open' => 'Öffnen: :title',
         'remove' => ':title aus dem Verlauf entfernen',

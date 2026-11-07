@@ -1021,3 +1021,26 @@ input[type="file"]::file-selector-button { border-radius: 10px; font-size: 1rem;
 .win-detail .detail-doc { height: 28rem; }
 .win-back { display: none; }
 @media (max-width: 63.99rem) { .win-back:not([hidden]) { display: inline-flex; } }
+
+/* Framework round 6 (Go 2026-11-07, points 26-31) */
+/* "⋯" menu: entries with icon and text; in a window head only on phones (A80) */
+.more-menu .dropdown-panel { min-width: 14rem; }
+.more-menu .menu-item { text-decoration: none; }
+.win-more { display: none; }
+@media (max-width: 63.99rem) {
+    .win-actions { display: none; }
+    .win-more { display: block; }
+    .win-more .dropdown-panel { display: flex; flex-wrap: wrap; gap: .5rem; }
+    .win-more .dropdown-panel[hidden] { display: none; }
+    .win-head { flex-wrap: nowrap; }
+}
+/* Sortable list: a handle on the left, the carried row lifts (A78) */
+.pick-handle { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 2rem; min-height: 2rem; margin: 0; padding: 0;
+    border: 0; border-radius: 8px; background: none; box-shadow: none; color: var(--muted); cursor: grab; touch-action: none; }
+.pick-handle:hover { background: rgb(127 127 127 / .14); color: var(--text); box-shadow: none; }
+.pick-row.is-dragging { box-shadow: var(--shadow); background: var(--bg); position: relative; z-index: 2; }
+.pick-row.is-dragging .pick-handle { cursor: grabbing; color: var(--primary); }
+/* A row takes its record's colour for the icon: --row-color, else --folder, else orange (A81) */
+.pick-row.is-static > .icon:not(.pick-handle .icon) { color: var(--row-color, var(--folder, var(--primary))); }
+
+.pick-row.is-static > button.pick-handle { margin: 0 -.25rem 0 -.5rem; }
