@@ -25,6 +25,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::get('badges', BadgeController::class)->name('badges');
     Route::post('notes', [HomeController::class, 'store'])->name('notes.store');
     Route::post('notes/{id}', [HomeController::class, 'update'])->name('notes.update');
+    Route::post('notes/{id}/look', [HomeController::class, 'look'])->name('notes.look');
     Route::post('notes/{id}/check', [HomeController::class, 'check'])->name('notes.check');
     Route::post('notes/{id}/delete', [HomeController::class, 'destroy'])->name('notes.destroy');
     Route::get('documents', [DocumentController::class, 'index'])->name('documents.index');

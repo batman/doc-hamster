@@ -11,9 +11,11 @@ use App\Domain\Org\Permission;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 
 /**
  * Home: sticky notes (collected 2026-11-03). Text, a checklist and links to
@@ -45,16 +47,46 @@ final class HomeController
 
     public function update(Request $request, string $id, CurrentOrg $org): RedirectResponse
     {
-        $note = $this->editable($id, $org);
+        $note = $this->editable($id, $org, unlocked: true);
         $this->fill($request, $note);
 
         return redirect()->route('home');
     }
 
+    /**
+     * The look of a note: place on the board (dragged), colour, opacity,
+     * lock. Only the fields sent change. A locked note only unlocks.
+     */
+    public function look(Request $request, string $id, CurrentOrg $org): JsonResponse|RedirectResponse
+    {
+        $note = $this->editable($id, $org);
+        $data = $request->validate([
+            'x' => ['sometimes', 'integer', 'min:0', 'max:20000'],
+            'y' => ['sometimes', 'integer', 'min:0', 'max:20000'],
+            'color' => ['sometimes', Rule::in(Note::COLORS)],
+            'opacity' => ['sometimes', 'integer', 'min:30', 'max:100'],
+            'locked' => ['sometimes', 'boolean'],
+        ]);
+        abort_if($note->locked && array_diff(array_keys($data), ['locked']) !== [], 423);
+
+        $note->fill(array_filter([
+            'pos_x' => $data['x'] ?? null,
+            'pos_y' => $data['y'] ?? null,
+            'color' => $data['color'] ?? null,
+            'opacity' => $data['opacity'] ?? null,
+        ], static fn (mixed $value): bool => $value !== null));
+        if (array_key_exists('locked', $data)) {
+            $note->locked = $request->boolean('locked');
+        }
+        $note->save();
+
+        return $request->expectsJson() ? response()->json(['ok' => true]) : redirect()->route('home');
+    }
+
     /** Ticks from the checklist; whoever may change the note may tick (A8). */
     public function check(Request $request, string $id, CurrentOrg $org): RedirectResponse
     {
-        $note = $this->editable($id, $org);
+        $note = $this->editable($id, $org, unlocked: true);
         $done = array_map('intval', (array) $request->input('done', []));
 
         $note->update(['checklist' => array_map(
@@ -68,7 +100,7 @@ final class HomeController
 
     public function destroy(string $id, CurrentOrg $org): RedirectResponse
     {
-        $this->editable($id, $org)->delete();
+        $this->editable($id, $org, unlocked: true)->delete();
 
         return redirect()->route('home');
     }
@@ -76,6 +108,7 @@ final class HomeController
     private function fill(Request $request, Note $note): void
     {
         $data = $request->validate([
+            'title' => ['nullable', 'string', 'max:100'],
             'body' => ['nullable', 'string', 'max:5000'],
             'checklist' => ['nullable', 'string', 'max:5000'],
             'link' => ['nullable', 'string', 'max:250'],
@@ -90,7 +123,7 @@ final class HomeController
             'done' => preg_match('/^\[[xX]\]/', $line) === 1,
         ], $lines));
 
-        $note->fill(['body' => $data['body'] ?? null, 'checklist' => $checklist]);
+        $note->fill(['title' => $data['title'] ?? null, 'body' => $data['body'] ?? null, 'checklist' => $checklist]);
         // Only the author decides who sees and changes it, and only with the right.
         if ($isAuthor && Gate::allows(Permission::ShareNotes->value)) {
             $note->fill(['shared' => $request->boolean('shared'), 'editable' => $request->boolean('shared') && $request->boolean('editable')]);
@@ -110,11 +143,12 @@ final class HomeController
         }
     }
 
-    private function editable(string $id, CurrentOrg $org): Note
+    private function editable(string $id, CurrentOrg $org, bool $unlocked = false): Note
     {
         $userId = $org->membership()->user_id;
         $note = Note::query()->visibleTo($userId)->whereKey($id)->firstOrFail();
         abort_unless($note->editableBy($userId), 403);
+        abort_if($unlocked && $note->locked, 423);
 
         return $note;
     }

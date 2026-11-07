@@ -1,4 +1,7 @@
 @php($key = $note?->id ?? 'new')
+<label for="title-{{ $key }}">{{ __('home.note_title') }}</label>
+<input id="title-{{ $key }}" name="title" maxlength="100" value="{{ $note?->title }}" placeholder="{{ __('home.untitled') }}">
+
 <label for="body-{{ $key }}">{{ __('home.body') }}</label>
 <textarea id="body-{{ $key }}" name="body" rows="3">{{ $note?->body }}</textarea>
 

@@ -382,6 +382,106 @@
         document.addEventListener('visibilitychange', poll);
     };
 
+    // Notes board (Home): on wide screens the notes sit where they were dragged; new ones take the next free slot.
+    // Dragging by the head saves the place; the opacity slider shows its value while it moves.
+    const setupNotes = () => {
+        const board = document.querySelector('[data-notes]');
+        if (!board) {
+            return;
+        }
+        const notes = [...board.querySelectorAll('.note')];
+        const wide = matchMedia('(min-width: 64rem)');
+        const GAP = 24;
+        notes.forEach(note => {
+            if (note.dataset.opacity) {
+                note.style.setProperty('--note-alpha', `${note.dataset.opacity}%`);
+            }
+            note.querySelector('[data-note-opacity]')?.addEventListener('input', event => {
+                note.style.setProperty('--note-alpha', `${event.target.value}%`);
+            });
+        });
+
+        const fit = () => {
+            board.style.height = `${Math.max(0, ...notes.map(note => note.offsetTop + note.offsetHeight)) + GAP}px`;
+        };
+        const layout = () => {
+            board.classList.toggle('is-board', wide.matches);
+            if (!wide.matches) {
+                notes.forEach(note => { note.style.left = ''; note.style.top = ''; });
+                board.style.height = '';
+                return;
+            }
+            const taken = [];
+            const put = (note, x, y) => {
+                note.style.left = `${x}px`;
+                note.style.top = `${y}px`;
+                taken.push({ x, y, w: note.offsetWidth, h: note.offsetHeight });
+            };
+            const free = (x, y, w, h) => taken.every(r => x + w + GAP / 2 <= r.x || r.x + r.w + GAP / 2 <= x || y + h + GAP / 2 <= r.y || r.y + r.h + GAP / 2 <= y);
+            notes.filter(note => note.dataset.x !== undefined).forEach(note => put(note, Number(note.dataset.x), Number(note.dataset.y)));
+            notes.filter(note => note.dataset.x === undefined).forEach(note => {
+                const w = note.offsetWidth;
+                const h = note.offsetHeight;
+                const cols = Math.max(1, Math.floor((board.clientWidth + GAP) / (w + GAP)));
+                for (let i = 0; i < 500; i++) {
+                    const x = (i % cols) * (w + GAP);
+                    const y = Math.floor(i / cols) * (h + GAP);
+                    if (free(x, y, w, h) || i === 499) {
+                        put(note, x, y);
+                        break;
+                    }
+                }
+            });
+            fit();
+        };
+
+        let layer = 10;
+        board.addEventListener('pointerdown', event => {
+            const head = event.target.closest('.note-head');
+            const note = head?.closest('[data-note-look]');
+            if (!note || !wide.matches || event.button !== 0 || event.target.closest('button, a, input, form, .dropdown')) {
+                return;
+            }
+            event.preventDefault();
+            const startX = event.clientX - note.offsetLeft;
+            const startY = event.clientY - note.offsetTop;
+            let moved = false;
+            note.style.zIndex = String(++layer);
+            note.classList.add('is-dragging');
+            head.setPointerCapture(event.pointerId);
+            const move = e => {
+                const x = Math.min(Math.max(0, e.clientX - startX), Math.max(0, board.clientWidth - note.offsetWidth));
+                const y = Math.max(0, e.clientY - startY);
+                note.style.left = `${x}px`;
+                note.style.top = `${y}px`;
+                moved = true;
+            };
+            const done = () => {
+                head.removeEventListener('pointermove', move);
+                note.classList.remove('is-dragging');
+                fit();
+                if (!moved) {
+                    return;
+                }
+                note.dataset.x = String(Math.round(note.offsetLeft));
+                note.dataset.y = String(Math.round(note.offsetTop));
+                const body = new FormData();
+                body.append('_token', board.dataset.csrf);
+                body.append('x', note.dataset.x);
+                body.append('y', note.dataset.y);
+                fetch(note.dataset.noteLook, { method: 'POST', body, credentials: 'same-origin', headers: { Accept: 'application/json' } })
+                    .catch(() => { /* offline: the place is kept until the next reload */ });
+            };
+            head.addEventListener('pointermove', move);
+            head.addEventListener('pointerup', done, { once: true });
+            head.addEventListener('pointercancel', done, { once: true });
+        });
+
+        wide.addEventListener('change', layout);
+        addEventListener('resize', () => wide.matches && fit());
+        layout();
+    };
+
     // Tags page: the search narrows the pills while typing, any letters inside the name.
     const setupTagSearch = () => {
         const search = document.querySelector('[data-tag-search]');
@@ -432,5 +532,6 @@
         setupBadges();
         setupTagSearch();
         setupColorField();
+        setupNotes();
     });
 })();

@@ -25,6 +25,12 @@ use Illuminate\Support\Carbon;
  * @property list<array{text: string, done: bool}>|null $checklist
  * @property bool $shared
  * @property bool $editable
+ * @property string|null $title
+ * @property string|null $color one of COLORS; null = yellow
+ * @property int|null $opacity percent, 30-100; null = 100
+ * @property bool $locked nobody changes, moves or deletes it until it is unlocked
+ * @property int|null $pos_x place on the board in px; null = next free slot
+ * @property int|null $pos_y
  * @property Carbon $created_at
  * @property-read User $author
  */
@@ -33,14 +39,16 @@ final class Note extends Model
     use BelongsToOrg;
     use HasUlids;
 
-    protected $fillable = ['org_id', 'user_id', 'body', 'checklist', 'shared', 'editable'];
+    public const COLORS = ['yellow', 'orange', 'green', 'blue', 'pink', 'purple'];
+
+    protected $fillable = ['org_id', 'user_id', 'body', 'checklist', 'shared', 'editable', 'title', 'color', 'opacity', 'locked', 'pos_x', 'pos_y'];
 
     /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
-        return ['checklist' => 'array', 'shared' => 'boolean', 'editable' => 'boolean'];
+        return ['checklist' => 'array', 'shared' => 'boolean', 'editable' => 'boolean', 'locked' => 'boolean', 'opacity' => 'integer', 'pos_x' => 'integer', 'pos_y' => 'integer'];
     }
 
     /**

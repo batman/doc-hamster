@@ -111,3 +111,25 @@ it('lists and revokes only links to receipts the person may see, and only Admins
     $this->post('/share-links/'.$link->id.'/revoke')->assertRedirect(route('shares.index'));
     expect($link->fresh()->revoked_at)->not->toBeNull();
 });
+
+it('keeps title, colour, opacity and place of a note, and a locked note stays as it is', function (): void {
+    $this->actingAs($this->admin->user)->post('/notes', ['title' => 'Einkauf', 'body' => 'Milch'])->assertRedirect();
+    $note = Note::query()->withoutGlobalScope(OrgScope::class)->firstOrFail();
+
+    $this->postJson('/notes/'.$note->id.'/look', ['x' => 120, 'y' => 40])->assertOk();
+    $this->post('/notes/'.$note->id.'/look', ['color' => 'blue', 'opacity' => 60])->assertRedirect(route('home'));
+    $this->post('/notes/'.$note->id.'/look', ['color' => 'black'])->assertSessionHasErrors('color');
+    expect($note->fresh()->only(['title', 'color', 'opacity', 'pos_x', 'pos_y']))
+        ->toBe(['title' => 'Einkauf', 'color' => 'blue', 'opacity' => 60, 'pos_x' => 120, 'pos_y' => 40]);
+    $this->get('/')->assertSee('Einkauf')->assertSee('note-blue')->assertSee('data-x="120"', false);
+
+    $this->post('/notes/'.$note->id.'/look', ['locked' => 1])->assertRedirect();
+    $this->post('/notes/'.$note->id, ['body' => 'Anders'])->assertStatus(423);
+    $this->postJson('/notes/'.$note->id.'/look', ['x' => 0, 'y' => 0])->assertStatus(423);
+    $this->post('/notes/'.$note->id.'/delete')->assertStatus(423);
+    $this->get('/')->assertSee('Milch')->assertDontSee('data-note-look', false);
+
+    $this->post('/notes/'.$note->id.'/look', ['locked' => 0])->assertRedirect();
+    $this->post('/notes/'.$note->id.'/delete')->assertRedirect();
+    expect(Note::query()->withoutGlobalScope(OrgScope::class)->count())->toBe(0);
+});
