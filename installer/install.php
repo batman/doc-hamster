@@ -31,6 +31,9 @@ const DH_EXTENSIONS = ['pdo_mysql', 'mbstring', 'intl', 'sodium', 'fileinfo', 'e
 const DH_MAX_ZIP_BYTES = 268435456; // 256 MiB unpacked in total
 const DH_MAX_ZIP_FILE_BYTES = 16777216; // 16 MiB per file
 const DH_MAX_ZIP_ENTRIES = 60000;
+// A failed release lookup is retried after 5 minutes at most: bounded API load
+// (12 calls/hour per session) with quick recovery from transient failures.
+const DH_RELEASE_RETRY_SECONDS = 300;
 
 // The test suite defines DH_TESTING and includes this file for its functions only;
 // the installer body below the function definitions is skipped then.
@@ -195,6 +198,34 @@ function choosePreviewRelease(): array
     $manifest['url'] = $assets[$manifest['zip']];
 
     return $manifest;
+}
+
+/**
+ * The release from the session, choosing and caching it on the first call.
+ * Failures are cached too: a GitHub outage or rate limit must not turn every
+ * page reload into another API call. After DH_RELEASE_RETRY_SECONDS the next
+ * page load retries the lookup. The chooser is injected for unit testing.
+ */
+function loadRelease(array &$session, callable $choose, int $now): array
+{
+    if (isset($session['release']) && is_array($session['release'])) {
+        return $session['release'];
+    }
+    if (isset($session['release_error'], $session['release_error_at'])
+        && is_string($session['release_error'])
+        && $now - (int) $session['release_error_at'] < DH_RELEASE_RETRY_SECONDS) {
+        throw new RuntimeException($session['release_error']);
+    }
+    try {
+        $session['release'] = $choose();
+
+        return $session['release'];
+    } catch (RuntimeException $e) {
+        $session['release_error'] = $e->getMessage();
+        $session['release_error_at'] = $now;
+
+        throw $e;
+    }
 }
 
 function removeTree(string $dir): void
@@ -518,9 +549,9 @@ foreach (DH_EXTENSIONS as $ext) {
     $checks['Erweiterung '.$ext] = extension_loaded($ext);
 }
 $checks['Schreibrechte für '.dirname($appDir)] = @is_writable(dirname($appDir));
-if (empty($_SESSION['release']) && extension_loaded('curl')) {
+if ((! isset($_SESSION['release']) || ! is_array($_SESSION['release'])) && extension_loaded('curl')) {
     try {
-        $_SESSION['release'] = chooseRelease();
+        loadRelease($_SESSION, 'chooseRelease', time());
     } catch (Throwable $e) {
         $checks[$e->getMessage()] = false;
     }
