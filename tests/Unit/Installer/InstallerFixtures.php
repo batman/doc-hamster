@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Installer;
 
+use RuntimeException;
 use ZipArchive;
 
 /**
@@ -103,7 +104,7 @@ final class InstallerFixtures
             foreach (range(18931, 18971) as $port) {
                 $proc = proc_open(
                     [PHP_BINARY, '-S', '127.0.0.1:'.$port, '-t', $docRoot],
-                    [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']],
+                    [0 => ['file', PHP_OS_FAMILY === 'Windows' ? 'NUL' : '/dev/null', 'r'], 1 => ['file', PHP_OS_FAMILY === 'Windows' ? 'NUL' : '/dev/null', 'w'], 2 => ['file', PHP_OS_FAMILY === 'Windows' ? 'NUL' : '/dev/null', 'w']],
                     $pipes
                 );
                 if (! is_resource($proc)) {
@@ -200,7 +201,7 @@ final class InstallerFixtures
     {
         $dir = self::makeTempDir('dh-lint');
         file_put_contents($dir.'/check.php', $phpCode);
-        exec(PHP_BINARY.' -l '.escapeshellarg($dir.'/check.php').' 2>/dev/null', $ignored, $code);
+        exec(PHP_BINARY.' -l '.escapeshellarg($dir.'/check.php').' 2>'.(PHP_OS_FAMILY === 'Windows' ? 'NUL' : '/dev/null'), $ignored, $code);
         self::removeDir($dir);
 
         return $code === 0;

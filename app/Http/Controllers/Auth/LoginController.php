@@ -9,15 +9,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 final class LoginController extends Controller
 {
-    /** Throwaway hash for the dummy verify below, derived once per process. */
-    private static ?string $dummyHash = null;
-
     public function show(): View
     {
         return view('auth.login');
@@ -59,12 +57,15 @@ final class LoginController extends Controller
     /**
      * A throwaway hash with the cost of a real password hash. Derived from
      * the configured hasher instead of hard-coded, so the dummy verify
-     * always costs one hash – in every environment. The first call per
-     * worker process pays one extra hash for deriving it; steady state is
-     * exactly one verify, like a wrong password.
+     * always costs one hash – in every environment. It is cached across
+     * requests (PHP-FPM forgets statics after each request), keyed by the
+     * hashing config so a changed cost setting derives a fresh one. Only the
+     * very first unknown-user failure pays the extra hash for deriving it.
      */
     private static function dummyHash(): string
     {
-        return self::$dummyHash ??= Hash::make(Str::random(32));
+        $key = 'auth.dummy-hash.'.hash('sha256', serialize(config('hashing')));
+
+        return (string) Cache::rememberForever($key, fn (): string => Hash::make(Str::random(32)));
     }
 }

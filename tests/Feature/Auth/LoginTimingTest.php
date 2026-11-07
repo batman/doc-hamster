@@ -6,13 +6,21 @@ use App\Domain\Auth\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Hashing\Argon2IdHasher;
 use Illuminate\Support\Facades\Hash;
-use SensitiveParameter;
 
 uses(RefreshDatabase::class);
 
-final class CountingHasher extends Argon2IdHasher
+final class LoginTimingCountingHasher extends Argon2IdHasher
 {
     public int $checks = 0;
+
+    public int $makes = 0;
+
+    public function make(#[SensitiveParameter] $value, array $options = []): string
+    {
+        $this->makes++;
+
+        return parent::make($value, $options);
+    }
 
     public function check(#[SensitiveParameter] $value, $hashedValue, array $options = []): bool
     {
@@ -22,10 +30,10 @@ final class CountingHasher extends Argon2IdHasher
     }
 }
 
-function countingHasher(): CountingHasher
+function countingHasher(): LoginTimingCountingHasher
 {
-    $hasher = new CountingHasher;
-    Hash::extend('argon2id', fn (): CountingHasher => $hasher);
+    $hasher = new LoginTimingCountingHasher((array) config('hashing.argon'));
+    Hash::extend('argon2id', fn (): LoginTimingCountingHasher => $hasher);
     Hash::forgetDrivers();
 
     return $hasher;
@@ -83,4 +91,16 @@ it('rejects an overlong password for an unknown user without error', function ()
     $this->assertGuest();
 
     expect($hasher->checks)->toBe(1);
+});
+
+it('derives the dummy hash once, not on every request', function (): void {
+    $hasher = countingHasher();
+
+    foreach (['no-such-user', 'other-unknown'] as $username) {
+        $this->post('/login', ['username' => $username, 'password' => 'wrong-password-123'])
+            ->assertSessionHasErrors('username');
+    }
+
+    expect($hasher->makes)->toBe(1)
+        ->and($hasher->checks)->toBe(2);
 });
