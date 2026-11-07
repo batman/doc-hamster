@@ -300,3 +300,8 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Not done: print button and zoom in the document view (next PR); the module itself. Full suite not run on MySQL/MariaDB here (CI does); on SQLite three tests fail the same way on clean main (SetupCommandTest x2, UpdateTest x1), unrelated.
 - Watch out: `Document::scopeMatchable()` still counts receipts without a folder (old data) as matchable. `Folder::defaultIdFor()` creates "Belege" for an organisation that has none.
 - Branch/PR: manager/SCAN-folders
+
+## 2026-11-07 · Manager · Folders on their own (preview)
+- Done (PO request): the folders commit from the SCAN/PHONE branch (#89) taken out into its own branch and PR so the PO can preview and release folders first: folders and subfolders, an automatic "Belege" folder for every organisation, a folder bar in Belege, "Ordner" in the receipt view, bank matching per folder. Applied cleanly on main; full suite on SQLite passes except the known 5 MySQL-only tests; pint/PHPStan clean.
+- Watch out (Lead): #89 still contains the same commit; once this is on main, rebasing #89 drops it.
+- Branch/PR: manager/SCAN-folders
