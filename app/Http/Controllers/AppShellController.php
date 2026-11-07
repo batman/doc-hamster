@@ -20,8 +20,8 @@ final class AppShellController
             'name' => config('app.name'),
             'short_name' => config('app.name'),
             'description' => __('app.shell.description'),
-            'id' => route('home', absolute: false),
-            'start_url' => route('home', absolute: false),
+            'id' => route('app.home', absolute: false),
+            'start_url' => route('app.home', absolute: false),
             'scope' => url('/').'/',
             'display' => 'standalone',
             'orientation' => 'portrait',
@@ -34,7 +34,7 @@ final class AppShellController
                 ['src' => asset('img/app-icon-maskable-512.png'), 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'maskable'],
             ],
             'shortcuts' => [
-                ['name' => __('documents.title'), 'url' => route('documents.index', absolute: false)],
+                ['name' => __('app.bar.documents_app'), 'url' => route('app.documents', absolute: false)],
             ],
         ], options: JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
             ->header('Content-Type', 'application/manifest+json')

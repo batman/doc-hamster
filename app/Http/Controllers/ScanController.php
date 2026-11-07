@@ -37,6 +37,16 @@ final class ScanController
     /** The scan page: pages so far, the form for the next one, and "Fertig". */
     public function index(Request $request, CurrentOrg $org): View
     {
+        return view('scan.index', $this->state($request, $org));
+    }
+
+    /**
+     * What the scan page shows; the phone app uses the same (PhoneAppController::scan).
+     *
+     * @return array<string, mixed>
+     */
+    public function state(Request $request, CurrentOrg $org): array
+    {
         $userId = $org->membership()->user_id;
         $scanner = $this->scanner($org);
         $session = new ScanSession($org->id(), $userId);
@@ -52,7 +62,7 @@ final class ScanController
         $viaStation = $scanner === null && ScanStation::linked();
         $known = $station ?? ScanStation::query()->whereNotNull('token_hash')->whereNull('revoked_at')->latest('last_seen_at')->first();
 
-        return view('scan.index', [
+        return [
             'configured' => $scanner !== null || $viaStation,
             'name' => $scanner !== null ? ($org->organization()->settings_json['scanner']['name'] ?? null) : ($known->printer_name ?? $known?->name),
             'feeder' => $scanner !== null ? (bool) ($org->organization()->settings_json['scanner']['feeder'] ?? false) : (bool) $known?->printer_feeder,
@@ -63,7 +73,7 @@ final class ScanController
             'waiting' => $waiting,
             'failure' => $ended?->status === 'failed' ? $this->message(new RuntimeException((string) $ended->error)) : null,
             'stationOffline' => $viaStation && $station === null,
-        ]);
+        ];
     }
 
     /** Scans the next page (or the whole feeder stack) and adds it to the document in the making. */

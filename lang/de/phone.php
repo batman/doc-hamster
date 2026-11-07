@@ -30,4 +30,10 @@ return [
     'connect' => 'Verbinden',
     'code_invalid' => 'Der Code stimmt nicht oder ist abgelaufen. Lassen Sie sich in DocHamster einen neuen zeigen.',
     'connected' => 'Dieses Handy ist verbunden und bleibt angemeldet.',
+    'android' => 'Android-Handy',
+    'rename' => 'Umbenennen',
+    'save' => 'Speichern',
+    'renamed' => 'Name gespeichert.',
+    'login_button' => 'Mit Handy verbinden',
+    'login_hint' => 'Am Computer angemeldet? Dort unter Einstellungen → Handy den QR-Code zeigen und mit dem Handy scannen – ohne Passwort.',
 ];

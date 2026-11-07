@@ -81,38 +81,6 @@
                 </nav>
             </aside>
             <div class="nav-backdrop"></div>
-            {{-- Phones: the app bar at the bottom (PHONE, issue #37). "Foto" opens the camera; the photo waits on the phone while it is offline. --}}
-            @php
-                $scanReady = Gate::allows('documents.upload') && app(\App\Domain\Org\CurrentOrg::class)->isSet()
-                    && (data_get(app(\App\Domain\Org\CurrentOrg::class)->organization()->settings_json, 'scanner.url') || \App\Domain\Scanning\ScanStation::linked());
-            @endphp
-            <nav class="app-bar" aria-label="{{ __('app.bar.label') }}">
-                <a class="app-bar-item" href="{{ route('documents.index') }}" @if (request()->routeIs('documents.*')) aria-current="page" @endif><x-icon name="receipt" /><span>{{ __('app.bar.documents') }}</span></a>
-                @can('documents.upload')
-                    <form class="app-bar-photo" method="post" action="{{ route('documents.store') }}" enctype="multipart/form-data" data-queue-upload>
-                        @csrf
-                        @if (is_string(request()->query('folder')) && request()->query('folder') !== 'none')
-                            <input type="hidden" name="folder" value="{{ request()->query('folder') }}">
-                        @endif
-                        <label class="app-bar-item app-bar-main">
-                            <input class="visually-hidden" type="file" name="files[]" accept="image/*,application/pdf" capture="environment" data-camera>
-                            <x-icon name="camera" /><span>{{ __('app.bar.photo') }}</span>
-                        </label>
-                        <noscript><button type="submit">{{ __('documents.upload') }}</button></noscript>
-                    </form>
-                @endcan
-                @if ($scanReady)
-                    <a class="app-bar-item" href="{{ route('scan.index') }}" @if (request()->routeIs('scan.*')) aria-current="page" @endif><x-icon name="scan" /><span>{{ __('app.bar.scan') }}</span></a>
-                @elseif (Gate::allows('documents.upload'))
-                    <a class="app-bar-item" href="{{ route('print-tray.index') }}" @if (request()->routeIs('print-tray.*')) aria-current="page" @endif><x-icon name="printer" /><span>{{ __('app.bar.print_tray') }}</span></a>
-                @endif
-                <button type="button" class="app-bar-item" data-app-more><x-icon name="dots" /><span>{{ __('app.bar.more') }}</span></button>
-            </nav>
-            <div class="queue-status" role="status" hidden data-home="{{ route('home') }}"
-                data-sending="{{ __('app.queue.sending') }}" data-sent="{{ __('app.queue.sent') }}"
-                data-waiting="{{ trans_choice('app.queue.waiting', 1) }}" data-waiting-many="{{ trans_choice('app.queue.waiting', 2) }}" data-login="{{ __('app.queue.login') }}">
-                <span class="queue-hamster" aria-hidden="true"></span><span class="queue-text"></span>
-            </div>
             @can('documents.upload')
                 <div class="drop-overlay" hidden><p>{{ __('documents.drop') }}</p></div>
             @endcan

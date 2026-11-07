@@ -32,7 +32,7 @@ function connectPhone(object $test, string $code): string
 {
     Auth::logout();
     $test->flushSession();
-    $response = $test->post('/connect', ['code' => $code, 'name' => 'Testhandy'])->assertRedirect('/phone');
+    $response = $test->post('/connect', ['code' => $code, 'name' => 'Testhandy'])->assertRedirect('/app');
     $cookie = $response->getCookie('__Host-dh_device');
     expect($cookie)->not->toBeNull();
     expect($cookie->isHttpOnly())->toBeTrue();

@@ -43,6 +43,15 @@
                     <x-icon name="device-mobile" />
                     <span>{{ $device->name }}@if ($device->id === $current) <small class="muted">({{ __('phone.this_device') }})</small>@endif</span>
                     <span class="muted">{{ __('phone.last_used', ['date' => $device->last_used_at?->format('d.m.Y H:i') ?? '–']) }}</span>
+                    <details class="phone-rename">
+                        <summary class="button-quiet">{{ __('phone.rename') }}</summary>
+                        <form method="post" action="{{ route('phone.rename', $device->id) }}">
+                            @csrf
+                            <label for="device-{{ $device->id }}" class="visually-hidden">{{ __('phone.name') }}</label>
+                            <input id="device-{{ $device->id }}" name="name" value="{{ $device->name }}" maxlength="100" required>
+                            <button type="submit">{{ __('phone.save') }}</button>
+                        </form>
+                    </details>
                     <form method="post" action="{{ route('phone.revoke', $device->id) }}">
                         @csrf
                         <button type="submit" class="button-quiet">{{ __('phone.revoke') }}</button>

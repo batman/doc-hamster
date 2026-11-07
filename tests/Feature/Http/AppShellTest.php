@@ -7,7 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 /*
 | PHONE (issue #37): DocHamster on the home screen – manifest, offline page,
-| service worker and the app bar.
+| service worker.
 */
 uses(RefreshDatabase::class)->group('db');
 
@@ -16,7 +16,7 @@ it('serves a web app manifest with icons for the home screen', function (): void
 
     $manifest = $response->json();
     expect($manifest['display'])->toBe('standalone')
-        ->and($manifest['start_url'])->toBe('/')
+        ->and($manifest['start_url'])->toBe('/app')
         ->and(collect($manifest['icons'])->pluck('sizes')->all())->toContain('192x192', '512x512');
     foreach ($manifest['icons'] as $icon) {
         expect(public_path(ltrim((string) parse_url($icon['src'], PHP_URL_PATH), '/')))->toBeFile();
@@ -43,13 +43,12 @@ it('ships a service worker that never keeps pages or documents', function (): vo
         ->toContain('(css|js|img)');
 });
 
-it('shows the app bar with camera and the home-screen tags when signed in', function (): void {
+it('puts the home-screen tags on the website and in the app', function (): void {
     $member = Membership::factory()->owner()->create();
 
-    $this->actingAs($member->user)->get('/documents')->assertOk()
-        ->assertSee('rel="manifest"', false)
-        ->assertSee('class="app-bar"', false)
-        ->assertSee('capture="environment"', false)
-        ->assertSee('data-queue-upload', false)
-        ->assertSee('name="csrf-token"', false);
+    foreach (['/documents', '/app'] as $page) {
+        $this->actingAs($member->user)->get($page)->assertOk()
+            ->assertSee('rel="manifest"', false)
+            ->assertSee('name="csrf-token"', false);
+    }
 });

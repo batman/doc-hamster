@@ -60,6 +60,27 @@ final class PhoneController extends Controller
         return redirect()->route('phone.index')->with('pairing_code', $code);
     }
 
+    /** A paired phone gets a name of its own from the list (A11: no name field when connecting). */
+    public function rename(Request $request, string $id, CurrentOrg $org): RedirectResponse
+    {
+        $data = $request->validate(['name' => ['required', 'string', 'max:100']]);
+        $device = Device::query()->where('user_id', $org->membership()->user_id)->whereKey($id)->whereNull('revoked_at')->firstOrFail();
+        $device->forceFill(['name' => trim($data['name'])])->save();
+
+        return redirect()->route('phone.index')->with('status', __('phone.renamed'));
+    }
+
+    /** "iPhone", "iPad", "Android-Handy" … from the browser; the person can rename it later. */
+    public static function nameFrom(string $userAgent): string
+    {
+        return match (true) {
+            str_contains($userAgent, 'iPhone') => 'iPhone',
+            str_contains($userAgent, 'iPad') => 'iPad',
+            str_contains($userAgent, 'Android') => __('phone.android'),
+            default => __('phone.default_name'),
+        };
+    }
+
     public function revoke(Request $request, string $id, CurrentOrg $org, AuditLog $audit): RedirectResponse
     {
         $userId = $org->membership()->user_id;
@@ -95,7 +116,7 @@ final class PhoneController extends Controller
         }
 
         $name = trim((string) ($data['name'] ?? ''));
-        [$device, $token] = $this->devices->issue($user, $name !== '' ? $name : __('phone.default_name'), $request);
+        [$device, $token] = $this->devices->issue($user, $name !== '' ? $name : self::nameFrom((string) $request->userAgent()), $request);
         $pairing->forceFill(['device_id' => $device->id])->save();
 
         if (Auth::check()) {
@@ -106,7 +127,7 @@ final class PhoneController extends Controller
         $request->session()->put(DeviceLogin::SESSION_KEY, $device->id);
         $audit->record('device.paired', userId: $user->id, deviceId: $device->id, subject: $device, ip: $request->ip());
 
-        return redirect()->route('phone.index')
+        return redirect()->route('app.home')
             ->with('status', __('phone.connected'))
             ->withCookie($this->devices->cookie($request, $token));
     }

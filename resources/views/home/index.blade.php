@@ -9,7 +9,7 @@
     </div>
 
     @if ($connectPhone)
-        <p class="notice"><x-icon name="device-mobile" /> {{ __('phone.home_hint') }} <a href="{{ route('phone.index') }}">{{ __('phone.start') }}</a></p>
+        <p class="notice connect-hint"><x-icon name="device-mobile" /> {{ __('phone.home_hint') }} <a href="{{ route('phone.index') }}">{{ __('phone.start') }}</a></p>
     @endif
 
     <datalist id="note-documents">

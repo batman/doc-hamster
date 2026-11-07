@@ -12,6 +12,7 @@ use App\Http\Controllers\ExportController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MemberController;
+use App\Http\Controllers\PhoneAppController;
 use App\Http\Controllers\PhoneCheckController;
 use App\Http\Controllers\PhoneController;
 use App\Http\Controllers\PrintTrayController;
@@ -51,9 +52,21 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::get('files/{id}', [DocumentController::class, 'file'])->name('documents.file');
     Route::get('phone-check/qr', [PhoneCheckController::class, 'qr'])->name('phone-check.qr');
 
+    // The phone app (PHONE, #37): opened from the home screen. Belege = camera, Dokumente = folders, documents, scanning.
+    Route::prefix('app')->name('app.')->controller(PhoneAppController::class)->group(function (): void {
+        Route::get('/', 'camera')->name('home');
+        Route::get('documents', 'documents')->name('documents');
+        Route::get('documents/{id}', 'document')->name('documents.show');
+        Route::get('scan', 'scan')->name('scan');
+        Route::get('scanner', 'scanner')->name('scanner');
+        Route::post('scanner/search', 'searchScanners')->middleware('throttle:5,1')->name('scanner.search');
+        Route::get('settings', 'settings')->name('settings');
+    });
+
     // Handy verbinden: QR code once, then the phone stays signed in (PLAN §11.1).
     Route::get('phone', [PhoneController::class, 'index'])->name('phone.index');
     Route::post('phone/code', [PhoneController::class, 'start'])->middleware('throttle:10,1')->name('phone.start');
+    Route::post('phone/devices/{id}/rename', [PhoneController::class, 'rename'])->name('phone.rename');
     Route::post('phone/devices/{id}/revoke', [PhoneController::class, 'revoke'])->name('phone.revoke');
 
     // Druckerablage: what was printed on "Hamster" (print tray).

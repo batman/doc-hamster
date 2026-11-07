@@ -30,4 +30,10 @@ return [
     'connect' => 'Connect',
     'code_invalid' => 'The code is wrong or has expired. Show a new one in DocHamster.',
     'connected' => 'This phone is connected and stays signed in.',
+    'android' => 'Android phone',
+    'rename' => 'Rename',
+    'save' => 'Save',
+    'renamed' => 'Name saved.',
+    'login_button' => 'Connect with your phone',
+    'login_hint' => 'Signed in on the computer? Show the QR code there under Settings → Phone and scan it with the phone – no password needed.',
 ];

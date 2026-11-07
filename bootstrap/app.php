@@ -9,6 +9,7 @@ use App\Http\Middleware\RedirectToSetup;
 use App\Http\Middleware\RequireSameOriginApi;
 use App\Http\Middleware\ResolveCurrentOrg;
 use App\Http\Middleware\RestoreDeviceLogin;
+use App\Http\Middleware\ReturnToApp;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
@@ -44,7 +45,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(SecurityHeaders::class);
-        $middleware->web(prepend: [RedirectToSetup::class], append: [SetLocale::class, RestoreDeviceLogin::class]);
+        $middleware->web(prepend: [RedirectToSetup::class], append: [SetLocale::class, RestoreDeviceLogin::class, ReturnToApp::class]);
         // A connected phone must be signed in again before `auth` looks (Laravel sorts `auth` early).
         $middleware->prependToPriorityList(before: AuthenticatesRequests::class, prepend: RestoreDeviceLogin::class);
         $middleware->alias([

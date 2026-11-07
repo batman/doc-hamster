@@ -613,22 +613,25 @@
         navigator.serviceWorker.register(meta.content).catch(() => { /* works without it, only no offline page */ });
     };
 
-    // "Mehr" in the app bar opens the side menu (settings, logout, everything else).
-    const setupAppBar = () => {
-        const more = document.querySelector('[data-app-more]');
-        const toggle = document.querySelector('.nav-toggle');
-        if (more && toggle) {
-            more.addEventListener('click', () => toggle.click());
+    // Without the queue (no IndexedDB, private mode): put the files into the form and send it the normal way.
+    const submitDirectly = (form, files) => {
+        const input = form.querySelector('input[type="file"]');
+        if (input && typeof DataTransfer === 'function') {
+            const transfer = new DataTransfer();
+            files.forEach(file => transfer.items.add(file));
+            input.files = transfer.files;
         }
+        form.submit();
     };
 
-    // Photos from the app bar go into a queue on the phone first (IndexedDB) and are
-    // sent from there: without a connection they wait and go out when it is back.
+    // Photos from the app go into a queue on the phone first (IndexedDB) and are sent
+    // from there: without a connection they wait and go out when it is back.
+    // Returns enqueue(form, files) for the camera, or a plain form submit without the queue.
     const setupUploadQueue = () => {
         const forms = [...document.querySelectorAll('form[data-queue-upload]')];
         const status = document.querySelector('.queue-status');
         if (!('indexedDB' in window) || !status) {
-            return; // the form is sent the normal way
+            return submitDirectly;
         }
         const text = status.querySelector('.queue-text');
         let hamster = null;
@@ -720,41 +723,143 @@
             } else if (sent > 0) {
                 show(status.dataset.sent, 'awake');
                 hideLater();
-                // The new receipt shows up in the list.
-                if (document.querySelector('.view-list, .empty-state') && !document.body.classList.contains('offline-page')) {
-                    setTimeout(() => window.location.reload(), 1200);
-                }
             }
         };
 
-        forms.forEach(form => {
-            const input = form.querySelector('input[type="file"]');
-            input.addEventListener('change', async () => {
+        const enqueue = async (form, files) => {
+            const folder = form.querySelector('input[name="folder"]')?.value || null;
+            try {
+                for (const file of files) {
+                    await add({ action: form.action, name: file.name || 'foto.jpg', type: file.type, blob: file, folder, added: Date.now() });
+                }
+            } catch {
+                submitDirectly(form, files); // no storage on this phone: send directly
+                return;
+            }
+            flush();
+        };
+
+        forms.forEach(form => form.querySelectorAll('input[type="file"]').forEach(input => {
+            input.addEventListener('change', () => {
                 const files = [...input.files];
-                if (files.length === 0) {
-                    return;
-                }
-                const folder = form.querySelector('input[name="folder"]')?.value || null;
-                try {
-                    for (const file of files) {
-                        await add({ action: form.action, name: file.name || 'foto.jpg', type: file.type, blob: file, folder, added: Date.now() });
-                    }
-                } catch {
-                    form.submit(); // no storage on this phone (private mode): send directly
-                    return;
-                }
                 input.value = '';
-                flush();
+                if (files.length > 0) {
+                    enqueue(form, files);
+                }
             });
-        });
+        }));
         window.addEventListener('online', flush);
         flush();
+        return enqueue;
+    };
+
+    // Belege: the live camera. One tap takes the picture and hands it to the queue; the
+    // camera stays open for the next receipt. No camera or no permission: the phone's own
+    // camera (the button on the right) takes over, and so does the shutter.
+    const setupCamera = enqueue => {
+        const box = document.querySelector('[data-live-camera]');
+        const form = document.querySelector('[data-camera-form]');
+        if (!box || !form) {
+            return;
+        }
+        const video = box.querySelector('[data-camera-view]');
+        const hint = box.querySelector('[data-camera-hint]');
+        const flash = box.querySelector('[data-camera-flash]');
+        const shutter = form.querySelector('[data-shutter]');
+        const native = form.querySelector('.camera-native input');
+        let stream = null;
+
+        const failed = () => {
+            video.hidden = true;
+            hint.hidden = false;
+        };
+        const stop = () => {
+            stream?.getTracks().forEach(track => track.stop());
+            stream = null;
+        };
+        const start = async () => {
+            if (stream || !navigator.mediaDevices?.getUserMedia || !window.isSecureContext) {
+                if (!stream) {
+                    failed();
+                }
+                return;
+            }
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    audio: false,
+                    video: { facingMode: { ideal: 'environment' }, width: { ideal: 2560 }, height: { ideal: 1920 } },
+                });
+                video.srcObject = stream;
+                video.hidden = false;
+                hint.hidden = true;
+                await video.play().catch(() => {});
+            } catch {
+                stop();
+                failed();
+            }
+        };
+
+        shutter.addEventListener('click', () => {
+            if (!stream || !video.videoWidth) {
+                native?.click();
+                return;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            flash.hidden = false;
+            setTimeout(() => { flash.hidden = true; }, 150);
+            if (navigator.vibrate) {
+                navigator.vibrate(30);
+            }
+            const stamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+            canvas.toBlob(blob => {
+                if (blob) {
+                    enqueue(form, [new File([blob], `beleg-${stamp}.jpg`, { type: 'image/jpeg' })]);
+                }
+            }, 'image/jpeg', 0.9);
+        });
+        // The camera is switched off while the app is in the background.
+        document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
+        window.addEventListener('pagehide', stop);
+        start();
+    };
+
+    // Phone app: "really delete?" before forms marked data-confirm, and sharing a document.
+    const setupPhoneActions = () => {
+        document.querySelectorAll('form[data-confirm]').forEach(form => form.addEventListener('submit', event => {
+            if (!window.confirm(form.dataset.confirm)) {
+                event.preventDefault();
+            }
+        }));
+        document.querySelectorAll('[data-share]').forEach(button => {
+            if (!navigator.share) {
+                return;
+            }
+            button.hidden = false;
+            button.addEventListener('click', async () => {
+                try {
+                    const response = await fetch(button.dataset.share, { credentials: 'same-origin' });
+                    const blob = await response.blob();
+                    const extension = (button.dataset.shareType || '').split('/')[1] || 'pdf';
+                    const file = new File([blob], `${button.dataset.shareTitle || 'dokument'}.${extension}`, { type: blob.type });
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({ files: [file], title: button.dataset.shareTitle });
+                    } else {
+                        await navigator.share({ title: button.dataset.shareTitle, url: button.dataset.share });
+                    }
+                } catch {
+                    // cancelled by the person, nothing to do
+                }
+            });
+        });
     };
 
     document.addEventListener('DOMContentLoaded', () => {
         setupServiceWorker();
-        setupAppBar();
-        setupUploadQueue();
+        setupCamera(setupUploadQueue());
+        setupPhoneActions();
         setupScanWait();
         setupPrintAndZoom();
         setupMenu();
