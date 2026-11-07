@@ -23,11 +23,11 @@
         </nav>
     @endif
 
-    @if ($scanReady)
-        <a class="phone-action" href="{{ route('app.scan', array_filter(['folder' => $current?->id])) }}"><x-icon name="scan" />{{ __('app.scan.title') }}</a>
-    @elseif (Gate::allows('settings.manage'))
-        <a class="phone-action" href="{{ route('app.scanner') }}"><x-icon name="plug" />{{ __('app.scan.connect') }}</a>
-    @endif
+    {{-- A22: always there; without a device both lead to "Drucker & Scanner". --}}
+    <div class="phone-actions">
+        <a class="phone-action" href="{{ $scanReady ? route('app.scan', array_filter(['folder' => $current?->id])) : route('app.scanner') }}"><x-icon name="scan" />{{ __('app.scan.title') }}</a>
+        <a class="phone-action phone-action-quiet" href="{{ route('app.scanner') }}"><x-icon name="printer" />{{ __('app.scanner.short') }}</a>
+    </div>
 
     <ul class="phone-list" aria-label="{{ __('folders.title') }}">
         @foreach ($folders as $folder)
@@ -76,6 +76,8 @@
                         <input type="hidden" name="app_back" value="{{ $back }}">
                         <button type="submit" class="button-quiet" aria-label="{{ __('app.docs.print_named', ['name' => $document->title]) }}"><x-icon name="printer" /></button>
                     </form>
+                @elseif ($file)
+                    <a class="phone-row-print button-quiet" href="{{ route('app.scanner') }}" aria-label="{{ __('app.docs.print_named', ['name' => $document->title]) }}"><x-icon name="printer" /></a>
                 @endif
             </li>
         @endforeach

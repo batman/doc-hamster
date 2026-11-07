@@ -7,7 +7,7 @@
     <meta name="color-scheme" content="light dark">
     <meta name="theme-color" content="#30302e">
     <title>@hasSection('title')@yield('title') – @endif{{ config('app.name') }}</title>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ config('dochamster.version') }}">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ config('dochamster.asset_version') }}">
     @auth
         <link rel="stylesheet" href="{{ route('tags.css') }}">
     @endauth
@@ -21,10 +21,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="{{ config('app.name') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="dh-sw" content="{{ asset('sw.js') }}?v={{ config('dochamster.version') }}">
-    <script src="{{ asset('js/app.js') }}?v={{ config('dochamster.version') }}"></script>
+    <meta name="dh-sw" content="{{ asset('sw.js') }}?v={{ config('dochamster.asset_version') }}">
+    <script src="{{ asset('js/app.js') }}?v={{ config('dochamster.asset_version') }}"></script>
     @auth
-        <script src="{{ asset('js/hamster.js') }}?v={{ config('dochamster.version') }}" defer></script>
+        <script src="{{ asset('js/hamster.js') }}?v={{ config('dochamster.asset_version') }}" defer></script>
     @endauth
     @stack('head')
 </head>

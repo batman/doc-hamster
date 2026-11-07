@@ -11,6 +11,7 @@
 @section('content')
     <p class="muted">{{ auth()->user()?->name }}</p>
     <ul class="phone-list">
+        <li class="phone-row"><a class="phone-row-main" href="{{ route('app.scanner') }}"><x-icon name="printer" /><span>{{ __('app.scanner.title') }}</span></a></li>
         <li class="phone-row"><a class="phone-row-main" href="{{ route('home') }}"><x-icon name="home" /><span>{{ __('app.gear.website') }}</span></a></li>
         <li class="phone-row"><a class="phone-row-main" href="{{ route('settings.index') }}"><x-icon name="settings" /><span>{{ __('app.gear.settings') }}</span></a></li>
     </ul>

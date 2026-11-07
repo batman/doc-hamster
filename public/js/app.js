@@ -624,22 +624,62 @@
         form.submit();
     };
 
+    // Photos are made smaller before sending: a receipt stays easy to read at 2000 pixels,
+    // the upload is quick and fits the server's limits. PDFs and anything the phone
+    // cannot draw are sent as they are.
+    const shrinkPhoto = file => new Promise(resolve => {
+        if (!file.type.startsWith('image/') || file.type === 'image/gif') {
+            resolve(file);
+            return;
+        }
+        const url = URL.createObjectURL(file);
+        const image = new Image();
+        image.onload = () => {
+            URL.revokeObjectURL(url);
+            const scale = Math.min(1, 2000 / Math.max(image.naturalWidth, image.naturalHeight));
+            if (scale === 1 && file.type === 'image/jpeg' && file.size < 900 * 1024) {
+                resolve(file);
+                return;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(image.naturalWidth * scale);
+            canvas.height = Math.round(image.naturalHeight * scale);
+            canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(blob => {
+                const name = (file.name || 'foto').replace(/\.[^.]+$/, '') + '.jpg';
+                resolve(blob ? new File([blob], name, { type: 'image/jpeg' }) : file);
+            }, 'image/jpeg', 0.85);
+        };
+        image.onerror = () => {
+            URL.revokeObjectURL(url);
+            resolve(file);
+        };
+        image.src = url;
+    });
+
     // Photos from the app go into a queue on the phone first (IndexedDB) and are sent
-    // from there: without a connection they wait and go out when it is back.
+    // from there: without a connection they wait and go out when it is back. "Gesendet"
+    // only when the server answers 201 (stored); a refusal shows its reason, the photo
+    // stays and can be sent again or thrown away.
     // Returns enqueue(form, files) for the camera, or a plain form submit without the queue.
     const setupUploadQueue = () => {
         const forms = [...document.querySelectorAll('form[data-queue-upload]')];
         const status = document.querySelector('.queue-status');
         if (!('indexedDB' in window) || !status) {
-            return submitDirectly;
+            return async (form, files) => submitDirectly(form, await Promise.all(files.map(shrinkPhoto)));
         }
         const text = status.querySelector('.queue-text');
+        const retry = status.querySelector('[data-queue-retry]');
+        const drop = status.querySelector('[data-queue-drop]');
         let hamster = null;
         let hideTimer = null;
-        const show = (message, mood) => {
+        const show = (message, mood, failed = false) => {
             clearTimeout(hideTimer);
             text.textContent = message;
             status.hidden = false;
+            status.classList.toggle('is-failed', failed);
+            retry.hidden = !failed;
+            drop.hidden = !failed;
             const host = status.querySelector('.queue-hamster');
             if (!hamster && window.docHamster && host) {
                 hamster = window.docHamster.mount(host, { mood: mood || 'awake' });
@@ -674,14 +714,29 @@
             return token;
         };
         const waiting = count => (count === 1 ? status.dataset.waiting : status.dataset.waitingMany).replace(/\d+/, String(count));
+        const reason = async response => {
+            if (response.status === 413) {
+                return status.dataset.tooBig;
+            }
+            try {
+                const answer = await response.json();
+                const first = answer.errors ? Object.values(answer.errors)[0] : null;
+                return (Array.isArray(first) ? first[0] : null) || answer.message || status.dataset.failed;
+            } catch {
+                return status.dataset.failed;
+            }
+        };
 
         let busy = false;
+        let failedId = null;
         const flush = async () => {
             if (busy) {
                 return;
             }
             busy = true;
+            failedId = null;
             let sent = 0;
+            let refused = null;
             try {
                 for (const item of await all()) {
                     if (!navigator.onLine) {
@@ -695,22 +750,29 @@
                         if (item.folder) {
                             body.append('folder', item.folder);
                         }
-                        return fetch(item.action, { method: 'POST', body, credentials: 'same-origin' });
+                        return fetch(item.action, { method: 'POST', body, credentials: 'same-origin', headers: { Accept: 'application/json' } });
                     };
                     let response = await post();
                     if (response.status === 419) { // the session was renewed meanwhile
                         await freshToken();
                         response = await post();
                     }
-                    if (response.redirected && new URL(response.url).pathname.endsWith('/login')) {
-                        show(status.dataset.login, 'sleep');
+                    if (response.status === 401 || (response.redirected && new URL(response.url).pathname.endsWith('/login'))) {
+                        show(status.dataset.login, 'sleep', false);
                         return;
                     }
-                    if (!response.ok) {
-                        throw new Error(`upload ${response.status}`);
+                    if (response.status === 201) {
+                        await remove(item.id);
+                        sent++;
+                        continue;
                     }
-                    await remove(item.id);
-                    sent++;
+                    if (response.status >= 400 && response.status < 500) {
+                        // The server said no: sending it again the same way will not help.
+                        refused = await reason(response);
+                        failedId = item.id;
+                        break;
+                    }
+                    throw new Error(`upload ${response.status}`); // server away or broken: try later
                 }
             } catch {
                 // offline or the server is away: the photos stay in the queue
@@ -718,22 +780,34 @@
                 busy = false;
             }
             const left = (await all()).length;
-            if (left > 0) {
+            if (refused !== null) {
+                show(refused, 'sleep', true);
+            } else if (left > 0) {
                 show(waiting(left), 'sleep');
             } else if (sent > 0) {
                 show(status.dataset.sent, 'awake');
                 hideLater();
             }
         };
+        retry.addEventListener('click', () => flush());
+        drop.addEventListener('click', async () => {
+            if (failedId !== null) {
+                await remove(failedId);
+                failedId = null;
+            }
+            status.hidden = true;
+            flush();
+        });
 
         const enqueue = async (form, files) => {
             const folder = form.querySelector('input[name="folder"]')?.value || null;
+            const photos = await Promise.all(files.map(shrinkPhoto));
             try {
-                for (const file of files) {
+                for (const file of photos) {
                     await add({ action: form.action, name: file.name || 'foto.jpg', type: file.type, blob: file, folder, added: Date.now() });
                 }
             } catch {
-                submitDirectly(form, files); // no storage on this phone: send directly
+                submitDirectly(form, photos); // no storage on this phone: send directly
                 return;
             }
             flush();
@@ -753,9 +827,14 @@
         return enqueue;
     };
 
-    // Belege: the live camera. One tap takes the picture and hands it to the queue; the
-    // camera stays open for the next receipt. No camera or no permission: the phone's own
-    // camera (the button on the right) takes over, and so does the shutter.
+    // iPhone and iPad: home-screen apps there forget the camera permission and ask on every
+    // start, so the phone's own camera is used instead (one tap on the shutter, no question).
+    const isApple = () => /iPhone|iPad|iPod/.test(navigator.userAgent)
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    // Belege: the camera. Elsewhere the live camera is open at once; one tap takes the
+    // picture and hands it to the queue, the camera stays open. No live camera (iPhone,
+    // no permission): the shutter opens the phone's own camera.
     const setupCamera = enqueue => {
         const box = document.querySelector('[data-live-camera]');
         const form = document.querySelector('[data-camera-form]');
@@ -764,40 +843,72 @@
         }
         const video = box.querySelector('[data-camera-view]');
         const hint = box.querySelector('[data-camera-hint]');
+        const ready = box.querySelector('[data-camera-ready]');
+        const allow = box.querySelector('[data-camera-allow]');
         const flash = box.querySelector('[data-camera-flash]');
         const shutter = form.querySelector('[data-shutter]');
-        const native = form.querySelector('.camera-native input');
+        const native = form.querySelector('[data-camera-native]');
         let stream = null;
 
-        const failed = () => {
+        const useNative = denied => {
             video.hidden = true;
-            hint.hidden = false;
+            hint.hidden = !denied;
+            ready.hidden = denied;
         };
         const stop = () => {
             stream?.getTracks().forEach(track => track.stop());
             stream = null;
         };
         const start = async () => {
-            if (stream || !navigator.mediaDevices?.getUserMedia || !window.isSecureContext) {
-                if (!stream) {
-                    failed();
+            if (stream) {
+                if (video.paused) {
+                    video.play().catch(() => {});
                 }
                 return;
+            }
+            if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) {
+                useNative(false);
+                return;
+            }
+            // First start in a browser that asks: say once how to make it stop asking.
+            try {
+                const state = await navigator.permissions?.query({ name: 'camera' });
+                if (state?.state === 'prompt' && allow) {
+                    allow.hidden = false;
+                }
+            } catch {
+                // the browser cannot tell, nothing to show
             }
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
                     audio: false,
-                    video: { facingMode: { ideal: 'environment' }, width: { ideal: 2560 }, height: { ideal: 1920 } },
+                    video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1440 } },
                 });
+                if (allow) {
+                    allow.hidden = true;
+                }
                 video.srcObject = stream;
                 video.hidden = false;
                 hint.hidden = true;
+                ready.hidden = true;
+                // The picture must never stand still with a "play" sign: restart it.
+                stream.getVideoTracks().forEach(track => track.addEventListener('ended', () => {
+                    stop();
+                    if (!document.hidden) {
+                        start();
+                    }
+                }));
                 await video.play().catch(() => {});
             } catch {
                 stop();
-                failed();
+                useNative(true);
             }
         };
+        video.addEventListener('pause', () => {
+            if (stream && !document.hidden) {
+                video.play().catch(() => {});
+            }
+        });
 
         shutter.addEventListener('click', () => {
             if (!stream || !video.videoWidth) {
@@ -818,8 +929,13 @@
                 if (blob) {
                     enqueue(form, [new File([blob], `beleg-${stamp}.jpg`, { type: 'image/jpeg' })]);
                 }
-            }, 'image/jpeg', 0.9);
+            }, 'image/jpeg', 0.85);
         });
+
+        if (isApple()) {
+            useNative(false);
+            return;
+        }
         // The camera is switched off while the app is in the background.
         document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
         window.addEventListener('pagehide', stop);

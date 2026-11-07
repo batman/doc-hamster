@@ -92,23 +92,25 @@ final class PhoneAppController
         return view('app.scan', [...$scans->state($request, $org), 'folders' => Folder::flat(), 'back' => route('app.scan', array_filter(['folder' => $request->query('folder')]), false)]);
     }
 
-    /** Connect a scanner: search the home network or link a Scan Station; only admins. */
-    public function scanner(CurrentOrg $org): View
+    /**
+     * Drucker & Scanner (A22, A30, A31): what is connected, and how to connect.
+     * On a server on the internet the Scan Station comes first with its steps
+     * and there is no network search; in a home network the search is offered.
+     * Only admins connect; everyone else is told to ask one.
+     */
+    public function scanner(CurrentOrg $org, ScannerDiscovery $discovery): View
     {
+        $admin = Gate::allows(Permission::ManageSettings->value);
+
         return view('app.scanner', [
-            'admin' => Gate::allows(Permission::ManageSettings->value),
+            'admin' => $admin,
+            'searchable' => $admin && $discovery->possible(),
             'found' => session('scanners_found'),
             'code' => session('station_code'),
+            'stations' => ScanStation::query()->whereNotNull('token_hash')->whereNull('revoked_at')->orderBy('name')->get(),
+            'direct' => $org->organization()->settings_json['scanner']['name'] ?? null,
             'back' => route('app.scanner', absolute: false),
         ]);
-    }
-
-    public function searchScanners(ScannerDiscovery $discovery): RedirectResponse
-    {
-        abort_unless(Gate::allows(Permission::ManageSettings->value), 403);
-        @set_time_limit(60);
-
-        return redirect()->route('app.scanner')->with('scanners_found', $discovery->find());
     }
 
     /** The gear: the website (settings) and signing out. */

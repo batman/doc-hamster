@@ -29,6 +29,8 @@
                     <input type="hidden" name="app_back" value="{{ $back }}">
                     <button type="submit" class="phone-action"><x-icon name="printer" />{{ __('app.docs.print') }}</button>
                 </form>
+            @else
+                <a class="phone-action" href="{{ route('app.scanner') }}"><x-icon name="printer" />{{ __('app.docs.print') }}</a>
             @endif
         </div>
     @endif

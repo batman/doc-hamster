@@ -59,7 +59,6 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::get('documents/{id}', 'document')->name('documents.show');
         Route::get('scan', 'scan')->name('scan');
         Route::get('scanner', 'scanner')->name('scanner');
-        Route::post('scanner/search', 'searchScanners')->middleware('throttle:5,1')->name('scanner.search');
         Route::get('settings', 'settings')->name('settings');
     });
 
@@ -121,6 +120,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::middleware('can:settings.manage')->group(function (): void {
         Route::get('scanner', [ScanController::class, 'settings'])->name('scanner.show');
         Route::post('scanner', [ScanController::class, 'save'])->middleware('throttle:10,1')->name('scanner.save');
+        Route::post('scanner/search', [ScanController::class, 'search'])->middleware('throttle:5,1')->name('scanner.search');
         Route::post('scanner/stations', [ScanController::class, 'stationCreate'])->middleware('throttle:10,1')->name('scanner.station.create');
         Route::post('scanner/stations/{id}/revoke', [ScanController::class, 'stationRevoke'])->name('scanner.station.revoke');
         Route::get('scanner/station-download', [ScanController::class, 'stationDownload'])->name('scanner.station.download');

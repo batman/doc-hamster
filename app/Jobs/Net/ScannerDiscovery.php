@@ -23,6 +23,9 @@ final class ScannerDiscovery
 {
     private const BATCH = 64;
 
+    /** @param string|null $address the server's own address; found by itself when null (given in tests) */
+    public function __construct(private ?string $address = null) {}
+
     /**
      * @return list<array{url: string, model: string}>
      */
@@ -55,11 +58,21 @@ final class ScannerDiscovery
         return $found;
     }
 
+    /**
+     * Whether a search can find anything: only a DocHamster inside a home
+     * network (private address). On a server on the internet the Scan Station
+     * is the way, and the search is not offered (A31).
+     */
+    public function possible(): bool
+    {
+        return $this->ownAddress() !== null;
+    }
+
     /** The server's own private IPv4 address, if it has one. */
     private function ownAddress(): ?string
     {
-        $socket = function_exists('socket_create') ? @socket_create(AF_INET, SOCK_DGRAM, SOL_UDP) : false;
-        $ip = null;
+        $ip = $this->address;
+        $socket = $ip === null && function_exists('socket_create') ? @socket_create(AF_INET, SOCK_DGRAM, SOL_UDP) : false;
         if ($socket !== false) {
             // A UDP "connect" sends nothing; it only picks the address the system would use.
             if (@socket_connect($socket, '192.168.0.1', 9) && @socket_getsockname($socket, $address)) {

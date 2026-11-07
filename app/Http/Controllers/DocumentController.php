@@ -17,6 +17,7 @@ use App\Domain\Scanning\NetworkPrinter;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -123,7 +124,12 @@ final class DocumentController
         return back();
     }
 
-    public function store(Request $request, AuditLog $audit, CurrentOrg $org): RedirectResponse
+    /**
+     * The phone app's queue asks for JSON (Accept: application/json): it gets
+     * 201 only when the receipt is really stored, 422 with the reason
+     * otherwise, so it never says "Gesendet" for a refused photo.
+     */
+    public function store(Request $request, AuditLog $audit, CurrentOrg $org): RedirectResponse|JsonResponse
     {
         // One file ("file") or several from the menu ("files[]", picked or dropped).
         $data = $request->validate([
@@ -139,7 +145,9 @@ final class DocumentController
         foreach (is_array($many) ? $many : [$request->file('file')] as $upload) {
             $type = DocumentIntake::detect($upload);
             if (! $upload instanceof UploadedFile || $type === null) {
-                return back()->withErrors(['file' => __('documents.wrong_type')]);
+                return $request->expectsJson()
+                    ? response()->json(['message' => __('documents.wrong_type')], 422)
+                    : back()->withErrors(['file' => __('documents.wrong_type')]);
             }
             $checked[] = [$upload, ...$type];
         }
@@ -151,6 +159,10 @@ final class DocumentController
             $document = DocumentIntake::store($upload, $mime, $extension, $org->id(), $userId, $upload->getClientOriginalName(), $tagIds, folderId: $data['folder'] ?? null);
 
             $audit->record('document.uploaded', orgId: $org->id(), userId: $userId, subject: $document, ip: $request->ip());
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['saved' => count($checked), 'message' => trans_choice('documents.saved', count($checked))], 201);
         }
 
         return redirect()->route('documents.index')->with('status', trans_choice('documents.saved', count($checked)));

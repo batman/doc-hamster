@@ -13,6 +13,7 @@ use App\Domain\Scanning\ScanRequest;
 use App\Domain\Scanning\ScanSession;
 use App\Domain\Scanning\ScanStation;
 use App\Jobs\Net\EsclClient;
+use App\Jobs\Net\ScannerDiscovery;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -185,9 +186,11 @@ final class ScanController
     }
 
     /** The scanner setting (Admins): a device on the network, or Scan Stations. */
-    public function settings(CurrentOrg $org): View
+    public function settings(CurrentOrg $org, ScannerDiscovery $discovery): View
     {
         return view('scan.settings', [
+            'searchable' => $discovery->possible(),
+            'found' => session('scanners_found'),
             'url' => $org->organization()->settings_json['scanner']['url'] ?? '',
             'name' => $org->organization()->settings_json['scanner']['name'] ?? null,
             'stations' => ScanStation::query()->whereNotNull('token_hash')->whereNull('revoked_at')->orderBy('name')->get(),
@@ -195,6 +198,14 @@ final class ScanController
             'code' => session('station_code'),
             'codeName' => session('station_name'),
         ]);
+    }
+
+    /** "Im Netzwerk suchen" (A29): printers/scanners in the home network, for the website and the app (app_back). */
+    public function search(ScannerDiscovery $discovery): RedirectResponse
+    {
+        @set_time_limit(60);
+
+        return redirect()->route('scanner.show')->with('scanners_found', $discovery->find());
     }
 
     /** A new Scan Station: shows its one-time code once, with the steps to start it. */

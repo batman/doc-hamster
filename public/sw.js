@@ -43,20 +43,14 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // The app's own files: from the phone at once, refreshed in the background.
+    // The app's own files: always the newest from the server; the kept copy only without a connection.
     if (SHELL.test(url.pathname)) {
-        event.respondWith(caches.open(CACHE).then(cache => cache.match(request).then(kept => {
-            const fresh = fetch(request).then(response => {
-                if (response.ok) {
-                    cache.put(request, response.clone());
-                }
-                return response;
-            });
-            if (kept) {
-                fresh.catch(() => { /* offline: the kept copy is enough */ });
-                return kept;
+        event.respondWith(fetch(request).then(response => {
+            if (response.ok) {
+                const copy = response.clone();
+                caches.open(CACHE).then(cache => cache.put(request, copy));
             }
-            return fresh;
-        })));
+            return response;
+        }).catch(() => caches.match(request)));
     }
 });

@@ -64,6 +64,32 @@
     @if ($name)
         <p class="check-ok">{{ __('scan.connected', ['name' => $name]) }}</p>
     @endif
+    @if ($searchable)
+        {{-- A29: DocHamster is in the home network, so it can look for the device itself. --}}
+        <form method="post" action="{{ route('scanner.search') }}" data-busy="{{ __('app.scanner.searching') }}">
+            @csrf
+            <div class="actions"><button type="submit"><x-icon name="search" /> {{ __('app.scanner.search') }}</button></div>
+        </form>
+        @if (is_array($found))
+            @if ($found === [])
+                <p class="muted">{{ __('app.scanner.none_found') }}</p>
+            @else
+                <ul class="station-list">
+                    @foreach ($found as $device)
+                        <li>
+                            <strong>{{ $device['model'] }}</strong>
+                            <span class="muted">{{ $device['url'] }}</span>
+                            <form method="post" action="{{ route('scanner.save') }}">
+                                @csrf
+                                <input type="hidden" name="url" value="{{ $device['url'] }}">
+                                <button type="submit">{{ __('app.scanner.use') }}</button>
+                            </form>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+        @endif
+    @endif
     <form method="post" action="{{ route('scanner.save') }}">
         @csrf
         <label for="url">{{ __('scan.address') }}</label>
