@@ -12,6 +12,7 @@ use App\Http\Controllers\FolderController;
 use App\Http\Controllers\FolderImportController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MemberController;
+use App\Http\Controllers\NoteColumnController;
 use App\Http\Controllers\PhoneCheckController;
 use App\Http\Controllers\PrintTrayController;
 use App\Http\Controllers\RoleController;
@@ -25,10 +26,19 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'org'])->group(function (): void {
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::get('badges', BadgeController::class)->name('badges');
+    // Board columns first, so "notes/columns" is not taken for a note id.
+    Route::post('notes/columns', [NoteColumnController::class, 'store'])->name('notes.columns.store');
+    Route::post('notes/columns/order', [NoteColumnController::class, 'order'])->name('notes.columns.order');
+    Route::post('notes/columns/{id}', [NoteColumnController::class, 'update'])->name('notes.columns.update');
+    Route::post('notes/columns/{id}/delete', [NoteColumnController::class, 'destroy'])->name('notes.columns.destroy');
+    Route::get('notes/archive', [HomeController::class, 'archive'])->name('notes.archive');
     Route::post('notes', [HomeController::class, 'store'])->name('notes.store');
     Route::post('notes/{id}', [HomeController::class, 'update'])->name('notes.update');
     Route::post('notes/{id}/look', [HomeController::class, 'look'])->name('notes.look');
     Route::post('notes/{id}/text', [HomeController::class, 'text'])->name('notes.text');
+    Route::post('notes/{id}/move', [HomeController::class, 'move'])->name('notes.move');
+    Route::post('notes/{id}/archive', [HomeController::class, 'archiveNote'])->name('notes.archive_note');
+    Route::post('notes/{id}/restore', [HomeController::class, 'restore'])->name('notes.restore');
     Route::post('notes/{id}/delete', [HomeController::class, 'destroy'])->name('notes.destroy');
     Route::get('documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::get('documents/trash', [DocumentController::class, 'trash'])->middleware('can:documents.trash')->name('documents.trash');

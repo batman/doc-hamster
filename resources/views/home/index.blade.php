@@ -5,8 +5,19 @@
 @section('content')
     <div class="page-head">
         <h1>{{ __('home.title') }}</h1>
-        <button type="button" class="icon-button" data-dialog-open="note-new" aria-label="{{ __('home.new') }}" data-tooltip="{{ __('home.new') }}"><x-icon name="plus" /></button>
+        <a class="icon-button" href="{{ route('notes.archive') }}" aria-label="{{ __('home.archive') }}" data-tooltip="{{ __('home.archive') }}"><x-icon name="archive" /></a>
+        <button type="button" class="icon-button" data-dialog-open="note-new" data-note-column="{{ $columns->first()?->id }}" aria-label="{{ __('home.new') }}" data-tooltip="{{ __('home.new') }}"><x-icon name="plus" /></button>
     </div>
+
+    {{-- Tag filter (A40): only notes with the chosen tag. --}}
+    @if ($tags->isNotEmpty())
+        <ul class="tags note-filter" aria-label="{{ __('home.filter') }}">
+            <li><a class="tag note-filter-all @if ($filter === null) is-selected @endif" href="{{ route('home') }}">{{ __('home.filter_all') }}</a></li>
+            @foreach ($tags as $tag)
+                <li><a class="tag tag-{{ $tag->id }} @if ($filter?->id === $tag->id) is-selected @endif" href="{{ route('home', ['tag' => $tag->id]) }}">{{ $tag->name }}</a></li>
+            @endforeach
+        </ul>
+    @endif
 
     <datalist id="note-documents">
         @foreach ($documents as $document)
@@ -19,6 +30,7 @@
             <h2 id="note-new-title">{{ __('home.new') }}</h2>
             <form method="post" action="{{ route('notes.store') }}">
                 @csrf
+                <input type="hidden" name="column" value="{{ $columns->first()?->id }}" data-note-new-column>
                 <fieldset class="note-fields">
                     @include('home._fields', ['note' => null])
                 </fieldset>
@@ -31,53 +43,67 @@
         </div>
     </div>
 
-    {{-- A board: on wide screens app.js places the notes freely and they can be dragged by their head; otherwise a grid. --}}
-    <ul class="notes" data-notes data-csrf="{{ csrf_token() }}">
-        @foreach ($notes as $note)
-            @php
-                $canEdit = $note->editableBy($userId);
-                $open = $canEdit && ! $note->locked;
-                $color = $note->color ?? 'yellow';
-            @endphp
-            <li class="note note-{{ $color }} @if ($note->locked) is-locked @endif" data-note-id="{{ $note->id }}"
-                @if ($open) data-note-look="{{ route('notes.look', $note->id) }}" @endif
-                @if ($note->pos_x !== null && $note->pos_y !== null) data-x="{{ $note->pos_x }}" data-y="{{ $note->pos_y }}" @endif
-                @if ($note->width !== null && $note->height !== null) data-w="{{ $note->width }}" data-h="{{ $note->height }}" @endif
-                @if ($note->opacity !== null) data-opacity="{{ $note->opacity }}" @endif>
-                <div class="note-head">
-                    <span class="note-title">{{ $note->title ?: __('home.untitled') }}</span>
-                    @if ($canEdit)
-                        <button type="button" class="note-tool" data-dialog-open="edit-note-{{ $note->id }}" aria-label="{{ __('home.edit') }}" data-tooltip="{{ __('home.edit') }}"><x-icon name="pencil" /></button>
-                    @endif
-                    @if ($open)
-                        <button type="button" class="note-tool" data-dialog-open="delete-note-{{ $note->id }}" aria-label="{{ __('home.delete') }}" data-tooltip="{{ __('home.delete') }}"><x-icon name="x" /></button>
-                    @endif
+    {{-- The board (Go of 2026-11-08, like Trello): columns side by side, notes dragged by their head between and within them. --}}
+    <div class="kanban" data-notes data-csrf="{{ csrf_token() }}" @if ($canShare) data-columns-order="{{ route('notes.columns.order') }}" @endif>
+        @foreach ($columns as $column)
+            @php($cards = $byColumn->get($column->id, collect()))
+            <section class="kanban-col" data-column-id="{{ $column->id }}" aria-label="{{ $column->name }}">
+                <button type="button" class="col-strip kanban-strip" data-kanban-unfold aria-label="{{ __('home.column_unfold', ['name' => $column->name]) }}" hidden>
+                    <x-icon name="chevron-right" />
+                    <span class="strip-label"><span>{{ $column->name }}</span><span class="kanban-count">{{ $cards->count() }}</span></span>
+                </button>
+                <div class="kanban-body">
+                    <header class="kanban-head" @if ($canShare) draggable="true" data-kanban-grip @endif>
+                        @if ($canShare)
+                            <input class="kanban-name" value="{{ $column->name }}" maxlength="60" aria-label="{{ __('home.column_name') }}" data-kanban-rename="{{ route('notes.columns.update', $column->id) }}">
+                        @else
+                            <h2 class="kanban-name">{{ $column->name }}</h2>
+                        @endif
+                        <span class="kanban-count">{{ $cards->count() }}</span>
+                        <button type="button" class="note-tool" data-kanban-fold aria-label="{{ __('home.column_fold') }}" data-tooltip="{{ __('home.column_fold') }}"><x-icon name="chevron-left" /></button>
+                        @if ($canShare && $columns->count() > 1)
+                            <button type="button" class="note-tool" data-dialog-open="delete-column-{{ $column->id }}" aria-label="{{ __('home.column_delete') }}" data-tooltip="{{ __('home.column_delete') }}"><x-icon name="trash" /></button>
+                        @endif
+                    </header>
+
+                    <ul class="kanban-cards" data-kanban-cards="{{ $column->id }}">
+                        @foreach ($cards as $note)
+                            @include('home._note', ['note' => $note])
+                        @endforeach
+                    </ul>
+
+                    <button type="button" class="button-quiet kanban-add" data-dialog-open="note-new" data-note-column="{{ $column->id }}"><x-icon name="plus" />{{ __('home.add_note') }}</button>
                 </div>
-
-                {{-- The text is always a field; app.js lays a mirror with our own checkboxes over it (lists "[a, #b]"). --}}
-                <div class="note-content">
-                    <div class="note-text" @if ($open) data-note-text="{{ route('notes.text', $note->id) }}" @endif>
-                        <textarea class="note-area" rows="1" spellcheck="false" aria-label="{{ __('home.body') }}" @readonly(! $open)>{{ $note->body }}</textarea>
-                        <div class="note-mirror" aria-hidden="true"></div>
-                    </div>
-
-                    @if ($note->documents->isNotEmpty())
-                        <ul class="note-links">
-                            @foreach ($note->documents as $document)
-                                <li><a href="{{ route('documents.show', $document->id) }}"><x-icon name="file-text" />{{ $document->title }}</a></li>
-                            @endforeach
-                        </ul>
-                    @endif
-                </div>
-
-                <p class="note-meta">
-                    @if ($note->locked)<span class="note-lock" title="{{ __('home.locked') }}"><x-icon name="lock" /><span class="visually-hidden">{{ __('home.locked') }}</span></span>@endif
-                    {{ $note->author->display_name }} · {{ $note->created_at->format('d.m.Y') }}
-                    @if ($note->shared) · {{ $note->editable ? __('home.shared_editable') : __('home.shared') }} @endif
-                </p>
-            </li>
+            </section>
         @endforeach
-    </ul>
+
+        @if ($canShare)
+            <form method="post" action="{{ route('notes.columns.store') }}" class="kanban-col kanban-new">
+                @csrf
+                <label for="new-column">{{ __('home.add_column') }}</label>
+                <input id="new-column" name="name" maxlength="60" required placeholder="{{ __('home.column_name') }}">
+                <button type="submit"><x-icon name="plus" />{{ __('home.add_column') }}</button>
+            </form>
+        @endif
+    </div>
+
+    @if ($canShare && $columns->count() > 1)
+        @foreach ($columns as $column)
+            <div class="dialog-backdrop" data-dialog="delete-column-{{ $column->id }}" hidden>
+                <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="delete-column-{{ $column->id }}-title">
+                    <h2 id="delete-column-{{ $column->id }}-title">{{ __('home.column_delete_title', ['name' => $column->name]) }}</h2>
+                    <p>{{ __('home.column_delete_hint') }}</p>
+                    <div class="dialog-actions">
+                        <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
+                        <form method="post" action="{{ route('notes.columns.destroy', $column->id) }}">
+                            @csrf
+                            <button type="submit" class="button-danger">{{ __('home.column_delete') }}</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        @endforeach
+    @endif
 
     {{-- Dialogs outside the board, so a note's look and stacking never reach them. --}}
     @foreach ($notes as $note)

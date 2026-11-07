@@ -589,17 +589,52 @@ a.col-item { text-decoration: none; }
 :is(html.nav-rail, .shell.nav-rail) .nav-version::after { content: "v"; }
 .site-footer { margin: 0; padding: 0 1rem 1rem; }
 
-/* Sticky notes on Home: a board of square notes with a darker head (Go 2026-11-07).
-   Narrow screens and no JS: a grid. Wide screens: app.js places them freely (.is-board). */
-.notes { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 1.5rem; margin: 1.5rem 0 0; padding: 0; list-style: none; }
-.notes.is-board { display: block; position: relative; }
-.notes.is-board > .note { position: absolute; width: 16rem; height: 16rem; min-width: 10rem; min-height: 7.5rem; max-width: 100%; overflow: hidden; }
-/* Size: dragged at the bottom-right corner; the text wraps and scrolls inside (Go of 2026-11-07). */
-.notes.is-board > .note[data-note-look] { resize: both; }
+/* Sticky notes on Home as a board like Trello (Go of 2026-11-08): columns side by side, scrolling sideways when
+   there are many (A35); every note is as wide as its column (A34), its height follows the text up to a limit. */
+.kanban { display: flex; align-items: flex-start; gap: 1rem; margin: 1rem 0 0; padding: 0 0 1rem; overflow-x: auto; }
+.kanban-col {
+    flex: none; display: flex; box-sizing: border-box; width: 18rem; max-height: calc(100dvh - 10rem);
+    border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+}
+.kanban-body { display: flex; flex-direction: column; width: 100%; min-width: 0; }
+.kanban-col.is-folded { width: auto; }
+.kanban-body[hidden], .kanban-strip[hidden] { display: none; }
+.kanban-col.is-folded .col-strip { border-right: 0; border-radius: var(--radius); }
+.kanban-col.is-dragging, .note.is-dragging { display: none; }
+.kanban-head { display: flex; align-items: center; gap: .25rem; padding: .5rem .5rem .25rem .75rem; }
+.kanban-head[data-kanban-grip] { cursor: grab; }
+.kanban-name {
+    flex: 1; min-width: 0; min-height: 2.25rem; margin: 0; padding: .25rem .4rem; border: 1px solid transparent; border-radius: calc(var(--radius) / 2);
+    background: transparent; color: var(--text); font: inherit; font-size: 1rem; font-weight: 700; max-width: none;
+}
+input.kanban-name:hover { border-color: var(--border); }
+input.kanban-name:focus { border-color: var(--primary); background: var(--bg); }
+.kanban-count { flex: none; min-width: 1.5rem; font-size: .8rem; color: var(--muted); text-align: center; }
+.kanban-head .note-tool { color: var(--muted); }
+.kanban-head .note-tool:hover { background: var(--bg); }
+.kanban-cards { display: grid; align-content: start; gap: .75rem; flex: 1; min-height: 3rem; margin: 0; padding: .25rem .75rem .75rem; overflow-y: auto; list-style: none; }
+.kanban-gap { border: 2px dashed var(--border); border-radius: var(--radius); background: var(--bg); }
+.kanban-col-gap { flex: none; align-self: stretch; min-height: 10rem; border: 2px dashed var(--border); border-radius: var(--radius); }
+.kanban-add { display: flex; align-items: center; gap: .4rem; margin: 0 .75rem .75rem; justify-content: flex-start; }
+.kanban-new { display: block; padding: .75rem; }
+.kanban-new label { margin-top: 0; }
+.kanban-new input { max-width: none; }
+.kanban-new button { display: inline-flex; align-items: center; gap: .4rem; margin-top: .5rem; }
+.note-filter { margin: .5rem 0 0; }
+.note-filter-all { --tag: var(--surface); --tag-text: var(--text); }
+.kanban-cards > .note { min-height: 7.5rem; max-height: 24rem; overflow: hidden; }
+/* Height: dragged at the bottom-right corner; the width is the column's (A34). */
+.kanban-cards > .note[data-note-look] { resize: vertical; }
+.kanban-cards > .note[style*="height"] { max-height: none; }
+@media (max-width: 40rem) {
+    /* Phones (A36): one column at a time, wiped sideways. */
+    .kanban { scroll-snap-type: x mandatory; }
+    .kanban-col { width: calc(100vw - 3rem); scroll-snap-align: start; }
+}
 .note {
     --note: #fdd835; --note-ink: #2b2a1f; --note-alpha: 100%;
     --note-bg: color-mix(in srgb, var(--note) var(--note-alpha), transparent);
-    display: flex; flex-direction: column; min-height: 16rem; padding: 0;
+    display: flex; flex-direction: column; padding: 0;
     background: var(--note-bg); color: var(--note-ink);
     box-shadow: 2px 4px 12px rgb(0 0 0 / .2); overflow-wrap: anywhere;
 }
@@ -629,9 +664,8 @@ a.col-item { text-decoration: none; }
 .note:is(.note-black, .note-red, .note-bordeaux, .note-green, .note-blue, .note-navy, .note-purple, .note-pink, .note-brown) a { color: inherit; text-decoration: underline; }
 .note:is(.note-black, .note-red, .note-bordeaux, .note-green, .note-blue, .note-navy, .note-purple, .note-pink, .note-brown) .note-tool:hover { background: rgb(255 255 255 / .15); }
 .note-head { display: flex; align-items: center; gap: .25rem; min-height: 2.75rem; padding: .25rem .25rem 0 .75rem; }
-.is-board [data-note-look] .note-head { cursor: grab; touch-action: none; }
-.note.is-dragging { z-index: 10; box-shadow: 4px 10px 24px rgb(0 0 0 / .3); }
-.note.is-dragging .note-head { cursor: grabbing; }
+.note[data-note-move] .note-head { cursor: grab; }
+.note-tool-form { display: contents; }
 .note-title { flex: 1; min-width: 0; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .note-tool {
     display: inline-flex; align-items: center; justify-content: center; flex: none;
@@ -701,7 +735,9 @@ a.col-item { text-decoration: none; }
 .note-new-text { font-family: ui-monospace, "Cascadia Mono", Consolas, Menlo, "DejaVu Sans Mono", monospace; }
 .note-links { margin: .5rem 0 0; padding: 0; list-style: none; }
 .note-links a { display: inline-flex; align-items: center; gap: .35rem; }
-.note-meta { margin: 0; padding: .5rem 1rem .6rem; font-size: .75rem; opacity: .7; }
+.note-meta { padding: .5rem 1rem .6rem; font-size: .75rem; }
+.note-meta p { margin: 0; opacity: .7; }
+.note-tags { margin: 0 0 .35rem; }
 .note.is-locked .note-content { opacity: .85; }
 @media (prefers-color-scheme: dark) {
     .note { --note-ink: #1f1e16; }

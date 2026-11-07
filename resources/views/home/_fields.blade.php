@@ -19,6 +19,29 @@
     @endforeach
 @endif
 
+{{-- Tags like on receipts (A19): only existing ones, new tags are made on the Tags page (A20). --}}
+@if ($tags->isNotEmpty())
+    <fieldset class="note-tag-field">
+        <legend>{{ __('home.tags') }}</legend>
+        <div class="tags">
+            @foreach ($tags as $tag)
+                <label class="tag-choice"><input type="checkbox" name="tags[]" value="{{ $tag->id }}" @checked($note?->tags->contains('id', $tag->id))><span class="tag tag-{{ $tag->id }}">{{ $tag->name }}</span></label>
+            @endforeach
+        </div>
+    </fieldset>
+@endif
+
+{{-- Moving without dragging (phones, A36): the note goes to the end of the chosen column. --}}
+@if ($note !== null && $columns->count() > 1)
+    @php($inColumn = $columns->contains('id', $note->column_id) ? $note->column_id : $columns->first()?->id)
+    <label for="column-{{ $key }}">{{ __('home.column') }}</label>
+    <select id="column-{{ $key }}" name="column">
+        @foreach ($columns as $column)
+            <option value="{{ $column->id }}" @selected($column->id === $inColumn)>{{ $column->name }}</option>
+        @endforeach
+    </select>
+@endif
+
 <fieldset class="note-color-field">
     <legend>{{ __('home.color') }}</legend>
     @foreach (\App\Domain\Notes\Note::COLORS as $choice)

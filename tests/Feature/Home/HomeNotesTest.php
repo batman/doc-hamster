@@ -6,7 +6,9 @@ use App\Domain\Audit\AuditLogEntry;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
 use App\Domain\Documents\ShareLink;
+use App\Domain\Documents\Tag;
 use App\Domain\Notes\Note;
+use App\Domain\Notes\NoteColumn;
 use App\Domain\Org\Membership;
 use App\Domain\Org\OrgScope;
 use App\Domain\Org\RoleRight;
@@ -55,7 +57,7 @@ it('changes the text on the note and keeps its size', function (): void {
     $this->postJson('/notes/'.$note->id.'/look', ['w' => 300, 'h' => 200])->assertOk();
     $this->postJson('/notes/'.$note->id.'/look', ['w' => 50])->assertStatus(422);
     expect($note->fresh()->only(['body', 'width', 'height']))->toBe(['body' => 'neu [x, #y]', 'width' => 300, 'height' => 200]);
-    $this->get('/')->assertSee('data-w="300"', false);
+    $this->get('/')->assertSee('data-h="200"', false);
 });
 
 it('hands out a receipt by link until it is revoked', function (): void {
@@ -133,7 +135,7 @@ it('keeps title, colour, opacity and place of a note, and a locked note stays as
     $this->post('/notes/'.$note->id.'/look', ['color' => 'rainbow'])->assertSessionHasErrors('color');
     expect($note->fresh()->only(['title', 'color', 'opacity', 'pos_x', 'pos_y']))
         ->toBe(['title' => 'Einkauf', 'color' => 'navy', 'opacity' => 60, 'pos_x' => 120, 'pos_y' => 40]);
-    $this->get('/')->assertSee('Einkauf')->assertSee('note-blue')->assertSee('data-x="120"', false);
+    $this->get('/')->assertSee('Einkauf')->assertSee('note-navy');
 
     // Locked in the edit dialog (A13): the fields stay as they are, only the lock can change.
     $this->post('/notes/'.$note->id, ['title' => 'Einkauf', 'body' => 'Milch', 'locked' => 1])->assertRedirect();
@@ -147,4 +149,44 @@ it('keeps title, colour, opacity and place of a note, and a locked note stays as
     expect($note->fresh()->only(['body', 'locked']))->toBe(['body' => 'Milch', 'locked' => false]);
     $this->post('/notes/'.$note->id.'/delete')->assertRedirect();
     expect(Note::query()->withoutGlobalScope(OrgScope::class)->count())->toBe(0);
+});
+
+it('puts notes on a board of columns, moves, archives and tags them', function (): void {
+    $clerk = Membership::factory()->withRights(RoleRight::Upload)->create(['org_id' => $this->admin->org_id]);
+    $tag = Tag::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $this->admin->org_id)->firstOrFail();
+
+    // The board starts with one column; new notes go to its end.
+    $this->actingAs($this->admin->user)->get('/')->assertOk()->assertSee('Notizen');
+    $first = NoteColumn::query()->withoutGlobalScope(OrgScope::class)->sole();
+    $this->post('/notes', ['title' => 'A', 'tags' => [$tag->id]]);
+    $this->post('/notes', ['title' => 'B']);
+    $a = Note::query()->withoutGlobalScope(OrgScope::class)->where('title', 'A')->firstOrFail();
+    $b = Note::query()->withoutGlobalScope(OrgScope::class)->where('title', 'B')->firstOrFail();
+    expect([$a->column_id, $a->sort, $b->sort])->toBe([$first->id, 1, 2])
+        ->and($a->tags()->pluck('tags.id')->all())->toBe([$tag->id]);
+
+    // Columns: any number, renamed, ordered; only with the right.
+    $this->post('/notes/columns', ['name' => 'Erledigt'])->assertRedirect(route('home'));
+    $done = NoteColumn::query()->withoutGlobalScope(OrgScope::class)->where('name', 'Erledigt')->firstOrFail();
+    $this->postJson('/notes/columns/'.$done->id, ['name' => 'Fertig'])->assertOk();
+    $this->postJson('/notes/columns/order', ['order' => [$done->id, $first->id]])->assertOk();
+    expect($done->fresh()->only(['name', 'sort']))->toBe(['name' => 'Fertig', 'sort' => 0]);
+    $this->actingAs($clerk->user)->post('/notes/columns', ['name' => 'X'])->assertForbidden();
+
+    // Drag & drop: B goes before A into "Fertig".
+    $this->actingAs($this->admin->user)->postJson('/notes/'.$b->id.'/move', ['column' => $done->id, 'order' => [$b->id]])->assertOk();
+    $this->postJson('/notes/'.$a->id.'/move', ['column' => $done->id, 'order' => [$b->id, $a->id]])->assertOk();
+    expect([$b->fresh()->sort, $a->fresh()->sort, $a->fresh()->column_id])->toBe([0, 1, $done->id]);
+
+    // The tag filter shows only A; the pill links to the receipts with that tag.
+    $this->get('/?tag='.$tag->id)->assertSee('>A<', false)->assertDontSee('>B<', false);
+
+    // Archive and back; deleting a column moves its notes to the first other one.
+    $this->post('/notes/'.$a->id.'/archive')->assertRedirect(route('home'));
+    $this->get('/')->assertDontSee('>A<', false);
+    $this->get('/notes/archive')->assertOk()->assertSee('A');
+    $this->post('/notes/'.$a->id.'/restore')->assertRedirect(route('notes.archive'));
+    $this->post('/notes/columns/'.$done->id.'/delete')->assertRedirect(route('home'));
+    expect($a->fresh()->column_id)->toBe($first->id)->and($a->fresh()->archived_at)->toBeNull();
+    $this->post('/notes/columns/'.$first->id.'/delete')->assertStatus(422);
 });

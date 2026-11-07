@@ -802,19 +802,20 @@
         document.addEventListener('visibilitychange', poll);
     };
 
-    // Notes board (Home): on wide screens the notes sit where they were dragged; new ones take the next free slot.
-    // Dragging by the head saves the place.
+    // Notes board (Home, Go of 2026-11-08): columns like Trello. A note is dragged by its head between and within
+    // the columns, a column by its head; the order is saved. A column folds to a strip (remembered in this browser).
     const setupNotes = () => {
         const board = document.querySelector('[data-notes]');
         if (!board) {
             return;
         }
         const notes = [...board.querySelectorAll('.note')];
-        const wide = matchMedia('(min-width: 64rem)');
-        const GAP = 24;
         notes.forEach(note => {
             if (note.dataset.opacity) {
                 note.style.setProperty('--note-alpha', `${note.dataset.opacity}%`);
+            }
+            if (note.dataset.h) {
+                note.style.height = `${note.dataset.h}px`;
             }
         });
         // Edit dialog of a locked note: unticking "Gesperrt" frees the fields right away.
@@ -824,113 +825,189 @@
             box.addEventListener('change', () => { fields.disabled = locked && box.checked; });
         });
 
-        const fit = () => {
-            board.style.height = `${Math.max(0, ...notes.map(note => note.offsetTop + note.offsetHeight)) + GAP}px`;
-        };
-        const layout = () => {
-            board.classList.toggle('is-board', wide.matches);
-            if (!wide.matches) {
-                // Phones: full width, the saved size waits for the board (A3).
-                notes.forEach(note => { note.style.left = ''; note.style.top = ''; note.style.width = ''; note.style.height = ''; });
-                board.style.height = '';
-                return;
-            }
-            notes.filter(note => note.dataset.w !== undefined).forEach(note => {
-                note.style.width = `${note.dataset.w}px`;
-                note.style.height = `${note.dataset.h}px`;
-            });
-            const taken = [];
-            const put = (note, x, y) => {
-                note.style.left = `${x}px`;
-                note.style.top = `${y}px`;
-                taken.push({ x, y, w: note.offsetWidth, h: note.offsetHeight });
-            };
-            const free = (x, y, w, h) => taken.every(r => x + w + GAP / 2 <= r.x || r.x + r.w + GAP / 2 <= x || y + h + GAP / 2 <= r.y || r.y + r.h + GAP / 2 <= y);
-            notes.filter(note => note.dataset.x !== undefined).forEach(note => put(note, Number(note.dataset.x), Number(note.dataset.y)));
-            notes.filter(note => note.dataset.x === undefined).forEach(note => {
-                const w = note.offsetWidth;
-                const h = note.offsetHeight;
-                const cols = Math.max(1, Math.floor((board.clientWidth + GAP) / (w + GAP)));
-                for (let i = 0; i < 500; i++) {
-                    const x = (i % cols) * (w + GAP);
-                    const y = Math.floor(i / cols) * (h + GAP);
-                    if (free(x, y, w, h) || i === 499) {
-                        put(note, x, y);
-                        break;
-                    }
-                }
-            });
-            fit();
-        };
-
-        let layer = 10;
-        board.addEventListener('pointerdown', event => {
-            const head = event.target.closest('.note-head');
-            const note = head?.closest('[data-note-look]');
-            if (!note || !wide.matches || event.button !== 0 || event.target.closest('button, a, input, form, .dropdown')) {
-                return;
-            }
-            event.preventDefault();
-            const startX = event.clientX - note.offsetLeft;
-            const startY = event.clientY - note.offsetTop;
-            let moved = false;
-            note.style.zIndex = String(++layer);
-            note.classList.add('is-dragging');
-            head.setPointerCapture(event.pointerId);
-            const move = e => {
-                const x = Math.min(Math.max(0, e.clientX - startX), Math.max(0, board.clientWidth - note.offsetWidth));
-                const y = Math.max(0, e.clientY - startY);
-                note.style.left = `${x}px`;
-                note.style.top = `${y}px`;
-                moved = true;
-            };
-            const done = () => {
-                head.removeEventListener('pointermove', move);
-                note.classList.remove('is-dragging');
-                fit();
-                if (!moved) {
-                    return;
-                }
-                note.dataset.x = String(Math.round(note.offsetLeft));
-                note.dataset.y = String(Math.round(note.offsetTop));
-                const body = new FormData();
-                body.append('_token', board.dataset.csrf);
-                body.append('x', note.dataset.x);
-                body.append('y', note.dataset.y);
-                fetch(note.dataset.noteLook, { method: 'POST', body, credentials: 'same-origin', headers: { Accept: 'application/json' } })
-                    .catch(() => { /* offline: the place is kept until the next reload */ });
-            };
-            head.addEventListener('pointermove', move);
-            head.addEventListener('pointerup', done, { once: true });
-            head.addEventListener('pointercancel', done, { once: true });
-        });
-
-        // Size (Go of 2026-11-07): the browser's corner handle sets width/height inline; a moment after the last change it is saved.
         const send = (url, fields) => {
             const body = new FormData();
             body.append('_token', board.dataset.csrf);
-            Object.entries(fields).forEach(([key, value]) => body.append(key, value));
+            Object.entries(fields).forEach(([key, value]) => (Array.isArray(value)
+                ? value.forEach(item => body.append(`${key}[]`, item))
+                : body.append(key, value)));
             return fetch(url, { method: 'POST', body, credentials: 'same-origin', headers: { Accept: 'application/json' } });
         };
+        const failed = () => location.reload();
+
+        // "+ Notiz" in a column puts the new note into that column (A33).
+        document.querySelectorAll('[data-note-column]').forEach(button => button.addEventListener('click', () => {
+            const field = document.querySelector('[data-note-new-column]');
+            if (field) {
+                field.value = button.dataset.noteColumn;
+            }
+        }));
+
+        // Height: dragged at the bottom-right corner (the width is the column's, A34); saved a moment after the last change.
         const timers = new Map();
         const sized = new ResizeObserver(entries => entries.forEach(({ target: note }) => {
-            if (!wide.matches || !note.style.width || !note.style.height) {
-                return;
-            }
-            const w = String(Math.round(note.offsetWidth));
             const h = String(Math.round(note.offsetHeight));
-            if (w === note.dataset.w && h === note.dataset.h) {
+            if (!note.style.height || h === note.dataset.h) {
                 return;
             }
             clearTimeout(timers.get(note));
             timers.set(note, setTimeout(() => {
-                note.dataset.w = w;
                 note.dataset.h = h;
-                fit();
-                send(note.dataset.noteLook, { w, h }).catch(() => { /* offline: kept until the next reload */ });
+                send(note.dataset.noteLook, { h }).catch(() => { /* offline: kept until the next reload */ });
             }, 500));
         }));
         notes.filter(note => note.dataset.noteLook).forEach(note => sized.observe(note));
+
+        // Folding (A39): the column becomes a strip with its name; this browser remembers it.
+        const FOLDED = 'notes.folded';
+        let folded = [];
+        try { folded = JSON.parse(localStorage.getItem(FOLDED) || '[]'); } catch { /* not remembered */ }
+        const fold = (column, on) => {
+            column.classList.toggle('is-folded', on);
+            column.querySelector('.kanban-body').hidden = on;
+            column.querySelector('[data-kanban-unfold]').hidden = !on;
+            folded = folded.filter(id => id !== column.dataset.columnId).concat(on ? [column.dataset.columnId] : []);
+            try { localStorage.setItem(FOLDED, JSON.stringify(folded)); } catch { /* not remembered */ }
+        };
+        board.querySelectorAll('.kanban-col[data-column-id]').forEach(column => {
+            if (folded.includes(column.dataset.columnId)) {
+                fold(column, true);
+            }
+        });
+        board.addEventListener('click', event => {
+            const folder = event.target.closest('[data-kanban-fold]');
+            const opener = event.target.closest('[data-kanban-unfold]');
+            if (folder || opener) {
+                const column = (folder || opener).closest('.kanban-col');
+                fold(column, Boolean(folder));
+                column.querySelector(folder ? '[data-kanban-unfold]' : '[data-kanban-fold]')?.focus();
+            }
+        });
+
+        // Renaming: click on the name and type, like Trello. Enter or leaving saves, Esc goes back.
+        board.querySelectorAll('[data-kanban-rename]').forEach(input => {
+            let saved = input.value;
+            input.addEventListener('keydown', event => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    input.blur();
+                } else if (event.key === 'Escape') {
+                    input.value = saved;
+                    input.blur();
+                }
+            });
+            input.addEventListener('change', () => {
+                const name = input.value.trim();
+                if (name === '') {
+                    input.value = saved;
+                    return;
+                }
+                send(input.dataset.kanbanRename, { name }).then(response => {
+                    if (!response.ok) {
+                        failed();
+                    }
+                    saved = name;
+                    const column = input.closest('.kanban-col');
+                    column.setAttribute('aria-label', name);
+                    column.querySelector('.strip-label > span').textContent = name;
+                }).catch(failed);
+            });
+        });
+
+        // Drag & drop (A32, 73): a gap shows where the note or column lands.
+        const counts = () => board.querySelectorAll('.kanban-col[data-column-id]').forEach(column => {
+            const n = String(column.querySelectorAll('.kanban-cards > .note').length);
+            column.querySelectorAll('.kanban-count').forEach(count => { count.textContent = n; });
+        });
+        const noteGap = document.createElement('li');
+        noteGap.className = 'kanban-gap';
+        const columnGap = document.createElement('div');
+        columnGap.className = 'kanban-col-gap';
+        let dragged = null;
+        board.addEventListener('pointerdown', event => {
+            if (event.target.closest('button, a, input, textarea, form')) {
+                return;
+            }
+            const note = event.target.closest('.note-head')?.closest('.note[data-note-move]');
+            const head = event.target.closest('[data-kanban-grip]');
+            if (note) {
+                note.draggable = true;
+            } else if (head) {
+                head.draggable = true;
+            }
+        });
+        board.addEventListener('dragstart', event => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement) || target.draggable !== true) {
+                return;
+            }
+            dragged = target.matches('.note') ? target : target.closest('.kanban-col');
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', '');
+            const gap = dragged.matches('.note') ? noteGap : columnGap;
+            gap.style.height = dragged.matches('.note') ? `${dragged.offsetHeight}px` : '';
+            gap.style.width = dragged.matches('.note') ? '' : `${dragged.offsetWidth}px`;
+            // Hidden only after the browser took its picture of it.
+            requestAnimationFrame(() => {
+                dragged?.after(gap);
+                dragged?.classList.add('is-dragging');
+            });
+        });
+        board.addEventListener('dragover', event => {
+            if (!dragged) {
+                return;
+            }
+            event.preventDefault();
+            if (dragged.matches('.note')) {
+                const list = event.target.closest('.kanban-col')?.querySelector('.kanban-cards');
+                if (!list || list.closest('.kanban-col').classList.contains('is-folded')) {
+                    return;
+                }
+                const before = [...list.querySelectorAll(':scope > .note:not(.is-dragging)')]
+                    .find(card => { const r = card.getBoundingClientRect(); return event.clientY < r.top + r.height / 2; });
+                if (before ? noteGap.nextElementSibling !== before : list.lastElementChild !== noteGap) {
+                    list.insertBefore(noteGap, before ?? null);
+                }
+            } else {
+                const before = [...board.querySelectorAll(':scope > .kanban-col[data-column-id]:not(.is-dragging)')]
+                    .find(column => { const r = column.getBoundingClientRect(); return event.clientX < r.left + r.width / 2; });
+                const end = board.querySelector(':scope > .kanban-new');
+                board.insertBefore(columnGap, before ?? end ?? null);
+            }
+        });
+        board.addEventListener('drop', event => {
+            if (!dragged) {
+                return;
+            }
+            event.preventDefault();
+            if (dragged.matches('.note') && noteGap.parentElement) {
+                const list = noteGap.parentElement;
+                list.insertBefore(dragged, noteGap);
+                counts();
+                send(dragged.dataset.noteMove, {
+                    column: list.dataset.kanbanCards,
+                    order: [...list.querySelectorAll(':scope > .note')].map(card => card.dataset.noteId),
+                }).then(response => { if (!response.ok) { failed(); } }).catch(failed);
+            } else if (columnGap.parentElement) {
+                board.insertBefore(dragged, columnGap);
+                send(board.dataset.columnsOrder, {
+                    order: [...board.querySelectorAll(':scope > .kanban-col[data-column-id]')].map(column => column.dataset.columnId),
+                }).then(response => { if (!response.ok) { failed(); } }).catch(failed);
+            }
+        });
+        board.addEventListener('dragend', () => {
+            noteGap.remove();
+            columnGap.remove();
+            dragged?.classList.remove('is-dragging');
+            board.querySelectorAll('[draggable="true"]').forEach(el => { el.draggable = false; });
+            dragged = null;
+        });
+        document.addEventListener('pointerup', () => {
+            if (!dragged) {
+                board.querySelectorAll('[draggable="true"]').forEach(el => { el.draggable = false; });
+            }
+        });
+
 
         // Edit dialog: colour and opacity show on the note right away; closing without saving puts the old look back (A9).
         document.querySelectorAll('[data-note-preview]').forEach(dialog => {
@@ -1116,9 +1193,6 @@
         addEventListener('resize', () => board.querySelectorAll('.note-area').forEach(grow));
         new ResizeObserver(() => board.querySelectorAll('.note-area').forEach(grow)).observe(board);
 
-        wide.addEventListener('change', layout);
-        addEventListener('resize', () => wide.matches && fit());
-        layout();
     };
 
     // Toasts close themselves after a few seconds; a click closes them at once.

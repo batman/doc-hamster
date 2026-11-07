@@ -6,6 +6,7 @@ namespace App\Domain\Notes;
 
 use App\Domain\Auth\User;
 use App\Domain\Documents\Document;
+use App\Domain\Documents\Tag;
 use App\Domain\Org\BelongsToOrg;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -33,6 +34,9 @@ use Illuminate\Support\Carbon;
  * @property int|null $pos_y
  * @property int|null $width size on the board in px; null = default
  * @property int|null $height
+ * @property string|null $column_id board column; null = the first column
+ * @property int $sort place in the column
+ * @property Carbon|null $archived_at archived notes leave the board (A41)
  * @property Carbon $created_at
  * @property-read User $author
  */
@@ -44,14 +48,14 @@ final class Note extends Model
     /** The PO's 20 sticky-note colours (2026-11-07); the values live in app.css (.note-<key>). */
     public const COLORS = ['white', 'black', 'gray', 'red', 'bordeaux', 'orange', 'yellow', 'lightgreen', 'green', 'turquoise', 'lightblue', 'blue', 'navy', 'purple', 'lavender', 'pink', 'brown', 'beige', 'gold', 'mint'];
 
-    protected $fillable = ['org_id', 'user_id', 'body', 'checklist', 'shared', 'editable', 'title', 'color', 'opacity', 'locked', 'pos_x', 'pos_y', 'width', 'height'];
+    protected $fillable = ['org_id', 'user_id', 'body', 'checklist', 'shared', 'editable', 'title', 'color', 'opacity', 'locked', 'pos_x', 'pos_y', 'width', 'height', 'column_id', 'sort'];
 
     /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
-        return ['checklist' => 'array', 'shared' => 'boolean', 'editable' => 'boolean', 'locked' => 'boolean', 'opacity' => 'integer', 'pos_x' => 'integer', 'pos_y' => 'integer', 'width' => 'integer', 'height' => 'integer'];
+        return ['checklist' => 'array', 'shared' => 'boolean', 'editable' => 'boolean', 'locked' => 'boolean', 'opacity' => 'integer', 'pos_x' => 'integer', 'pos_y' => 'integer', 'width' => 'integer', 'height' => 'integer', 'sort' => 'integer', 'archived_at' => 'datetime'];
     }
 
     /**
@@ -68,6 +72,14 @@ final class Note extends Model
     public function documents(): BelongsToMany
     {
         return $this->belongsToMany(Document::class, 'note_documents')->orderBy('title');
+    }
+
+    /**
+     * @return BelongsToMany<Tag, $this>
+     */
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class, 'note_tags')->orderBy('name');
     }
 
     /**
