@@ -7,24 +7,21 @@
 @section('content')
     @php $openFolder = $folder !== null ? collect($folders)->pluck('folder')->firstWhere('id', $folder) : null; @endphp
     <div class="windows" data-windows>
-    {{-- The folders themselves are in the menu under Belege (PO, 2026-11-07); here the open one, with edit and "new subfolder". --}}
-    <x-window :title="$openFolder?->name ?? __('documents.title')" :icon="$openFolder?->iconName() ?? 'receipt'" :url="route('documents.index', request()->except('page'))" :class="$openFolder?->colorClass()">
+    {{-- Folders on the window system (PO, 2026-11-07; FRAMEWORK.md: the main menu has no sub-items): Belege lists the top folders
+         and the Papierkorb as rows, a folder opens as a window on the right with its subfolders and receipts. --}}
+    <x-window :title="$openFolder?->name ?? __('documents.title')" :icon="$openFolder?->iconName() ?? 'receipt'"
+              :url="route('documents.index', request()->except('page'))" :close="$openFolder ? route('documents.index') : null"
+              :upload="$openFolder ? 'folder='.$openFolder->id : null" :class="$openFolder?->colorClass()">
         <x-slot:actions>
             <div class="toolbar">
-                @if ($openFolder && Gate::allows('documents.edit'))
-                    @if ($openFolder->depth() < \App\Domain\Documents\Folder::MAX_DEPTH)
-                        <a class="icon-button" href="{{ route('folders.index', ['parent' => $openFolder->id]) }}" aria-label="{{ __('folders.add_sub', ['name' => $openFolder->name]) }}" data-tooltip="{{ __('folders.add_sub', ['name' => $openFolder->name]) }}"><x-icon name="folder-plus" /></a>
-                    @endif
-                    <a class="icon-button" href="{{ route('folders.index', ['folder' => $openFolder->id]) }}" aria-label="{{ __('folders.edit') }}" data-tooltip="{{ __('folders.edit') }}"><x-icon name="pencil" /></a>
-                @endif
-                @if ($trashed > 0)
-                    <a href="{{ route('documents.trash') }}">{{ __('documents.trash_count', ['count' => $trashed]) }}</a>
-                @endif
                 @if ($tags->isNotEmpty())
                     {{-- Ticks only collect; "Anwenden" filters, in the browser when the page holds every receipt, else on the server. --}}
                     <form class="dropdown" data-kind="filter" data-complete="{{ $complete ? '1' : '0' }}" method="get" action="{{ route('documents.index') }}">
                         @if ($month)
                             <input type="hidden" name="month" value="{{ $month->format('Y-m') }}">
+                        @endif
+                        @if ($openFolder)
+                            <input type="hidden" name="folder" value="{{ $openFolder->id }}">
                         @endif
                         <button type="button" class="icon-button @if ($selected !== []) is-active @endif" data-tooltip="{{ __('documents.filter') }}" aria-label="{{ __('documents.filter') }}" aria-haspopup="true" aria-expanded="false">
                             <span data-icon="off" @if ($selected !== []) hidden @endif><x-icon name="filter" /></span>
@@ -55,8 +52,42 @@
                         @endforeach
                     </div>
                 </form>
+                @can('documents.edit')
+                    <x-more-menu>
+                        @if (! $openFolder)
+                            <a class="menu-item" href="{{ route('folders.index', ['new' => 1]) }}" data-window><x-icon name="folder-plus" /><span>{{ __('folders.add') }}</span></a>
+                        @else
+                            @if ($openFolder->depth() < \App\Domain\Documents\Folder::MAX_DEPTH)
+                                <a class="menu-item" href="{{ route('folders.index', ['parent' => $openFolder->id]) }}" data-window><x-icon name="folder-plus" /><span>{{ __('folders.add_sub_short') }}</span></a>
+                            @endif
+                            <a class="menu-item" href="{{ route('folders.index', ['folder' => $openFolder->id]) }}" data-window><x-icon name="pencil" /><span>{{ __('folders.edit') }}</span></a>
+                        @endif
+                    </x-more-menu>
+                @endcan
             </div>
         </x-slot:actions>
+
+        @if ($folderRows !== [])
+            {{-- Sortable rows (FRAMEWORK.md "Sortable list"); app.js saves the order on list:sorted. The Papierkorb only on top. --}}
+            @php $sortable = Gate::allows('documents.edit') && count($folderRows) > 1; @endphp
+            <ul class="pick-list folder-rows" @if ($sortable) data-sortable data-folder-order="{{ route('folders.order') }}" data-parent="{{ $openFolder?->id }}" data-order-failed="{{ __('folders.order_invalid') }}" @endif>
+                @foreach ($folderRows as $row)
+                    @if ($row['folder'] === null)
+                        <li class="pick-row is-static" data-id="trash">
+                            @if ($sortable)<button type="button" class="pick-handle" aria-label="{{ __('folders.drag', ['name' => __('folders.trash')]) }}"><x-icon name="grip-vertical" /></button>@endif
+                            <x-icon name="trash" />
+                            <span><strong><a href="{{ route('documents.trash') }}" data-window>{{ __('folders.trash') }}</a></strong><small>{{ trans_choice('folders.used', $trashed, ['count' => $trashed]) }}</small></span>
+                        </li>
+                    @else
+                        <li class="pick-row is-static {{ $row['folder']->colorClass() }}" data-id="{{ $row['folder']->id }}">
+                            @if ($sortable)<button type="button" class="pick-handle" aria-label="{{ __('folders.drag', ['name' => $row['folder']->name]) }}"><x-icon name="grip-vertical" /></button>@endif
+                            <x-icon :name="$row['folder']->iconName()" />
+                            <span><strong><a href="{{ route('documents.index', ['folder' => $row['folder']->id]) }}" data-window>{{ $row['folder']->name }}</a></strong><small>{{ trans_choice('folders.used', $row['count'], ['count' => $row['count']]) }}</small></span>
+                        </li>
+                    @endif
+                @endforeach
+            </ul>
+        @endif
 
         @if (session('status'))
             <p class="check-ok" role="status">{{ session('status') }}</p>

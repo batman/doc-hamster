@@ -6,17 +6,19 @@
     $color = old('color_hex') ?: old('color', $color ?? 'none');
     $icon = old('icon', $icon);
     $palette = \App\Domain\Documents\Tag::PALETTE;
+    // Ids carry the folder's id (or "new"): two folder windows can be open at once (window system).
+    $key = $self ?? 'new';
 @endphp
 <input type="hidden" name="look" value="1">
 @if ($locked)
-    <label for="name">{{ __('folders.name') }}</label>
-    <input id="name" value="{{ $name }}" disabled>
+    <label for="name-{{ $key }}">{{ __('folders.name') }}</label>
+    <input id="name-{{ $key }}" value="{{ $name }}" disabled>
     <p class="muted">{{ __('folders.default_note') }}</p>
 @else
-<label for="name">{{ __('folders.name') }}</label>
-<input id="name" name="name" value="{{ old('name', $name) }}" maxlength="100" required @if ($name === '') autofocus @endif>
-<label for="parent_id">{{ __('folders.parent') }}</label>
-<select id="parent_id" name="parent_id">
+<label for="name-{{ $key }}">{{ __('folders.name') }}</label>
+<input id="name-{{ $key }}" name="name" value="{{ old('name', $name) }}" maxlength="100" required @if ($name === '') autofocus @endif>
+<label for="parent_id-{{ $key }}">{{ __('folders.parent') }}</label>
+<select id="parent_id-{{ $key }}" name="parent_id">
     <option value="">{{ __('folders.top') }}</option>
     @foreach ($all as $row)
         @unless (in_array($row['folder']->id, $blocked, true) || $row['depth'] >= \App\Domain\Documents\Folder::MAX_DEPTH)
@@ -35,10 +37,10 @@
         @endforeach
     </div>
     <div class="tag-color-own">
-        <label for="color-picker">{{ __('folders.own_color') }}</label>
-        <input id="color-picker" type="color" value="{{ is_string($color) && str_starts_with($color, '#') ? $color : $palette[0] }}" data-color-picker>
-        <label for="color-hex" class="visually-hidden">{{ __('tags.hex') }}</label>
-        <input id="color-hex" name="color_hex" value="{{ is_string($color) && str_starts_with($color, '#') && ! in_array($color, $palette, true) ? $color : '' }}" placeholder="#rrggbb" maxlength="7" pattern="#[0-9a-fA-F]{6}" data-color-hex>
+        <label for="color-picker-{{ $key }}">{{ __('folders.own_color') }}</label>
+        <input id="color-picker-{{ $key }}" type="color" value="{{ is_string($color) && str_starts_with($color, '#') ? $color : $palette[0] }}" data-color-picker>
+        <label for="color-hex-{{ $key }}" class="visually-hidden">{{ __('tags.hex') }}</label>
+        <input id="color-hex-{{ $key }}" name="color_hex" value="{{ is_string($color) && str_starts_with($color, '#') && ! in_array($color, $palette, true) ? $color : '' }}" placeholder="#rrggbb" maxlength="7" pattern="#[0-9a-fA-F]{6}" data-color-hex>
     </div>
 </fieldset>
 

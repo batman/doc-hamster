@@ -103,6 +103,7 @@ final class DocumentController
             'selected' => $selected,
             'folders' => $folders,
             'folder' => $folder,
+            'folderRows' => $this->folderRows($request, $folders, $folder),
             'view' => $view,
             'views' => self::VIEWS,
             'month' => $month,
@@ -276,6 +277,60 @@ final class DocumentController
     private static function tagRules(): array
     {
         return ['tags' => ['array'], 'tags.*' => [Rule::in(Tag::query()->pluck('id')->all())]];
+    }
+
+    /**
+     * The folder rows on top of a Belege window (window system, PO 2026-11-07): without a folder the
+     * top folders with the Papierkorb in its place, inside a folder its subfolders. Counts include
+     * everything below a folder and only receipts this person may see.
+     *
+     * @param  list<array{folder: Folder, depth: int}>  $folders
+     * @return list<array{folder: Folder|null, count: int}>
+     */
+    private function folderRows(Request $request, array $folders, ?string $folder): array
+    {
+        $direct = Document::query()->visibleTo($this->userId($request), Gate::allows(Permission::ViewAllDocuments->value))
+            ->whereNotNull('folder_id')->selectRaw('folder_id, count(*) as total')->groupBy('folder_id')->pluck('total', 'folder_id');
+        // Sum up from the deepest level, so each folder holds what lies below it (one query, no recursion).
+        $sum = [];
+        foreach (array_reverse($folders) as $row) {
+            $id = $row['folder']->id;
+            $sum[$id] = ($sum[$id] ?? 0) + (int) ($direct[$id] ?? 0);
+            $parent = $row['folder']->parent_id;
+            if ($parent !== null) {
+                $sum[$parent] = ($sum[$parent] ?? 0) + $sum[$id];
+            }
+        }
+        $total = static fn (string $id): int => $sum[$id] ?? 0;
+
+        $out = [];
+        if ($folder !== null) {
+            foreach ($folders as $row) {
+                if ($row['folder']->parent_id === $folder) {
+                    $out[] = ['folder' => $row['folder'], 'count' => $total($row['folder']->id)];
+                }
+            }
+
+            return $out;
+        }
+
+        $org = app(CurrentOrg::class);
+        foreach (Folder::menu($org->isSet() ? $org->organization() : null) as $row) {
+            if ($row['depth'] !== 0) {
+                continue;
+            }
+            if ($row['folder'] === null) {
+                // The Papierkorb, in its place among the top folders, for people who may open it.
+                if (Gate::allows(Permission::TrashDocuments->value)) {
+                    $out[] = ['folder' => null, 'count' => 0];
+                }
+
+                continue;
+            }
+            $out[] = ['folder' => $row['folder'], 'count' => $total($row['folder']->id)];
+        }
+
+        return $out;
     }
 
     /**

@@ -142,37 +142,8 @@ a { color: var(--primary-ink); }
     .nav-collapse { display: none; }
 }
 
-/* Submenu "Ordner" under Belege: folders in their order, drag handle, "+" for a subfolder */
-.nav-sub { margin: 0 0 .25rem; }
-.nav-sub-head { display: flex; align-items: center; justify-content: space-between; min-height: 2rem; padding: 0 .25rem 0 2.6rem; color: var(--muted); font-size: .8rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
-.nav-folders { margin: 0; padding: 0 0 0 1.4rem; list-style: none; }
-.nav-folders .nav-folders { padding-left: 1rem; display: none; }
-.nav-folder.is-open > .nav-folders { display: block; }
-.nav-folder-row { position: relative; display: flex; align-items: center; gap: .1rem; }
-.nav-folder-row .nav-item { min-height: 40px; padding: 0 .5rem; gap: .5rem; flex: 1; min-width: 0; font-weight: 400; }
-.nav-folder-row .nav-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.nav-folder-link .icon { color: var(--folder, currentColor); }
-.nav-grip, .nav-folder-toggle, .nav-folder-add {
-    display: inline-grid; place-items: center; flex: none; width: 1.75rem; min-height: 1.75rem; margin: 0; padding: 0;
-    border: 0; border-radius: .4rem; background: none; color: var(--muted); box-shadow: none; text-decoration: none;
-}
-.nav-grip { position: absolute; left: -1.5rem; width: 1.4rem; cursor: grab; touch-action: none; opacity: 0; }
-.nav-folder-add { opacity: 0; }
-.nav-folder-row:hover > .nav-grip, .nav-folder-row:hover > .nav-folder-add, .nav-folder-row:focus-within > .nav-grip, .nav-folder-row:focus-within > .nav-folder-add, .nav-folder-add.is-visible { opacity: 1; }
-@media (hover: none) { .nav-grip, .nav-folder-add { opacity: .7; } }
-.nav-grip:hover, .nav-folder-toggle:hover, .nav-folder-add:hover { color: var(--text); background: var(--bg); }
-.nav-grip .icon, .nav-folder-toggle .icon, .nav-folder-add .icon { width: 1.1rem; height: 1.1rem; }
-.nav-folder-toggle .icon { transition: rotate .15s; rotate: -90deg; }
-.nav-folder.is-open > .nav-folder-row > .nav-folder-toggle .icon { rotate: 0deg; }
-.nav-folder.is-dragging { opacity: .6; }
-.nav-folder.is-dragging > .nav-folder-row { background: var(--bg); border-radius: .4rem; box-shadow: var(--shadow); }
-body.is-dragging-folder { cursor: grabbing; user-select: none; }
-@media (min-width: 64rem) {
-    :is(html.nav-rail, .shell.nav-rail) .nav-sub { display: none; }
-}
-
 /* Folder colour and symbol pickers, folder import */
-.folder-icon, .folder-link .icon, .folder-title .icon { color: var(--folder, currentColor); }
+.folder-icon, .folder-link .icon { color: var(--folder, currentColor); }
 .folder-icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr)); gap: .35rem; margin-top: .5rem; }
 .folder-icon-choice { position: relative; margin: 0; }
 .folder-icon-choice input { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; margin: 0; opacity: 0; cursor: pointer; }
@@ -184,8 +155,6 @@ body.is-dragging-folder { cursor: grabbing; user-select: none; }
 .folder-import progress { width: 100%; }
 .folder-import label.button { display: inline-flex; gap: .5rem; color: var(--primary-text); }
 .folder-import label.button:has(+ input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
-.page-head .folder-title { display: flex; align-items: center; gap: .5rem; }
-.page-head .folder-title .icon { width: 1.6rem; height: 1.6rem; }
 /* Files dragged over the page: drop anywhere to upload */
 .drop-overlay {
     position: fixed; inset: .75rem; z-index: 50; display: grid; place-content: center;
@@ -826,9 +795,6 @@ button.col-strip:hover > .icon { color: var(--primary-ink); }
 .folder-d2 { padding-left: 2rem; }
 .folder-d3 { padding-left: 3rem; }
 .folder-d4 { padding-left: 4rem; }
-.folder-bar { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1rem; padding: 0; list-style: none; }
-.folder-bar a { display: inline-flex; align-items: center; gap: .35rem; padding: .25rem .7rem; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; color: inherit; opacity: .8; }
-.folder-bar a.is-selected, .folder-bar a:hover { opacity: 1; font-weight: 600; }
 
 /* Floating menu button (Go 2026-11-07, point 3, A24): with the menu folded away on desktop, and always on phones,
    the button floats over the content with a shadow instead of sitting in a dark block. */
@@ -1056,3 +1022,26 @@ input[type="file"]::file-selector-button { border-radius: 10px; font-size: 1rem;
 .win-detail .detail-doc { height: 28rem; }
 .win-back { display: none; }
 @media (max-width: 63.99rem) { .win-back:not([hidden]) { display: inline-flex; } }
+
+/* Framework round 6 (Go 2026-11-07, points 26-31) */
+/* "⋯" menu: entries with icon and text; in a window head only on phones (A80) */
+.more-menu .dropdown-panel { min-width: 14rem; }
+.more-menu .menu-item { text-decoration: none; }
+.win-more { display: none; }
+@media (max-width: 63.99rem) {
+    .win-actions { display: none; }
+    .win-more { display: block; }
+    .win-more .dropdown-panel { display: flex; flex-wrap: wrap; gap: .5rem; }
+    .win-more .dropdown-panel[hidden] { display: none; }
+    .win-head { flex-wrap: nowrap; }
+}
+/* Sortable list: a handle on the left, the carried row lifts (A78) */
+.pick-handle { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 2rem; min-height: 2rem; margin: 0; padding: 0;
+    border: 0; border-radius: 8px; background: none; box-shadow: none; color: var(--muted); cursor: grab; touch-action: none; }
+.pick-handle:hover { background: rgb(127 127 127 / .14); color: var(--text); box-shadow: none; }
+.pick-row.is-dragging { box-shadow: var(--shadow); background: var(--bg); position: relative; z-index: 2; }
+.pick-row.is-dragging .pick-handle { cursor: grabbing; color: var(--primary); }
+/* A row takes its record's colour for the icon: --row-color, else --folder, else orange (A81) */
+.pick-row.is-static > .icon:not(.pick-handle .icon) { color: var(--row-color, var(--folder, var(--primary))); }
+
+.pick-row.is-static > button.pick-handle { margin: 0 -.25rem 0 -.5rem; }

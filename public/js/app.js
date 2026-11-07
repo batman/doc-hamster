@@ -139,10 +139,24 @@
         }
         const input = form.querySelector('input[type="file"]');
         const overlay = document.querySelector('.drop-overlay');
+        // The active window says where an upload belongs (data-window-upload="folder=…", A79).
+        const target = () => {
+            form.querySelectorAll('[data-upload-target]').forEach(field => field.remove());
+            const win = document.querySelector('[data-windows] > section.is-active') ?? [...document.querySelectorAll('section[data-window]')].pop();
+            new URLSearchParams(win?.dataset.windowUpload ?? '').forEach((value, key) => {
+                const field = document.createElement('input');
+                field.type = 'hidden';
+                field.name = key;
+                field.value = value;
+                field.dataset.uploadTarget = '';
+                form.append(field);
+            });
+        };
         const send = () => {
             if (input.files.length === 0) {
                 return;
             }
+            target();
             form.querySelector('.nav-text').textContent = form.dataset.busy;
             form.classList.add('is-busy');
             overlay.querySelector('p').textContent = form.dataset.busy;
@@ -198,60 +212,55 @@
         });
     };
 
-    // Toolbar dropdowns (filter, view): the icon button opens its panel; Escape and a click outside close it.
+    // Dropdowns (filter, view, "⋯"): one listener for the whole page, so they work in every window, also in
+    // windows loaded later and several side by side (Go 2026-11-07, point 26, A77). The icon button opens its
+    // panel; a click outside, a click on an entry and Escape close it.
     const setupDropdowns = () => {
-        const dropdowns = [...document.querySelectorAll('.dropdown')];
         const setOpen = (dropdown, open) => {
-            dropdown.querySelector('.dropdown-panel').hidden = !open;
-            dropdown.querySelector('.icon-button').setAttribute('aria-expanded', String(open));
+            dropdown.querySelector(':scope > .dropdown-panel').hidden = !open;
+            dropdown.querySelector(':scope > .icon-button').setAttribute('aria-expanded', String(open));
         };
-        const openOne = () => dropdowns.find(dropdown => !dropdown.querySelector('.dropdown-panel').hidden);
-
-        dropdowns.forEach(dropdown => dropdown.querySelector('.icon-button').addEventListener('click', () => {
-            const open = dropdown.querySelector('.dropdown-panel').hidden;
-            dropdowns.forEach(other => setOpen(other, false));
-            setOpen(dropdown, open);
-        }));
+        const openOnes = () => [...document.querySelectorAll('.dropdown')].filter(d => d.querySelector(':scope > .dropdown-panel')?.hidden === false);
         document.addEventListener('click', event => {
-            if (!event.target.closest('.dropdown')) {
-                dropdowns.forEach(dropdown => setOpen(dropdown, false));
+            const toggle = event.target.closest('.dropdown > .icon-button');
+            const inside = event.target.closest('.dropdown');
+            openOnes().filter(d => d !== inside && !d.contains(inside)).forEach(d => setOpen(d, false));
+            if (toggle) {
+                const dropdown = toggle.parentElement;
+                setOpen(dropdown, dropdown.querySelector(':scope > .dropdown-panel').hidden);
+            } else if (inside && event.target.closest('.dropdown-panel a, .dropdown-panel .menu-item')) {
+                setOpen(inside, false);
             }
         });
         document.addEventListener('keydown', event => {
-            const open = openOne();
+            const open = openOnes().pop();
             if (event.key === 'Escape' && open) {
                 setOpen(open, false);
-                open.querySelector('.icon-button').focus();
+                open.querySelector(':scope > .icon-button').focus();
             }
         });
     };
 
-    // Receipt filter: ticks collect, "Anwenden" filters. A receipt must have all ticked tags.
-    // When the page doesn't hold every receipt, the server filters instead.
+    // Receipt filter: ticks collect, "Anwenden" filters. A receipt must have all ticked tags. Each filter works
+    // on the list of its own window. When the window doesn't hold every receipt, the server filters instead.
     const setupFilter = () => {
-        const filter = document.querySelector('.dropdown[data-kind="filter"]');
-        if (!filter) {
-            return;
-        }
-        const boxes = [...filter.querySelectorAll('input[name="tags[]"]')];
-        const reset = filter.querySelector('[data-reset]');
-
-        const apply = () => {
+        const apply = filter => {
             if (filter.dataset.complete !== '1') {
                 filter.submit();
                 return;
             }
-            const wanted = boxes.filter(box => box.checked).map(box => box.value);
+            const scope = filter.closest('section[data-window]') ?? document;
+            const wanted = [...filter.querySelectorAll('input[name="tags[]"]')].filter(box => box.checked).map(box => box.value);
             let shown = 0;
-            document.querySelectorAll('[data-item]').forEach(item => {
+            scope.querySelectorAll('[data-item]').forEach(item => {
                 const has = item.dataset.tags.split(' ');
                 item.hidden = !wanted.every(tag => has.includes(tag));
                 shown += item.hidden ? 0 : 1;
             });
-            document.querySelectorAll('[data-group]').forEach(group => {
+            scope.querySelectorAll('[data-group]').forEach(group => {
                 group.hidden = group.querySelector('[data-item]:not([hidden])') === null;
             });
-            const none = document.querySelector('[data-no-match]');
+            const none = scope.querySelector('[data-no-match]');
             if (none) {
                 none.hidden = shown > 0 || wanted.length === 0;
             }
@@ -264,28 +273,118 @@
             badge.textContent = String(wanted.length);
             badge.hidden = !active;
 
-            // Keep the address in step, so reloading or a shared link shows the same.
-            const url = new URL(location.href);
+            // Keep the window's address in step, so reloading or a shared link shows the same.
+            const url = new URL(scope.dataset?.windowUrl ?? location.href, location.href);
             url.searchParams.delete('tags[]');
             wanted.forEach(tag => url.searchParams.append('tags[]', tag));
-            history.replaceState(null, '', url);
+            if (scope !== document) {
+                scope.dataset.windowUrl = url.href;
+            }
+            if (scope === document || scope.classList.contains('is-active')) {
+                history.replaceState({ window: url.href }, '', url);
+            }
         };
-
-        const close = () => {
+        const close = filter => {
             filter.querySelector('.dropdown-panel').hidden = true;
             filter.querySelector('.icon-button').setAttribute('aria-expanded', 'false');
         };
-        filter.addEventListener('submit', event => {
-            if (filter.dataset.complete === '1') {
+        document.addEventListener('submit', event => {
+            const filter = event.target.closest('.dropdown[data-kind="filter"]');
+            if (filter && filter.dataset.complete === '1') {
                 event.preventDefault();
-                apply();
-                close();
+                apply(filter);
+                close(filter);
             }
         });
-        reset.addEventListener('click', () => {
-            boxes.forEach(box => { box.checked = false; });
-            apply();
-            close();
+        document.addEventListener('click', event => {
+            const reset = event.target.closest('.dropdown[data-kind="filter"] [data-reset]');
+            if (reset) {
+                const filter = reset.closest('.dropdown');
+                filter.querySelectorAll('input[name="tags[]"]').forEach(box => { box.checked = false; });
+                apply(filter);
+                close(filter);
+            }
+        });
+    };
+
+    // Window heads on phones (point 30, A80): the buttons of the head go into its "⋯" menu, the title keeps its room.
+    const setupHeadActions = () => {
+        const phone = matchMedia('(max-width: 63.99rem)');
+        const place = root => root.querySelectorAll('[data-win-actions]').forEach(actions => {
+            const panel = actions.parentElement.querySelector('[data-win-more] .dropdown-panel');
+            const [from, to] = phone.matches ? [actions, panel] : [panel, actions];
+            [...from.childNodes].forEach(node => to.append(node));
+        });
+        DocHamster.on('window:open', place);
+        phone.addEventListener('change', () => place(document));
+    };
+
+    // Sortable list (point 28, A78): rows of a [data-sortable] list are moved by their handle (.pick-handle)
+    // with mouse or finger, or with the keyboard: Space picks a row up, arrow keys move it, Space drops it,
+    // Escape puts it back. Afterwards DocHamster.emit('list:sorted', { list, ids }) – the module saves.
+    const setupSortable = () => {
+        const rows = list => [...list.querySelectorAll(':scope > [data-id]')];
+        const done = list => DocHamster.emit('list:sorted', { list, ids: rows(list).map(row => row.dataset.id) });
+        document.addEventListener('pointerdown', event => {
+            const handle = event.target.closest('[data-sortable] .pick-handle');
+            if (!handle || event.button !== 0) {
+                return;
+            }
+            const row = handle.closest('[data-id]');
+            const list = row.parentElement;
+            const before = rows(list).map(r => r.dataset.id).join();
+            event.preventDefault();
+            handle.setPointerCapture(event.pointerId);
+            row.classList.add('is-dragging');
+            const move = e => {
+                const over = rows(list).find(r => r !== row && e.clientY < r.getBoundingClientRect().top + r.offsetHeight / 2);
+                if (over !== row.nextElementSibling) {
+                    list.insertBefore(row, over ?? null);
+                }
+            };
+            handle.addEventListener('pointermove', move);
+            handle.addEventListener('pointerup', () => {
+                handle.removeEventListener('pointermove', move);
+                row.classList.remove('is-dragging');
+                if (rows(list).map(r => r.dataset.id).join() !== before) {
+                    done(list);
+                }
+            }, { once: true });
+        });
+        let carried = null;
+        document.addEventListener('keydown', event => {
+            const handle = event.target.closest('[data-sortable] .pick-handle');
+            if (!handle) {
+                return;
+            }
+            const row = handle.closest('[data-id]');
+            const list = row.parentElement;
+            if (event.key === ' ' || event.key === 'Enter') {
+                event.preventDefault();
+                if (carried) {
+                    carried.row.classList.remove('is-dragging');
+                    if (rows(list).map(r => r.dataset.id).join() !== carried.before) {
+                        done(list);
+                    }
+                    carried = null;
+                } else {
+                    carried = { row, before: rows(list).map(r => r.dataset.id).join(), next: row.nextElementSibling };
+                    row.classList.add('is-dragging');
+                }
+            } else if (carried && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+                event.preventDefault();
+                const sibling = event.key === 'ArrowUp' ? row.previousElementSibling : row.nextElementSibling?.nextElementSibling ?? null;
+                if (event.key === 'ArrowUp' && !sibling) {
+                    return;
+                }
+                list.insertBefore(row, sibling);
+                handle.focus();
+            } else if (carried && event.key === 'Escape') {
+                list.insertBefore(row, carried.next);
+                row.classList.remove('is-dragging');
+                carried = null;
+                handle.focus();
+            }
         });
     };
 
@@ -1256,11 +1355,9 @@
     };
 
     // Tag colour: a palette colour, or any colour from the picker or typed as #rrggbb.
-    const setupColorField = () => {
-        const field = document.querySelector('[data-color-field]');
-        if (!field) {
-            return;
-        }
+    // Colour field (tags, folders): set up in every window, also in windows loaded later (window system).
+    const setupColorField = root => root.querySelectorAll('[data-color-field]:not([data-ready])').forEach(field => {
+        field.dataset.ready = '';
         const picker = field.querySelector('[data-color-picker]');
         const hex = field.querySelector('[data-color-hex]');
         const radios = [...field.querySelectorAll('input[type="radio"]')];
@@ -1281,116 +1378,44 @@
                 picker.value = radio.value;
             }
         }));
-    };
+    });
+    DocHamster.on('window:open', setupColorField);
 
-    // Folder menu under Belege (PO, 2026-11-07): open/close subfolders; drag the handle to change the order of one level.
-    // Pointer events, so it works with mouse, pen and finger alike; the new order is saved right away.
-    const setupFolderMenu = () => {
-        const menu = document.querySelector('.nav-sub');
-        if (!menu) {
-            return;
-        }
-        menu.querySelectorAll('[data-folder-toggle]').forEach(button => button.addEventListener('click', () => {
-            const item = button.closest('.nav-folder');
-            const open = item.classList.toggle('is-open');
-            button.setAttribute('aria-expanded', open ? 'true' : 'false');
-        }));
-
-        const url = menu.dataset.folderOrder;
+    // Folder order (PO, 2026-11-07): the folder rows in a Belege window are a sortable list of the framework;
+    // after a move the new order of that level is saved right away. "trash" stands for the Papierkorb.
+    DocHamster.on('list:sorted', ({ list, ids }) => {
+        const url = list.dataset.folderOrder;
         if (!url) {
             return;
         }
-        const token = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
-        const save = list => {
-            const body = new FormData();
+        const body = new FormData();
+        ids.forEach(id => body.append('order[]', id));
+        if (list.dataset.parent) {
             body.append('parent_id', list.dataset.parent);
-            [...list.children].forEach(item => body.append('order[]', item.dataset.id));
-            fetch(url, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token, Accept: 'application/json' }, credentials: 'same-origin' })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(String(response.status));
-                    }
-                })
-                .catch(() => {
-                    window.alert(menu.dataset.orderFailed);
-                    window.location.reload();
-                });
-        };
-
-        menu.querySelectorAll('[data-grip]').forEach(grip => {
-            grip.addEventListener('pointerdown', event => {
-                if (event.button !== 0) {
-                    return;
-                }
-                event.preventDefault();
-                const item = grip.closest('.nav-folder');
-                const list = item.parentElement;
-                const before = [...list.children].map(child => child.dataset.id).join();
-                // Listened on the document: moving the item in the DOM ends any pointer capture on the handle.
-                item.classList.add('is-dragging');
-                document.body.classList.add('is-dragging-folder');
-
-                const move = moveEvent => {
-                    if (moveEvent.pointerId !== event.pointerId) {
-                        return;
-                    }
-                    const siblings = [...list.children].filter(child => child !== item);
-                    const next = siblings.find(child => {
-                        const box = child.querySelector('.nav-folder-row').getBoundingClientRect();
-                        return moveEvent.clientY < box.top + box.height / 2;
-                    });
-                    if (next) {
-                        if (item.nextElementSibling !== next) {
-                            list.insertBefore(item, next);
-                        }
-                    } else if (list.lastElementChild !== item) {
-                        list.appendChild(item);
-                    }
-                };
-                const end = endEvent => {
-                    if (endEvent.pointerId !== event.pointerId) {
-                        return;
-                    }
-                    document.removeEventListener('pointermove', move);
-                    document.removeEventListener('pointerup', end);
-                    document.removeEventListener('pointercancel', end);
-                    item.classList.remove('is-dragging');
-                    document.body.classList.remove('is-dragging-folder');
-                    if ([...list.children].map(child => child.dataset.id).join() !== before) {
-                        save(list);
-                    }
-                };
-                document.addEventListener('pointermove', move);
-                document.addEventListener('pointerup', end);
-                document.addEventListener('pointercancel', end);
-            });
-            // Keyboard: arrow up/down moves the folder one place.
-            grip.addEventListener('keydown', event => {
-                if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') {
-                    return;
-                }
-                event.preventDefault();
-                const item = grip.closest('.nav-folder');
-                const list = item.parentElement;
-                if (event.key === 'ArrowUp' && item.previousElementSibling) {
-                    list.insertBefore(item, item.previousElementSibling);
-                } else if (event.key === 'ArrowDown' && item.nextElementSibling) {
-                    list.insertBefore(item.nextElementSibling, item);
-                } else {
-                    return;
-                }
-                grip.focus();
-                save(list);
-            });
-        });
-    };
-
-    // Folder import: the picked folder becomes a new folder of the same name; files go up one by one with their path.
-    const setupFolderImport = () => {
-        const form = document.querySelector('[data-folder-import]');
-        if (!form) {
-            return;
         }
+        const token = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+        fetch(url, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token, Accept: 'application/json' }, credentials: 'same-origin' })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(String(response.status));
+                }
+            })
+            .catch(() => {
+                // The framework's error line above the list (no JS toast yet).
+                if (!list.previousElementSibling?.matches('[data-order-error]')) {
+                    const error = document.createElement('p');
+                    error.className = 'error';
+                    error.setAttribute('role', 'alert');
+                    error.dataset.orderError = '';
+                    error.textContent = list.dataset.orderFailed;
+                    list.before(error);
+                }
+            });
+    });
+
+    // The import form sits in a window of the Ordner page, which may be loaded later (window system).
+    const setupFolderImport = root => root.querySelectorAll('[data-folder-import]:not([data-ready])').forEach(form => {
+        form.dataset.ready = '';
         const input = form.querySelector('input[type="file"]');
         const status = form.querySelector('[data-import-status]');
         const bar = form.querySelector('progress');
@@ -1461,21 +1486,21 @@
             input.disabled = false;
             input.value = '';
         });
-    };
+    });
+    DocHamster.on('window:open', setupFolderImport);
 
     document.addEventListener('DOMContentLoaded', () => {
         setupMenu();
         setupDropdowns();
         setupFilter();
+        setupSortable();
+        setupHeadActions();
         setupDialogs();
         setupWindows();
         setupColumns();
         setupScrollHint();
         setupBadges();
         setupTagSearch();
-        setupColorField();
-        setupFolderMenu();
-        setupFolderImport();
         setupNotes();
         setupToasts();
         setupAjaxForms();

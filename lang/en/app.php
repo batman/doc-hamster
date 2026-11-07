@@ -11,6 +11,7 @@ return [
         'collapse' => 'Shrink menu',
         'expand' => 'Widen menu',
     ],
+    'more' => 'More',
     'window' => [
         'open' => 'Open: :title',
         'remove' => 'Remove :title from the history',

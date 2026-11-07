@@ -179,6 +179,38 @@ it('moves receipts and subfolders up when a folder is deleted; a top folder hand
         ->and(folderRow($leaf->id)?->parent_id)->toBeNull();
 });
 
+it('deletes a folder with its content: subfolders go, receipts land in the Papierkorb', function (): void {
+    $top = makeFolder($this->orgId, 'Oben');
+    $middle = makeFolder($this->orgId, 'Mitte', $top->id);
+    $leaf = makeFolder($this->orgId, 'Unten', $middle->id);
+    $sibling = makeFolder($this->orgId, 'Daneben', $top->id);
+    $this->actingAs($this->admin->user);
+    $this->post('/documents', ['file' => UploadedFile::fake()->image('mitte.jpg'), 'folder' => $middle->id]);
+    $this->post('/documents', ['file' => UploadedFile::fake()->image('unten.jpg'), 'folder' => $leaf->id]);
+    $this->post('/documents', ['file' => UploadedFile::fake()->image('daneben.jpg'), 'folder' => $sibling->id]);
+
+    $this->post('/folders/'.$middle->id.'/delete', ['with_content' => '1'])->assertRedirect('/folders');
+
+    $inTrash = static fn (string $title): Document => Document::query()->withoutGlobalScope(OrgScope::class)->withTrashed()->where('title', $title)->firstOrFail();
+    expect(folderRow($middle->id))->toBeNull()
+        ->and(folderRow($leaf->id))->toBeNull()
+        ->and(folderRow($sibling->id))->not->toBeNull()
+        ->and($inTrash('mitte.jpg')->trashed())->toBeTrue()
+        ->and($inTrash('unten.jpg')->trashed())->toBeTrue()
+        // Brought back from the Papierkorb, they land in the folder above.
+        ->and($inTrash('unten.jpg')->folder_id)->toBe($top->id)
+        ->and(titled('daneben.jpg')->folder_id)->toBe($sibling->id);
+});
+
+it('deletes with content only for people who may put receipts into the Papierkorb', function (): void {
+    $folder = makeFolder($this->orgId, 'Geschützt');
+    $editor = Membership::factory()->withRights(RoleRight::Edit)->create(['org_id' => $this->orgId]);
+
+    $this->actingAs($editor->user)->post('/folders/'.$folder->id.'/delete', ['with_content' => '1'])->assertForbidden();
+
+    expect(folderRow($folder->id))->not->toBeNull();
+});
+
 it('cannot delete the folder "Belege"', function (): void {
     $belege = belegeOf($this->orgId);
 
@@ -246,10 +278,23 @@ it('gives a folder a colour and a symbol from the fixed set, and serves the colo
     expect(folderRow($auto->id)?->icon)->toBe('car')->and(folderRow($auto->id)?->color)->toBe('#3fb68f');
 });
 
-it('shows the folders under Belege in the menu, the Papierkorb last until moved', function (): void {
-    $this->actingAs($this->admin->user)->get('/documents')->assertOk()
-        ->assertSee('nav-sub', false)
-        ->assertSeeInOrder(['Belege allgemein', 'Rechnungen', 'Papierkorb']);
+it('shows the folders as sortable rows in the Belege window, not in the main menu; a folder shows its subfolders', function (): void {
+    $invoices = folderNamed('Rechnungen');
+    $phone = makeFolder($this->orgId, 'Telefon', $invoices->id);
+    $this->actingAs($this->admin->user);
+    $this->post('/documents', ['file' => UploadedFile::fake()->image('tel.jpg'), 'folder' => $phone->id]);
+
+    $this->get('/documents')->assertOk()
+        ->assertDontSee('nav-folders', false)
+        ->assertSee('data-sortable', false)
+        ->assertSee('data-id="trash"', false)
+        ->assertSeeInOrder(['Belege allgemein', 'Rechnungen', '1 Beleg', 'Papierkorb']);
+    $this->get('/documents?folder='.$invoices->id)->assertOk()
+        ->assertSee('data-window-upload="folder='.$invoices->id.'"', false)
+        ->assertSee('data-id="'.$phone->id.'"', false)
+        ->assertDontSee('data-id="trash"', false)
+        ->assertSee('Unterordner anlegen');
+    $this->get('/documents/trash')->assertOk()->assertSee('data-window-title="Papierkorb"', false);
 });
 
 it('saves the order of one level by drag and drop, the Papierkorb included', function (): void {
@@ -302,4 +347,18 @@ it('keeps the folder import to people who may upload and edit, and to the own or
     $this->actingAs($this->admin->user)
         ->post('/folders/import/'.$foreign->id.'/file', ['file' => UploadedFile::fake()->image('x.jpg'), 'path' => 'x.jpg'], ['Accept' => 'application/json'])
         ->assertNotFound();
+});
+
+it('shows folders as windows: the list as root, a folder or a new one to its right with ids that carry the folder', function (): void {
+    $this->actingAs($this->admin->user);
+    $travel = makeFolder($this->orgId, 'Reisen');
+
+    $this->get('/folders')->assertOk()->assertSee('data-windows', false)->assertDontSee('data-folder-import', false);
+    $this->get('/folders?new=1')->assertOk()->assertSee('Neuen Ordner anlegen')->assertSee('data-folder-import', false)->assertSee('id="name-new"', false);
+    $this->get('/folders?parent='.$travel->id)->assertOk()->assertSee('data-folder-import', false);
+    $this->get('/folders?folder='.$travel->id)->assertOk()
+        ->assertSee('data-dialog="delete-folder-'.$travel->id.'"', false)
+        ->assertSee('id="name-'.$travel->id.'"', false)
+        ->assertSee('data-window-url="'.route('folders.index', ['folder' => $travel->id]).'"', false);
+    $this->get('/documents?folder='.$travel->id)->assertOk()->assertSee('data-window-title="Reisen"', false);
 });
