@@ -150,3 +150,67 @@ it('keeps the web setup code when the shell install stops without an owner', fun
         restoreOwnerRows($owners);
     }
 })->group('db');
+
+it('stops with a hint instead of finishing when no owner exists and the run is not interactive', function (): void {
+    $owners = snapshotOwnerRows();
+    Membership::query()->where('role', Role::Owner->value)->delete();
+
+    try {
+        $this->artisan('dochamster:setup', ['--no-interaction' => true])
+            ->expectsOutputToContain(__('setup.owner_missing', ['command' => 'php artisan dochamster:owner']))
+            ->assertExitCode(1);
+
+        expect(Dotenv::parse((string) file_get_contents($this->envPath)))->not->toHaveKey('DOCHAMSTER_INSTALLED');
+    } finally {
+        restoreOwnerRows($owners);
+    }
+})->group('db');
+
+it('stops without finishing after three invalid owner answers', function (): void {
+    $owners = snapshotOwnerRows();
+    Membership::query()->where('role', Role::Owner->value)->delete();
+
+    try {
+        $command = $this->artisan('dochamster:setup')
+            ->expectsQuestion(__('setup.ask_url'), 'https://belege.example.com');
+
+        // Empty org, then a bad username, then mismatched passwords.
+        $attempts = [
+            ['', 'x', 'short', 'short'],
+            ['Haushalt Shell', 'bad user!', 'ein-langes-test-passwort', 'ein-langes-test-passwort'],
+            ['Haushalt Shell', 'inhaber-shell', 'ein-langes-test-passwort', 'anders-lang-genug-hier'],
+        ];
+        foreach ($attempts as [$org, $username, $password, $repeat]) {
+            $command = $command
+                ->expectsQuestion(__('auth.owner.org'), $org)
+                ->expectsQuestion(__('auth.username'), $username)
+                ->expectsQuestion(__('auth.password'), $password)
+                ->expectsQuestion(__('setup.wizard.password_repeat'), $repeat);
+        }
+
+        $command
+            ->expectsOutputToContain(__('auth.owner.invalid'))
+            ->expectsOutputToContain(__('setup.owner_missing', ['command' => 'php artisan dochamster:owner']))
+            ->assertExitCode(1);
+
+        expect(Dotenv::parse((string) file_get_contents($this->envPath)))->not->toHaveKey('DOCHAMSTER_INSTALLED');
+    } finally {
+        restoreOwnerRows($owners);
+    }
+})->group('db');
+
+it('skips the owner questions when an owner already exists', function (): void {
+    $created = ensureOwnerExists();
+
+    try {
+        // Any owner question here would fail the run as an unexpected question.
+        $this->artisan('dochamster:setup')
+            ->expectsQuestion(__('setup.ask_url'), 'https://belege.example.com')
+            ->expectsOutputToContain(__('setup.done'))
+            ->assertExitCode(0);
+
+        expect(Dotenv::parse((string) file_get_contents($this->envPath))['DOCHAMSTER_INSTALLED'])->toBe('true');
+    } finally {
+        deleteOwnerUser($created);
+    }
+})->group('db');
