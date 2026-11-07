@@ -357,3 +357,10 @@ Newest entry at the bottom. Format: see WORKFLOW.md §4. Never edit old entries.
 - Done (PO go): connecting a printer/scanner needs no extra right any more – everyone who may upload can open "Drucker & Scanner" (website and app), search the network, enter an address, link a Scan Station and download its program. Removing a device (empty address, station "Entfernen") stays with admins; tax advisors (no upload) connect nothing. "Bitte fragen Sie einen Admin" is gone. ScanTest/StationTest follow the new rule; new PhoneAppTest cases for employee and advisor. Full suite on SQLite 336/341 (the known 5 MySQL-only tests).
 - Watch out (Lead): this changes who may set up scanning (was admins only, issue #77). PO decision 2026-11-07; the Scan Station gets only files of print jobs the person may see, as before.
 - Branch/PR: manager/SCAN-phone-once (#89)
+
+## 2026-11-07 · Manager · PHONE: print and scan without anything at home (12, A34–A39)
+- Done (PO go): the app works without a computer or device at home. "Drucken" (document and every row in Dokumente) opens the phone's own print dialog with the printers in its Wi-Fi (PDFs via the share menu → Drucken on iPhone, images via the browser print). "Scannen" uses the phone camera: one page or several, each photo becomes a page (new `scan.photo`, JPEG/PNG/WebP, max 50 pages), then name and folder → one PDF. No "Drucker & Scanner" in the app any more (page and gear entry removed); the Scan Station and network search stay on the website. When a printer/scanner is connected on the website, Scannen first asks "Mit der Kamera" or "Mit dem Drucker".
+- Also: folders split into their own branch `manager/SCAN-folders` (#92, preview-ready); #89 needs a rebase after #92 lands (the duplicate commit drops).
+- Checked locally at phone size: camera scan → page strip → saved as PDF in Dokumente, print buttons in list and document, gear without Drucker & Scanner. Full suite on SQLite 335/340 (the known 5 MySQL-only tests); pint/PHPStan clean.
+- Not done: not tried on a real iPhone (print dialog, share sheet).
+- Branch/PR: manager/SCAN-phone-once (#89)

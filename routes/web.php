@@ -58,7 +58,6 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::get('documents', 'documents')->name('documents');
         Route::get('documents/{id}', 'document')->name('documents.show');
         Route::get('scan', 'scan')->name('scan');
-        Route::get('scanner', 'scanner')->name('scanner');
         Route::get('settings', 'settings')->name('settings');
     });
 
@@ -111,6 +110,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::middleware('can:documents.upload')->prefix('scan')->name('scan.')->group(function (): void {
         Route::get('/', [ScanController::class, 'index'])->name('index');
         Route::post('page', [ScanController::class, 'scan'])->middleware('throttle:30,1')->name('page');
+        Route::post('photo', [ScanController::class, 'photo'])->middleware('throttle:60,1')->name('photo');
         Route::post('finish', [ScanController::class, 'finish'])->name('finish');
         Route::post('cancel', [ScanController::class, 'cancel'])->name('cancel');
         Route::get('pages/{number}', [ScanController::class, 'page'])->whereNumber('number')->name('preview');

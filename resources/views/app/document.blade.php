@@ -23,15 +23,8 @@
         <div class="phone-actions">
             <a class="phone-action" href="{{ route('documents.download', $file->id) }}" download><x-icon name="download" />{{ __('app.docs.download') }}</a>
             <button type="button" class="phone-action" data-share="{{ route('documents.file', $file->id) }}" data-share-title="{{ $document->title }}" data-share-type="{{ $file->mime }}" hidden><x-icon name="send" />{{ __('app.docs.share') }}</button>
-            @if ($canPrint)
-                <form method="post" action="{{ route('documents.print', $file->id) }}">
-                    @csrf
-                    <input type="hidden" name="app_back" value="{{ $back }}">
-                    <button type="submit" class="phone-action"><x-icon name="printer" />{{ __('app.docs.print') }}</button>
-                </form>
-            @else
-                <a class="phone-action" href="{{ route('app.scanner') }}"><x-icon name="printer" />{{ __('app.docs.print') }}</a>
-            @endif
+            {{-- A34: the phone's own print dialog with the printers in its Wi-Fi; nothing to set up. --}}
+            <button type="button" class="phone-action" data-phone-print="{{ route('documents.file', $file->id) }}" data-print-title="{{ $document->title }}" data-print-type="{{ $file->mime }}"><x-icon name="printer" />{{ __('app.docs.print') }}</button>
         </div>
     @endif
 

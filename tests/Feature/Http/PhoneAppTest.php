@@ -109,56 +109,83 @@ function serverAt(string $address): void
     app()->instance(ScannerDiscovery::class, new ScannerDiscovery($address));
 }
 
-it('always shows Scannen and Drucken, leading to Drucker & Scanner while nothing is connected', function (): void {
+it('prints and scans without anything at home: phone print dialog and camera', function (): void {
     $this->actingAs($this->owner->user)->post('/documents', ['file' => UploadedFile::fake()->image('bon.jpg')]);
-    $document = Document::withoutGlobalScope(OrgScope::class)->firstOrFail();
+    $document = Document::withoutGlobalScope(OrgScope::class)->with('files')->firstOrFail();
+    $file = $document->files->first();
 
     $this->get('/app/documents')->assertOk()
         ->assertSee(__('app.scan.title'))
-        ->assertSee(__('app.scanner.short'))
-        ->assertSee('href="'.route('app.scanner').'"', false);
-    $this->get('/app/documents/'.$document->id)->assertOk()->assertSee(__('app.docs.print'))->assertSee(route('app.scanner'), false);
-    $this->get('/app/scan')->assertRedirect('/app/scanner');
-    $this->get('/app/settings')->assertSee(__('app.scanner.title'));
+        ->assertSee('data-phone-print="'.route('documents.file', $file->id).'"', false)
+        ->assertDontSee('/app/scanner', false);
+    $this->get('/app/documents/'.$document->id)->assertOk()->assertSee('data-phone-print', false);
+    $this->get('/app/settings')->assertOk()->assertDontSee(__('app.scanner.title'));
+    $this->get('/app/scanner')->assertNotFound();
+
+    $this->get('/app/scan')->assertOk()
+        ->assertSee(__('app.scan.one'))
+        ->assertSee(__('app.scan.many'))
+        ->assertSee('capture="environment"', false)
+        ->assertSee(route('scan.photo'), false)
+        ->assertDontSee(__('app.scan.with_printer'));
 });
 
-it('puts the Scan Station first with its steps when DocHamster runs on the internet', function (): void {
+it('turns camera photos into pages and one PDF with a name and a folder', function (): void {
+    $this->actingAs($this->owner->user);
+    $this->post('/folders', ['name' => 'Verträge', 'parent_id' => '']);
+    $folder = appFolder('Verträge');
+
+    $this->post('/scan/photo', ['photo' => UploadedFile::fake()->image('seite1.jpg', 800, 1100)], ['Accept' => 'application/json'])
+        ->assertCreated()->assertJson(['pages' => 1]);
+    $this->post('/scan/photo', ['photo' => UploadedFile::fake()->image('seite2.png', 800, 1100)], ['Accept' => 'application/json'])
+        ->assertCreated()->assertJson(['pages' => 2]);
+    $this->post('/scan/photo', ['photo' => UploadedFile::fake()->create('x.txt', 1, 'text/plain')], ['Accept' => 'application/json'])
+        ->assertUnprocessable();
+
+    $this->get('/app/scan?mode=many&with=camera')->assertOk()->assertSee(__('app.scan.next'))->assertSee(__('app.scan.done_title'));
+    $this->post('/scan/finish', ['title' => 'Mietvertrag', 'folder' => $folder->id, 'app_back' => '/app/documents?folder='.$folder->id])
+        ->assertRedirect('/app/documents?folder='.$folder->id);
+
+    $document = Document::withoutGlobalScope(OrgScope::class)->with('files')->where('title', 'Mietvertrag')->firstOrFail();
+    expect($document->folder_id)->toBe($folder->id)
+        ->and($document->files->first()?->mime)->toBe('application/pdf');
+});
+
+it('asks camera or printer when a printer is connected on the website', function (): void {
+    Organization::query()->findOrFail($this->owner->org_id)->forceFill(['settings_json' => ['scanner' => ['url' => 'http://192.168.0.20', 'name' => 'Testdrucker']]])->save();
+
+    $this->actingAs($this->owner->user)->get('/app/scan')->assertOk()
+        ->assertSee(__('app.scan.with_camera'))
+        ->assertSee(__('app.scan.with_printer'))
+        ->assertSee('Testdrucker');
+    $this->get('/app/scan?with=printer')->assertOk()->assertSee(route('scan.page'), false)->assertDontSee(route('scan.photo'), false);
+    $this->get('/app/scan?with=camera')->assertOk()->assertSee(route('scan.photo'), false);
+});
+
+it('does not count a stored public scanner address as connected', function (): void {
+    Organization::query()->findOrFail($this->owner->org_id)->forceFill(['settings_json' => ['scanner' => ['url' => 'http://203.0.113.5']]])->save();
+
+    $this->actingAs($this->owner->user)->get('/app/scan')->assertOk()->assertDontSee(__('app.scan.with_printer'));
+});
+
+it('offers the network search on the website only when DocHamster runs in a home network', function (): void {
+    Http::fake(['*' => Http::response('', 404)]);
+    $this->actingAs($this->owner->user);
+
     serverAt('203.0.113.7');
+    $this->get('/scanner')->assertOk()->assertSee(__('scan.settings_title'))->assertDontSee(__('app.scanner.search'));
 
-    $this->actingAs($this->owner->user)->get('/app/scanner')->assertOk()
-        ->assertSee(__('app.scanner.station_start'))
-        ->assertDontSee(__('app.scanner.search'));
-
-    $this->post('/scanner/stations', ['app_back' => '/app/scanner'])->assertRedirect('/app/scanner');
-    $this->get('/app/scanner')->assertOk()
-        ->assertSee(__('app.scanner.steps_title'))
-        ->assertSee((string) session('station_code'))
-        ->assertSee('dochamster-station.php');
-});
-
-it('offers the network search when DocHamster runs in a home network', function (): void {
     serverAt('192.168.0.5');
-    Http::fake(['*' => Http::response('', 404)]);
-
-    $this->actingAs($this->owner->user)->get('/app/scanner')->assertOk()->assertSee(__('app.scanner.search'));
-    $this->get('/scanner')->assertOk()->assertSee(__('scan.settings_title'))->assertSee(__('app.scanner.search'));
-
-    $this->post('/scanner/search', ['app_back' => '/app/scanner'])->assertRedirect('/app/scanner');
-    expect(session('scanners_found'))->toBe([]);
+    $this->get('/scanner')->assertOk()->assertSee(__('app.scanner.search'));
     $this->post('/scanner/search')->assertRedirect('/scanner');
+    expect(session('scanners_found'))->toBe([]);
 });
 
-it('lets every employee connect a printer or scanner, only admins remove one', function (): void {
-    serverAt('192.168.0.5');
-    Http::fake(['*' => Http::response('', 404)]);
+it('lets every employee connect a printer or scanner on the website, only admins remove one', function (): void {
     $member = Membership::factory()->create(['org_id' => $this->owner->org_id]);
 
-    $this->actingAs($member->user)->get('/app/scanner')->assertOk()
-        ->assertSee(__('app.scanner.search'))
-        ->assertSee(__('app.scanner.station_title'));
-    $this->get('/scanner')->assertOk()->assertDontSee('/revoke', false);
-    $this->post('/scanner/search', ['app_back' => '/app/scanner'])->assertRedirect('/app/scanner');
-    $this->post('/scanner/stations', ['app_back' => '/app/scanner'])->assertRedirect('/app/scanner');
+    $this->actingAs($member->user)->get('/scanner')->assertOk()->assertDontSee('/revoke', false);
+    $this->post('/scanner/stations')->assertRedirect('/scanner');
     expect(session('station_code'))->toBeString();
     $this->post('/scanner', ['url' => ''])->assertForbidden();
 });
@@ -168,6 +195,7 @@ it('lets the tax advisor connect nothing', function (): void {
 
     $this->actingAs($advisor->user)->get('/scanner')->assertForbidden();
     $this->post('/scanner/stations')->assertForbidden();
+    $this->post('/scan/photo', ['photo' => UploadedFile::fake()->image('x.jpg')])->assertForbidden();
 });
 
 it('says only stored when the app sends a photo, and why not otherwise', function (): void {
@@ -180,22 +208,6 @@ it('says only stored when the app sends a photo, and why not otherwise', functio
     $this->post('/documents', [], ['Accept' => 'application/json'])->assertUnprocessable();
 
     expect(Document::withoutGlobalScope(OrgScope::class)->count())->toBe(1);
-});
-
-it('scans one page or several once a scanner is connected', function (): void {
-    Organization::query()->findOrFail($this->owner->org_id)->forceFill(['settings_json' => ['scanner' => ['url' => 'http://192.168.0.20', 'name' => 'Testdrucker']]])->save();
-
-    $this->actingAs($this->owner->user)->get('/app/documents')->assertSee(__('app.scan.title'));
-    $this->get('/app/scan')->assertOk()
-        ->assertSee(__('app.scan.one'))
-        ->assertSee(__('app.scan.many'))
-        ->assertSee('Testdrucker');
-});
-
-it('does not count a stored public scanner address as connected', function (): void {
-    Organization::query()->findOrFail($this->owner->org_id)->forceFill(['settings_json' => ['scanner' => ['url' => 'http://203.0.113.5']]])->save();
-
-    $this->actingAs($this->owner->user)->get('/app/scan')->assertRedirect('/app/scanner');
 });
 
 it('names a new phone by itself and lets the person rename it', function (): void {

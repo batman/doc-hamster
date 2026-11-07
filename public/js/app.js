@@ -942,6 +942,89 @@
         start();
     };
 
+    // Scannen with the phone camera (A35): the photo is made smaller and sent as the next
+    // page; then the scan page opens again with the new page in the strip.
+    const setupScanPhotos = () => {
+        document.querySelectorAll('form[data-scan-photo]').forEach(form => {
+            const input = form.querySelector('input[type="file"]');
+            const label = form.querySelector('label span');
+            input.addEventListener('change', async () => {
+                const file = input.files[0];
+                if (!file) {
+                    return;
+                }
+                const original = label.textContent;
+                label.textContent = form.dataset.busy;
+                form.classList.add('is-busy');
+                try {
+                    const photo = await shrinkPhoto(file);
+                    const body = new FormData();
+                    body.append('_token', form.querySelector('input[name="_token"]').value);
+                    body.append('photo', photo, photo.name || 'seite.jpg');
+                    const response = await fetch(form.action, { method: 'POST', body, credentials: 'same-origin', headers: { Accept: 'application/json' } });
+                    if (response.status === 201) {
+                        window.location.href = form.querySelector('input[name="app_back"]').value;
+                        return;
+                    }
+                    let message = '';
+                    try {
+                        message = (await response.json()).message || '';
+                    } catch {
+                        // no JSON: the plain message below
+                    }
+                    window.alert(message || response.statusText);
+                } catch {
+                    window.alert(navigator.onLine ? form.dataset.unreachable : form.dataset.offline);
+                }
+                label.textContent = original;
+                form.classList.remove('is-busy');
+                input.value = '';
+            });
+        });
+    };
+
+    // Drucken in the phone app (A34): the phone's own print dialog lists the printers in its
+    // Wi-Fi – nothing to set up. Photos are printed from a hidden frame; a PDF goes through
+    // the share menu where available (iPhone: "Drucken" there prints every page).
+    const setupPhonePrint = () => {
+        const printFrame = url => {
+            const frame = document.createElement('iframe');
+            frame.className = 'print-frame';
+            frame.setAttribute('aria-hidden', 'true');
+            frame.tabIndex = -1;
+            frame.addEventListener('load', () => {
+                try {
+                    frame.contentWindow.focus();
+                    frame.contentWindow.print();
+                } catch {
+                    window.print();
+                }
+            });
+            frame.src = url;
+            document.body.append(frame);
+            setTimeout(() => frame.remove(), 120000);
+        };
+        document.querySelectorAll('[data-phone-print]').forEach(button => button.addEventListener('click', async () => {
+            const url = button.dataset.phonePrint;
+            const type = button.dataset.printType || '';
+            if (type === 'application/pdf' && navigator.canShare) {
+                try {
+                    const blob = await (await fetch(url, { credentials: 'same-origin' })).blob();
+                    const file = new File([blob], `${button.dataset.printTitle || 'dokument'}.pdf`, { type: 'application/pdf' });
+                    if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({ files: [file], title: button.dataset.printTitle });
+                        return;
+                    }
+                } catch (error) {
+                    if (error && error.name === 'AbortError') {
+                        return; // closed by the person
+                    }
+                }
+            }
+            printFrame(url);
+        }));
+    };
+
     // Phone app: "really delete?" before forms marked data-confirm, and sharing a document.
     const setupPhoneActions = () => {
         document.querySelectorAll('form[data-confirm]').forEach(form => form.addEventListener('submit', event => {
@@ -976,6 +1059,8 @@
         setupServiceWorker();
         setupCamera(setupUploadQueue());
         setupPhoneActions();
+        setupScanPhotos();
+        setupPhonePrint();
         setupScanWait();
         setupPrintAndZoom();
         setupMenu();

@@ -24,6 +24,7 @@ return [
     'scan_next' => 'Nächste Seite scannen',
     'scanning' => 'Es wird gescannt …',
     'pages' => '{1} :count Seite|[2,*] :count Seiten',
+    'too_many' => 'Höchstens 50 Seiten pro Dokument.',
     'page' => 'Seite :number',
     'remove' => 'Seite :number entfernen',
     'remove_short' => 'Entfernen',

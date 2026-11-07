@@ -23,11 +23,10 @@
         </nav>
     @endif
 
-    {{-- A22: always there; without a device both lead to "Drucker & Scanner". --}}
-    <div class="phone-actions">
-        <a class="phone-action" href="{{ $scanReady ? route('app.scan', array_filter(['folder' => $current?->id])) : route('app.scanner') }}"><x-icon name="scan" />{{ __('app.scan.title') }}</a>
-        <a class="phone-action phone-action-quiet" href="{{ route('app.scanner') }}"><x-icon name="printer" />{{ __('app.scanner.short') }}</a>
-    </div>
+    {{-- A35: scanning works with the phone camera, nothing to connect. --}}
+    @if ($canScan)
+        <a class="phone-action" href="{{ route('app.scan', array_filter(['folder' => $current?->id])) }}"><x-icon name="scan" />{{ __('app.scan.title') }}</a>
+    @endif
 
     <ul class="phone-list" aria-label="{{ __('folders.title') }}">
         @foreach ($folders as $folder)
@@ -69,15 +68,9 @@
                     @endif
                     <span>{{ $document->title }}<small class="muted">{{ $document->created_at?->format('d.m.Y') }}</small></span>
                 </a>
-                @if ($canPrint && $file)
-                    {{-- A21: print straight from the list, without opening the document. --}}
-                    <form class="phone-row-print" method="post" action="{{ route('documents.print', $file->id) }}">
-                        @csrf
-                        <input type="hidden" name="app_back" value="{{ $back }}">
-                        <button type="submit" class="button-quiet" aria-label="{{ __('app.docs.print_named', ['name' => $document->title]) }}"><x-icon name="printer" /></button>
-                    </form>
-                @elseif ($file)
-                    <a class="phone-row-print button-quiet" href="{{ route('app.scanner') }}" aria-label="{{ __('app.docs.print_named', ['name' => $document->title]) }}"><x-icon name="printer" /></a>
+                @if ($file)
+                    {{-- A21/A34: print straight from the list through the phone's print dialog. --}}
+                    <button type="button" class="phone-row-print" data-phone-print="{{ route('documents.file', $file->id) }}" data-print-title="{{ $document->title }}" data-print-type="{{ $file->mime }}" aria-label="{{ __('app.docs.print_named', ['name' => $document->title]) }}"><x-icon name="printer" /></button>
                 @endif
             </li>
         @endforeach

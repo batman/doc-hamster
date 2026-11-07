@@ -8,10 +8,8 @@ use App\Domain\Documents\Document;
 use App\Domain\Documents\Folder;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
-use App\Domain\Scanning\NetworkPrinter;
 use App\Domain\Scanning\ScannerAddress;
 use App\Domain\Scanning\ScanStation;
-use App\Jobs\Net\ScannerDiscovery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -23,6 +21,10 @@ use Illuminate\View\View;
  * "Dokumente" holds folders, documents and scanning. Everything else is the
  * website. Forms post to the website's own routes with `app_back`
  * (ReturnToApp), so there is one set of rules for both.
+ *
+ * It works without anything at home (point 12): scanning uses the phone
+ * camera, printing the phone's own print dialog with the printers in its
+ * Wi-Fi. A printer/scanner connected on the website is offered as a choice.
  */
 final class PhoneAppController
 {
@@ -37,7 +39,7 @@ final class PhoneAppController
     }
 
     /** Dokumente: the folders of one level and the documents in the open folder. */
-    public function documents(Request $request, CurrentOrg $org, NetworkPrinter $printer): View
+    public function documents(Request $request, CurrentOrg $org): View
     {
         $rows = collect(Folder::flat());
         $wanted = $request->query('folder');
@@ -60,13 +62,12 @@ final class PhoneAppController
             'folders' => $rows->filter(static fn (array $row): bool => $row['folder']->parent_id === $current?->id)->pluck('folder')->values(),
             'allFolders' => $rows->all(),
             'documents' => $documents,
-            'scanReady' => $this->scanReady($org),
-            'canPrint' => $printer->available(),
+            'canScan' => Gate::allows(Permission::UploadDocuments->value),
             'back' => route('app.documents', array_filter(['folder' => $current?->id]), false),
         ]);
     }
 
-    public function document(Request $request, string $id, CurrentOrg $org, NetworkPrinter $printer): View
+    public function document(Request $request, string $id, CurrentOrg $org): View
     {
         $document = Document::query()
             ->visibleTo($org->membership()->user_id, Gate::allows(Permission::ViewAllDocuments->value))
@@ -76,41 +77,33 @@ final class PhoneAppController
             'document' => $document,
             'file' => $document->files->first(),
             'folders' => Folder::flat(),
-            'canPrint' => $printer->available(),
             'back' => route('app.documents.show', $document->id, false),
             'list' => route('app.documents', array_filter(['folder' => $document->folder_id]), false),
         ]);
     }
 
-    /** Scannen: one page or several, then a name and a folder. Not connected yet → connect first. */
-    public function scan(Request $request, CurrentOrg $org, ScanController $scans): View|RedirectResponse
-    {
-        if (! $this->scanReady($org)) {
-            return redirect()->route('app.scanner', array_filter(['folder' => $request->query('folder')]));
-        }
-
-        return view('app.scan', [...$scans->state($request, $org), 'folders' => Folder::flat(), 'back' => route('app.scan', array_filter(['folder' => $request->query('folder')]), false)]);
-    }
-
     /**
-     * Drucker & Scanner (A22, A30, A31): what is connected, and how to connect.
-     * On a server on the internet the Scan Station comes first with its steps
-     * and there is no network search; in a home network the search is offered.
-     * Only admins connect; everyone else is told to ask one.
+     * Scannen: with the phone camera (A35), or with the printer when one is
+     * connected on the website – then the person chooses once per document
+     * (A39). One page or several, then a name and a folder or none.
      */
-    public function scanner(CurrentOrg $org, ScannerDiscovery $discovery): View
+    public function scan(Request $request, CurrentOrg $org, ScanController $scans): View
     {
-        // A33: everyone who may upload connects a device, no admin needed.
-        $admin = Gate::allows(Permission::UploadDocuments->value);
+        abort_unless(Gate::allows(Permission::UploadDocuments->value), 403);
+        $device = $this->deviceConnected($org);
+        $state = $scans->state($request, $org);
+        $wanted = $request->query('with');
+        $with = match (true) {
+            ! $device => 'camera',
+            in_array($wanted, ['camera', 'printer'], true) => $wanted,
+            $state['waiting'] || $state['pages'] > 0 => 'printer',
+            default => null, // device connected, nothing started: ask (A39)
+        };
 
-        return view('app.scanner', [
-            'admin' => $admin,
-            'searchable' => $admin && $discovery->possible(),
-            'found' => session('scanners_found'),
-            'code' => session('station_code'),
-            'stations' => ScanStation::query()->whereNotNull('token_hash')->whereNull('revoked_at')->orderBy('name')->get(),
-            'direct' => $org->organization()->settings_json['scanner']['name'] ?? null,
-            'back' => route('app.scanner', absolute: false),
+        return view('app.scan', [
+            ...$state,
+            'with' => $with,
+            'folders' => Folder::flat(),
         ]);
     }
 
@@ -120,11 +113,9 @@ final class PhoneAppController
         return view('app.settings');
     }
 
-    private function scanReady(CurrentOrg $org): bool
+    /** A printer/scanner from the website's "Drucker & Scanner": an address in the settings or a linked Scan Station. */
+    private function deviceConnected(CurrentOrg $org): bool
     {
-        if (! Gate::allows(Permission::UploadDocuments->value)) {
-            return false;
-        }
         $url = $org->organization()->settings_json['scanner']['url'] ?? null;
         try {
             // The same check as the website's scanning: a stored address is not trusted blindly.

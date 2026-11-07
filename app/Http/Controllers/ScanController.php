@@ -16,6 +16,7 @@ use App\Domain\Scanning\ScanStation;
 use App\Jobs\Net\EsclClient;
 use App\Jobs\Net\ScannerDiscovery;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -36,6 +37,9 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 final class ScanController
 {
     private const DPI = [150, 200, 300];
+
+    /** Photo pages per document from the phone camera. */
+    private const MAX_PAGES = 50;
 
     /** The scan page: pages so far, the form for the next one, and "Fertig". */
     public function index(Request $request, CurrentOrg $org): View
@@ -178,6 +182,55 @@ final class ScanController
         abort_if($jpeg === null, 404);
 
         return response($jpeg, 200, ['Content-Type' => 'image/jpeg', 'Cache-Control' => 'private, no-store']);
+    }
+
+    /**
+     * Scannen with the phone camera (A35): each photo becomes the next page of
+     * the document in the making; "Fertig" turns them into one PDF like a scan.
+     * No printer, scanner or computer at home needed.
+     */
+    public function photo(Request $request, CurrentOrg $org): RedirectResponse|JsonResponse
+    {
+        $request->validate(['photo' => ['required', 'file', 'max:25600']]);
+        $file = $request->file('photo');
+        $bytes = $file instanceof UploadedFile ? (string) file_get_contents($file->getRealPath()) : '';
+        $jpeg = self::asJpeg($bytes);
+        $session = new ScanSession($org->id(), $org->membership()->user_id);
+        if ($jpeg === null || $session->count() >= self::MAX_PAGES) {
+            $message = $jpeg === null ? __('documents.wrong_type') : __('scan.too_many');
+
+            return $request->expectsJson()
+                ? response()->json(['message' => $message], 422)
+                : back()->withErrors(['scan' => $message]);
+        }
+        $session->add([$jpeg]);
+
+        return $request->expectsJson()
+            ? response()->json(['pages' => $session->count()], 201)
+            : redirect()->route('scan.index');
+    }
+
+    /** JPEG as it is; PNG/WebP (when GD can read them) turned into JPEG; anything else null. */
+    private static function asJpeg(string $bytes): ?string
+    {
+        $info = $bytes !== '' ? @getimagesizefromstring($bytes) : false;
+        if ($info === false) {
+            return null;
+        }
+        if ($info[2] === IMAGETYPE_JPEG) {
+            return $bytes;
+        }
+        if (! in_array($info[2], [IMAGETYPE_PNG, IMAGETYPE_WEBP], true) || ! function_exists('imagecreatefromstring')) {
+            return null;
+        }
+        $image = @imagecreatefromstring($bytes);
+        if ($image === false) {
+            return null;
+        }
+        ob_start();
+        imagejpeg($image, null, 85);
+
+        return (string) ob_get_clean();
     }
 
     public function remove(CurrentOrg $org, int $number): RedirectResponse
