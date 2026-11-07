@@ -114,6 +114,15 @@ it('warns when cron never ran or stopped running', function (?int $heartbeatAge,
     '10 minutes ago' => [600, 'cron_stale'],
 ]);
 
+it('tells the admin the exact cron command when cron never ran', function (): void {
+    $probe = new FakeSystemProbe;
+    $probe->lastHeartbeat = null;
+    $probe->cronCommand = '/opt/php/bin/php /srv/dochamster/artisan schedule:run';
+
+    expect(check($probe, 'cron')->params)
+        ->toBe(['command' => '/opt/php/bin/php /srv/dochamster/artisan schedule:run']);
+});
+
 it('offers an add-on only when all its tools are present', function (): void {
     $probe = new FakeSystemProbe;
     $probe->executables = ['tesseract'];

@@ -43,7 +43,7 @@ return [
         'db_version_too_old' => ':server :version is too old – :minimum or newer is required.',
         'https_ok' => 'APP_URL uses HTTPS.',
         'https_missing' => 'APP_URL must start with https:// (fixed domain with a valid certificate).',
-        'cron_never' => 'Cron has not run yet. Add a cron entry: "php artisan schedule:run" every minute.',
+        'cron_never' => 'Cron has not run yet. Add a cron entry that runs every minute: ":command".',
         'cron_ok' => 'Last run :minutes min ago.',
         'cron_stale' => 'Last run :minutes min ago – check the cron entry.',
         'proc_open_ok' => 'Allowed.',
