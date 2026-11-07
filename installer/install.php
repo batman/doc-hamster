@@ -26,27 +26,45 @@ const DH_WIPE_GROUPS = [
     'tags' => ['label' => 'Tags (die Belege bleiben erhalten)', 'tables' => ['document_tags', 'tags']],
 ];
 const DH_EXTENSIONS = ['pdo_mysql', 'mbstring', 'intl', 'sodium', 'fileinfo', 'exif', 'zip', 'gd', 'curl'];
+// Package size caps. Far above the real release (v0.1.0: 29 MB unpacked, 7606 entries,
+// biggest file 0.7 MB), far below what would exhaust a shared hoster's disk or memory.
+const DH_MAX_ZIP_BYTES = 268435456; // 256 MiB unpacked in total
+const DH_MAX_ZIP_FILE_BYTES = 16777216; // 16 MiB per file
+const DH_MAX_ZIP_ENTRIES = 60000;
+// A failed release lookup is retried after 5 minutes at most: bounded API load
+// (12 calls/hour per session) with quick recovery from transient failures.
+const DH_RELEASE_RETRY_SECONDS = 300;
 
-$https = (! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-    || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
-session_set_cookie_params(['httponly' => true, 'samesite' => 'Strict', 'secure' => $https]);
-session_start();
-header('X-Frame-Options: DENY');
-header('X-Content-Type-Options: nosniff');
-header('Referrer-Policy: no-referrer');
-header('Cache-Control: no-store');
+// The test suite defines DH_TESTING and includes this file for its functions only;
+// the installer body below the function definitions is skipped then.
+if (! defined('DH_TESTING')) {
+    $https = isHttpsRequest($_SERVER);
+    session_set_cookie_params(['httponly' => true, 'samesite' => 'Strict', 'secure' => $https]);
+    session_start();
+    header('X-Frame-Options: DENY');
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: no-referrer');
+    header('Cache-Control: no-store');
 
-$webRoot = __DIR__;
-$outside = @is_writable(dirname($webRoot));
-// The web folder itself may be called "dochamster" (e.g. a subdomain) – never use it as the app folder.
-$appDir = ($outside ? dirname($webRoot) : $webRoot).'/dochamster';
-if ($appDir === $webRoot) {
-    $appDir .= '-app';
+    $webRoot = __DIR__;
+    $outside = @is_writable(dirname($webRoot));
+    // The web folder itself may be called "dochamster" (e.g. a subdomain) – never use it as the app folder.
+    $appDir = ($outside ? dirname($webRoot) : $webRoot).'/dochamster';
+    if ($appDir === $webRoot) {
+        $appDir .= '-app';
+    }
 }
 
 function h(string $s): string
 {
     return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+}
+
+/** True when the request came over HTTPS, directly or via a forwarding proxy. */
+function isHttpsRequest(array $server): bool
+{
+    return (! empty($server['HTTPS']) && $server['HTTPS'] !== 'off')
+        || strtolower((string) ($server['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
 }
 
 function page(string $title, string $body): void
@@ -104,16 +122,16 @@ function http(string $url, ?string $file = null): string
     return $out === null ? (string) $body : '';
 }
 
-/** Newest release whose manifest fits this PHP version. */
-function chooseRelease(): array
+/**
+ * Newest release whose manifest fits this PHP version.
+ *
+ * The manifest fetch is injected so the choice logic is unit-testable; the
+ * installer passes a download, the tests pass canned responses.
+ */
+function selectRelease(array $releases, callable $fetchManifest, string $phpVersion): array
 {
-    if (DH_PREVIEW_PR > 0) {
-        return choosePreviewRelease();
-    }
-
-    $releases = json_decode(http('https://api.github.com/repos/'.DH_REPO.'/releases?per_page=20'), true);
-    foreach (is_array($releases) ? $releases : [] as $release) {
-        if (! empty($release['draft']) || ! empty($release['prerelease'])) {
+    foreach ($releases as $release) {
+        if (! is_array($release) || ! empty($release['draft']) || ! empty($release['prerelease'])) {
             continue;
         }
         $assets = [];
@@ -123,14 +141,28 @@ function chooseRelease(): array
         if (! isset($assets['manifest.json'])) {
             continue;
         }
-        $manifest = json_decode(http($assets['manifest.json']), true);
-        if (is_array($manifest) && isset($assets[$manifest['zip'] ?? '']) && version_compare(PHP_VERSION, (string) $manifest['php'], '>=')) {
+        $manifest = $fetchManifest($assets['manifest.json']);
+        if (is_array($manifest) && isset($assets[$manifest['zip'] ?? '']) && version_compare($phpVersion, (string) $manifest['php'], '>=')) {
             $manifest['url'] = $assets[$manifest['zip']];
 
             return $manifest;
         }
     }
-    throw new RuntimeException('Keine passende DocHamster-Version für PHP '.PHP_VERSION.' gefunden.');
+    throw new RuntimeException('Keine passende DocHamster-Version für PHP '.$phpVersion.' gefunden.');
+}
+
+/** Newest release whose manifest fits this PHP version. */
+function chooseRelease(): array
+{
+    if (DH_PREVIEW_PR > 0) {
+        return choosePreviewRelease();
+    }
+
+    $releases = json_decode(http('https://api.github.com/repos/'.DH_REPO.'/releases?per_page=20'), true);
+
+    return selectRelease(is_array($releases) ? $releases : [], static function (string $url) {
+        return json_decode(http($url), true);
+    }, PHP_VERSION);
 }
 
 /** The branch installer rechecks the PR label and exact commit before touching installed files. */
@@ -182,10 +214,40 @@ function choosePreviewRelease(): array
     return $manifest;
 }
 
+/**
+ * The release from the session, choosing and caching it on the first call.
+ * Failures are cached too: a GitHub outage or rate limit must not turn every
+ * page reload into another API call. After DH_RELEASE_RETRY_SECONDS the next
+ * page load retries the lookup. The chooser is injected for unit testing.
+ */
+function loadRelease(array &$session, callable $choose, int $now): array
+{
+    if (isset($session['release']) && is_array($session['release'])) {
+        return $session['release'];
+    }
+    if (isset($session['release_error'], $session['release_error_at'])
+        && is_string($session['release_error'])
+        && $now - (int) $session['release_error_at'] < DH_RELEASE_RETRY_SECONDS) {
+        throw new RuntimeException($session['release_error']);
+    }
+    try {
+        $session['release'] = $choose();
+
+        return $session['release'];
+    } catch (RuntimeException $e) {
+        $session['release_error'] = $e->getMessage();
+        $session['release_error_at'] = $now;
+
+        throw $e;
+    }
+}
+
 function removeTree(string $dir): void
 {
     if (! is_dir($dir) || is_link($dir)) {
-        @unlink($dir);
+        if (file_exists($dir) || is_link($dir)) {
+            @unlink($dir);
+        }
 
         return;
     }
@@ -197,20 +259,61 @@ function removeTree(string $dir): void
     @rmdir($dir);
 }
 
-/** Write $content to $path; an existing different file is kept as <name>.bak-<time>. */
+/**
+ * Backup name for $path that never clobbers an earlier backup: <name>.bak-<time>,
+ * with a counter appended while that name is taken (two runs within one second,
+ * or a leftover backup from an earlier install).
+ */
+function backupPath(string $path): string
+{
+    $backup = $path.'.bak-'.date('YmdHis');
+    for ($i = 2; is_file($backup) || is_link($backup); $i++) {
+        $backup = $path.'.bak-'.date('YmdHis').'-'.$i;
+    }
+
+    return $backup;
+}
+
+/** Moves an existing file aside so placeFile() never destroys it; no-op when absent. */
+function moveToBackup(string $path): void
+{
+    if (is_file($path) || is_link($path)) {
+        rename($path, backupPath($path));
+    }
+}
+
+/**
+ * Write $content to $path; an existing different file is kept as <name>.bak-<time>.
+ *
+ * This is the documented answer to issue #8 (existing web-root files): replace with
+ * backup instead of refusing the install, so hoster placeholder pages survive and the
+ * user can restore anything unexpected from the .bak files.
+ */
 function placeFile(string $path, string $content, bool $keepOld): void
 {
     if ($keepOld && is_file($path) && (string) file_get_contents($path) !== $content) {
-        rename($path, $path.'.bak-'.date('YmdHis'));
+        moveToBackup($path);
     }
     file_put_contents($path, $content);
+}
+
+/**
+ * Rewrites public/index.php for a web root outside the app: every __DIR__.'/../
+ * becomes the absolute app path. var_export() quotes the path, so quotes or
+ * backslashes in the hoster's directory names cannot break the PHP syntax.
+ */
+function rewriteIndexPhp(string $index, string $appDir): string
+{
+    return str_replace("__DIR__.'/../", var_export($appDir.'/', true).".'", $index);
 }
 
 /** Puts everything from public/ into the web root; index.php gets the path to the app. */
 function wireWebRoot(string $appDir, string $webRoot, bool $keepOld): void
 {
     $copy = static function (string $from, string $to) use (&$copy, $keepOld): void {
-        @mkdir($to);
+        if (! is_dir($to)) {
+            @mkdir($to);
+        }
         foreach (scandir($from) ?: [] as $entry) {
             if (in_array($entry, ['.', '..', 'index.php', '.user.ini'], true)) {
                 continue;
@@ -223,13 +326,104 @@ function wireWebRoot(string $appDir, string $webRoot, bool $keepOld): void
     $copy($appDir.'/public', $webRoot);
 
     $index = (string) file_get_contents($appDir.'/public/index.php');
-    placeFile($webRoot.'/index.php', str_replace("__DIR__.'/../", var_export($appDir.'/', true).".'", $index), $keepOld);
+    placeFile($webRoot.'/index.php', rewriteIndexPhp($index, $appDir), $keepOld);
 }
 
-/** Downloads and checks the release, returns the unpacked folder. */
+/** One package entry name: only dochamster/... without parent references. */
+function assertZipEntry(string $name): void
+{
+    if (strpos($name, 'dochamster/') !== 0 || strpos($name, '..') !== false || strpos($name, "\0") !== false) {
+        throw new RuntimeException('Unerwarteter Inhalt im Paket.');
+    }
+}
+
+/** True when the entry headers flag a symlink (some libzip versions restore those on disk). */
+function isZipSymlink(ZipArchive $zip, int $index): bool
+{
+    $opsys = 0;
+    $attr = 0;
+    if (! $zip->getExternalAttributesIndex($index, $opsys, $attr)) {
+        return false;
+    }
+
+    return $opsys === ZipArchive::OPSYS_UNIX && (($attr >> 16) & 0170000) === 0120000;
+}
+
+/**
+ * Pre-scan of the whole package before anything is written: entry names, symlink
+ * flags and size caps. The caps default to the DH_MAX_ZIP_* constants; the tests
+ * pass small values to exercise the logic without building huge archives.
+ */
+function assertZipPaths(ZipArchive $zip, int $maxBytes = DH_MAX_ZIP_BYTES, int $maxFileBytes = DH_MAX_ZIP_FILE_BYTES, int $maxEntries = DH_MAX_ZIP_ENTRIES): void
+{
+    if ($zip->numFiles > $maxEntries) {
+        throw new RuntimeException('Das Paket ist zu groß und wurde abgewiesen.');
+    }
+    $total = 0;
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        assertZipEntry((string) $zip->getNameIndex($i));
+        if (isZipSymlink($zip, $i)) {
+            throw new RuntimeException('Unerwarteter Inhalt im Paket.');
+        }
+        $stat = $zip->statIndex($i);
+        $size = is_array($stat) ? (int) ($stat['size'] ?? 0) : 0;
+        if ($size > $maxFileBytes) {
+            throw new RuntimeException('Das Paket ist zu groß und wurde abgewiesen.');
+        }
+        $total += $size;
+        if ($total > $maxBytes) {
+            throw new RuntimeException('Das Paket ist zu groß und wurde abgewiesen.');
+        }
+    }
+}
+
+/**
+ * Extracts the package entry by entry (libzip streams each entry to disk, so no
+ * entry content is ever held in memory) and re-checks every entry as it lands:
+ * name, symlink refusal, and on-disk sizes against the caps. The header sizes in
+ * assertZipPaths() fail fast, but headers can lie – the filesize() accounting here
+ * is the ground truth. Anything already written stays inside $tmpDir; the caller
+ * wipes it when this throws.
+ */
+function extractZipEntries(ZipArchive $zip, string $tmpDir, int $maxBytes = DH_MAX_ZIP_BYTES, int $maxFileBytes = DH_MAX_ZIP_FILE_BYTES): void
+{
+    $total = 0;
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $name = (string) $zip->getNameIndex($i);
+        assertZipEntry($name);
+        if (! $zip->extractTo($tmpDir, $name)) {
+            throw new RuntimeException('Entpacken fehlgeschlagen (Speicherplatz?).');
+        }
+        $path = $tmpDir.'/'.$name;
+        // A symlink entry would let later entries – or the app itself – write through it.
+        if (is_link($path) || ! file_exists($path)) {
+            throw new RuntimeException('Unerwarteter Inhalt im Paket.');
+        }
+        if (is_file($path)) {
+            $size = filesize($path);
+            if ($size === false || $size > $maxFileBytes) {
+                throw new RuntimeException('Das Paket ist zu groß und wurde abgewiesen.');
+            }
+            $total += $size;
+            if ($total > $maxBytes) {
+                throw new RuntimeException('Das Paket ist zu groß und wurde abgewiesen.');
+            }
+        }
+    }
+}
+
+/**
+ * Downloads and checks the release, returns the unpacked folder.
+ *
+ * Everything lands in $tmpDir; the caller moves the result into place with
+ * rename() last, so a failed run leaves no artisan marker behind and the
+ * install can simply be retried (issue #8).
+ */
 function unpackRelease(array $release, string $tmpDir, string $zipFile): string
 {
-    removeTree($tmpDir);
+    if (file_exists($tmpDir) || is_link($tmpDir)) {
+        removeTree($tmpDir);
+    }
     http($release['url'], $zipFile);
     if (! hash_equals((string) $release['sha256'], (string) hash_file('sha256', $zipFile))) {
         throw new RuntimeException('Die heruntergeladene Datei ist beschädigt (Prüfsumme stimmt nicht). Bitte erneut versuchen.');
@@ -239,15 +433,8 @@ function unpackRelease(array $release, string $tmpDir, string $zipFile): string
     if ($zip->open($zipFile) !== true) {
         throw new RuntimeException('ZIP-Datei lässt sich nicht öffnen.');
     }
-    for ($i = 0; $i < $zip->numFiles; $i++) {
-        $name = (string) $zip->getNameIndex($i);
-        if (strpos($name, 'dochamster/') !== 0 || strpos($name, '..') !== false) {
-            throw new RuntimeException('Unerwarteter Inhalt im Paket.');
-        }
-    }
-    if (! $zip->extractTo($tmpDir)) {
-        throw new RuntimeException('Entpacken fehlgeschlagen (Speicherplatz?).');
-    }
+    assertZipPaths($zip);
+    extractZipEntries($zip, $tmpDir);
     $zip->close();
     @unlink($zipFile);
 
@@ -363,6 +550,10 @@ function wipeSelected(string $appDir, array $groups): void
     }
 }
 
+if (defined('DH_TESTING')) {
+    return;
+}
+
 // The installer stays usable for two hours after its first run (not after upload: FTP clients may keep old file dates).
 $codeFile = codeFile($webRoot, $outside);
 if (is_file($codeFile) && time() - (int) filemtime($codeFile) > DH_MAX_AGE_SECONDS) {
@@ -421,9 +612,9 @@ foreach (DH_EXTENSIONS as $ext) {
     $checks['Erweiterung '.$ext] = extension_loaded($ext);
 }
 $checks['Schreibrechte für '.dirname($appDir)] = @is_writable(dirname($appDir));
-if (empty($_SESSION['release']) && extension_loaded('curl')) {
+if ((! isset($_SESSION['release']) || ! is_array($_SESSION['release'])) && extension_loaded('curl')) {
     try {
-        $_SESSION['release'] = chooseRelease();
+        loadRelease($_SESSION, 'chooseRelease', time());
     } catch (Throwable $e) {
         $checks[$e->getMessage()] = false;
     }
@@ -573,9 +764,7 @@ try {
         file_put_contents($appDir.'/storage/app/private/setup-code.txt', trim((string) file_get_contents($codeFile))."\n");
 
         foreach (['index.html', 'index.htm'] as $default) {
-            if (is_file($webRoot.'/'.$default)) {
-                rename($webRoot.'/'.$default, $webRoot.'/'.$default.'.bak-'.date('YmdHis'));
-            }
+            moveToBackup($webRoot.'/'.$default);
         }
         wireWebRoot($appDir, $webRoot, true);
     } else {

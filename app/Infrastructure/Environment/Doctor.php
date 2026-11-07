@@ -10,6 +10,9 @@ use Throwable;
  * Checks the server against the published minimum requirements (D-010) and
  * reports which add-ons can be offered. Used by `dochamster:doctor`,
  * `dochamster:setup` and later the admin page.
+ *
+ * Local-only mode skips the database check, so the rest can run with no
+ * database and no network – the no-network CI job (D-020) relies on this.
  */
 final class Doctor
 {
@@ -35,7 +38,7 @@ final class Doctor
     /**
      * @return list<CheckResult>
      */
-    public function run(): array
+    public function run(bool $localOnly = false): array
     {
         $results = [
             $this->phpVersion(),
@@ -43,11 +46,17 @@ final class Doctor
             $this->memoryLimit(),
             $this->uploadLimit('upload_max_filesize'),
             $this->uploadLimit('post_max_size'),
-            $this->database(),
-            $this->https(),
-            $this->cron(),
-            $this->procOpen(),
         ];
+
+        // Skipped, not filtered: local-only mode must not even attempt the
+        // connection, so it works with no database and no network (D-020).
+        if (! $localOnly) {
+            $results[] = $this->database();
+        }
+
+        $results[] = $this->https();
+        $results[] = $this->cron();
+        $results[] = $this->procOpen();
 
         foreach (Addon::cases() as $addon) {
             $results[] = $this->addon($addon);
@@ -170,7 +179,8 @@ final class Doctor
         $last = $this->probe->lastCronHeartbeat();
 
         if ($last === null) {
-            return new CheckResult('cron', CheckStatus::Warning, 'cron_never');
+            return new CheckResult('cron', CheckStatus::Warning, 'cron_never',
+                ['command' => $this->probe->cronCommand()]);
         }
 
         $age = $this->probe->now() - $last;

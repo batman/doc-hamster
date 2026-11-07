@@ -48,6 +48,49 @@
             sync();
         });
         document.querySelector('.nav-backdrop').addEventListener('click', closeDrawer);
+
+        // The wall right of the menu (A40): wide = open with that width, narrow = icons only, too narrow = hidden.
+        const NAV_WIDTH = 'dh-nav-width';
+        const rem = parseFloat(getComputedStyle(root).fontSize);
+        const applyWidth = width => root.style.setProperty('--nav-width', width ? `${width}px` : '');
+        try { applyWidth(Number(localStorage.getItem(NAV_WIDTH)) || 0); } catch { /* default width */ }
+        const side = nav.closest('.side');
+        const wall = document.createElement('div');
+        wall.className = 'nav-wall';
+        wall.setAttribute('aria-hidden', 'true');
+        side.append(wall);
+        wall.addEventListener('pointerdown', event => {
+            if (event.button !== 0 || mobile.matches) {
+                return;
+            }
+            event.preventDefault();
+            const left = side.getBoundingClientRect().left;
+            wall.setPointerCapture(event.pointerId);
+            wall.classList.add('is-active');
+            const place = (x, done) => {
+                const width = x - left;
+                root.classList.toggle('nav-closed', width < 4.5 * rem);
+                root.classList.toggle('nav-rail', width >= 4.5 * rem && width < 12 * rem);
+                if (width >= 12 * rem) {
+                    const w = Math.min(24 * rem, width);
+                    applyWidth(w);
+                    if (done) {
+                        try { localStorage.setItem(NAV_WIDTH, String(Math.round(w))); } catch { /* not remembered */ }
+                    }
+                }
+                if (done) {
+                    store();
+                    sync();
+                }
+            };
+            const move = e => place(e.clientX, false);
+            wall.addEventListener('pointermove', move);
+            wall.addEventListener('pointerup', e => {
+                wall.removeEventListener('pointermove', move);
+                wall.classList.remove('is-active');
+                place(e.clientX, true);
+            }, { once: true });
+        });
         document.addEventListener('keydown', event => {
             if (event.key === 'Escape' && root.classList.contains('nav-open')) {
                 closeDrawer();
@@ -219,6 +262,10 @@
         const shut = dialog => { dialog.hidden = true; };
         const open = button => {
             const dialog = document.querySelector(`[data-dialog="${button.dataset.dialogOpen}"]`);
+            const heading = dialog.querySelector('[data-dialog-heading]');
+            if (heading && button.dataset.dialogTitle) {
+                heading.textContent = button.dataset.dialogTitle;
+            }
             dialog.hidden = false;
             dialog.querySelector('[data-dialog-close], button, a, input')?.focus();
         };
@@ -238,7 +285,11 @@
                 })
                 .catch(() => { /* no share menu then, our dialog stays */ });
         });
-        document.querySelectorAll('[data-dialog-open]').forEach(button => button.addEventListener('click', () => {
+        document.addEventListener('click', event => {
+            const button = event.target.closest('[data-dialog-open]');
+            if (!button || button.disabled) {
+                return;
+            }
             const file = shared.get(button);
             if (file) {
                 navigator.share({ files: [file], title: file.name }).catch(error => {
@@ -249,7 +300,7 @@
                 return;
             }
             open(button);
-        }));
+        });
         document.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', () => {
             const field = document.getElementById(button.dataset.copy);
             field.select();
@@ -299,20 +350,166 @@
             }
         });
         cols.addEventListener('animationend', event => event.target.classList.remove('is-opening'));
+
+        // Walls between the columns (Go 2026-11-07, points 11-13): drag a column wider or narrower. Narrow shows
+        // only the icons, too narrow snaps to the strip like the arrow; a strip can be dragged open again.
+        // Widths are remembered per column; a double click resets, arrow keys move the focused wall.
+        const WIDTHS = 'dh-col-widths';
+        const rem = parseFloat(getComputedStyle(root).fontSize);
+        const ICONS = 4.5 * rem;
+        const TEXT = 12 * rem;
+        let widths = {};
+        try { widths = JSON.parse(localStorage.getItem(WIDTHS)) ?? {}; } catch { widths = {}; }
+        const keepWidths = () => { try { localStorage.setItem(WIDTHS, JSON.stringify(widths)); } catch { /* not remembered */ } };
+        const desktop = matchMedia('(min-width: 64rem)');
+        const limits = i => (pane(i)?.classList.contains('col-pane') ? [16 * rem, 40 * rem] : [ICONS, 24 * rem]);
+        const size = (i, width) => {
+            const p = pane(i);
+            if (width === undefined) {
+                p.style.width = '';
+                p.classList.remove('is-icons');
+            } else {
+                p.style.width = `${width}px`;
+                p.classList.toggle('is-icons', width < TEXT && !p.classList.contains('col-pane'));
+            }
+            document.dispatchEvent(new Event('dh:cols'));
+        };
+        [0, 1].forEach(i => {
+            if (foldable(i) && desktop.matches && typeof widths[i] === 'number' && !pane(i).hidden) {
+                size(i, widths[i]);
+            }
+        });
+        [0, 1].filter(foldable).forEach(i => {
+            const wall = document.createElement('div');
+            wall.className = 'col-wall';
+            wall.tabIndex = 0;
+            wall.setAttribute('role', 'separator');
+            wall.setAttribute('aria-orientation', 'vertical');
+            wall.setAttribute('aria-label', cols.dataset.wallLabel ?? '');
+            pane(i).after(wall);
+            const [min, max] = limits(i);
+            // width < min snaps to the strip; otherwise the column takes the width, held at the limits (A45)
+            const apply = (width, done) => {
+                if (width < ICONS) {
+                    if (!pane(i).hidden) {
+                        set(i, false, false);
+                    }
+                    if (done) {
+                        delete widths[i];
+                        keepWidths();
+                    }
+                    return;
+                }
+                const w = Math.min(max, Math.max(min, width));
+                if (pane(i).hidden) {
+                    set(i, true, false);
+                }
+                size(i, w);
+                if (done) {
+                    widths[i] = w;
+                    keepWidths();
+                }
+            };
+            wall.addEventListener('pointerdown', event => {
+                if (event.button !== 0 || !desktop.matches) {
+                    return;
+                }
+                event.preventDefault();
+                const left = (pane(i).hidden ? strip(i) : pane(i)).getBoundingClientRect().left;
+                wall.setPointerCapture(event.pointerId);
+                wall.classList.add('is-active');
+                const move = e => apply(e.clientX - left, false);
+                wall.addEventListener('pointermove', move);
+                wall.addEventListener('pointerup', e => {
+                    wall.removeEventListener('pointermove', move);
+                    wall.classList.remove('is-active');
+                    apply(e.clientX - left, true);
+                }, { once: true });
+            });
+            wall.addEventListener('dblclick', () => {
+                if (pane(i).hidden) {
+                    set(i, true, false);
+                }
+                size(i, undefined);
+                delete widths[i];
+                keepWidths();
+            });
+            wall.addEventListener('keydown', event => {
+                const step = event.key === 'ArrowLeft' ? -rem : (event.key === 'ArrowRight' ? rem : 0);
+                if (step !== 0) {
+                    event.preventDefault();
+                    apply((pane(i).hidden ? 0 : pane(i).offsetWidth) + step, true);
+                }
+            });
+        });
+
+        // Soft width changes (Go 2026-11-07, points 16-19): the arrow opens a column to its widest, folding and the
+        // automatic minimizing shrink it to the strip; ease-in-out, nothing moves with "reduce motion".
+        const still = matchMedia('(prefers-reduced-motion: reduce)');
+        const STRIP = 3.5 * rem;
+        const glide = (p, from, to) => new Promise(done => {
+            if (still.matches || !desktop.matches) {
+                done();
+                return;
+            }
+            p.style.width = `${from}px`;
+            p.classList.add('is-gliding');
+            p.getBoundingClientRect();
+            p.style.width = `${to}px`;
+            const end = () => {
+                p.classList.remove('is-gliding');
+                done();
+            };
+            p.addEventListener('transitionend', end, { once: true });
+            setTimeout(end, 400);
+        });
+        const fold = i => glide(pane(i), pane(i).offsetWidth, STRIP).then(() => {
+            set(i, false, false);
+            size(i, undefined);
+            delete widths[i];
+            keepWidths();
+        });
+        const unfold = i => {
+            const max = limits(i)[1];
+            set(i, true, false);
+            pane(i).classList.remove('is-icons');
+            return glide(pane(i), STRIP, max).then(() => {
+                size(i, max);
+                widths[i] = max;
+                keepWidths();
+            });
+        };
+
+        // A click on an entry folds its column to the strip before the next page opens (point 16).
+        cols.addEventListener('click', event => {
+            const item = event.target.closest('a.col-item');
+            const col = item?.closest('[data-col]');
+            if (!item || !col || event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) {
+                return;
+            }
+            const i = Number(col.dataset.col);
+            state[i] = 'closed';
+            delete widths[i];
+            keepWidths();
+            try { localStorage.setItem(COLS, JSON.stringify(state)); } catch { /* not remembered */ }
+            if (desktop.matches && !still.matches && foldable(i)) {
+                event.preventDefault();
+                fold(i).then(() => { location.href = item.href; });
+            }
+        });
+
         cols.addEventListener('click', event => {
             const folder = event.target.closest('[data-fold]');
             if (folder) {
                 const i = Number(folder.dataset.fold);
-                set(i, false);
-                strip(i).focus();
+                fold(i).then(() => strip(i).focus());
                 return;
             }
             const opener = event.target.closest('[data-strip]');
             if (opener) {
                 const i = Number(opener.dataset.strip);
-                set(i, true);
                 opened.push(i);
-                pane(i).querySelector('[data-fold]')?.focus();
+                unfold(i).then(() => pane(i).querySelector('[data-fold]')?.focus());
             }
         });
         // Capture phase: runs before dialogs and dropdowns close themselves on the same key.
@@ -324,8 +521,7 @@
             while (opened.length > 0) {
                 const i = opened.pop();
                 if (!pane(i).hidden) {
-                    set(i, false);
-                    strip(i).focus();
+                    fold(i).then(() => strip(i).focus());
                     return;
                 }
             }
@@ -410,10 +606,15 @@
         const layout = () => {
             board.classList.toggle('is-board', wide.matches);
             if (!wide.matches) {
-                notes.forEach(note => { note.style.left = ''; note.style.top = ''; });
+                // Phones: full width, the saved size waits for the board (A3).
+                notes.forEach(note => { note.style.left = ''; note.style.top = ''; note.style.width = ''; note.style.height = ''; });
                 board.style.height = '';
                 return;
             }
+            notes.filter(note => note.dataset.w !== undefined).forEach(note => {
+                note.style.width = `${note.dataset.w}px`;
+                note.style.height = `${note.dataset.h}px`;
+            });
             const taken = [];
             const put = (note, x, y) => {
                 note.style.left = `${x}px`;
@@ -480,9 +681,266 @@
             head.addEventListener('pointercancel', done, { once: true });
         });
 
+        // Size (Go of 2026-11-07): the browser's corner handle sets width/height inline; a moment after the last change it is saved.
+        const send = (url, fields) => {
+            const body = new FormData();
+            body.append('_token', board.dataset.csrf);
+            Object.entries(fields).forEach(([key, value]) => body.append(key, value));
+            return fetch(url, { method: 'POST', body, credentials: 'same-origin', headers: { Accept: 'application/json' } });
+        };
+        const timers = new Map();
+        const sized = new ResizeObserver(entries => entries.forEach(({ target: note }) => {
+            if (!wide.matches || !note.style.width || !note.style.height) {
+                return;
+            }
+            const w = String(Math.round(note.offsetWidth));
+            const h = String(Math.round(note.offsetHeight));
+            if (w === note.dataset.w && h === note.dataset.h) {
+                return;
+            }
+            clearTimeout(timers.get(note));
+            timers.set(note, setTimeout(() => {
+                note.dataset.w = w;
+                note.dataset.h = h;
+                fit();
+                send(note.dataset.noteLook, { w, h }).catch(() => { /* offline: kept until the next reload */ });
+            }, 500));
+        }));
+        notes.filter(note => note.dataset.noteLook).forEach(note => sized.observe(note));
+
+        // Edit dialog: colour and opacity show on the note right away; closing without saving puts the old look back (A9).
+        document.querySelectorAll('[data-note-preview]').forEach(dialog => {
+            const note = board.querySelector(`[data-note-id="${dialog.dataset.notePreview}"]`);
+            const form = dialog.querySelector('form');
+            if (!note || !form) {
+                return;
+            }
+            const colors = [...form.querySelectorAll('input[name="color"]')].map(input => `note-${input.value}`);
+            let before = null;
+            let saved = false;
+            const show = (color, alpha) => {
+                note.classList.remove(...colors);
+                note.classList.add(color);
+                note.style.setProperty('--note-alpha', alpha);
+            };
+            form.addEventListener('input', () => {
+                const color = form.querySelector('input[name="color"]:checked');
+                const opacity = form.querySelector('input[name="opacity"]');
+                show(color ? `note-${color.value}` : before.color, opacity ? `${opacity.value}%` : before.alpha);
+            });
+            form.addEventListener('submit', () => { saved = true; });
+            new MutationObserver(() => {
+                if (!dialog.hidden) {
+                    before = { color: colors.find(c => note.classList.contains(c)) ?? 'note-yellow', alpha: note.style.getPropertyValue('--note-alpha') || '100%' };
+                    saved = false;
+                } else if (before && !saved) {
+                    show(before.color, before.alpha);
+                    form.reset();
+                }
+            }).observe(dialog, { attributes: true, attributeFilter: ['hidden'] });
+        });
+
+        // Text (Go of 2026-11-07, round 2): the note's text is always a text field in a monospace font.
+        // Lists "[a, b, #c]" are set one entry per line; a mirror with the same font lies exactly over the
+        // field and draws our own checkboxes in the first three columns. A click in the text writes right
+        // there (the field is underneath), a click on a box ticks. Leaving the field formats and saves.
+        const LIST = /\[([^[\]]*)\]/g;
+        const entries = inner => inner.split(',')
+            .map(part => part.replace(/\s+/g, ' ').trim())
+            .map(part => ({ done: part.startsWith('#'), text: (part.startsWith('#') ? part.slice(1) : part).trim() }))
+            .filter(entry => entry.text !== '');
+        const block = items => items.map((item, i) => `${i === 0 ? '[' : ' '} ${item.done ? '#' : ' '}${item.text}${i === items.length - 1 ? ']' : ','}`).join('\n');
+        // After a list the text goes on in the next line.
+        const after = rest => {
+            const text = rest.replace(/^[ \t]+/, '');
+            return text === '' || text.startsWith('\n') ? text : `\n${text}`;
+        };
+        const format = text => {
+            let out = '';
+            let pos = 0;
+            for (const match of text.matchAll(LIST)) {
+                const items = entries(match[1]);
+                if (items.length === 0) {
+                    continue;
+                }
+                let before = text.slice(pos, match.index);
+                before = (pos > 0 ? after(before) : before).replace(/[ \t]+$/, '');
+                if ((out + before) !== '' && !(out + before).endsWith('\n')) {
+                    before += '\n';
+                }
+                out += before + block(items);
+                pos = match.index + match[0].length;
+            }
+            return pos > 0 ? out + after(text.slice(pos)) : text;
+        };
+        const span = (cls, text) => {
+            const el = document.createElement('span');
+            el.className = cls;
+            el.textContent = text;
+            return el;
+        };
+        // The mirror holds exactly the field's characters; only their look differs.
+        const mirror = (wrap, area) => {
+            const view = wrap.querySelector('.note-mirror');
+            const text = area.value;
+            const open = !area.readOnly;
+            view.replaceChildren();
+            let pos = 0;
+            for (const match of text.matchAll(LIST)) {
+                if (entries(match[1]).length === 0) {
+                    continue;
+                }
+                view.append(text.slice(pos, match.index));
+                let at = match.index;
+                match[0].split('\n').forEach((line, i) => {
+                    if (i > 0) {
+                        view.append('\n');
+                        at += 1;
+                    }
+                    // Our layout: 3 columns for the box, the entry, then "," or "]". Anything else stays plain text.
+                    const ok = /^[[ ] [ #]\S/.test(line) && /[,\]]$/.test(line);
+                    if (!ok) {
+                        view.append(line);
+                    } else {
+                        const done = line[2] === '#';
+                        const slot = span('note-slot', line.slice(0, 3));
+                        const box = span(`note-box${done ? ' is-done' : ''}`, '');
+                        box.setAttribute('role', 'checkbox');
+                        box.setAttribute('aria-checked', String(done));
+                        box.setAttribute('aria-label', line.slice(3, -1));
+                        box.dataset.at = String(at + 2);
+                        if (open) {
+                            box.tabIndex = 0;
+                        }
+                        slot.append(box);
+                        view.append(slot, span(`note-entry${done ? ' is-done' : ''}`, line.slice(3, -1)), span('note-mark', line.slice(-1)));
+                    }
+                    at += line.length;
+                });
+                pos = match.index + match[0].length;
+            }
+            view.append(text.slice(pos), '\n');
+        };
+        const grow = area => {
+            area.style.height = 'auto';
+            area.style.height = `${area.scrollHeight}px`;
+        };
+        const save = (wrap, area) => {
+            if (area.value === area.dataset.saved || !wrap.dataset.noteText) {
+                return;
+            }
+            const body = area.value;
+            send(wrap.dataset.noteText, { body })
+                .then(response => (response.ok ? (area.dataset.saved = body) : Promise.reject(response)))
+                .catch(() => location.reload());
+        };
+        board.querySelectorAll('.note-text').forEach(wrap => {
+            const area = wrap.querySelector('.note-area');
+            area.value = format(area.value);
+            area.dataset.saved = area.value;
+            mirror(wrap, area);
+            grow(area);
+            area.addEventListener('input', () => grow(area));
+            area.addEventListener('keydown', e => {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    area.value = area.dataset.saved;
+                    area.blur();
+                } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    area.blur();
+                }
+            });
+            area.addEventListener('blur', () => {
+                area.value = format(area.value);
+                mirror(wrap, area);
+                grow(area);
+                save(wrap, area);
+            });
+        });
+        const tick = box => {
+            const wrap = box.closest('.note-text');
+            const area = wrap.querySelector('.note-area');
+            if (area.readOnly) {
+                return;
+            }
+            const at = Number(box.dataset.at);
+            area.value = area.value.slice(0, at) + (area.value[at] === '#' ? ' ' : '#') + area.value.slice(at + 1);
+            mirror(wrap, area);
+            save(wrap, area);
+        };
+        // The box must not take the focus from nowhere into the field underneath.
+        board.addEventListener('pointerdown', event => {
+            if (event.target.closest('.note-box')) {
+                event.preventDefault();
+            }
+        });
+        board.addEventListener('click', event => {
+            const box = event.target.closest('.note-box');
+            if (box) {
+                tick(box);
+            }
+        });
+        board.addEventListener('keydown', event => {
+            const box = event.target.closest('.note-box');
+            if (box && (event.key === ' ' || event.key === 'Enter')) {
+                event.preventDefault();
+                tick(box);
+                board.querySelector(`.note-box[data-at="${box.dataset.at}"]`)?.focus();
+            }
+        });
+        addEventListener('resize', () => board.querySelectorAll('.note-area').forEach(grow));
+        new ResizeObserver(() => board.querySelectorAll('.note-area').forEach(grow)).observe(board);
+
         wide.addEventListener('change', layout);
         addEventListener('resize', () => wide.matches && fit());
         layout();
+    };
+
+    // Toasts close themselves after a few seconds; a click closes them at once.
+    const setupToasts = () => {
+        document.querySelectorAll('[data-toast]').forEach(toast => {
+            const leave = () => {
+                toast.classList.add('is-leaving');
+                setTimeout(() => toast.remove(), 300);
+            };
+            toast.addEventListener('click', leave);
+            setTimeout(leave, 5000);
+        });
+    };
+
+    // Update page: a row's "Installieren" puts its pull request number into the password dialog (A54).
+    const setupPreviewPick = () => {
+        document.addEventListener('click', event => {
+            const button = event.target.closest('[data-preview-pr]');
+            const field = document.querySelector('[data-preview-pr-field]');
+            if (button && field) {
+                field.value = button.dataset.previewPr;
+            }
+        }, { capture: true });
+    };
+
+    // Forms with data-ajax="#target" send in the background and put the returned list into the target,
+    // so one search never wipes the result of another (Update page). The button spins meanwhile.
+    const setupAjaxForms = () => {
+        document.querySelectorAll('form[data-ajax]').forEach(form => form.addEventListener('submit', event => {
+            event.preventDefault();
+            const button = form.querySelector('button[type="submit"]');
+            const target = document.querySelector(form.dataset.ajax);
+            button.disabled = true;
+            button.classList.add('is-busy');
+            fetch(form.action, { method: 'POST', body: new FormData(form), credentials: 'same-origin', headers: { Accept: 'application/json' } })
+                .then(response => (response.ok ? response.json() : Promise.reject(response)))
+                .then(data => {
+                    target.innerHTML = data.html;
+                    target.dispatchEvent(new Event('change', { bubbles: true }));
+                })
+                .catch(() => form.submit())
+                .finally(() => {
+                    button.disabled = false;
+                    button.classList.remove('is-busy');
+                });
+        }));
     };
 
     // Tags page: the search narrows the pills while typing, any letters inside the name.
@@ -1257,5 +1715,8 @@
         setupFolderMenu();
         setupFolderImport();
         setupNotes();
+        setupToasts();
+        setupAjaxForms();
+        setupPreviewPick();
     });
 })();

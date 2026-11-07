@@ -69,8 +69,6 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | P0-2a | Technical decisions D-001…D-010, D-012, D-016, D-017, D-019 (STT engine) | Lead | done | – | PR #2. All blocking decisions decided; D-005, D-006, D-007 (files), D-019 engine stay proposed until their phase |
 | P0-2b | Product decisions D-000, D-011, D-014, D-018 (receipt pack layout) | Lead | in progress | – | D-000, D-011, D-014 decided (`lead/P0-15-review-followups`); D-018 waits for the layout draft P0-5. D-015, D-019 decided by PO |
 | P0-3 | Repo basics: README, LICENSE, AGENTS.md, workflow, templates | Manager | done | – | 2026-10-29 |
-| P0-4 | Synthetic/anonymised fixtures: ~30 receipt photos (EXIF stripped), 1 anonymised Revolut export, 2–3 other bank exports | Lead + Manager | todo | P0-21 | Lead (with operator) supplies, Manager checks anonymisation |
-| P0-5 | UI sketches: capture, matching, **receipt pack PDF layout**, list, detail, settings | Manager | in review | P0-1c | Drafts done 2026-10-30: `docs/design/screens.md` (screens, 4 open product questions) and `docs/design/receipt-pack.html` + `.md` (layout, Q-19 questions). Lead signs off and asks its operator Q-19 (D-018) |
 | P0-6 | Roles set: Lead + Manager (both Claude) | PO | done | – | 2026-10-29 |
 | P0-7 | Public-repo hardening: SECURITY.md, rules, `.gitignore` | Manager | done | – | 2026-10-29 |
 | P0-8 | Full history & content scan before going public | Manager | done | before D-014 | 2026-10-30, after the repo was already public: gitleaks over all 31 commits/all refs clean; manual scan of authors, e-mails, IPs, hostnames, IBAN/phone patterns, binary files, issue/PR texts – nothing personal or secret (only composer.lock maintainer e-mails, RFC 5737 IPs, example.com). Repeat before v1.0 (P8-3) |
@@ -80,22 +78,12 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 
 | ID | Task | Owner | Status | Depends on | Notes |
 |----|------|-------|--------|------------|-------|
-| P0-10 | Ask Revolut (business-partners@revolut.com) whether an open-source module for Revolut Business users and the descriptive name are fine | Lead | todo | – | Blocks P3-4b, not Phase 1. Record only the generic outcome here |
 | P0-11 | Decide license policy D-022 | Lead | done | – | D-022 decided, PR #5 merged 2026-10-29 |
 | P0-12 | Answer Q-11: `BankConnector` interface + module install mechanism; finalise D-010 yourself (PO leaves Q-8 to the Lead) | Lead | in progress | PR #1 merged | D-010 finalised in PR #2 (one minimum requirement, no Docker); `BankConnector`/module part open; also update D-019/D-020 to "bank modules + SMTP" (PR #5 review point 10) |
-| P0-13 | Dependency license list `docs/DEPENDENCIES.md` + license column for add-on tools in the install docs (D-022: tools are installed by the admin, not shipped – no Ghostscript alternative needed) | Lead | todo | P0-11 | `docs/DEPENDENCIES.md` started in P1-1 (PR #9) |
 | P0-14 | Rebase PR #1 after PR #2 is merged; fill Q-8 row | Lead | done | PR #2 merged | Done by the Lead on PO request: renumbered D-020→D-021, D-021→D-022, Q-9→Q-11, merged main; Q-8 row filled in PR #2 |
 | P0-15 | Fix the must-fix points of the Manager's critical review on PR #2 (downloads for the offline worker, DNS-01, SQLite backups) and answer all points | Lead | done | – | PR #5 merged 2026-10-29: D-023 backup, D-016 as module, B12 criteria, D-025 PHP raise policy; all Manager review points answered |
 | P0-16 | **Critical review of PR #1** (D-021, D-022, P3 split, collaboration rules) – technical feasibility | Lead | todo | – | WORKFLOW §10. PR #1 was merged by the PO before this review → review after merge, fixes as a follow-up PR |
-| P0-17 | Architecture overview `docs/architecture/OVERVIEW.md`: components, queues (`local`/`net`), data flow, add-on detection, module mechanism, where each decision lives | Lead | todo | P0-15 | Manager reviews |
 | P0-18 | Concrete data model: list of migrations/tables for P1–P4 incl. B7/B8/B16/B17 and generic transaction fields (D-021) | Lead | todo | PR #1 merged | Replaces PLAN §6 tables in P0-1c |
-| P0-19 | Threat model `docs/security/THREAT-MODEL.md` (STRIDE) for pairing, upload, file serving, bank modules, receipt-pack links | Lead | todo | – | Manager reviews against PLAN §11 |
-| P0-20 | CI & tooling spec: GitHub Actions jobs (lint, PHPStan 8 + Larastan, Pest incl. arch tests, MariaDB + MySQL matrix, gitleaks, license check, `local` jobs without network – D-003, D-020) | Lead | todo | P0-13 | Implemented in P1-1 |
-| P0-21 | Synthetic fixture generator spec: fake receipts (images) and fake bank CSVs of several formats, no real data | Lead | todo | – | Reduces P0-4 for the PO |
-| P0-22 | Device test plan for the spikes B5 (camera method) and B14 (pairing inside installed PWA): devices, steps, pass criteria | Lead | todo | – | PO runs it on real phones |
-| P0-23 | Break P1-1…P1-8 into concrete sub-tasks with acceptance tests, order and rough size | Lead | todo | P0-15 | Manager reviews, then Phase 1 can start |
-| P0-24 | Critical review of the Manager's PLAN v2 PR (P0-1c) and receipt-pack layout (P0-5) | Lead | in progress | P0-1c, P0-5 | Post-merge review of PR #7 done (findings in old issue #18 → issue #4); P0-5 layout review open |
-| P0-25 | In P0-23: mark which Phase 1 sub-tasks the Manager codes **together with the Lead** (Lead assigns, Lead reviews) | Lead | todo | P0-23 | Manager never codes alone |
 
 ## Phase 1 – Foundation (v0.1) – started 2026-10-29 (PO go, issue #8)
 
@@ -104,29 +92,17 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | P1-1 | Project skeleton (Laravel, D-001), config, `.env.example`, `dochamster:doctor`/`setup` (no Docker, D-010), CI, gitleaks | Manager (PO override, issue #8) | done | PO go | Old repo PR #9; review findings in issue #4 |
 | P1-2 | Migrations: identity & access tables | Lead | done | P1-1 | Old repo PR #19 |
 | P1-3 | Layout, CSS base, i18n, error pages | Lead | done | P1-1 | Old repo PR #24 |
-| P1-4 | Setup CLI, invitations, pairing (link/QR), passkeys | Lead (pairing part: Manager) | todo (pairing in review) | P1-2 | Interim: owner password login + `dochamster:owner` (old repo PR #27) until passkeys. Phone pairing by QR/short code handed to the Manager by the PO 2026-11-07 (#37), PR #89 |
-| P1-5 | Device token rotation, device list, revoke, step-up | Manager (device login, list, revoke) / Lead (rotation, step-up) | in review (first part) | P1-4 | PO 2026-11-07: phone connected once stays signed in; PR #89. Rotation with theft detection and step-up still open |
 | P1-6 | Org scope middleware, roles/policies, permission-matrix tests | Lead | done | P1-2 | Old repo PR #20 |
 | P1-7 | Security headers, CSRF, rate limiting, health endpoint | Lead | done | P1-1 | Old repo PR #21; proxy/scheme finding in issue #6 |
-| P1-8 | README install, HTTPS docs, backup docs v1 | Lead | todo | P1-1 | |
 | P1-9 | Setup wizard in the browser, core (D-024): securing a fresh instance, server check, database setup, lock after finishing, resume; release package if decided | Lead | done | P1-1, P1-7, Q-12 | Old repo PR #22. Release package = web installer, PR #5 (Manager review there). Q-12 not yet recorded in DECISIONS.md (issue #6) |
 | P1-10 | Interactive shell install: same steps in the terminal, asks for DB credentials (D-024, AK-4.9.7) | Lead | done | P1-1, Q-12 | Old repo PR #23; must-fix: ends without an owner account (issue #6) |
-| P1-11 | Setup wizard: owner account, mail, cron check, connect the phone + home-screen app, first steps | Lead | todo | P1-4, P1-9 | Part done: owner step (old repo PR #28); mail, cron, phone open |
 | MVP-CSV | Bank CSV import + manual match (MVP) | Lead (this PC) | done | P1-6 | Any number of accounts, columns remembered per account, receipts linked by hand. Not in it: XLSX, separate debit/credit columns, "needs no receipt" |
 | MVP-ZIP | ZIP export per period (MVP) | Lead (install session) | done | P1-6 | PR #24; transactions join the index once MVP-CSV is merged |
 | MVP-PEOPLE | Owner adds employees and tax advisors, resets passwords, removes access (D-012) | Lead (install session) | done | P1-6 | PR #25, #27; tax advisors read-only on everything until shares (Q-20). Also: owner-triggered update, PR #26 |
 | MVP-ROLES | Roles the Admin creates and names, checkboxes per role; Admin fixed, Mitarbeiter + Steuerberater pre-installed | Manager | done | MVP-PEOPLE | PR #40. PLAN §2.1 not updated while the docs pause lasts |
-| MVP-FRONTEND | Own CSS/JS framework and frontend layer | Operator + Lead (install session) | todo, reserved | – | Issue #31. Fits D-004. Not started |
 | MVP-TAGS | Tags on receipts: pick at upload, filter in the list, managed by Admin and "Tags bearbeiten" | Manager | done | MVP-ROLES (checkbox) | PR #41. Plain chips until MVP-FRONTEND |
-| MVP-TIMELINE | Receipt list as timeline, table and large icons; timeline by upload or document date | Operator + Lead (install session) | todo, reserved | MVP-FRONTEND | Issue #33. Not started |
 | MVP-TAGCOLORS | Tags get colours and a leading # | Lead | done | MVP-TAGS | Issue #43, any colour (Q-29). Built in UI-APPLY-2 (#54): palette + own colour, "#" from CSS |
-| SCAN | Printer/scanner module (own repo `DocHamster-scanner`, MIT): scan one or several pages as one document into folders, "Scan from printer/scanner" button in the phone web app, print from DocHamster, receiver for printers that push; folders in the core | Manager | in review: everything in ONE PR #89 (preview-ready), replaces #79–#84; next: IPP printing, receiver | INBOX, PHONE | Issue #77, proposal `docs/proposals/printer-scan-station.md` (PO request 2026-11-06). Needs a `plan` PR amending D-015. Manager takes sub-tasks the Lead assigns |
 | FOLDERS | Folders under Belege: submenu "Ordner" with "+", "Belege allgemein" (fixed) + "Rechnungen", colour, symbol from 26 fixed icons, drag-and-drop order incl. Papierkorb, folder import, "+" per folder for subfolders | Manager (PO go 2026-11-07) | in review (PR, preview-ready) | SCAN (folders in the core) | PO request 2026-11-07; stacked on manager/SCAN-phone-once (#89) |
-| PRINT | DocHamster as a printer, through the hamster first, Windows first | – | todo | HAMSTER | Issue #34, stage 4 of the roadmap #35 |
-| MAIL | Documents by e-mail: inbox with release, mail archive | – | todo | HAMSTER | Issue #38, stage 4 of the roadmap #35 |
-| PHONE | Website on the home screen: camera, photos, documents, device pairing; never a native app | Manager (PO go 2026-11-07, handed over on #37) | in review (PR #89, preview-ready): home-screen app, app bar, photo queue offline, printing to the network printer | – | Issue #37, steps 1 and 2 in stage 1 of the roadmap #35. Device probe first |
-| INBOX | Upload interface with a personal key per device | – | todo | PHONE | Issue #36, stage 3 of the roadmap #35 |
-| HAMSTER | Desktop hamster: drop a file, it lands on the server; own repository, Tauri | – | todo | INBOX | Issue #36, stage 3 of the roadmap #35 |
 | HAMSTER-FIG | The hamster itself: 2D pixel-art mascot (poses traced from the PO's reference images, same pixel grid), stepped animations, free-moving (drag, throw, fall, eat documents as animation) | Manager (PO request) | done | – | `public/js/hamster-sprites.js`, `public/js/hamster-mascot.js`, demo `public/design/hamster.html`. PO OK, PR merged after green CI. Where it goes in the app (logo, pages, desktop app) and what eating does: Lead |
 | UI-STYLE | New look: styleguide, stylesheet and icons from the PO's design session (twelve points) | PO (Claude chat) | done | – | `public/design/` and `docs/design/ui-redesign.md`; the running app is unchanged |
 | UI-APPLY | Apply the new look to the Blade views and JS (menu frame, Einstellungen page, filter and views, no hamster) | Lead (this PC) | done | UI-STYLE | Menu frame, Einstellungen, filter in the browser, six views kept per person, no hamster in the app |
@@ -136,7 +112,6 @@ Phase 1 go: given by the PO on 2026-10-29 (issue #8).
 | REVIEW-56a | Fixes from review #56, points 1–6: download names with "/", share list and revoke by visibility, link lifetime for Admins, audit on opening a link, file type on share downloads, notes show only visible receipts | Manager | done | GO-1104 | PR #58. Lifetime Admin-only and notes filter decided while building, Lead may veto |
 | REVIEW-56b | Fixes from review #56, points 7 and 9: thumbnail pixel budget (40 MP in uploads) + EXIF orientation, bank amounts (minus behind the currency, more than two decimals) | Manager | done | UI-APPLY-2, MVP-CSV | PR #59. Point 8 (Ghostscript) and Revolut `State` rows stay with the Lead |
 | PREVIEW-DEPLOY | Preview selected, labelled pull-request branches through the server updater | Lead (this PC) | done | – | PO go 2026-11-07; PR #85 merged; v0.1.18 released; only open PRs labelled `preview-ready`, GitHub release package per PR, warning before swapping installed code |
-| PREVIEW-PUBLISHER | Fix preview release publishing without a local Git checkout | Lead (this PC) | in progress | PREVIEW-DEPLOY | Follow-up discovered while publishing the requested test previews; pass the repository explicitly to GitHub CLI |
 | BUG-DROP-1 | Prevent dragging a document preview from uploading it again | Lead (this PC) | done | – | PO request 2026-11-07; PR #86; PO verified the preview and approved merge |
 
 Phases 2–8: see PLAN.md §14 (reordered in v1.1: 2 capture with time/location → 3 Revolut & matching → 4 receipt pack = core flow done → 5 OCR → 6 search → 7 tax advisor access → 8 release). The Manager adds rows when the previous phase is in review.

@@ -2,12 +2,16 @@
 
 declare(strict_types=1);
 
+use App\Infrastructure\Environment\AppVersion;
+
 return [
 
     /*
-    | Written into the release package by .github/workflows/release.yml.
+    | Release number from the VERSION file (written by
+    | .github/workflows/release.yml), else the git short hash from a
+    | checkout, else 'dev' (e.g. install.php hosting without git).
     */
-    'version' => is_file(base_path('VERSION')) ? trim((string) file_get_contents(base_path('VERSION'))) : 'dev',
+    'version' => AppVersion::current(base_path()),
 
     /*
     | Appended to styles, scripts and the service worker: the version plus when

@@ -1,0 +1,56 @@
+name: Try-out smoke
+
+# Only when the stack itself or its dependencies change: a full Docker build
+# takes minutes and the app is tested by ci.yml anyway.
+on:
+  push:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - docker-compose.yml
+      - .dockerignore
+      - docker/**
+      - composer.json
+      - composer.lock
+      - .github/workflows/tryout.yml
+  pull_request:
+    paths:
+      - Dockerfile
+      - docker-compose.yml
+      - .dockerignore
+      - docker/**
+      - composer.json
+      - composer.lock
+      - .github/workflows/tryout.yml
+
+permissions:
+  contents: read
+
+# Guards the one-command Docker try-out from #63: boot the stack from zero
+# and prove the login page serves. No secrets needed, nothing app-side runs.
+jobs:
+  smoke:
+    name: Boot stack, login serves
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - run: docker compose up -d --build
+
+      - name: Wait for self-provisioning
+        run: |
+          for _ in $(seq 1 60); do
+            if docker compose logs app 2>/dev/null | grep -q '\[try\] ready'; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo '--- app log tail ---'
+          docker compose logs app | tail -30
+          exit 1
+
+      - run: curl -sf http://127.0.0.1:8080/login -o /dev/null
+
+      - run: docker compose down -v
+        if: always()

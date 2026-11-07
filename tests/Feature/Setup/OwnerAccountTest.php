@@ -28,3 +28,24 @@ it('creates its own organisation when another owner exists', function (): void {
     expect(Organization::count())->toBe(2)
         ->and($owner->memberships()->firstOrFail()->org_id)->not->toBe($existing->org_id);
 });
+
+it('ignores revoked owners when checking for an owner', function (): void {
+    Membership::factory()->create(['role' => Role::Owner, 'revoked_at' => now()]);
+    Membership::factory()->create(['role' => Role::Owner, 'revoked_at' => now()]);
+
+    expect(OwnerAccount::exists())->toBeFalse();
+
+    Membership::factory()->create(['role' => Role::Owner]);
+
+    expect(OwnerAccount::exists())->toBeTrue();
+});
+
+it('lets a new owner take over when the only owner is revoked', function (): void {
+    $revoked = Membership::factory()->create(['role' => Role::Owner, 'revoked_at' => now()]);
+
+    $owner = OwnerAccount::create('Neu', 'inhaber-neu', 'ein-langes-test-passwort');
+
+    expect(Organization::count())->toBe(1)
+        ->and($owner->memberships()->firstOrFail()->org_id)->toBe($revoked->org_id)
+        ->and($owner->memberships()->firstOrFail()->isActive())->toBeTrue();
+});

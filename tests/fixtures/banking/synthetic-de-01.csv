@@ -1,0 +1,11 @@
+Konto;DE00 0000 0000 0000 0000 00
+Buchungstag;Empfänger;Verwendungszweck;Betrag
+02.01.2026;Bäckerei Müller;Brötchen und Kuchen;-12,30
+03.01.2026;Musterfirma GmbH;Rechnung 2026-001;1.234,56
+05.01.2026;Café Sonnenschein;Kaffee mit Freunden;-3,50
+05.01.2026;Café Sonnenschein;Kaffee mit Freunden;-3,50
+06.01.2026;Stadtwerke Beispielstadt;"Abschlag Januar
+Kundennummer 12345";-89,00
+07.01.2026;Beispiel AG;Gehalt Januar;2.845,67
+08.01.2026;Buchhandlung Österreicher;Bücherbestellung Nr. 42;-45,99
+Summe;;;3.925,94

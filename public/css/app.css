@@ -594,20 +594,41 @@ a.col-item { text-decoration: none; }
    Narrow screens and no JS: a grid. Wide screens: app.js places them freely (.is-board). */
 .notes { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 1.5rem; margin: 1.5rem 0 0; padding: 0; list-style: none; }
 .notes.is-board { display: block; position: relative; }
-.notes.is-board > .note { position: absolute; width: 16rem; }
+.notes.is-board > .note { position: absolute; width: 16rem; height: 16rem; min-width: 10rem; min-height: 7.5rem; max-width: 100%; overflow: hidden; }
+/* Size: dragged at the bottom-right corner; the text wraps and scrolls inside (Go of 2026-11-07). */
+.notes.is-board > .note[data-note-look] { resize: both; }
 .note {
-    --note: #fff275; --note-ink: #2b2a1f; --note-alpha: 100%;
+    --note: #fdd835; --note-ink: #2b2a1f; --note-alpha: 100%;
     --note-bg: color-mix(in srgb, var(--note) var(--note-alpha), transparent);
     display: flex; flex-direction: column; min-height: 16rem; padding: 0;
     background: var(--note-bg); color: var(--note-ink);
     box-shadow: 2px 4px 12px rgb(0 0 0 / .2); overflow-wrap: anywhere;
 }
 .note:hover, .note:focus-within { z-index: 5; }
-.note-orange { --note: #ffc785; }
-.note-green { --note: #b8eda0; }
-.note-blue { --note: #a8d8ff; }
-.note-pink { --note: #ffb8d4; }
-.note-purple { --note: #d8c6ff; }
+/* The PO's 20 colours (2026-11-07). Dark ones get light ink so the text stays readable. */
+.note-white { --note: #ffffff; }
+.note-black { --note: #000000; }
+.note-gray { --note: #808080; }
+.note-red { --note: #e53935; }
+.note-bordeaux { --note: #800020; }
+.note-orange { --note: #fb8c00; }
+.note-yellow { --note: #fdd835; }
+.note-lightgreen { --note: #7cb342; }
+.note-green { --note: #2e7d32; }
+.note-turquoise { --note: #00acc1; }
+.note-lightblue { --note: #4fc3f7; }
+.note-blue { --note: #1e5bc6; }
+.note-navy { --note: #0d1b4c; }
+.note-purple { --note: #8e24aa; }
+.note-lavender { --note: #b39ddb; }
+.note-pink { --note: #ec407a; }
+.note-brown { --note: #6d4c41; }
+.note-beige { --note: #e8d8b9; }
+.note-gold { --note: #d4af37; }
+.note-mint { --note: #a5e6c8; }
+.note:is(.note-black, .note-red, .note-bordeaux, .note-green, .note-blue, .note-navy, .note-purple, .note-pink, .note-brown) { --note-ink: #fff; }
+.note:is(.note-black, .note-red, .note-bordeaux, .note-green, .note-blue, .note-navy, .note-purple, .note-pink, .note-brown) a { color: inherit; text-decoration: underline; }
+.note:is(.note-black, .note-red, .note-bordeaux, .note-green, .note-blue, .note-navy, .note-purple, .note-pink, .note-brown) .note-tool:hover { background: rgb(255 255 255 / .15); }
 .note-head { display: flex; align-items: center; gap: .25rem; min-height: 2.75rem; padding: .25rem .25rem 0 .75rem; }
 .is-board [data-note-look] .note-head { cursor: grab; touch-action: none; }
 .note.is-dragging { z-index: 10; box-shadow: 4px 10px 24px rgb(0 0 0 / .3); }
@@ -631,16 +652,55 @@ a.col-item { text-decoration: none; }
 .note-swatch-choice input:checked + .note-swatch { border-color: var(--text); box-shadow: inset 0 0 0 3px var(--bg); }
 .note-swatch-choice input:focus-visible + .note-swatch { outline: 2px solid var(--primary); outline-offset: 2px; }
 .note-opacity { min-height: 0; padding: 0; accent-color: var(--primary); }
-.note-lock-choice { margin-top: 1rem; }
+.note-lock-choice { margin-top: .25rem; }
 .note-lock { display: inline-flex; vertical-align: -.15em; margin-right: .25rem; }
 .note-lock .icon { width: 1em; height: 1em; }
-.note-content { flex: 1; padding: .75rem 1rem 0; }
+/* Text (Go of 2026-11-07, round 2): always a field in a monospace font; a mirror with the same metrics lies
+   over it and draws our own checkboxes into the first three columns of a list line ("[  a," / "  #b]"). */
+.note { --note-mono: ui-monospace, "Cascadia Mono", Consolas, Menlo, "DejaVu Sans Mono", monospace; }
+.note-content {
+    flex: 1; min-height: 0; padding: .75rem 1rem .5rem; overflow-y: auto;
+    scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--note-ink) 25%, transparent) transparent;
+}
+.note:hover .note-content { scrollbar-color: color-mix(in srgb, var(--note-ink) 55%, transparent) transparent; }
+.note-text { position: relative; }
+.note-area, .note-mirror {
+    box-sizing: border-box; display: block; width: 100%; max-width: none; margin: 0; padding: 0; border: 0;
+    font: .9rem/1.5 var(--note-mono); letter-spacing: 0; tab-size: 4; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.note-area {
+    min-height: 1.5em; overflow: hidden; resize: none; border-radius: 0; background: transparent; box-shadow: none;
+    color: transparent; caret-color: var(--note-ink);
+}
+.note-area:focus, .note-area:focus-visible { outline: none; box-shadow: none; color: var(--note-ink); }
+.note-area[readonly] { pointer-events: none; }
+.note-text:focus-within { outline: 1px dashed color-mix(in srgb, var(--note-ink) 45%, transparent); outline-offset: 4px; }
+.note-text:focus-within .note-mirror { visibility: hidden; }
+.note-mirror { position: absolute; inset: 0; pointer-events: none; color: var(--note-ink); }
+.note-slot, .note-mark { color: transparent; }
+.note-slot { position: relative; }
+.note-box {
+    position: absolute; left: 50%; top: 50%; width: 1.05em; height: 1.05em; box-sizing: border-box; transform: translate(-50%, -50%);
+    border: 2px solid var(--note-ink); border-radius: .25em; pointer-events: auto; cursor: pointer;
+}
+.note-box.is-done { background: var(--note-ink); }
+.note-box.is-done::after {
+    content: ""; position: absolute; left: .27em; top: .06em; width: .26em; height: .52em;
+    border: solid var(--note); border-width: 0 .14em .14em 0; transform: rotate(45deg);
+}
+.note-box:focus-visible { outline: 2px solid var(--note-ink); outline-offset: 2px; }
+.note-area[readonly] ~ .note-mirror .note-box { pointer-events: none; cursor: default; }
+.note-entry.is-done { text-decoration: line-through; opacity: .6; }
+.note-hint { margin: .75rem 0 0; font-size: .875rem; opacity: .8; }
 .note a { color: #9a3a00; }
 .note label { color: var(--note-ink); }
-.note-body { margin: 0; white-space: pre-line; }
-.note-checklist { margin: .5rem 0 0; padding: 0; list-style: none; }
-.note-checklist label { min-height: 2rem; margin: 0; }
-.note-checklist input:checked + span { text-decoration: line-through; opacity: .6; }
+/* Edit dialog of the notes only: wider, a plain shadow, little backdrop so the note shows the change, tight ticks. */
+.dialog-backdrop.note-backdrop { background: rgb(0 0 0 / .12); }
+.dialog.note-dialog { width: min(40rem, calc(100% - 2rem)); box-shadow: 0 10px 30px rgb(0 0 0 / .25); }
+.note-dialog input:not([type="checkbox"], [type="radio"], [type="range"]), .note-dialog textarea { max-width: none; }
+.note-dialog label:has(> input[type="checkbox"]) { margin-top: .25rem; min-height: 2.25rem; }
+.note-dialog .note-color-field { display: flex; flex-wrap: wrap; max-width: 27.5rem; }
+.note-new-text { font-family: ui-monospace, "Cascadia Mono", Consolas, Menlo, "DejaVu Sans Mono", monospace; }
 .note-links { margin: .5rem 0 0; padding: 0; list-style: none; }
 .note-links a { display: inline-flex; align-items: center; gap: .35rem; }
 .note-meta { margin: 0; padding: .5rem 1rem .6rem; font-size: .75rem; opacity: .7; }
@@ -657,17 +717,22 @@ a.col-item { text-decoration: none; }
 .tray-howto li { margin-bottom: .35rem; }
 
 /* Go of 2026-11-05: column menu */
-/* Desktop: everything right of the menu starts below the dark bar and scrolls in its own box, both ways (points 1, 4, 7). */
+/* Desktop: the area right of the menu scrolls in its own box, both ways (point 7). It starts with a gap as high
+   as the dark bar, so the menu button never covers the title; scrolling takes everything up to the very top
+   (Go 2026-11-07, point 4). Columns reach the top with their background and keep their content below the gap. */
 @media (min-width: 64rem) {
-    .shell:not(:has(> .side-plain)) .content { margin-top: 3.5rem; height: calc(100vh - 3.5rem); overflow: auto; }
+    .shell:not(:has(> .side-plain)) .content { height: 100vh; padding-top: 3.5rem; overflow: auto; }
     .page-split { min-height: 100%; }
+    .content > .page-split:has(> .cols) { margin-top: -3.5rem; min-height: calc(100% + 3.5rem); }
+    .content > .page-split > .cols > .col { padding-top: 4.75rem; }
+    .content > .page-split > .cols > button.col-strip { padding-top: 4.5rem; }
     /* Menu hidden: only the menu button is left, the first strip slides under it (point 5). */
     :is(html.nav-closed, .shell.nav-closed) .side:not(.side-plain) { position: fixed; top: 0; left: 0; height: 3.5rem; }
     .cols > .col-page, .cols > .col.is-last { min-width: 30rem; }
     .cols > .col-pane { min-width: 20rem; }
     /* A shade at the edge while there is more to scroll sideways (A6). */
     .shell::before, .shell::after {
-        content: ""; position: fixed; top: 3.5rem; bottom: var(--sbh, 0px); z-index: 15; width: .75rem;
+        content: ""; position: fixed; top: 0; bottom: var(--sbh, 0px); z-index: 15; width: .75rem;
         pointer-events: none; opacity: 0; transition: opacity .15s;
     }
     .shell::before { left: var(--content-left, 0px); background: linear-gradient(to right, rgb(0 0 0 / .18), transparent); }
@@ -882,3 +947,139 @@ a.phone-row-print .icon { width: 1.4rem; height: 1.4rem; }
 .scan-photo.is-busy { opacity: .6; pointer-events: none; }
 .phone-row-print { display: flex; margin: 0; padding: .75rem; border: 0; background: none; color: var(--muted); cursor: pointer; }
 .phone-row-print .icon { width: 1.4rem; height: 1.4rem; }
+
+/* Floating menu button (Go 2026-11-07, point 3, A24): with the menu folded away on desktop, and always on phones,
+   the button floats over the content with a shadow instead of sitting in a dark block. */
+@media (min-width: 64rem) {
+    :is(html.nav-closed, .shell.nav-closed) .side:not(.side-plain) .site-header { background: none; }
+    :is(html.nav-closed, .shell.nav-closed) .nav-toggle { margin: .5rem; width: 2.75rem; min-height: 2.75rem; border-radius: 12px; background: var(--secondary); box-shadow: 0 4px 14px rgb(0 0 0 / .3); }
+    :is(html.nav-closed, .shell.nav-closed) .nav-dot { top: .45rem; right: .45rem; }
+    :is(html.nav-closed, .shell.nav-closed) .nav-toggle .icon { width: 1.5rem; height: 1.5rem; }
+}
+@media (max-width: 63.99rem) {
+    .side:not(.side-plain) .site-header { background: none; }
+    .side:not(.side-plain) .nav-toggle { margin: .5rem; width: 2.75rem; min-height: 2.75rem; border-radius: 12px; background: var(--secondary); box-shadow: 0 4px 14px rgb(0 0 0 / .3); }
+    .nav-dot { top: .45rem; right: .45rem; }
+    .side:not(.side-plain) .nav-toggle .icon { width: 1.5rem; height: 1.5rem; }
+}
+
+/* Building blocks from the Update page (Go 2026-11-07, A16-A22), meant for every page */
+.card { max-width: 48rem; margin-top: 1rem; padding: 1rem 1.25rem 1.25rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); }
+.card-head { display: flex; align-items: center; gap: .5rem; margin: 0 0 .5rem; font-size: 1.05rem; }
+.card-head .icon { width: 1.35rem; height: 1.35rem; color: var(--primary); }
+.card-text { max-width: 70ch; margin: .25rem 0 .75rem; color: var(--muted); }
+.card-note { max-width: 70ch; margin: .5rem 0 0; font-size: .8rem; color: var(--muted); }
+.card-row { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+.card button { margin-top: 0; }
+.button-small { display: inline-flex; align-items: center; gap: .45rem; min-height: 40px; padding: 0 1rem; font-size: .95rem; }
+.button-small .icon { width: 1.15rem; height: 1.15rem; }
+/* A list of rows to pick one from: the whole row is the choice, the picked one gets the orange bar (A20) */
+.pick-list { margin: 1rem 0; padding: 0; border: 0; display: grid; gap: .4rem; min-width: 0; }
+.pick-list label.pick-row { display: flex; align-items: flex-start; gap: .75rem; margin: 0; padding: .7rem .9rem; border-radius: calc(var(--radius) / 2); background: var(--surface); color: var(--text); font-weight: 400; cursor: pointer; }
+.pick-row > .icon { flex: none; width: 1.25rem; height: 1.25rem; margin-top: .1rem; color: var(--muted); }
+.pick-row strong { display: block; font-weight: 600; }
+.pick-row small { display: block; color: var(--muted); }
+.pick-row:hover { background: var(--bg); }
+.pick-row:has(input:checked) { box-shadow: inset 4px 0 0 var(--primary); background: var(--bg); }
+.pick-row:has(input:checked) > .icon, .pick-mark { color: var(--primary); }
+.pick-row:has(input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
+.pick-mark { display: none; margin-left: auto; }
+.pick-row:has(input:checked) .pick-mark { display: flex; }
+/* Toast: a short status top right that closes itself (A22) */
+.toast {
+    position: fixed; top: 1rem; right: 1rem; z-index: 60; display: flex; align-items: center; gap: .6rem; max-width: min(26rem, calc(100% - 2rem));
+    padding: .7rem 1rem; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: calc(var(--radius) / 2); box-shadow: var(--shadow);
+    animation: toast-in .2s ease-out;
+}
+.toast .icon { flex: none; color: var(--ok); }
+.toast.is-leaving { opacity: 0; translate: 0 -.5rem; transition: opacity .3s, translate .3s; }
+@keyframes toast-in { from { opacity: 0; translate: 0 -.5rem; } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } .toast.is-leaving { transition: none; } }
+@media (max-width: 63.99rem) { .toast { top: auto; bottom: 1rem; left: 1rem; right: 1rem; max-width: none; } }
+
+/* Update page round 2 (Go 2026-11-07, points 6-10): lists that say "Keine Einträge", icon buttons in the card head */
+.card-head .card-action { margin-left: auto; }
+.card-head .icon-button { width: 40px; min-height: 40px; }
+.card-head .icon-button .icon { color: var(--text); width: 1.25rem; height: 1.25rem; }
+.icon-button.is-busy .icon { animation: spin 1s linear infinite; }
+@keyframes spin { to { rotate: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .icon-button.is-busy .icon { animation: none; opacity: .5; } }
+.pick-list > li { list-style: none; }
+ul.pick-list { margin: .75rem 0; }
+.list-empty { margin: 0; padding: .7rem .9rem; border: 1px dashed var(--border); border-radius: calc(var(--radius) / 2); color: var(--muted); }
+.list-error { color: var(--error); border-color: currentColor; }
+.pick-row.is-static { display: flex; align-items: center; gap: .75rem; padding: .7rem .9rem; border-radius: calc(var(--radius) / 2); background: var(--surface); cursor: default; }
+.pick-row.is-static > .icon { flex: none; width: 1.25rem; height: 1.25rem; color: var(--primary); }
+.pick-row.is-static strong { display: block; font-weight: 600; }
+.pick-row.is-static small { display: block; color: var(--muted); }
+.pick-row.is-static button { margin: 0 0 0 auto; }
+.tag-outline { display: inline-block; margin-bottom: .2rem; padding: 0 .5rem; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); font-size: .75rem; font-weight: 600; }
+
+/* Walls between columns and right of the menu (Go 2026-11-07, points 11-13, A37-A45) */
+.side:not(.side-plain) { width: var(--nav-width, 15rem); }
+.col-wall { flex: none; position: relative; z-index: 4; width: 0; }
+.col-wall::before { content: ""; position: absolute; inset: 0 -5px; cursor: col-resize; }
+.col-wall::after, .nav-wall::after { content: ""; position: absolute; top: 0; bottom: 0; left: -1px; width: 3px; background: var(--primary); opacity: 0; transition: opacity .15s; }
+.col-wall:hover::after, .col-wall:focus-visible::after, .col-wall.is-active::after,
+.nav-wall:hover::after, .nav-wall.is-active::after { opacity: 1; }
+.col-wall:focus-visible { outline: none; }
+.nav-wall { position: absolute; top: 0; right: -5px; z-index: 25; width: 10px; height: 100%; cursor: col-resize; }
+.nav-wall::after { left: 4px; }
+:is(html.nav-closed, .shell.nav-closed) .nav-wall { display: none; }
+.cols > .col-nav { max-width: none; }
+/* A column down to its icons: entries show only the icon, with the name as tooltip */
+.col.is-icons { padding-inline: .5rem; overflow: visible; }
+.col.is-icons .col-head { justify-content: center; margin-left: 0; }
+.col.is-icons .col-head h2 { display: none; }
+.col.is-icons .col-item { justify-content: center; padding: 0; }
+.col.is-icons .col-item > span { display: none; }
+.col:not(.is-icons) .col-item[data-tooltip]::before, .col:not(.is-icons) .col-item[data-tooltip]::after { display: none; }
+@media (max-width: 63.99rem) {
+    .col-wall, .nav-wall { display: none; }
+    .cols > .col { width: auto !important; }
+    .side { width: auto; }
+}
+
+/* One button for the whole app (Go 2026-11-07, point 14, A46-A52). Every button is clearly a button:
+   orange = the main action (one per area), outlined = side actions, red = delete, square = icon only.
+   Nothing else in the app is filled orange. Special controls (menu entries, strips, swatches, tags ...)
+   keep their own look and are left out here. */
+:root { --button-shadow: 0 1px 0 rgb(0 0 0 / .12), 0 2px 6px rgb(0 0 0 / .14); --primary-hover: #ee6410; --danger: #d92d20; --danger-hover: #b9251a; }
+@media (prefers-color-scheme: dark) { :root { --button-shadow: 0 1px 0 rgb(0 0 0 / .4), 0 2px 8px rgb(0 0 0 / .45); } }
+:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .col-item, .col-strip, .col-fold, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)) {
+    display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+    min-height: 48px; padding: 0 1.25rem; border: 2px solid transparent; border-radius: 10px;
+    background: var(--primary); color: var(--primary-text); box-shadow: var(--button-shadow);
+    font: inherit; font-size: 1rem; font-weight: 600; letter-spacing: 0; line-height: 1.2; text-decoration: none;
+    cursor: pointer; transition: background-color .12s, box-shadow .12s, translate .06s;
+}
+:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .col-item, .col-strip, .col-fold, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)):hover { background: var(--primary-hover); box-shadow: var(--button-shadow); }
+:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .col-item, .col-strip, .col-fold, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)):active:not(:disabled) { translate: 0 1px; box-shadow: none; }
+:is(button, .button):focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; box-shadow: none; }
+:is(button, .button):disabled { opacity: .45; box-shadow: none; cursor: not-allowed; translate: none; }
+button .icon, .button .icon { width: 1.25rem; height: 1.25rem; }
+/* Side action: outlined, no fill; in dark mode light text and a faint fill so it stays visible (A52) */
+:is(button, .button).button-quiet, .icon-button {
+    background: transparent; color: var(--text); border-color: color-mix(in srgb, currentColor 55%, transparent); box-shadow: none;
+}
+:is(button, .button).button-quiet:hover, .icon-button:hover { background: rgb(127 127 127 / .14); box-shadow: none; }
+@media (prefers-color-scheme: dark) {
+    :is(button, .button).button-quiet, .icon-button { background: rgb(255 255 255 / .06); border-color: rgb(245 244 238 / .7); }
+}
+:is(button, .button).button-danger { background: var(--danger); color: #fff; }
+:is(button, .button).button-danger:hover { background: var(--danger-hover); }
+/* Sizes: 48 px, small 40 px; icon buttons are square */
+:is(button, .button).button-small { min-height: 40px; padding: 0 .9rem; font-size: .95rem; }
+.icon-button { width: 48px; padding: 0; }
+.card-head .icon-button, .icon-button.button-small { width: 40px; min-height: 40px; }
+.icon-button[aria-expanded="true"], .icon-button.is-active { border-color: var(--primary); color: var(--primary-ink); }
+/* The upload in the menu keeps its layout, with the button corner and shadow */
+.sidebar .nav-action { border-radius: 10px; box-shadow: var(--button-shadow); }
+.sidebar .nav-action:hover { background: var(--primary-hover); }
+input[type="file"]::file-selector-button { border-radius: 10px; font-size: 1rem; letter-spacing: 0; box-shadow: var(--button-shadow); }
+
+/* Columns glide when the arrow or a click changes their width (points 16-19) */
+.cols > .col.is-gliding { transition: width .25s cubic-bezier(.45, 0, .55, 1); overflow: hidden; }
+.cols > .col.is-gliding * { white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .cols > .col.is-gliding { transition: none; } }
+

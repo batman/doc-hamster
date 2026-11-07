@@ -18,8 +18,8 @@
         @endforeach
     </datalist>
 
-    <div class="dialog-backdrop" data-dialog="note-new" hidden>
-        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="note-new-title">
+    <div class="dialog-backdrop note-backdrop" data-dialog="note-new" hidden>
+        <div class="dialog note-dialog" role="dialog" aria-modal="true" aria-labelledby="note-new-title">
             <h2 id="note-new-title">{{ __('home.new') }}</h2>
             <form method="post" action="{{ route('notes.store') }}">
                 @csrf
@@ -43,9 +43,10 @@
                 $open = $canEdit && ! $note->locked;
                 $color = $note->color ?? 'yellow';
             @endphp
-            <li class="note note-{{ $color }} @if ($note->locked) is-locked @endif"
+            <li class="note note-{{ $color }} @if ($note->locked) is-locked @endif" data-note-id="{{ $note->id }}"
                 @if ($open) data-note-look="{{ route('notes.look', $note->id) }}" @endif
                 @if ($note->pos_x !== null && $note->pos_y !== null) data-x="{{ $note->pos_x }}" data-y="{{ $note->pos_y }}" @endif
+                @if ($note->width !== null && $note->height !== null) data-w="{{ $note->width }}" data-h="{{ $note->height }}" @endif
                 @if ($note->opacity !== null) data-opacity="{{ $note->opacity }}" @endif>
                 <div class="note-head">
                     <span class="note-title">{{ $note->title ?: __('home.untitled') }}</span>
@@ -57,24 +58,12 @@
                     @endif
                 </div>
 
+                {{-- The text is always a field; app.js lays a mirror with our own checkboxes over it (lists "[a, #b]"). --}}
                 <div class="note-content">
-                    @if ($note->body)
-                        <p class="note-body">{{ $note->body }}</p>
-                    @endif
-
-                    @if ($note->checklist)
-                        <form method="post" action="{{ route('notes.check', $note->id) }}" data-autosubmit>
-                            @csrf
-                            <ul class="note-checklist">
-                                @foreach ($note->checklist as $i => $item)
-                                    <li><label><input type="checkbox" name="done[]" value="{{ $i }}" @checked($item['done']) @disabled(! $open)> <span>{{ $item['text'] }}</span></label></li>
-                                @endforeach
-                            </ul>
-                            @if ($open)
-                                <noscript><button type="submit">{{ __('home.save') }}</button></noscript>
-                            @endif
-                        </form>
-                    @endif
+                    <div class="note-text" @if ($open) data-note-text="{{ route('notes.text', $note->id) }}" @endif>
+                        <textarea class="note-area" rows="1" spellcheck="false" aria-label="{{ __('home.body') }}" @readonly(! $open)>{{ $note->body }}</textarea>
+                        <div class="note-mirror" aria-hidden="true"></div>
+                    </div>
 
                     @if ($note->documents->isNotEmpty())
                         <ul class="note-links">
@@ -97,8 +86,8 @@
     {{-- Dialogs outside the board, so a note's look and stacking never reach them. --}}
     @foreach ($notes as $note)
         @if ($note->editableBy($userId))
-            <div class="dialog-backdrop" data-dialog="edit-note-{{ $note->id }}" hidden>
-                <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="edit-note-{{ $note->id }}-title">
+            <div class="dialog-backdrop note-backdrop" data-dialog="edit-note-{{ $note->id }}" data-note-preview="{{ $note->id }}" hidden>
+                <div class="dialog note-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-note-{{ $note->id }}-title">
                     <h2 id="edit-note-{{ $note->id }}-title">{{ __('home.edit') }}</h2>
                     <form method="post" action="{{ route('notes.update', $note->id) }}">
                         @csrf

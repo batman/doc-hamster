@@ -12,13 +12,14 @@ final class DoctorCommand extends Command
 {
     use RendersDoctorResults;
 
-    protected $signature = 'dochamster:doctor';
+    protected $signature = 'dochamster:doctor
+        {--local-only : Skip checks that need the database or network (offline use, D-020)}';
 
     protected $description = 'Check this server against the DocHamster minimum requirements and list available add-ons (D-010)';
 
     public function handle(Doctor $doctor): int
     {
-        $results = $doctor->run();
+        $results = $doctor->run(localOnly: (bool) $this->option('local-only'));
         $this->renderDoctorResults($results);
 
         if (Doctor::hasFailures($results)) {

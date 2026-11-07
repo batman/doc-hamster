@@ -32,7 +32,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('notes', [HomeController::class, 'store'])->name('notes.store');
     Route::post('notes/{id}', [HomeController::class, 'update'])->name('notes.update');
     Route::post('notes/{id}/look', [HomeController::class, 'look'])->name('notes.look');
-    Route::post('notes/{id}/check', [HomeController::class, 'check'])->name('notes.check');
+    Route::post('notes/{id}/text', [HomeController::class, 'text'])->name('notes.text');
     Route::post('notes/{id}/delete', [HomeController::class, 'destroy'])->name('notes.destroy');
     Route::get('documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::get('documents/trash', [DocumentController::class, 'trash'])->middleware('can:documents.trash')->name('documents.trash');
