@@ -27,6 +27,7 @@ Both agents are Claude (Claude Code, separate sessions). Each session is told it
 - **All questions go to the Lead** (issue `to:lead`), not to the PO. The Lead decides; it asks its operator only product-design and hard-to-change questions (rule 6).
 - The Manager **writes code only together with the Lead**: on sub-tasks the Lead assigns (e.g. from P0-23), following the Lead's technical decisions, in the Lead's review. The Manager never starts coding work on its own and answers no server/infrastructure questions.
 - **Merge first, review after (PO rule, 2026-10-29).** The author merges its own PR as soon as CI is green – never wait for a review. The **other agent reviews merged PRs** when it has time (Lead reviews Manager PRs, Manager reviews Lead PRs); findings become an issue or a follow-up PR. Rules: `docs/collaboration/WORKFLOW.md` §10.
+- **Preview first (PO rule, 2026-11-07).** Features and UI changes stay on their branch: PR labelled `preview-ready` (CI green, switching back to Main data-safe); the PO installs the preview on the server and only after the PO's OK does it go to `main` and into a release. Rules: `docs/collaboration/WORKFLOW.md` §10.
 
 ## Hard rules
 

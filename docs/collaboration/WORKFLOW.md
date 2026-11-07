@@ -89,6 +89,8 @@ The repo will be public. Before every PR, the author runs the checklist in the P
 
 **Merge first, review after (PO rule, 2026-10-29):** the author merges its own PR (squash) as soon as CI is green – it never waits for a review. Every merged PR then gets a review from the **other** agent when it has time. Reviews are meant to find problems, not to be polite.
 
+**Preview first for anything the PO will see (PO rule, 2026-11-07):** features and UI changes are not merged right away. The author pushes the branch, opens the PR and – once CI is green and switching back to Main is data-safe (only additive, nullable migrations) – labels it `preview-ready`. `preview.yml` then builds a preview package that the PO installs through the app's Update page. Only when the PO approves does the author merge into `main` (locally, fast-forward) and publish the next release. Fixes and docs may still merge right away.
+
 **The reviewer must:**
 - Say **what was checked** (acceptance criteria, plan/decisions consistency, public-repo rules, security, tests, first-install/update/failure paths).
 - List concrete findings as **must fix / should fix / question**, each with "what breaks" or "what is missing".
