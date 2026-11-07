@@ -27,21 +27,25 @@ const DH_WIPE_GROUPS = [
 ];
 const DH_EXTENSIONS = ['pdo_mysql', 'mbstring', 'intl', 'sodium', 'fileinfo', 'exif', 'zip', 'gd', 'curl'];
 
-$https = (! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-    || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
-session_set_cookie_params(['httponly' => true, 'samesite' => 'Strict', 'secure' => $https]);
-session_start();
-header('X-Frame-Options: DENY');
-header('X-Content-Type-Options: nosniff');
-header('Referrer-Policy: no-referrer');
-header('Cache-Control: no-store');
+// The test suite defines DH_TESTING and includes this file for its functions only;
+// the installer body below the function definitions is skipped then.
+if (! defined('DH_TESTING')) {
+    $https = (! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+    session_set_cookie_params(['httponly' => true, 'samesite' => 'Strict', 'secure' => $https]);
+    session_start();
+    header('X-Frame-Options: DENY');
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: no-referrer');
+    header('Cache-Control: no-store');
 
-$webRoot = __DIR__;
-$outside = @is_writable(dirname($webRoot));
-// The web folder itself may be called "dochamster" (e.g. a subdomain) – never use it as the app folder.
-$appDir = ($outside ? dirname($webRoot) : $webRoot).'/dochamster';
-if ($appDir === $webRoot) {
-    $appDir .= '-app';
+    $webRoot = __DIR__;
+    $outside = @is_writable(dirname($webRoot));
+    // The web folder itself may be called "dochamster" (e.g. a subdomain) – never use it as the app folder.
+    $appDir = ($outside ? dirname($webRoot) : $webRoot).'/dochamster';
+    if ($appDir === $webRoot) {
+        $appDir .= '-app';
+    }
 }
 
 function h(string $s): string
@@ -197,11 +201,40 @@ function removeTree(string $dir): void
     @rmdir($dir);
 }
 
-/** Write $content to $path; an existing different file is kept as <name>.bak-<time>. */
+/**
+ * Backup name for $path that never clobbers an earlier backup: <name>.bak-<time>,
+ * with a counter appended while that name is taken (two runs within one second,
+ * or a leftover backup from an earlier install).
+ */
+function backupPath(string $path): string
+{
+    $backup = $path.'.bak-'.date('YmdHis');
+    for ($i = 2; is_file($backup) || is_link($backup); $i++) {
+        $backup = $path.'.bak-'.date('YmdHis').'-'.$i;
+    }
+
+    return $backup;
+}
+
+/** Moves an existing file aside so placeFile() never destroys it; no-op when absent. */
+function moveToBackup(string $path): void
+{
+    if (is_file($path) || is_link($path)) {
+        rename($path, backupPath($path));
+    }
+}
+
+/**
+ * Write $content to $path; an existing different file is kept as <name>.bak-<time>.
+ *
+ * This is the documented answer to issue #8 (existing web-root files): replace with
+ * backup instead of refusing the install, so hoster placeholder pages survive and the
+ * user can restore anything unexpected from the .bak files.
+ */
 function placeFile(string $path, string $content, bool $keepOld): void
 {
     if ($keepOld && is_file($path) && (string) file_get_contents($path) !== $content) {
-        rename($path, $path.'.bak-'.date('YmdHis'));
+        moveToBackup($path);
     }
     file_put_contents($path, $content);
 }
@@ -210,7 +243,9 @@ function placeFile(string $path, string $content, bool $keepOld): void
 function wireWebRoot(string $appDir, string $webRoot, bool $keepOld): void
 {
     $copy = static function (string $from, string $to) use (&$copy, $keepOld): void {
-        @mkdir($to);
+        if (! is_dir($to)) {
+            @mkdir($to);
+        }
         foreach (scandir($from) ?: [] as $entry) {
             if (in_array($entry, ['.', '..', 'index.php', '.user.ini'], true)) {
                 continue;
@@ -361,6 +396,10 @@ function wipeSelected(string $appDir, array $groups): void
             }
         }
     }
+}
+
+if (defined('DH_TESTING')) {
+    return;
 }
 
 // The installer stays usable for two hours after its first run (not after upload: FTP clients may keep old file dates).
@@ -573,9 +612,7 @@ try {
         file_put_contents($appDir.'/storage/app/private/setup-code.txt', trim((string) file_get_contents($codeFile))."\n");
 
         foreach (['index.html', 'index.htm'] as $default) {
-            if (is_file($webRoot.'/'.$default)) {
-                rename($webRoot.'/'.$default, $webRoot.'/'.$default.'.bak-'.date('YmdHis'));
-            }
+            moveToBackup($webRoot.'/'.$default);
         }
         wireWebRoot($appDir, $webRoot, true);
     } else {
