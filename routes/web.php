@@ -41,6 +41,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::get('files/{id}/thumb', [DocumentController::class, 'thumb'])->name('documents.thumb');
     Route::get('tags.css', [TagController::class, 'css'])->name('tags.css');
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
+    Route::post('settings/language', [SettingsController::class, 'language'])->name('settings.language');
     Route::get('settings/{group}', [SettingsController::class, 'group'])->name('settings.group');
     Route::post('documents/{id}/tags', [DocumentController::class, 'updateTags'])->middleware('can:documents.edit')->name('documents.tags');
     Route::get('files/{id}', [DocumentController::class, 'file'])->name('documents.file');

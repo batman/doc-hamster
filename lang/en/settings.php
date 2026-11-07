@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 return [
     'title' => 'Settings',
+    'language' => [
+        'title' => 'Language',
+        'label' => 'Display language',
+        'save' => 'Save',
+        'saved' => 'Language saved.',
+    ],
     'fold' => 'Fold',
     'expand' => 'Open :name',
     'open' => 'Open',
