@@ -1307,109 +1307,38 @@
     });
     DocHamster.on('window:open', setupColorField);
 
-    // Folder menu under Belege (PO, 2026-11-07): open/close subfolders; drag the handle to change the order of one level.
-    // Pointer events, so it works with mouse, pen and finger alike; the new order is saved right away.
-    const setupFolderMenu = () => {
-        const menu = document.querySelector('.nav-sub');
-        if (!menu) {
-            return;
-        }
-        menu.querySelectorAll('[data-folder-toggle]').forEach(button => button.addEventListener('click', () => {
-            const item = button.closest('.nav-folder');
-            const open = item.classList.toggle('is-open');
-            button.setAttribute('aria-expanded', open ? 'true' : 'false');
-        }));
-
-        const url = menu.dataset.folderOrder;
+    // Folder order (PO, 2026-11-07): the folder rows in a Belege window are a sortable list of the framework;
+    // after a move the new order of that level is saved right away. "trash" stands for the Papierkorb.
+    DocHamster.on('list:sorted', ({ list, ids }) => {
+        const url = list.dataset.folderOrder;
         if (!url) {
             return;
         }
-        const token = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
-        const save = list => {
-            const body = new FormData();
+        const body = new FormData();
+        ids.forEach(id => body.append('order[]', id));
+        if (list.dataset.parent) {
             body.append('parent_id', list.dataset.parent);
-            [...list.children].forEach(item => body.append('order[]', item.dataset.id));
-            fetch(url, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token, Accept: 'application/json' }, credentials: 'same-origin' })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(String(response.status));
-                    }
-                })
-                .catch(() => {
-                    window.alert(menu.dataset.orderFailed);
-                    window.location.reload();
-                });
-        };
-
-        menu.querySelectorAll('[data-grip]').forEach(grip => {
-            grip.addEventListener('pointerdown', event => {
-                if (event.button !== 0) {
-                    return;
+        }
+        const token = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+        fetch(url, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token, Accept: 'application/json' }, credentials: 'same-origin' })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(String(response.status));
                 }
-                event.preventDefault();
-                const item = grip.closest('.nav-folder');
-                const list = item.parentElement;
-                const before = [...list.children].map(child => child.dataset.id).join();
-                // Listened on the document: moving the item in the DOM ends any pointer capture on the handle.
-                item.classList.add('is-dragging');
-                document.body.classList.add('is-dragging-folder');
-
-                const move = moveEvent => {
-                    if (moveEvent.pointerId !== event.pointerId) {
-                        return;
-                    }
-                    const siblings = [...list.children].filter(child => child !== item);
-                    const next = siblings.find(child => {
-                        const box = child.querySelector('.nav-folder-row').getBoundingClientRect();
-                        return moveEvent.clientY < box.top + box.height / 2;
-                    });
-                    if (next) {
-                        if (item.nextElementSibling !== next) {
-                            list.insertBefore(item, next);
-                        }
-                    } else if (list.lastElementChild !== item) {
-                        list.appendChild(item);
-                    }
-                };
-                const end = endEvent => {
-                    if (endEvent.pointerId !== event.pointerId) {
-                        return;
-                    }
-                    document.removeEventListener('pointermove', move);
-                    document.removeEventListener('pointerup', end);
-                    document.removeEventListener('pointercancel', end);
-                    item.classList.remove('is-dragging');
-                    document.body.classList.remove('is-dragging-folder');
-                    if ([...list.children].map(child => child.dataset.id).join() !== before) {
-                        save(list);
-                    }
-                };
-                document.addEventListener('pointermove', move);
-                document.addEventListener('pointerup', end);
-                document.addEventListener('pointercancel', end);
+            })
+            .catch(() => {
+                // The framework's error line above the list (no JS toast yet).
+                if (!list.previousElementSibling?.matches('[data-order-error]')) {
+                    const error = document.createElement('p');
+                    error.className = 'error';
+                    error.setAttribute('role', 'alert');
+                    error.dataset.orderError = '';
+                    error.textContent = list.dataset.orderFailed;
+                    list.before(error);
+                }
             });
-            // Keyboard: arrow up/down moves the folder one place.
-            grip.addEventListener('keydown', event => {
-                if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') {
-                    return;
-                }
-                event.preventDefault();
-                const item = grip.closest('.nav-folder');
-                const list = item.parentElement;
-                if (event.key === 'ArrowUp' && item.previousElementSibling) {
-                    list.insertBefore(item, item.previousElementSibling);
-                } else if (event.key === 'ArrowDown' && item.nextElementSibling) {
-                    list.insertBefore(item.nextElementSibling, item);
-                } else {
-                    return;
-                }
-                grip.focus();
-                save(list);
-            });
-        });
-    };
+    });
 
-    // Folder import: the picked folder becomes a new folder of the same name; files go up one by one with their path.
     // The import form sits in a window of the Ordner page, which may be loaded later (window system).
     const setupFolderImport = root => root.querySelectorAll('[data-folder-import]:not([data-ready])').forEach(form => {
         form.dataset.ready = '';
@@ -1498,7 +1427,6 @@
         setupScrollHint();
         setupBadges();
         setupTagSearch();
-        setupFolderMenu();
         setupNotes();
         setupToasts();
         setupAjaxForms();

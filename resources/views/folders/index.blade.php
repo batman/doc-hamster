@@ -59,12 +59,23 @@
                     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="delete-folder-{{ $folder->id }}-title">
                         <h2 id="delete-folder-{{ $folder->id }}-title">{{ __('folders.delete_title') }}</h2>
                         <p>{{ __('folders.delete_text', ['name' => $folder->name]) }}</p>
+                        @can('documents.trash')
+                            <p>{{ __('folders.delete_content_text') }}</p>
+                        @endcan
                         <div class="dialog-actions">
                             <button type="button" class="button-quiet" data-dialog-close>{{ __('folders.cancel') }}</button>
                             <form method="post" action="{{ route('folders.destroy', $folder->id) }}">
                                 @csrf
-                                <button type="submit" class="button-danger">{{ __('folders.delete') }}</button>
+                                <button type="submit" class="button-quiet">{{ __('folders.delete_keep') }}</button>
                             </form>
+                            @can('documents.trash')
+                                {{-- With content (taken over from #114): subfolders go, receipts land in the Papierkorb. --}}
+                                <form method="post" action="{{ route('folders.destroy', $folder->id) }}">
+                                    @csrf
+                                    <input type="hidden" name="with_content" value="1">
+                                    <button type="submit" class="button-danger">{{ __('folders.delete_content') }}</button>
+                                </form>
+                            @endcan
                         </div>
                     </div>
                 </div>
