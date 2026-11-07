@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Infrastructure\Environment\NativeSystemProbe;
 use App\Infrastructure\Environment\SystemProbe;
 use Tests\Support\FakeSystemProbe;
 
@@ -21,6 +22,23 @@ it('exits with an error when a minimum requirement is not met', function (): voi
     $this->artisan('dochamster:doctor')
         ->expectsOutputToContain('8.2.29 ist zu alt')
         ->assertExitCode(1);
+});
+
+it('shows the exact cron command when cron never ran', function (): void {
+    $probe = new FakeSystemProbe;
+    $probe->lastHeartbeat = null;
+    $this->app->instance(SystemProbe::class, $probe);
+
+    $this->artisan('dochamster:doctor')
+        ->expectsOutputToContain('/usr/bin/php /srv/dochamster/artisan schedule:run')
+        ->assertExitCode(0);
+});
+
+it('builds the real cron command from the PHP binary on this server', function (): void {
+    $command = app(NativeSystemProbe::class)->cronCommand();
+
+    expect($command)->toStartWith(PHP_BINARY.' ')
+        ->and($command)->toEndWith('artisan schedule:run');
 });
 
 it('stops setup before touching the database when requirements fail', function (): void {

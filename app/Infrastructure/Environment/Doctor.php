@@ -170,7 +170,8 @@ final class Doctor
         $last = $this->probe->lastCronHeartbeat();
 
         if ($last === null) {
-            return new CheckResult('cron', CheckStatus::Warning, 'cron_never');
+            return new CheckResult('cron', CheckStatus::Warning, 'cron_never',
+                ['command' => $this->probe->cronCommand()]);
         }
 
         $age = $this->probe->now() - $last;

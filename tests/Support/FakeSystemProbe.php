@@ -37,6 +37,8 @@ final class FakeSystemProbe implements SystemProbe
 
     public ?int $lastHeartbeat = 1_800_000_000 - 60;
 
+    public string $cronCommand = '/usr/bin/php /srv/dochamster/artisan schedule:run';
+
     public function phpVersion(): string
     {
         return $this->phpVersion;
@@ -80,6 +82,11 @@ final class FakeSystemProbe implements SystemProbe
     public function lastCronHeartbeat(): ?int
     {
         return $this->lastHeartbeat;
+    }
+
+    public function cronCommand(): string
+    {
+        return $this->cronCommand;
     }
 
     public function now(): int

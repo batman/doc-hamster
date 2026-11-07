@@ -36,5 +36,8 @@ interface SystemProbe
     /** Unix time of the last cron heartbeat, null if cron never ran. */
     public function lastCronHeartbeat(): ?int;
 
+    /** The exact command cron must run every minute (real PHP binary + artisan). */
+    public function cronCommand(): string;
+
     public function now(): int;
 }

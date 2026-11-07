@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Environment;
 
+use App\Setup\CronLine;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Contracts\Foundation\Application;
@@ -92,6 +93,11 @@ final class NativeSystemProbe implements SystemProbe
         }
 
         return is_int($value) ? $value : null;
+    }
+
+    public function cronCommand(): string
+    {
+        return CronLine::command(PHP_BINARY, $this->app->basePath('artisan'));
     }
 
     public function now(): int
