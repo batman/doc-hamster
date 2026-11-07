@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'title' => 'Roles',
-    'admin_hint' => 'Admins may always do everything. Only Admins manage people, roles and updates.',
+    'admin_hint' => 'Admins may always do everything. Only Admins manage people and roles.',
     'name' => 'Name of the role',
     'rights_title' => 'This role may',
     'rights' => [
@@ -16,6 +16,8 @@ return [
         'export' => 'Export',
         'tags' => 'Edit tags',
         'notes' => 'Show notes to everyone',
+        'update' => 'Update the system',
+        'update_preview' => 'Install preview branches (only together with "Update the system")',
     ],
     'people' => '{0} Nobody has this role|{1} :count person has this role|[2,*] :count people have this role',
     'preinstalled' => 'pre-installed, can not be deleted',

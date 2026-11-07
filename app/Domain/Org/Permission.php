@@ -24,6 +24,8 @@ enum Permission: string
     case ShareNotes = 'notes.share';
     case ManageMembers = 'members.manage';
     case ManageSettings = 'settings.manage';
+    case UpdateSystem = 'system.update';
+    case InstallPreviews = 'system.update_preview';
     case ViewAuditLog = 'audit.view';
 
     /**
@@ -42,6 +44,8 @@ enum Permission: string
             self::CreateReports, self::Export => RoleRight::Export,
             self::ManageTags => RoleRight::Tags,
             self::ShareNotes => RoleRight::Notes,
+            self::UpdateSystem => RoleRight::Update,
+            self::InstallPreviews => RoleRight::UpdatePreview,
             self::DeleteDocumentsForever, self::ManageMembers, self::ManageSettings, self::ViewAuditLog => null,
         };
     }

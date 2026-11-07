@@ -22,7 +22,9 @@ dataset('rights', [
     'Tags' => [Permission::ManageTags, RoleRight::Tags],
     'Notizen' => [Permission::ShareNotes, RoleRight::Notes],
     'Personen und Rollen' => [Permission::ManageMembers, null],
-    'Einstellungen und Updates' => [Permission::ManageSettings, null],
+    'Einstellungen' => [Permission::ManageSettings, null],
+    'System aktualisieren' => [Permission::UpdateSystem, RoleRight::Update],
+    'Vorschau-Branches' => [Permission::InstallPreviews, RoleRight::UpdatePreview],
     'Audit-Log' => [Permission::ViewAuditLog, null],
 ]);
 
@@ -31,11 +33,11 @@ it('maps every permission to its checkbox', function (Permission $permission, ?R
 })->with('rights');
 
 it('covers every permission', function (): void {
-    expect(Permission::cases())->toHaveCount(14);
+    expect(Permission::cases())->toHaveCount(16);
 });
 
 it('has the agreed defaults for the pre-installed roles', function (): void {
-    expect(RoleRight::defaultsFor(Role::Member))->toBe(RoleRight::cases())
+    expect(RoleRight::defaultsFor(Role::Member))->toBe([RoleRight::Upload, RoleRight::ViewAll, RoleRight::Edit, RoleRight::Delete, RoleRight::Banking, RoleRight::Export, RoleRight::Tags, RoleRight::Notes])
         ->and(RoleRight::defaultsFor(Role::Accountant))->toBe([RoleRight::ViewAll, RoleRight::Export]);
 });
 

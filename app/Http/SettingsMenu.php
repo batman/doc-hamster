@@ -30,7 +30,7 @@ final class SettingsMenu
             ['shares', 'shares.index', 'send', 'exports.create', ['shares.*']],
         ], false],
         'update' => ['cloud-download', [
-            ['update', 'updates.show', 'cloud-download', 'settings.manage', ['updates.*']],
+            ['update', 'updates.show', 'cloud-download', 'system.update', ['updates.*']],
             ['phone', 'phone-check.qr', 'device-mobile', null, ['phone-check*']],
         ], false],
     ];

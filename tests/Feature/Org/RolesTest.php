@@ -42,7 +42,7 @@ it('gives a new organisation the two pre-installed roles with the agreed checkbo
     $advisor = roleOf($org->id, Role::Accountant);
 
     expect($employee->name)->toBe('Mitarbeiter')
-        ->and($employee->rights)->toBe(array_column(RoleRight::cases(), 'value'))
+        ->and($employee->rights)->toBe(['upload', 'view_all', 'edit', 'delete', 'banking', 'export', 'tags', 'notes'])
         ->and($advisor->name)->toBe('Steuerberater')
         ->and($advisor->rights)->toBe(['view_all', 'export']);
 });

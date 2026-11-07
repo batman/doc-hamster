@@ -65,6 +65,10 @@ final class CurrentOrg
         }
 
         $right = $permission->right();
+        // Previews are a step above updating: both boxes are needed.
+        if ($permission === Permission::InstallPreviews && ! $this->allows(Permission::UpdateSystem)) {
+            return false;
+        }
 
         return $right !== null && $this->membership()->orgRole?->has($right) === true;
     }

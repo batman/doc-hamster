@@ -50,6 +50,7 @@
         </div>
     @endif
 
+    @can('system.update_preview')
     <section class="preview-branches">
         <h2>{{ __('updates.preview_heading') }}</h2>
         <p>{{ __('updates.preview_explain') }}</p>
@@ -84,4 +85,5 @@
             @endif
         @endif
     </section>
+    @endcan
 @endsection

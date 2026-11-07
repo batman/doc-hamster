@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'title' => 'Rollen',
-    'admin_hint' => 'Admins dürfen immer alles. Nur Admins verwalten Personen, Rollen und Updates.',
+    'admin_hint' => 'Admins dürfen immer alles. Nur Admins verwalten Personen und Rollen.',
     'name' => 'Name der Rolle',
     'rights_title' => 'Das darf diese Rolle',
     'rights' => [
@@ -16,6 +16,8 @@ return [
         'export' => 'Exportieren',
         'tags' => 'Tags bearbeiten',
         'notes' => 'Notizen für alle zeigen',
+        'update' => 'System aktualisieren',
+        'update_preview' => 'Vorschau-Branches installieren (nur zusammen mit „System aktualisieren“)',
     ],
     'people' => '{0} Niemand hat diese Rolle|{1} :count Person hat diese Rolle|[2,*] :count Personen haben diese Rolle',
     'preinstalled' => 'vorinstalliert, kann nicht gelöscht werden',

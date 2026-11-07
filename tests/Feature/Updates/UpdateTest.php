@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Domain\Auth\User;
 use App\Domain\Org\Membership;
 use App\Domain\Org\Role;
+use App\Domain\Org\RoleRight;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
@@ -60,13 +61,24 @@ it('stays calm when GitHub is unreachable', function (): void {
     $this->post('/update/check')->assertSessionHasErrors('update');
 });
 
-it('is for owners only and needs the password to install', function (): void {
+it('is for owners and people with the update box, and needs the password to install', function (): void {
     fakeRelease('1.1.0');
 
     $this->post('/update/install', ['password' => 'falsch'])->assertSessionHasErrors('password');
 
     $member = Membership::factory()->create();
     $this->actingAs($member->user)->get('/update')->assertForbidden();
+
+    // "System aktualisieren" opens the page; previews need their own box on top (PO 2026-11-07).
+    $updater = Membership::factory()->withRights(RoleRight::Update)->create();
+    $this->actingAs($updater->user)->get('/update')->assertOk()->assertDontSee('preview-branches');
+    $this->post('/update/previews')->assertForbidden();
+
+    $onlyPreview = Membership::factory()->withRights(RoleRight::UpdatePreview)->create();
+    $this->actingAs($onlyPreview->user)->get('/update')->assertForbidden();
+
+    $both = Membership::factory()->withRights(RoleRight::Update, RoleRight::UpdatePreview)->create();
+    $this->actingAs($both->user)->get('/update')->assertOk()->assertSee('preview-branches');
 });
 
 it('refuses an installer whose checksum does not match', function (): void {
