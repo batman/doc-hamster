@@ -67,7 +67,7 @@ final class UpdateController
             return $this->answer($request, 'updates._previews', ['branches' => null, 'failed' => true], fn () => back()->withErrors(['preview' => __('updates.unreachable')]));
         }
         // Kept for the install, which names the branch afterwards (point 6).
-        session()->put('updates.preview_list', $branches);
+        $request->session()->put('updates.preview_list', $branches);
 
         return $this->answer($request, 'updates._previews', ['branches' => $branches, 'failed' => false], fn () => back()->with('updates.preview_branches', $branches));
     }
