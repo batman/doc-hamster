@@ -40,4 +40,11 @@ return [
     'install_version' => 'Version :version installieren',
     'preview_label' => 'Vorschau',
     'installed_label' => 'Installiert',
+    'preview_branch_label' => 'Vorschau-Branch',
+    'main_tile' => 'Hauptversion',
+    'main_tile_hint' => 'Main, die empfohlene Version – zurück zum normalen Betrieb',
+    'main_install' => 'Hauptversion installieren',
+    'preview_newer' => 'Neuer Stand von #:number · :branch',
+    'preview_gone' => 'Dieser Branch ist nicht mehr freigegeben. Zurück geht es mit der Hauptversion unter „Installiert“.',
+    'update_short' => 'Aktualisieren',
 ];

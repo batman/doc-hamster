@@ -28,6 +28,8 @@ final class UpdateController
         return view('updates.show', [
             'current' => (string) config('dochamster.version'),
             'available' => session('update.available'),
+            'branchUpdates' => session('updates.branch_updates'),
+            'branchGone' => (bool) session('updates.branch_gone'),
             'previewBranches' => session('updates.preview_branches'),
             'previewInstalled' => str_starts_with((string) config('dochamster.version'), 'preview-'),
             'previewInfo' => $this->previewInfo(),
@@ -43,6 +45,11 @@ final class UpdateController
      */
     public function check(Request $request, UpdateSource $source): JsonResponse|RedirectResponse
     {
+        $preview = $this->previewInfo();
+        if ($preview !== null) {
+            return $this->checkBranch($request, $source, $preview);
+        }
+
         try {
             $latest = $source->latest(PHP_VERSION);
         } catch (Throwable) {
@@ -57,6 +64,30 @@ final class UpdateController
         return $this->answer($request, 'updates._releases', ['releases' => $releases, 'failed' => false], fn () => $offer
             ? back()->with('update.available', $latest['version'])
             : back()->with('status', __('updates.up_to_date')));
+    }
+
+    /**
+     * A preview is installed: the only update is a newer state of that branch (A95). The way back to
+     * Main is the tile under "Installiert".
+     *
+     * @param  array{number: int, sha: string, branch: string, title: string}  $preview
+     */
+    private function checkBranch(Request $request, UpdateSource $source, array $preview): JsonResponse|RedirectResponse
+    {
+        try {
+            $listed = collect($source->previewBranches())->firstWhere('number', $preview['number']);
+        } catch (Throwable) {
+            return $this->answer($request, 'updates._releases', ['releases' => null, 'failed' => true], fn () => back()->withErrors(['update' => __('updates.unreachable')]));
+        }
+
+        $gone = ! is_array($listed);
+        $newer = ! $gone && ! str_starts_with((string) $listed['sha'], $preview['sha']);
+        $branches = $newer ? [$listed] : [];
+
+        return $this->answer($request, 'updates._releases', ['releases' => [], 'branchUpdates' => $branches, 'branchGone' => $gone, 'failed' => false], fn () => back()
+            ->with('updates.branch_updates', $branches)
+            ->with('updates.branch_gone', $gone)
+            ->with('status', $gone || $newer ? null : __('updates.up_to_date')));
     }
 
     public function checkPreviews(Request $request, UpdateSource $source): JsonResponse|RedirectResponse

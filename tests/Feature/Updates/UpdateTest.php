@@ -115,3 +115,17 @@ it('hands over to install.php for an update without questions and says when it i
     expect($response->headers->get('Location'))->toMatch('#/install\.php\?code=[0-9A-F]{20}&update=1$#');
     $this->get('/update?updated=1')->assertSee('Fertig: docHamster ist jetzt auf Version 1.0.0.');
 });
+
+it('offers only the newer state of the installed preview branch under Updates', function (): void {
+    config(['dochamster.version' => 'preview-116-aaaaaaa']);
+    Http::fake([
+        'github.com/*/releases/download/previews/previews.json' => Http::response([
+            ['number' => 116, 'title' => 'Framework', 'branch' => 'lead/framework', 'sha' => str_repeat('b', 40)],
+        ]),
+        '*' => Http::response('', 500),
+    ]);
+
+    $this->postJson('/update/check')->assertOk()
+        ->assertJsonPath('html', fn (string $html): bool => str_contains($html, 'Neuer Stand von #116') && ! str_contains($html, 'Version '));
+    $this->get('/update')->assertSee(__('updates.main_tile'));
+});

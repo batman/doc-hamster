@@ -1,7 +1,20 @@
-{{-- Releases found by "Auf neue Version prüfen" (Go 2026-11-07, points 8, 9, A35, A36); null = not asked yet. --}}
+{{-- What "Auf neue Version prüfen" found (points 8, 9, A35, A95): on Main a newer Main release, on a preview branch
+     only a newer state of that branch; null = not asked yet. --}}
 <ul class="pick-list" aria-live="polite">
     @if ($failed ?? false)
         <li class="list-empty list-error">{{ __('updates.unreachable') }}</li>
+    @elseif ($branchGone ?? false)
+        <li class="list-empty">{{ __('updates.preview_gone') }}</li>
+    @elseif (! empty($branchUpdates))
+        @foreach ($branchUpdates as $branch)
+            <li class="pick-row is-static">
+                <x-icon name="git-pull-request" />
+                <span><strong>{{ __('updates.preview_newer', ['number' => $branch['number'], 'branch' => $branch['branch']]) }}</strong><small>{{ $branch['title'] }}</small></span>
+                @if (($supported ?? false) && Gate::allows('system.update_preview'))
+                    <button type="button" class="button-small" data-dialog-open="update-preview" data-preview-pr="{{ $branch['number'] }}" data-dialog-title="{{ __('updates.preview_install_number', ['number' => $branch['number']]) }}">{{ __('updates.update_short') }}</button>
+                @endif
+            </li>
+        @endforeach
     @elseif (empty($releases))
         <li class="list-empty">{{ __('updates.no_entries') }}</li>
     @else

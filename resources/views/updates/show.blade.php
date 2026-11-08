@@ -6,7 +6,7 @@
 @section('page')
     @php
         $status = $updated ? __('updates.done', ['version' => $current]) : session('status');
-        $releases = $available ? [['version' => $available, 'main' => $previewInstalled]] : null;
+        $releases = $available ? [['version' => $available, 'main' => false]] : ($branchUpdates !== null ? [] : null);
     @endphp
 
     <h1>{{ __('updates.title') }}</h1>
@@ -21,14 +21,24 @@
     <section class="card">
         <h2 class="card-head"><x-icon name="device-desktop" />{{ __('updates.installed') }}</h2>
         @if ($previewInfo)
-            <div class="pick-row is-static">
-                <x-icon name="git-pull-request" />
-                <span>
-                    <span class="tag-outline">{{ __('updates.preview_label') }}</span>
-                    <strong>#{{ $previewInfo['number'] }}@if ($previewInfo['branch'] !== '') · {{ $previewInfo['branch'] }}@endif</strong>
-                    <small>{{ $previewInfo['title'] !== '' ? $previewInfo['title'] : __('updates.preview_state', ['sha' => $previewInfo['sha']]) }}</small>
-                </span>
-            </div>
+            <ul class="pick-list">
+                <li class="pick-row is-static">
+                    <x-icon name="git-pull-request" />
+                    <span>
+                        <span class="tag-outline">{{ __('updates.preview_branch_label') }}</span>
+                        <strong>#{{ $previewInfo['number'] }}@if ($previewInfo['branch'] !== '') · {{ $previewInfo['branch'] }}@endif</strong>
+                        <small>{{ $previewInfo['title'] !== '' ? $previewInfo['title'] : __('updates.preview_state', ['sha' => $previewInfo['sha']]) }}</small>
+                    </span>
+                </li>
+                {{-- The way back to Main (A95): always here while a branch is installed. --}}
+                <li class="pick-row is-static">
+                    <x-icon name="cloud-download" />
+                    <span><strong>{{ __('updates.main_tile') }}</strong><small>{{ __('updates.main_tile_hint') }}</small></span>
+                    @if ($supported)
+                        <button type="button" class="button-small" data-dialog-open="update-main" data-dialog-title="{{ __('updates.main_install') }}">{{ __('updates.install_short') }}</button>
+                    @endif
+                </li>
+            </ul>
         @else
             <p class="card-text"><strong>{{ __('updates.version_row', ['version' => $current]) }}</strong></p>
         @endif
@@ -43,7 +53,7 @@
             </form>
         </h2>
         <p class="card-text">{{ __('updates.privacy') }}</p>
-        <div id="release-list">@include('updates._releases', ['releases' => $releases])</div>
+        <div id="release-list">@include('updates._releases', ['releases' => $releases, 'branchUpdates' => $branchUpdates ?? [], 'branchGone' => $branchGone])</div>
         @unless ($supported)
             <p class="card-note">{{ __('updates.manual') }}</p>
         @endunless

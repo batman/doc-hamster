@@ -40,4 +40,11 @@ return [
     'install_version' => 'Install version :version',
     'preview_label' => 'Preview',
     'installed_label' => 'Installed',
+    'preview_branch_label' => 'Preview branch',
+    'main_tile' => 'Main version',
+    'main_tile_hint' => 'Main, the recommended version – back to normal use',
+    'main_install' => 'Install the main version',
+    'preview_newer' => 'Newer state of #:number · :branch',
+    'preview_gone' => 'This branch is no longer released for previews. The main version under "Installed" takes you back.',
+    'update_short' => 'Update',
 ];
