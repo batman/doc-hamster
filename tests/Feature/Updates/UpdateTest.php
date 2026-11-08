@@ -17,13 +17,11 @@ uses(RefreshDatabase::class)->group('db');
 
 function fakeRelease(string $version, string $installer = '<?php // new', ?string $served = null): void
 {
+    // Release downloads only, never the GitHub API (A87).
     Http::fake([
-        'api.github.com/*' => Http::response([['draft' => false, 'prerelease' => false, 'assets' => [
-            ['name' => 'manifest.json', 'browser_download_url' => 'https://example.com/manifest.json'],
-            ['name' => 'install.php', 'browser_download_url' => 'https://example.com/install.php'],
-        ]]]),
-        'example.com/manifest.json' => Http::response(['version' => $version, 'php' => '8.3.0', 'installer_sha256' => hash('sha256', $installer)]),
-        'example.com/install.php' => Http::response($served ?? $installer),
+        'github.com/*/releases/latest/download/manifest.json' => Http::response(['version' => $version, 'php' => '8.3.0', 'installer_sha256' => hash('sha256', $installer)]),
+        'github.com/*/releases/download/v'.$version.'/install.php' => Http::response($served ?? $installer),
+        'api.github.com/*' => Http::response('', 403),
     ]);
 }
 
