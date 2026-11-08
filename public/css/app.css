@@ -1163,3 +1163,37 @@ html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
 @media (max-width: 63.99rem) {
     .win, .win.is-active { min-width: 0; }
 }
+
+/* Framework round 10 (Go 2026-11-08, points 41-45) */
+
+/* A98: every fold/unfold arrow sits on the line of the column head (head centre = top padding + 24 px) */
+@media (min-width: 64rem) {
+    .content > .page-split > .cols > button.col-strip { padding-top: calc(4.75rem + 24px - .625rem); }
+}
+
+/* A100: a window strip looks like a column strip – arrow on top (on the head line), then icon and title, pin mark */
+.win.is-min .win-strip { justify-content: flex-start; gap: 1rem; padding-top: calc(4.75rem + 24px - .625rem); }
+.win.is-min .win-strip > .icon { width: 1.25rem; height: 1.25rem; rotate: none; color: var(--text); }
+.win.is-min .win-strip:hover > .icon { color: var(--primary-ink); }
+.win.is-min .win-strip .strip-label > span { writing-mode: vertical-rl; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-height: 60vh; }
+.win-strip-pin { display: none; }
+.win.is-min.is-pinned .win-strip-pin { display: inline-flex; }
+.win.is-min .win-strip-pin .icon { width: 1rem; height: 1rem; rotate: none; color: var(--primary); }
+@media (max-width: 63.99rem) { .win.is-min .win-strip { padding-top: 1rem; } }
+
+/* A99: the pin needle in the head – outlined grey, pinned filled orange */
+.win-pin .icon:last-child { display: none; }
+.win.is-pinned .win-pin .icon:first-child { display: none; }
+.win.is-pinned .win-pin .icon:last-child { display: block; color: var(--primary); }
+.win.is-pinned .win-pin { border-color: var(--primary); }
+@media (max-width: 63.99rem) { .win-pin { display: none; } }
+
+/* A101: head buttons small and quiet, on the title line, a fixed gap to the content */
+.win-head { padding-bottom: 1rem; }
+.win-head :is(.icon-button, .dropdown > .icon-button) { width: 36px; min-width: 36px; height: 36px; min-height: 36px; padding: 0; border-width: 1px; border-color: var(--border); border-radius: 8px; box-shadow: none; }
+.win-head :is(.icon-button, .dropdown > .icon-button) .icon { width: 1.1rem; height: 1.1rem; }
+.win-head .win-actions, .win-head .win-actions .toolbar { gap: .4rem; }
+.win-body > :first-child { margin-top: 0; }
+
+/* The window head line sits where the column head line sits (padding + 48 px row), so strips line up with both */
+@media (min-width: 64rem) { .win-head { box-sizing: content-box; } }

@@ -619,7 +619,9 @@
     // data-window in a window closes all windows right of that window, makes that window narrow (a strip
     // in the history on the left) and opens the new one on the right. A strip opened again just becomes
     // wide – nothing else changes; the wide windows share the width (each at least its minimum width,
-    // data-window-min), and when that doesn't fit the row scrolls sideways. The address follows the
+    // data-window-min), and when that doesn't fit the row scrolls sideways. A window made wide again from its
+    // strip is pinned (A97, A99): opening something from it leaves it wide; the pin in its head shows and
+    // switches that. The address follows the
     // active window (the last one opened); the history survives a reload (per tab).
     // Modules only deliver <x-window> content and listen to DocHamster.on('window:open', root => …).
     // ---------------------------------------------------------------------------------------------
@@ -649,12 +651,23 @@
             }
         };
         const active = () => box.querySelector(':scope > .is-active');
+        // Pinned windows stay wide when something opens from them (A97, A99).
+        const pin = (win, on) => {
+            win.classList.toggle('is-pinned', on);
+            const button = win.querySelector('[data-window-pin]');
+            if (button) {
+                const label = on ? button.dataset.labelUnpin : button.dataset.labelPin;
+                button.setAttribute('aria-pressed', String(on));
+                button.setAttribute('aria-label', label);
+                button.dataset.tooltip = label;
+            }
+        };
         const reveal = win => requestAnimationFrame(() => win.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' }));
 
         const remember = () => {
             try {
                 sessionStorage.setItem(KEY, JSON.stringify({
-                    list: wins().map(win => ({ url: win.dataset.windowUrl, title: win.dataset.windowTitle, icon: win.querySelector('.win-strip .icon')?.outerHTML ?? '', min: win.classList.contains('is-min'), closable: win.querySelector('[data-window-close]') !== null })),
+                    list: wins().map(win => ({ url: win.dataset.windowUrl, title: win.dataset.windowTitle, icon: win.querySelector('.win-strip .strip-label > .icon')?.outerHTML ?? '', min: win.classList.contains('is-min'), pinned: win.classList.contains('is-pinned'), closable: win.querySelector('[data-window-close]') !== null })),
                     active: active()?.dataset.windowUrl ?? null,
                 }));
             } catch { /* not remembered */ }
@@ -689,12 +702,15 @@
             win.dataset.windowUrl = item.url;
             win.dataset.windowTitle = item.title;
             win.dataset.lazy = '';
-            const strip = document.createElement('button');
-            strip.type = 'button';
-            strip.className = 'win-strip';
-            strip.dataset.windowActivate = '';
-            strip.innerHTML = `${item.icon}<span></span>`;
-            strip.querySelector('span').textContent = item.title;
+            win.classList.toggle('is-pinned', !!item.pinned);
+            // The same strip as a server window has: arrow, icon and title, pin mark.
+            const strip = document.querySelector('.win-strip')?.cloneNode(true) ?? document.createElement('button');
+            const label = strip.querySelector('.strip-label');
+            if (label) {
+                label.innerHTML = `${item.icon}<span></span>`;
+                label.querySelector('span').textContent = item.title;
+            }
+            strip.setAttribute('aria-label', item.title);
             win.append(strip);
             if (item.closable) {
                 const x = document.querySelector('.win-strip-x')?.cloneNode(true);
@@ -709,6 +725,7 @@
             name(full);
             full.classList.toggle('is-min', win.classList.contains('is-min'));
             full.classList.toggle('is-active', win.classList.contains('is-active'));
+            pin(full, win.classList.contains('is-pinned'));
             win.replaceWith(full);
             DocHamster.emit('window:open', full);
             return full;
@@ -716,6 +733,9 @@
 
         // A strip becomes wide again; the other windows stay as they are (point 40.6).
         const restore = (win, push = true) => fill(win).then(full => smooth(() => {
+            if (full.classList.contains('is-min')) {
+                pin(full, true);
+            }
             full.classList.remove('is-min');
             focus(full, push);
         }).then(() => reveal(full))).catch(() => { location.href = win.dataset.windowUrl; });
@@ -738,7 +758,7 @@
                             DocHamster.emit('window:close', gone);
                             gone.remove();
                         }
-                        from.classList.add('is-min');
+                        from.classList.toggle('is-min', !from.classList.contains('is-pinned'));
                     }
                     box.append(win);
                     focus(win);
@@ -787,6 +807,7 @@
             const order = saved.list.map(item => {
                 const win = byUrl(item.url) ?? placeholder(item);
                 win.classList.toggle('is-min', item.min && win !== current);
+                pin(win, !!item.pinned);
                 return win;
             });
             wins().filter(win => !order.includes(win)).forEach(win => order.push(win));
@@ -806,7 +827,10 @@
 
         box.addEventListener('click', event => {
             const win = event.target.closest('section[data-window]');
-            if (event.target.closest('[data-window-close]')) {
+            if (event.target.closest('[data-window-pin]')) {
+                pin(win, !win.classList.contains('is-pinned'));
+                remember();
+            } else if (event.target.closest('[data-window-close]')) {
                 event.preventDefault();
                 close(win);
             } else if (event.target.closest('[data-window-activate]')) {

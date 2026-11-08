@@ -11,7 +11,9 @@
 @php($url ??= request()->fullUrl())
 <section {{ $attributes->class('win') }} data-window data-window-url="{{ $url }}" data-window-title="{{ $title }}" @if ($upload) data-window-upload="{{ $upload }}" @endif @if ($min) data-window-min="{{ $min }}" @endif aria-label="{{ $title }}">
     <button type="button" class="win-strip" data-window-activate aria-label="{{ __('app.window.open', ['title' => $title]) }}">
-        <x-icon :name="$icon" /><span>{{ $title }}</span>
+        <x-icon name="chevron-right" />
+        <span class="strip-label"><x-icon :name="$icon" /><span>{{ $title }}</span></span>
+        <span class="win-strip-pin"><x-icon name="pin-filled" /></span>
     </button>
     @if ($close)
         <button type="button" class="win-strip-x" data-window-close aria-label="{{ __('app.window.remove', ['title' => $title]) }}" data-tooltip="{{ __('app.window.remove_short') }}"><x-icon name="x" /></button>
@@ -25,6 +27,7 @@
                 <div class="win-actions" data-win-actions>{{ $actions }}</div>
                 <x-more-menu class="win-more" data-win-more />
             @endisset
+            <button type="button" class="icon-button win-pin" data-window-pin aria-pressed="false" aria-label="{{ __('app.window.pin') }}" data-tooltip="{{ __('app.window.pin') }}" data-label-pin="{{ __('app.window.pin') }}" data-label-unpin="{{ __('app.window.unpin') }}"><x-icon name="pin" /><x-icon name="pin-filled" /></button>
             @if ($close)
                 <a class="icon-button win-close" href="{{ $close }}" data-window-close aria-label="{{ __('app.window.close') }}" data-tooltip="{{ __('app.window.close') }}"><x-icon name="x" /></a>
             @endif

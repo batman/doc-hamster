@@ -18,5 +18,7 @@ return [
         'remove_short' => 'Aus dem Verlauf entfernen',
         'close' => 'Schließen',
         'back' => 'Zurück',
+        'pin' => 'Anpinnen – bleibt groß',
+        'unpin' => 'Angepinnt – lösen',
     ],
 ];

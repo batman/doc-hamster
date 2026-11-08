@@ -90,6 +90,9 @@ The general logic of the app (points 22, 24, 40, PO 2026-11-08): **every window 
 
 - A link with `data-window` in a window **closes every window right of that window**, makes that window **narrow** (a strip in the history on the left) and opens the new window on the right. A target already in the history just opens again.
 - A click on a strip makes that window **wide again – nothing else changes**: no other window gets narrow for it.
+- **Pin:** a window made wide again from its strip is **pinned**: opening something from it leaves it wide (everything right of it still closes). The pin needle in the head (left of the X) shows it – outlined when free, filled orange when pinned – and switches it; a pinned window's strip shows a small needle too.
+- **Strip:** like the settings strips – the unfold arrow on top on the head line, then icon and title turned by 90°, the pin mark, the small X.
+- **Head:** title, the module's buttons (`actions`, small 36 px icon buttons), pin, X – all on one line, the line of the settings column heads; a fixed gap of 1rem to the content.
 - All wide windows **share the width**, each at least its minimum width (default 30rem, per window with the `min` prop). Too little room: the row scrolls sideways; the window just opened or opened again scrolls into view.
 - The **X** in a window's head closes just that window; the small X on a strip removes it from the history. If no wide window is left, the nearest strip opens. A window without a close target (`close` prop) can't be closed – the root of a module.
 - The **active** window is the one opened last or clicked into; the browser address and the title follow it. Browser back opens the window of the address before. A reload keeps the history of this tab with which windows were wide (`sessionStorage`); windows not loaded yet load when they are shown.

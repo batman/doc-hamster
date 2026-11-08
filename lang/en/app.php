@@ -18,5 +18,7 @@ return [
         'remove_short' => 'Remove from the history',
         'close' => 'Close',
         'back' => 'Back',
+        'pin' => 'Pin – stays wide',
+        'unpin' => 'Pinned – unpin',
     ],
 ];
