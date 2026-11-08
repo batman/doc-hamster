@@ -1054,8 +1054,8 @@ input[type="file"]::file-selector-button { border-radius: 10px; font-size: 1rem;
 .field { display: grid; gap: .4rem; margin-top: 1rem; max-width: 40rem; }
 .field > label, label.field-label { margin: 0; font-size: .875rem; font-weight: 600; line-height: 1.2; color: var(--primary-ink); }
 /* Older forms: a label right before its field, or a label wrapping its field, also puts the text above */
-label:not(:has(input[type="checkbox"], input[type="radio"])) { font-size: .875rem; color: var(--primary-ink); }
-label:has(> :is(input:not([type="checkbox"], [type="radio"], [type="hidden"]), select, textarea)) { display: grid; gap: .4rem; max-width: 40rem; }
+label:not(:has(input[type="checkbox"], input[type="radio"], input[type="file"])) { font-size: .875rem; color: var(--primary-ink); }
+label:has(> :is(input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="file"]), select, textarea)) { display: grid; gap: .4rem; max-width: 40rem; }
 label + :is(input:not([type="checkbox"], [type="radio"], [type="hidden"]), select, textarea) { margin-top: .4rem; }
 
 input:not([type="checkbox"], [type="radio"], [type="color"], [type="range"], [type="file"], [type="hidden"]),
