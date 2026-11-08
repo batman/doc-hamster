@@ -1046,10 +1046,10 @@ input[type="file"]::file-selector-button { border-radius: 10px; font-size: 1rem;
 
 .pick-row.is-static > button.pick-handle { margin: 0 -.25rem 0 -.5rem; }
 
-/* Form fields (Go 2026-11-08, point 32, A82-A85): label above, orange 2 px frame, 10 px corners like the
-   buttons, 48 px high; a soft orange glow while typing. Replaces the round fields from above. */
-:root { --field-bg: #ffffff; --field-glow: rgb(255 118 34 / .35); }
-@media (prefers-color-scheme: dark) { :root { --field-bg: #1f1f1d; } }
+/* Form fields (Go 2026-11-08, point 32, A82-A85), as the PO picked them in variant A: label above, a quiet
+   thin frame, 8 px corners, 48 px high; while typing an orange frame with a soft orange ring. */
+:root { --field-bg: #ffffff; --field-line: #d9d6cc; --field-glow: rgb(255 118 34 / .28); }
+@media (prefers-color-scheme: dark) { :root { --field-bg: #1f1f1d; --field-line: #55534e; } }
 
 .field { display: grid; gap: .4rem; margin-top: 1rem; max-width: 40rem; }
 .field > label, label.field-label { margin: 0; font-size: .875rem; font-weight: 600; line-height: 1.2; color: var(--primary-ink); }
@@ -1061,7 +1061,7 @@ label + :is(input:not([type="checkbox"], [type="radio"], [type="hidden"]), selec
 input:not([type="checkbox"], [type="radio"], [type="color"], [type="range"], [type="file"], [type="hidden"]),
 select, textarea {
     box-sizing: border-box; width: 100%; max-width: 40rem; min-height: 48px;
-    padding: 0 .9rem; border: 2px solid var(--primary); border-radius: 10px;
+    padding: 0 .9rem; border: 1px solid var(--field-line); border-radius: 8px;
     background-color: var(--field-bg); color: var(--text);
     font: inherit; font-size: 1rem; line-height: 1.4;
     outline: none; box-shadow: none; transition: box-shadow .12s;
@@ -1072,7 +1072,7 @@ select {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff7622' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6l6 -6'/%3E%3C/svg%3E");
     background-repeat: no-repeat; background-position: right .8rem center; background-size: 1.1rem;
 }
-:is(input, select, textarea):focus { box-shadow: 0 0 0 3px var(--field-glow); }
+:is(input, select, textarea):focus { border-color: rgb(255 118 34 / .7); box-shadow: 0 0 0 3px var(--field-glow); }
 :is(input, select, textarea)::placeholder { color: var(--muted); opacity: 1; }
 :is(input, select, textarea):disabled { opacity: .55; cursor: not-allowed; }
 input[readonly] { background-color: var(--surface); }

@@ -43,7 +43,7 @@ Every `<button>` and `.button` is a button by default. Do not reuse its look for
 
 ## 3. Form fields, cards, lists, toasts, dialogs
 
-- **Form field** – label **above** the field, orange 2 px frame, 10 px corners like the buttons, 48 px high, a soft orange glow while typing. The same look for text, password, search, date, number, `select` and `textarea` (grows with its text). Checkboxes, radios, colour and range keep their own look. Saved logins (autofill) look like typed text.
+- **Form field** – label **above** the field (orange, semi-bold), a quiet thin frame, 8 px corners, 48 px high; while typing an orange frame with a soft orange ring; an error gives a thin red frame. The same look for text, password, search, date, number, `select` and `textarea` (grows with its text). Checkboxes, radios, colour and range keep their own look. Saved logins (autofill) look like typed text.
   ```html
   <div class="field">
       <label for="username">Benutzername</label>
