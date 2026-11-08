@@ -70,9 +70,19 @@
                 <div class="field"><label for="sg-pass">Passwort</label><input id="sg-pass" type="password" value="geheimgeheim" autocomplete="off"></div>
                 <div class="field"><label for="sg-kind">Art</label><select id="sg-kind"><option>Quittung</option><option>Rechnung</option></select></div>
                 <div class="field"><label for="sg-note">Notiz</label><textarea id="sg-note" placeholder="Notiz zu diesem Beleg"></textarea></div>
+                <div class="field"><input id="sg-find" class="input-small" type="search" placeholder="Suchen" aria-label="Suchen"></div>
+                <fieldset><legend>Tags</legend><div class="tags"><span class="tag">Quittung</span> <span class="tag">Rechnung</span></div></fieldset>
                 <div class="field has-error"><label for="sg-mail">E-Mail</label><input id="sg-mail" value="max@" aria-invalid="true"><p class="field-hint">Bitte eine vollständige Adresse eingeben.</p></div>
                 <button type="button" style="margin-top: 1.5rem;">Anmelden</button>
             </div>
+
+            <h3 class="sg-pad">Tabs</h3>
+            <nav class="tab-bar" aria-label="Bank">
+                <a class="tab" href="#framework" aria-current="page"><span>Buchungen ohne Beleg</span><span class="tab-count">3</span><span class="tab-mark"></span></a>
+                <a class="tab" href="#framework"><span>Zugeordnete Buchungen</span><span class="tab-count">12</span></a>
+                <a class="tab" href="#framework"><span>Belege ohne Buchung</span><span class="tab-count">0</span></a>
+            </nav>
+            <p class="list-empty">Keine offenen Buchungen.</p>
 
             <h3 class="sg-pad">Karte mit Liste</h3>
             <section class="card">

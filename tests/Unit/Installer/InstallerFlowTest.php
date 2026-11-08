@@ -24,7 +24,7 @@ it('installs a fitting release end to end', function (): void {
     }
 
     [$routes, $files] = InstallerBrowser::releaseRoutes('0.2.0', '8.3.0', hash('sha256', $zipBytes));
-    $files['files/dochamster-0.2.0.zip'] = $zipBytes;
+    $files[InstallerBrowser::zipPath('0.2.0')] = $zipBytes;
     $browser = InstallerBrowser::start($routes, $files);
     try {
         $checks = $browser->unlock(['X-Forwarded-Proto: https']);

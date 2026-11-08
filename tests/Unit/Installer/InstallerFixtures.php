@@ -177,20 +177,6 @@ final class InstallerFixtures
         return self::serveZip(self::$serverDir, self::$serverUrl, $name, $entries);
     }
 
-    /** A GitHub release row shaped like the API returns it. */
-    public static function makeRelease(string $version, array $overrides = []): array
-    {
-        return array_merge([
-            'tag_name' => 'v'.$version,
-            'draft' => false,
-            'prerelease' => false,
-            'assets' => [
-                ['name' => 'manifest.json', 'browser_download_url' => 'https://example.com/'.$version.'/manifest.json'],
-                ['name' => 'dochamster-'.$version.'.zip', 'browser_download_url' => 'https://example.com/'.$version.'/dochamster-'.$version.'.zip'],
-            ],
-        ], $overrides);
-    }
-
     public static function makeManifest(string $version, string $php = '8.3.0'): array
     {
         return ['version' => $version, 'php' => $php, 'zip' => 'dochamster-'.$version.'.zip', 'sha256' => str_repeat('a', 64)];

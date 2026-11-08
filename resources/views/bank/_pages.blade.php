@@ -1,5 +1,5 @@
 @if ($pages->hasPages())
-    <nav class="tabs" aria-label="{{ __('bank.pages') }}">
+    <nav class="pager" aria-label="{{ __('bank.pages') }}">
         @if (! $pages->onFirstPage())
             <a href="{{ $pages->previousPageUrl() }}">{{ __('bank.previous') }}</a>
         @endif

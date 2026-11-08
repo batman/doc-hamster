@@ -141,7 +141,7 @@ it('ignores a failure without a timestamp', function (): void {
 });
 
 it('shows the translated rate-limit message without hammering the API', function (): void {
-    $routes = ['GET /api/repos' => ['status' => 403, 'body' => '{"message":"API rate limit exceeded"}']];
+    $routes = ['GET /api/gh' => ['status' => 403, 'body' => '{"message":"API rate limit exceeded"}']];
     $browser = InstallerBrowser::start($routes);
     try {
         $first = $browser->unlock();
@@ -151,7 +151,7 @@ it('shows the translated rate-limit message without hammering the API', function
         $second = $browser->get('/install.php')[2];
 
         expect($second)->toContain('zu viele Anfragen')
-            ->and(trim($browser->hits()))->toBe('GET /api/repos/batman/doc-hamster/releases');
+            ->and(trim($browser->hits()))->toBe('GET '.InstallerBrowser::LATEST_MANIFEST);
     } finally {
         $browser->stop();
     }
@@ -167,9 +167,8 @@ it('fetches a fitting release once per session', function (): void {
 
         $browser->get('/install.php');
 
-        // One releases list call for two page loads; the manifest asset is a
-        // static file, not an API hit.
-        expect(trim($browser->hits()))->toBe('GET /api/repos/batman/doc-hamster/releases');
+        // One manifest download for two page loads.
+        expect(trim($browser->hits()))->toBe('GET '.InstallerBrowser::LATEST_MANIFEST);
     } finally {
         $browser->stop();
     }

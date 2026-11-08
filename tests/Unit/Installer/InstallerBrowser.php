@@ -19,6 +19,8 @@ namespace Tests\Unit\Installer;
  */
 final class InstallerBrowser
 {
+    public const LATEST_MANIFEST = '/api/gh/batman/doc-hamster/releases/latest/download/manifest.json';
+
     private mixed $serverProc = null;
 
     private mixed $apiProc = null;
@@ -73,7 +75,7 @@ final class InstallerBrowser
                 }
                 // The installer copy goes live only after its API base is rewritten.
                 $installer = (string) file_get_contents(dirname(__DIR__, 3).'/installer/install.php');
-                file_put_contents($webRoot.'/install.php', str_replace('https://api.github.com', $apiBase.'/api', $installer));
+                file_put_contents($webRoot.'/install.php', str_replace('https://github.com', $apiBase.'/api/gh', $installer));
                 [$webProc, $webBase] = self::bootServer($webRoot, null, 19931, 19971);
             } catch (\Throwable $e) {
                 InstallerFixtures::stopServer($apiProc);
@@ -96,21 +98,24 @@ final class InstallerBrowser
     }
 
     /**
-     * Routes for an API offering exactly one fitting release (list + manifest asset).
+     * Routes for GitHub offering exactly one fitting release (the latest manifest download).
      *
      * @return array{0: array<string, RouteResponse>, 1: array<string, string>}
      */
     public static function releaseRoutes(string $version, string $php, string $sha256): array
     {
-        $release = InstallerFixtures::makeRelease($version, ['assets' => [
-            ['name' => 'manifest.json', 'browser_download_url' => '{BASE}/files/manifest.json'],
-            ['name' => 'dochamster-'.$version.'.zip', 'browser_download_url' => '{BASE}/files/dochamster-'.$version.'.zip'],
-        ]]);
+        $manifest = ['version' => $version, 'php' => $php, 'zip' => 'dochamster-'.$version.'.zip', 'sha256' => $sha256];
 
         return [
-            ['GET /api/repos' => ['status' => 200, 'body' => (string) json_encode([$release])]],
-            ['files/manifest.json' => (string) json_encode(['version' => $version, 'php' => $php, 'zip' => 'dochamster-'.$version.'.zip', 'sha256' => $sha256])],
+            ['GET '.self::LATEST_MANIFEST => ['status' => 200, 'body' => (string) json_encode($manifest)]],
+            [],
         ];
+    }
+
+    /** Where the fixture server serves a release zip, as the installer asks for it. */
+    public static function zipPath(string $version): string
+    {
+        return 'api/gh/batman/doc-hamster/releases/download/v'.$version.'/dochamster-'.$version.'.zip';
     }
 
     /**

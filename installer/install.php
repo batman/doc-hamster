@@ -14,6 +14,8 @@ declare(strict_types=1);
  */
 
 const DH_REPO = 'batman/doc-hamster';
+/** Release downloads only, never the GitHub API: no rate limit for the server (A87/A88). */
+const DH_DOWNLOADS = 'https://github.com/'.DH_REPO.'/releases';
 const DH_INSTALLER_VERSION = 'dev'; // set by .github/workflows/release.yml
 const DH_PREVIEW_PR = 0; // set by .github/workflows/preview.yml; zero means stable release
 const DH_PREVIEW_SHA = '';
@@ -123,46 +125,32 @@ function http(string $url, ?string $file = null): string
 }
 
 /**
- * Newest release whose manifest fits this PHP version.
- *
- * The manifest fetch is injected so the choice logic is unit-testable; the
- * installer passes a download, the tests pass canned responses.
+ * The newest release from its manifest, checked against this PHP version, with the zip's
+ * download address added. Pure, so it is unit-testable.
  */
-function selectRelease(array $releases, callable $fetchManifest, string $phpVersion): array
+function releaseFromManifest(mixed $manifest, string $phpVersion): array
 {
-    foreach ($releases as $release) {
-        if (! is_array($release) || ! empty($release['draft']) || ! empty($release['prerelease'])) {
-            continue;
-        }
-        $assets = [];
-        foreach ($release['assets'] ?? [] as $asset) {
-            $assets[$asset['name']] = $asset['browser_download_url'];
-        }
-        if (! isset($assets['manifest.json'])) {
-            continue;
-        }
-        $manifest = $fetchManifest($assets['manifest.json']);
-        if (is_array($manifest) && isset($assets[$manifest['zip'] ?? '']) && version_compare($phpVersion, (string) $manifest['php'], '>=')) {
-            $manifest['url'] = $assets[$manifest['zip']];
-
-            return $manifest;
-        }
+    if (! is_array($manifest)
+        || ! is_string($manifest['version'] ?? null) || ! is_string($manifest['zip'] ?? null) || ! isset($manifest['php'])
+        || basename($manifest['zip']) !== $manifest['zip']) {
+        throw new RuntimeException('Die Beschreibung der neuesten Version ist nicht lesbar. Bitte später erneut versuchen.');
     }
-    throw new RuntimeException('Keine passende DocHamster-Version für PHP '.$phpVersion.' gefunden.');
+    if (version_compare($phpVersion, (string) $manifest['php'], '<')) {
+        throw new RuntimeException('Keine passende DocHamster-Version für PHP '.$phpVersion.' gefunden.');
+    }
+    $manifest['url'] = DH_DOWNLOADS.'/download/v'.rawurlencode($manifest['version']).'/'.rawurlencode($manifest['zip']);
+
+    return $manifest;
 }
 
-/** Newest release whose manifest fits this PHP version. */
+/** The newest release, if it fits this PHP version. */
 function chooseRelease(): array
 {
     if (DH_PREVIEW_PR > 0) {
         return choosePreviewRelease();
     }
 
-    $releases = json_decode(http('https://api.github.com/repos/'.DH_REPO.'/releases?per_page=20'), true);
-
-    return selectRelease(is_array($releases) ? $releases : [], static function (string $url) {
-        return json_decode(http($url), true);
-    }, PHP_VERSION);
+    return releaseFromManifest(json_decode(http(DH_DOWNLOADS.'/latest/download/manifest.json'), true), PHP_VERSION);
 }
 
 /**
@@ -171,7 +159,7 @@ function chooseRelease(): array
  */
 function choosePreviewRelease(): array
 {
-    $downloads = 'https://github.com/'.DH_REPO.'/releases/download/';
+    $downloads = DH_DOWNLOADS.'/download/';
     $list = json_decode(http($downloads.'previews/previews.json'), true);
     $listed = false;
     foreach (is_array($list) ? $list : [] as $entry) {

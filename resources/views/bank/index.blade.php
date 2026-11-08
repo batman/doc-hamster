@@ -12,15 +12,21 @@
         <p class="check-ok" role="status">{{ session('status') }}</p>
     @endif
 
-    <nav class="tabs" aria-label="{{ __('bank.title') }}">
+    {{-- Tabs (FRAMEWORK.md "Tabs") --}}
+    <nav class="tab-bar" aria-label="{{ __('bank.title') }}">
         @foreach ($views as $name)
-            <a href="{{ route('bank.index', ['view' => $name]) }}" @if ($name === $view) aria-current="page" @endif>{{ __('bank.views.'.$name) }}</a>
+            <a class="tab" href="{{ route('bank.index', ['view' => $name]) }}" @if ($name === $view) aria-current="page" @endif>
+                <x-icon :name="['open' => 'receipt-off', 'matched' => 'link', 'receipts' => 'file-off'][$name]" />
+                <span>{{ __('bank.views.'.$name) }}</span>
+                <span class="tab-count">{{ $counts[$name] }}</span>
+                @if ($name === $view)<span class="tab-mark"></span>@endif
+            </a>
         @endforeach
     </nav>
 
     @if ($documents !== null)
         @if ($documents->isEmpty())
-            <p class="muted">{{ __('bank.empty.receipts') }}</p>
+            <p class="list-empty">{{ __('bank.empty.receipts') }}</p>
         @else
             <ul class="documents">
                 @foreach ($documents as $document)
@@ -30,7 +36,7 @@
             @include('bank._pages', ['pages' => $documents])
         @endif
     @elseif ($transactions->isEmpty())
-        <p class="muted">{{ __('bank.empty.'.$view) }}</p>
+        <p class="list-empty">{{ __('bank.empty.'.$view) }}</p>
     @else
         <ul class="documents">
             @foreach ($transactions as $entry)

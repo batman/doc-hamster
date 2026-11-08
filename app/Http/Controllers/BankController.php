@@ -37,6 +37,11 @@ final class BankController
         return view('bank.index', [
             'view' => $view,
             'views' => self::VIEWS,
+            'counts' => [
+                'open' => Transaction::query()->doesntHave('matches')->count(),
+                'matched' => Transaction::query()->has('matches')->count(),
+                'receipts' => $this->visible($org)->matchable()->doesntHave('matches')->count(),
+            ],
             'transactions' => $view === 'receipts' ? null : $this->transactions($view),
             'documents' => $view === 'receipts' ? $this->receiptsWithoutBooking($org) : null,
             'transaction' => null,

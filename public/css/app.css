@@ -1090,3 +1090,58 @@ input:autofill:focus, input:-webkit-autofill:focus { box-shadow: 0 0 0 1000px va
 .field.has-error :is(input, select, textarea):focus { box-shadow: 0 0 0 3px rgb(217 45 32 / .3); }
 .field.has-error .field-hint { color: var(--danger); }
 
+
+/* Framework round 8 (Go 2026-11-08, points 33-37) */
+
+/* A89: a frame field (fieldset) looks like a form field – no browser frame, the legend above like a label */
+fieldset { min-width: 0; max-width: 40rem; margin: 1rem 0 0; padding: 0; border: 0; }
+fieldset > legend { float: left; width: 100%; margin: 0 0 .4rem; padding: 0; font-size: .875rem; font-weight: 600; line-height: 1.2; color: var(--primary-ink); }
+fieldset > legend + * { clear: both; }
+.rights, .tag-color-field, .note-color-field, .note-tag-field { border: 0; padding: 0; border-radius: 0; }
+.rights label { display: flex; align-items: center; gap: .5rem; margin-top: .35rem; font-size: 1rem; color: var(--text); }
+
+/* A90: small field for tight spots – 40 px like small buttons, no label above. Every search field is small. */
+input.input-small, input[type="search"] { min-height: 40px; padding: 0 .75rem; font-size: .9375rem; }
+select.input-small { min-height: 40px; padding-left: .75rem; font-size: .9375rem; }
+
+/* A91: nothing in a list looks like a link. The whole row is the click area; underlined only inside running text. */
+a { text-decoration: none; }
+:is(p, .card-text, .card-note, .field-hint, dd) a:not(.button, .icon-button, .menu-item, .tag) { text-decoration: underline; }
+.pick-row a:not(.button, .icon-button, .menu-item, .tag), .documents a, .view-list a, .view-details td a, .timeline a { color: inherit; text-decoration: none; }
+.pick-row.is-static:has(> span a) { position: relative; cursor: pointer; transition: background-color .12s; }
+.pick-row.is-static > span a::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.pick-row.is-static:has(> span a):hover { background: color-mix(in srgb, var(--surface) 88%, var(--text)); }
+.pick-row.is-static > span a:focus-visible { outline: none; }
+.pick-row.is-static:has(> span a:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
+.pick-row.is-static > :is(button, form, .dropdown, .tag-outline) { position: relative; z-index: 1; }
+
+/* A92: drag to sort – the whole row is the grip, a dashed placeholder keeps its place, an orange bar shows the target */
+[data-sortable] { position: relative; }
+[data-sortable] > [data-id] { cursor: grab; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+[data-sortable] .pick-handle { touch-action: none; }
+.pick-placeholder { list-style: none; border: 2px dashed var(--border); border-radius: calc(var(--radius) / 2); background: transparent; }
+.pick-row.is-lifted, .pick-row.is-static.is-lifted { position: fixed; z-index: 60; margin: 0; box-shadow: var(--shadow); background: var(--bg); pointer-events: none; transform: scale(1.02); }
+.pick-row.is-gliding { transition: transform .18s ease-out, box-shadow .18s ease-out; }
+.pick-drop { position: absolute; left: 0; right: 0; height: 3px; margin-top: -1.5px; border-radius: 2px; background: var(--primary); pointer-events: none; }
+.pick-drop::before { content: ""; position: absolute; left: -4px; top: -3px; width: 9px; height: 9px; border-radius: 50%; background: var(--primary); }
+html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
+@media (prefers-reduced-motion: reduce) { .pick-row.is-gliding { transition: none; } }
+
+/* A93: tabs – a bar with tabs over a thin line; the active one in text colour with an orange bar that glides */
+.tab-bar { display: flex; gap: .25rem; margin: 1.25rem 0 1rem; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border); }
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab {
+    position: relative; display: inline-flex; flex: none; align-items: center; gap: .5rem; padding: .7rem .9rem .8rem;
+    color: var(--muted); font-weight: 600; white-space: nowrap; text-decoration: none; border-radius: 8px 8px 0 0;
+    transition: color .12s, background-color .12s;
+}
+.tab .icon { width: 1.15rem; height: 1.15rem; }
+.tab:hover { color: var(--text); background: var(--surface); }
+.tab[aria-current="page"] { color: var(--text); }
+.tab[aria-current="page"] .icon { color: var(--primary); }
+.tab-mark { position: absolute; left: .5rem; right: .5rem; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0; background: var(--primary); view-transition-name: tab-mark; }
+.tab-count { min-width: 1.4rem; padding: .05rem .45rem; border-radius: 999px; background: var(--surface); color: var(--muted); font-size: .75rem; font-weight: 600; line-height: 1.4; text-align: center; }
+.tab[aria-current="page"] .tab-count { background: rgb(255 118 34 / .15); color: var(--primary-ink); }
+.tab:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+::view-transition-group(tab-mark) { animation-duration: .25s; animation-timing-function: ease-in-out; }
+.pager { display: flex; gap: .5rem; margin-top: 1rem; }
