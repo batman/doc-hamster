@@ -64,6 +64,16 @@
                 <a href="#framework">Link bleibt Text</a>
             </div>
 
+            <h3 class="sg-pad">Formularfelder</h3>
+            <div style="max-width: 26rem;">
+                <div class="field"><label for="sg-user">Benutzername</label><input id="sg-user" value="max.mustermann" autocomplete="off"></div>
+                <div class="field"><label for="sg-pass">Passwort</label><input id="sg-pass" type="password" value="geheimgeheim" autocomplete="off"></div>
+                <div class="field"><label for="sg-kind">Art</label><select id="sg-kind"><option>Quittung</option><option>Rechnung</option></select></div>
+                <div class="field"><label for="sg-note">Notiz</label><textarea id="sg-note" placeholder="Notiz zu diesem Beleg"></textarea></div>
+                <div class="field has-error"><label for="sg-mail">E-Mail</label><input id="sg-mail" value="max@" aria-invalid="true"><p class="field-hint">Bitte eine vollständige Adresse eingeben.</p></div>
+                <button type="button" style="margin-top: 1.5rem;">Anmelden</button>
+            </div>
+
             <h3 class="sg-pad">Karte mit Liste</h3>
             <section class="card">
                 <h2 class="card-head"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/></svg>Updates

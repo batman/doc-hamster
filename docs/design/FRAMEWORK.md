@@ -41,7 +41,17 @@ Every `<button>` and `.button` is a button by default. Do not reuse its look for
 
 48 px high (small 40 px), 10 px corners, semi-bold, no letter spacing, light shadow that presses in on click, orange focus ring for the keyboard, faded when disabled. A link stays underlined text and never looks like a button.
 
-## 3. Cards, lists, toasts, dialogs
+## 3. Form fields, cards, lists, toasts, dialogs
+
+- **Form field** – label **above** the field, orange 2 px frame, 10 px corners like the buttons, 48 px high, a soft orange glow while typing. The same look for text, password, search, date, number, `select` and `textarea` (grows with its text). Checkboxes, radios, colour and range keep their own look. Saved logins (autofill) look like typed text.
+  ```html
+  <div class="field">
+      <label for="username">Benutzername</label>
+      <input id="username" name="username" autocomplete="username">
+      <p class="field-hint">Optional: a hint below the field.</p>
+  </div>
+  ```
+  An error: `class="field has-error"` (red frame, red hint) or `aria-invalid="true"` on the field. Older forms with the label right before or around the field are drawn the same way; new code uses `.field`.
 
 - **Card** – a framed block with a head: `<section class="card"><h2 class="card-head"><x-icon name="…" />Title <form class="card-action">…icon button…</form></h2> … </section>`. Text in a card: `.card-text` (readable line length), small print `.card-note`.
 - **List with rows** – `<ul class="pick-list">` with `<li class="pick-row is-static">` (icon, `<span><strong>…</strong><small>…</small></span>`, optional button or `<span class="tag-outline">` label on the right). An empty or not yet loaded list shows `<li class="list-empty">Keine Einträge</li>`; an error `list-empty list-error`.

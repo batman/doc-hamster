@@ -6,12 +6,14 @@
     <h1>{{ __('auth.login') }}</h1>
     <form method="post" action="{{ route('login.attempt') }}">
         @csrf
-        <label>{{ __('auth.username') }}
-            <input name="username" value="{{ old('username') }}" autocomplete="username" required autofocus>
-        </label>
-        <label>{{ __('auth.password') }}
-            <input type="password" name="password" autocomplete="current-password" required>
-        </label>
+        <div class="field">
+            <label for="username">{{ __('auth.username') }}</label>
+            <input id="username" name="username" value="{{ old('username') }}" autocomplete="username" required autofocus @error('username') aria-invalid="true" @enderror>
+        </div>
+        <div class="field">
+            <label for="password">{{ __('auth.password') }}</label>
+            <input id="password" type="password" name="password" autocomplete="current-password" required>
+        </div>
         @error('username')<p class="error" role="alert">{{ $message }}</p>@enderror
         <button type="submit">{{ __('auth.login') }}</button>
     </form>
