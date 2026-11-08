@@ -86,14 +86,15 @@ Every `<button>` and `.button` is a button by default. Do not reuse its look for
 
 ## 5. Window system
 
-The general logic of the app: **new windows open on the right, all earlier ones collect on the left as the history.**
+The general logic of the app (points 22, 24, 40, PO 2026-11-08): **every window is an area of its own** – it scrolls by itself and closes by itself, without touching the others.
 
-- Full: the **active** window and the one it was opened from (**previous**). All others are **strips** (icon and title turned by 90°).
-- A click on a strip opens that window again; windows right of it only minimize, nothing closes.
-- The **X** in a window's head closes it; the small X on a strip removes it from the history. A window without a close target (`close` prop) can't be closed – the root of a module.
-- The browser address always shows the active window. Browser back goes to the window opened before. A reload keeps the history of this tab (`sessionStorage`); windows not shown yet come back as strips and load when opened.
+- A link with `data-window` in a window **closes every window right of that window**, makes that window **narrow** (a strip in the history on the left) and opens the new window on the right. A target already in the history just opens again.
+- A click on a strip makes that window **wide again – nothing else changes**: no other window gets narrow for it.
+- All wide windows **share the width**, each at least its minimum width (default 30rem, per window with the `min` prop). Too little room: the row scrolls sideways; the window just opened or opened again scrolls into view.
+- The **X** in a window's head closes just that window; the small X on a strip removes it from the history. If no wide window is left, the nearest strip opens. A window without a close target (`close` prop) can't be closed – the root of a module.
+- The **active** window is the one opened last or clicked into; the browser address and the title follow it. Browser back opens the window of the address before. A reload keeps the history of this tab with which windows were wide (`sessionStorage`); windows not loaded yet load when they are shown.
 - Changes glide (view transitions where the browser has them; none with "reduce motion").
-- Phones: one window at a time, with a back arrow in its head.
+- Phones: one window at a time, with a back arrow in its head (opens the window left of it).
 - Without JavaScript every link is a normal page; the page shows its windows side by side.
 
 ### How a module uses it
@@ -119,7 +120,7 @@ The general logic of the app: **new windows open on the right, all earlier ones 
 
 **Links that open a window:** `<a href="…" data-window>`. The framework loads the target in the background with the header `X-DocHamster-Window: 1`; the layout then returns only the content (no menu, no frame), and the framework takes the page's last `section[data-window]`. If the target is already in the history, it is opened again instead of loaded twice. Modules need no extra route or controller code.
 
-**`<x-window>` props:** `title`, `icon` (Tabler name), `url` (this window's address; default the current one), `close` (where the X leads without JavaScript; leave out for a window that can't be closed), `upload` (where an upload belongs while this window is active, as form fields, e.g. `upload="folder=01H…"`), slot `actions` (buttons in the head), extra classes via `class="…"`.
+**`<x-window>` props:** `title`, `icon` (Tabler name), `url` (this window's address; default the current one), `close` (where the X leads without JavaScript; leave out for a window that can't be closed), `upload` (where an upload belongs while this window is active, as form fields, e.g. `upload="folder=01H…"`), `min` (minimum width when the window shares the room, e.g. `min="40rem"`; default 30rem), slot `actions` (buttons in the head), extra classes via `class="…"`.
 
 **Head on phones:** the buttons from `actions` move into a "⋯" menu, so the title keeps its room; on wide screens they stand in the head.
 

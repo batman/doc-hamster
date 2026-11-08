@@ -614,11 +614,13 @@
 
 
     // ---------------------------------------------------------------------------------------------
-    // Window system (Go 2026-11-07, points 22 and 24; docs/design/FRAMEWORK.md).
-    // New windows open on the right, earlier ones collect on the left as strips (the history).
-    // Full: the active window and the one it was opened from; all others are strips. A click on a
-    // strip opens it again and only minimizes the ones right of it; the X removes a window. The
-    // address follows the active window; the history survives a reload (per tab).
+    // Window system (points 22, 24, 40, A96; docs/design/FRAMEWORK.md).
+    // Every window is an area of its own: it scrolls by itself and closes by itself. A link with
+    // data-window in a window closes all windows right of that window, makes that window narrow (a strip
+    // in the history on the left) and opens the new one on the right. A strip opened again just becomes
+    // wide – nothing else changes; the wide windows share the width (each at least its minimum width,
+    // data-window-min), and when that doesn't fit the row scrolls sideways. The address follows the
+    // active window (the last one opened); the history survives a reload (per tab).
     // Modules only deliver <x-window> content and listen to DocHamster.on('window:open', root => …).
     // ---------------------------------------------------------------------------------------------
     const setupWindows = () => {
@@ -630,35 +632,43 @@
         const wins = () => [...box.querySelectorAll(':scope > section[data-window]')];
         const byUrl = url => wins().find(win => win.dataset.windowUrl === url);
         const phone = matchMedia('(max-width: 63.99rem)');
-        const smooth = change => (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches
-            ? document.startViewTransition(change).finished : Promise.resolve(change()));
+        const smooth = change => {
+            if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                return Promise.resolve(change());
+            }
+            const transition = document.startViewTransition(change);
+            transition.ready.catch(() => { /* skipped: the change still happened */ });
+            return transition.finished;
+        };
         let seq = 0;
         const name = win => {
             win.dataset.windowId ??= `w${++seq}`;
             win.style.viewTransitionName = `win-${win.dataset.windowId}`;
+            if (win.dataset.windowMin) {
+                win.style.setProperty('--win-min', win.dataset.windowMin);
+            }
         };
+        const active = () => box.querySelector(':scope > .is-active');
+        const reveal = win => requestAnimationFrame(() => win.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' }));
 
         const remember = () => {
             try {
                 sessionStorage.setItem(KEY, JSON.stringify({
-                    list: wins().map(win => ({ url: win.dataset.windowUrl, title: win.dataset.windowTitle, icon: win.querySelector('.win-strip .icon')?.outerHTML ?? '', opener: win.dataset.opener ?? null, closable: win.querySelector('[data-window-close]') !== null })),
-                    active: box.querySelector(':scope > .is-active')?.dataset.windowUrl ?? null,
+                    list: wins().map(win => ({ url: win.dataset.windowUrl, title: win.dataset.windowTitle, icon: win.querySelector('.win-strip .icon')?.outerHTML ?? '', min: win.classList.contains('is-min'), closable: win.querySelector('[data-window-close]') !== null })),
+                    active: active()?.dataset.windowUrl ?? null,
                 }));
             } catch { /* not remembered */ }
         };
 
-        const show = (active, push = true) => {
-            const opener = active.dataset.opener ? byUrl(active.dataset.opener) : null;
-            const prev = opener && wins().indexOf(opener) < wins().indexOf(active) ? opener : active.previousElementSibling;
-            wins().forEach(win => {
-                win.classList.toggle('is-active', win === active);
-                win.classList.toggle('is-prev', win === prev && win !== active);
-                win.classList.toggle('is-min', win !== active && win !== prev);
-                win.querySelector('[data-window-back]')?.toggleAttribute('hidden', !(win === active && prev));
+        // The active window: its address, its title, and on phones the only one shown (with a back arrow).
+        const focus = (win, push = true) => {
+            wins().forEach(other => {
+                other.classList.toggle('is-active', other === win);
+                other.querySelector('[data-window-back]')?.toggleAttribute('hidden', !(other === win && other.previousElementSibling?.matches('section[data-window]')));
             });
-            document.title = `${active.dataset.windowTitle} – ${document.title.split(' – ').pop()}`;
-            if (push && location.href !== active.dataset.windowUrl) {
-                history.pushState({ window: active.dataset.windowUrl }, '', active.dataset.windowUrl);
+            document.title = `${win.dataset.windowTitle} – ${document.title.split(' – ').pop()}`;
+            if (push && location.href !== win.dataset.windowUrl) {
+                history.pushState({ window: win.dataset.windowUrl }, '', win.dataset.windowUrl);
             }
             remember();
             document.dispatchEvent(new Event('dh:cols'));
@@ -679,9 +689,6 @@
             win.dataset.windowUrl = item.url;
             win.dataset.windowTitle = item.title;
             win.dataset.lazy = '';
-            if (item.opener) {
-                win.dataset.opener = item.opener;
-            }
             const strip = document.createElement('button');
             strip.type = 'button';
             strip.className = 'win-strip';
@@ -697,75 +704,105 @@
             }
             return win;
         };
+        // A stored strip gets its content (once) when it is shown wide.
+        const fill = win => (win.dataset.lazy === undefined ? Promise.resolve(win) : load(win.dataset.windowUrl).then(full => {
+            name(full);
+            full.classList.toggle('is-min', win.classList.contains('is-min'));
+            full.classList.toggle('is-active', win.classList.contains('is-active'));
+            win.replaceWith(full);
+            DocHamster.emit('window:open', full);
+            return full;
+        }));
 
-        const activate = (win, push = true) => {
-            if (win.dataset.lazy === undefined) {
-                return smooth(() => show(win, push));
-            }
-            return load(win.dataset.windowUrl).then(full => {
-                full.dataset.opener = win.dataset.opener ?? '';
-                name(full);
-                win.replaceWith(full);
-                DocHamster.emit('window:open', full);
-                return smooth(() => show(full, push));
-            }).catch(() => { location.href = win.dataset.windowUrl; });
-        };
+        // A strip becomes wide again; the other windows stay as they are (point 40.6).
+        const restore = (win, push = true) => fill(win).then(full => smooth(() => {
+            full.classList.remove('is-min');
+            focus(full, push);
+        }).then(() => reveal(full))).catch(() => { location.href = win.dataset.windowUrl; });
 
+        // A link in a window: everything right of that window closes, the window itself becomes a strip,
+        // the new one opens on the right (points 40.2, 40.3). A window already in the history just opens again.
         const open = (url, from) => {
             const known = byUrl(url);
             if (known) {
-                return activate(known);
+                return restore(known);
             }
             return load(url).then(win => {
-                win.dataset.opener = from?.dataset.windowUrl ?? '';
                 name(win);
                 return smooth(() => {
+                    if (from) {
+                        let next = from.nextElementSibling;
+                        while (next?.matches('section[data-window]')) {
+                            const gone = next;
+                            next = next.nextElementSibling;
+                            DocHamster.emit('window:close', gone);
+                            gone.remove();
+                        }
+                        from.classList.add('is-min');
+                    }
                     box.append(win);
-                    show(win);
+                    focus(win);
                 }).then(() => {
                     DocHamster.emit('window:open', win);
-                    win.scrollIntoView({ inline: 'end', block: 'nearest' });
+                    reveal(win);
                 });
             }).catch(() => { location.href = url; });
         };
 
+        // The X: only this window goes. If it was the active one, the nearest wide window takes over;
+        // if no wide window is left, the nearest strip opens.
         const close = win => {
             const wasActive = win.classList.contains('is-active');
-            const next = (win.dataset.opener && byUrl(win.dataset.opener)) || win.previousElementSibling || win.nextElementSibling;
+            const all = wins();
+            const at = all.indexOf(win);
+            const rest = all.filter(other => other !== win);
+            const nearest = list => [...list].sort((a, b) => Math.abs(all.indexOf(a) - at) - Math.abs(all.indexOf(b) - at) || all.indexOf(a) - all.indexOf(b))[0];
+            const wide = nearest(rest.filter(other => !other.classList.contains('is-min')));
+            const next = wide ?? nearest(rest);
             DocHamster.emit('window:close', win);
             return smooth(() => {
                 win.remove();
-                if (wasActive && next) {
-                    show(next, false);
-                    history.replaceState({ window: next.dataset.windowUrl }, '', next.dataset.windowUrl);
+                if (wasActive && wide) {
+                    focus(wide, false);
+                    history.replaceState({ window: wide.dataset.windowUrl }, '', wide.dataset.windowUrl);
                 } else {
                     remember();
+                }
+            }).then(() => {
+                if (!wide && next) {
+                    restore(next, false).then(() => history.replaceState({ window: next.dataset.windowUrl }, '', next.dataset.windowUrl));
                 }
             });
         };
 
-        // Start: the windows from the server, plus the rest of this tab's history as strips (A62)
-        wins().forEach(win => {
-            name(win);
-            if (win.previousElementSibling?.matches('section[data-window]')) {
-                win.dataset.opener ??= win.previousElementSibling.dataset.windowUrl;
-            }
-        });
+        // Start: the windows from the server, plus the rest of this tab's history (A62). Without a stored
+        // history only the last window is wide – the ones before it are where it was opened from.
+        wins().forEach(name);
+        let saved = null;
         try {
-            const saved = JSON.parse(sessionStorage.getItem(KEY));
-            const current = wins().at(-1)?.dataset.windowUrl;
-            if (saved && saved.list.some(item => item.url === current)) {
-                const order = saved.list.map(item => byUrl(item.url) ?? placeholder(item));
-                wins().filter(win => !order.includes(win)).forEach(win => order.push(win));
-                order.forEach(win => {
-                    name(win);
-                    box.append(win);
-                });
-            }
+            saved = JSON.parse(sessionStorage.getItem(KEY));
         } catch { /* fresh history */ }
+        const current = wins().at(-1);
+        if (saved && saved.list.some(item => item.url === current.dataset.windowUrl)) {
+            const order = saved.list.map(item => {
+                const win = byUrl(item.url) ?? placeholder(item);
+                win.classList.toggle('is-min', item.min && win !== current);
+                return win;
+            });
+            wins().filter(win => !order.includes(win)).forEach(win => order.push(win));
+            order.forEach(win => {
+                name(win);
+                box.append(win);
+            });
+        } else {
+            wins().forEach(win => win.classList.toggle('is-min', win !== current));
+        }
         wins().filter(win => win.dataset.lazy === undefined).forEach(win => DocHamster.emit('window:open', win));
-        show(wins().at(-1), false);
-        history.replaceState({ window: wins().at(-1).dataset.windowUrl }, '', location.href);
+        focus(current, false);
+        history.replaceState({ window: current.dataset.windowUrl }, '', location.href);
+        // Stored windows that were wide get their content now.
+        wins().filter(win => win.dataset.lazy !== undefined && !win.classList.contains('is-min')).forEach(fill);
+        reveal(current);
 
         box.addEventListener('click', event => {
             const win = event.target.closest('section[data-window]');
@@ -773,11 +810,11 @@
                 event.preventDefault();
                 close(win);
             } else if (event.target.closest('[data-window-activate]')) {
-                activate(win);
+                restore(win);
             } else if (event.target.closest('[data-window-back]')) {
-                const prev = box.querySelector(':scope > .is-prev');
-                if (prev) {
-                    activate(prev);
+                const before = win.previousElementSibling;
+                if (before?.matches('section[data-window]')) {
+                    restore(before);
                 }
             } else {
                 const link = event.target.closest('a[data-window]');
@@ -787,16 +824,22 @@
                 }
             }
         });
-        // A click into a minimized-looking previous window makes it the active one again
+        // A click into a wide window that isn't the active one makes it the active one (address, title).
+        box.addEventListener('pointerdown', event => {
+            const win = event.target.closest('section[data-window]');
+            if (win && !win.classList.contains('is-min') && !win.classList.contains('is-active') && !event.target.closest('a[data-window], [data-window-close]')) {
+                focus(win);
+            }
+        });
         addEventListener('popstate', event => {
             const win = byUrl(event.state?.window ?? location.href);
             if (win) {
-                activate(win, false);
+                restore(win, false);
             } else {
                 location.reload();
             }
         });
-        phone.addEventListener('change', () => show(box.querySelector(':scope > .is-active') ?? wins().at(-1), false));
+        phone.addEventListener('change', () => focus(active() ?? wins().at(-1), false));
     };
 
     // Einstellungen columns: every pane folds to its strip and opens again on its own; the page gives way.

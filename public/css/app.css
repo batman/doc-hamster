@@ -1145,3 +1145,21 @@ html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
 .tab:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
 ::view-transition-group(tab-mark) { animation-duration: .25s; animation-timing-function: ease-in-out; }
 .pager { display: flex; gap: .5rem; margin-top: 1rem; }
+
+/* Window system, point 40 / A96: every window scrolls by itself; the wide windows share the width, each at
+   least its minimum width (--win-min, from data-window-min, default 30rem); too little room and the row
+   scrolls sideways. Strips stay narrow. Replaces the is-active/is-prev widths above. */
+.win, .win.is-active { flex: 1 1 0; min-width: var(--win-min, 30rem); }
+.win.is-min { flex: 0 0 3.5rem; min-width: 3.5rem; }
+.win.is-active .win-title { font-size: 1.5rem; }
+@media (min-width: 64rem) {
+    .content > .page-windows { height: calc(100% + 3.5rem); min-height: 0; }
+    .page-windows > .windows { height: 100%; min-height: 0; }
+    .win { height: 100%; }
+    .win-frame { overflow: auto; overscroll-behavior: contain; }
+    .win-frame > .win-body { flex: 1 0 auto; overflow: visible; }
+    .win.is-min .win-strip { height: 100%; overflow: hidden; }
+}
+@media (max-width: 63.99rem) {
+    .win, .win.is-active { min-width: 0; }
+}

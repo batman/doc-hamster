@@ -3,12 +3,13 @@
     A module only fills the body; title, icon, close, strip, history and animation come from the framework.
     Props: title, icon (Tabler name), url (this window's address, default the current one),
     close (where the X leads without JavaScript; null = the window can't be closed), slot "actions" for the head,
-    upload (where an upload belongs while this window is active, e.g. "folder=01H…"; sent as extra form fields).
+    upload (where an upload belongs while this window is active, e.g. "folder=01H…"; sent as extra form fields),
+    min (the window's minimum width when it shares the room, e.g. "40rem"; default 30rem).
     On phones the actions move into a "⋯" menu, so the title keeps its room.
 --}}
-@props(['title', 'icon' => 'file-text', 'url' => null, 'close' => null, 'upload' => null])
+@props(['title', 'icon' => 'file-text', 'url' => null, 'close' => null, 'upload' => null, 'min' => null])
 @php($url ??= request()->fullUrl())
-<section {{ $attributes->class('win') }} data-window data-window-url="{{ $url }}" data-window-title="{{ $title }}" @if ($upload) data-window-upload="{{ $upload }}" @endif aria-label="{{ $title }}">
+<section {{ $attributes->class('win') }} data-window data-window-url="{{ $url }}" data-window-title="{{ $title }}" @if ($upload) data-window-upload="{{ $upload }}" @endif @if ($min) data-window-min="{{ $min }}" @endif aria-label="{{ $title }}">
     <button type="button" class="win-strip" data-window-activate aria-label="{{ __('app.window.open', ['title' => $title]) }}">
         <x-icon :name="$icon" /><span>{{ $title }}</span>
     </button>
