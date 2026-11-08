@@ -165,51 +165,35 @@ function chooseRelease(): array
     }, PHP_VERSION);
 }
 
-/** The branch installer rechecks the PR label and exact commit before touching installed files. */
+/**
+ * The branch installer rechecks that the branch is still listed for preview with exactly this
+ * commit before touching installed files. Plain release downloads only, no GitHub API (A87).
+ */
 function choosePreviewRelease(): array
 {
-    $pull = json_decode(http('https://api.github.com/repos/'.DH_REPO.'/pulls/'.DH_PREVIEW_PR), true);
-    $labelled = false;
-    foreach (is_array($pull['labels'] ?? null) ? $pull['labels'] : [] as $label) {
-        if (is_array($label) && ($label['name'] ?? null) === 'preview-ready') {
-            $labelled = true;
+    $downloads = 'https://github.com/'.DH_REPO.'/releases/download/';
+    $list = json_decode(http($downloads.'previews/previews.json'), true);
+    $listed = false;
+    foreach (is_array($list) ? $list : [] as $entry) {
+        if (is_array($entry) && ($entry['number'] ?? null) === DH_PREVIEW_PR && ($entry['sha'] ?? null) === DH_PREVIEW_SHA) {
+            $listed = true;
             break;
         }
     }
-    if (! is_array($pull)
-        || ($pull['state'] ?? null) !== 'open'
-        || ! empty($pull['draft'])
-        || ($pull['base']['ref'] ?? null) !== 'main'
-        || ($pull['head']['repo']['full_name'] ?? null) !== DH_REPO
-        || ($pull['head']['sha'] ?? null) !== DH_PREVIEW_SHA
-        || ! $labelled) {
+    if (! $listed) {
         throw new RuntimeException('Dieser Branch ist nicht mehr für Vorschauen freigegeben. Es wurde nichts verändert.');
     }
 
-    $tag = 'preview-pr-'.DH_PREVIEW_PR;
-    $release = json_decode(http('https://api.github.com/repos/'.DH_REPO.'/releases/tags/'.rawurlencode($tag)), true);
-    if (! is_array($release) || ! empty($release['draft']) || empty($release['prerelease'])) {
-        throw new RuntimeException('Das Vorschaupaket ist nicht verfügbar. Es wurde nichts verändert.');
-    }
-
-    $assets = [];
-    foreach (is_array($release['assets'] ?? null) ? $release['assets'] : [] as $asset) {
-        if (is_array($asset) && isset($asset['name'], $asset['browser_download_url'])) {
-            $assets[$asset['name']] = $asset['browser_download_url'];
-        }
-    }
-    if (! isset($assets['manifest.json'])) {
-        throw new RuntimeException('Das Vorschaupaket ist unvollständig. Es wurde nichts verändert.');
-    }
-    $manifest = json_decode(http($assets['manifest.json']), true);
+    $base = $downloads.'preview-pr-'.DH_PREVIEW_PR.'/';
+    $manifest = json_decode(http($base.'manifest.json'), true);
     if (! is_array($manifest)
         || ($manifest['pr'] ?? null) !== DH_PREVIEW_PR
         || ($manifest['commit_sha'] ?? null) !== DH_PREVIEW_SHA
-        || ! isset($assets[$manifest['zip'] ?? ''])
+        || ! is_string($manifest['zip'] ?? null) || basename($manifest['zip']) !== $manifest['zip']
         || version_compare(PHP_VERSION, (string) ($manifest['php'] ?? '99.0.0'), '<')) {
         throw new RuntimeException('Das Vorschaupaket passt nicht zum Server oder zum freigegebenen Branch. Es wurde nichts verändert.');
     }
-    $manifest['url'] = $assets[$manifest['zip']];
+    $manifest['url'] = $base.rawurlencode($manifest['zip']);
 
     return $manifest;
 }

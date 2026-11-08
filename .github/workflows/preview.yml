@@ -115,3 +115,39 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: gh release delete "preview-pr-${PR_NUMBER}" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
+
+  # The Update page and the preview installer read only this file (A87): plain downloads have no
+  # rate limit, the GitHub API allows an anonymous server just 60 calls an hour.
+  list:
+    needs: [package, publish, remove]
+    if: >-
+      always() && !cancelled() &&
+      (needs.publish.result == 'success' || needs.remove.result == 'success')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: read
+    concurrency:
+      group: preview-list
+      cancel-in-progress: false
+    steps:
+      - name: Rebuild previews.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          R="$GITHUB_REPOSITORY"
+          gh api "repos/$R/pulls?state=open&base=main&per_page=100" --paginate \
+            --jq ".[] | select(.draft | not) | select(.head.repo.full_name == \"$R\") | select([.labels[].name] | index(\"preview-ready\")) | {number, title, branch: .head.ref, sha: .head.sha}" > open.jsonl
+          : > listed.jsonl
+          while IFS= read -r pr; do
+            n=$(jq -r .number <<<"$pr"); sha=$(jq -r .sha <<<"$pr")
+            built=$(gh release download "preview-pr-$n" --repo "$R" -p manifest.json -O - 2>/dev/null | jq -r '.commit_sha // empty' || true)
+            # Only a package built from the branch's current commit is offered.
+            if [ "$built" = "$sha" ]; then echo "$pr" >> listed.jsonl; fi
+          done < open.jsonl
+          jq -s 'sort_by(.number)' listed.jsonl > previews.json
+          cat previews.json
+          gh release view previews --repo "$R" >/dev/null 2>&1 || gh release create previews --repo "$R" --prerelease \
+            --title "DocHamster previews" --notes "List of branches open for preview, read by the Update page. Not a release."
+          gh release upload previews previews.json --repo "$R" --clobber
