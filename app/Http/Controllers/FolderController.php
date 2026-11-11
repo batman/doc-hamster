@@ -27,12 +27,18 @@ use Illuminate\Validation\Rule;
  */
 final class FolderController
 {
-    /** The list as root window; `?folder=` opens one to its right, `?new=1` / `?parent=` the window for a new one. */
-    public function index(Request $request, CurrentOrg $org): View
+    /**
+     * Folders are managed where they are shown, in the Dokumente window (points 10-12). This page only
+     * gives the windows opened from there: `?folder=` its properties, `?new=1` / `?parent=` a new one.
+     */
+    public function index(Request $request, CurrentOrg $org): View|RedirectResponse
     {
         $rows = Folder::flat();
         $wanted = $request->query('folder');
         $current = collect($rows)->first(static fn (array $row): bool => $row['folder']->id === $wanted);
+        if ($current === null && ! $request->filled('new') && ! $request->filled('parent')) {
+            return redirect()->route('documents.index');
+        }
 
         return view('folders.index', [
             'rows' => $rows,
@@ -50,7 +56,8 @@ final class FolderController
         $folder = Folder::query()->create(['org_id' => $org->id(), 'name' => $data['name'], 'parent_id' => $data['parent_id'], 'color' => $data['color'], 'icon' => $data['icon'], 'bank_matching' => $data['bank_matching']]);
         $this->log($audit, $request, $org, 'folder.created', $folder);
 
-        return redirect()->route('folders.index', ['folder' => $folder->id])->with('status', __('folders.saved'));
+        // Back to where it was made: the window of its parent folder (or the top level).
+        return redirect()->route('documents.index', array_filter(['folder' => $folder->parent_id]))->with('status', __('folders.saved'));
     }
 
     public function update(Request $request, string $id, CurrentOrg $org, AuditLog $audit): RedirectResponse
@@ -68,7 +75,8 @@ final class FolderController
         ]);
         $this->log($audit, $request, $org, 'folder.changed', $folder);
 
-        return redirect()->route('folders.index', ['folder' => $folder->id])->with('status', __('folders.saved'));
+        // Back to the window it was changed in (a row of the Dokumente window or its properties window).
+        return back()->with('status', __('folders.saved'));
     }
 
     /**
@@ -110,7 +118,7 @@ final class FolderController
         $folder = Folder::query()->whereKey($id)->firstOrFail();
 
         if ($folder->is_default) {
-            return redirect()->route('folders.index', ['folder' => $folder->id])->withErrors(['folder' => __('folders.default_locked')]);
+            return back()->withErrors(['folder' => __('folders.default_locked')]);
         }
 
         // Receipts move up; from a top folder they go to "Belege", so none is ever left without a folder.
@@ -127,7 +135,7 @@ final class FolderController
         });
         $this->log($audit, $request, $org, 'folder.deleted', $folder);
 
-        return redirect()->route('folders.index')->with('status', __('folders.deleted'));
+        return redirect()->route('documents.index', array_filter(['folder' => $folder->parent_id]))->with('status', __('folders.deleted'));
     }
 
     /**
@@ -162,7 +170,7 @@ final class FolderController
         }
         $audit->record('folder.deleted', orgId: $org->id(), userId: $userId, subject: $folder, meta: ['name' => $folder->name, 'with_content' => true, 'folders' => count($branch), 'receipts' => $trashed->count()], ip: $request->ip());
 
-        return redirect()->route('folders.index')->with('status', trans_choice('folders.deleted_with_content', $trashed->count(), ['count' => $trashed->count()]));
+        return redirect()->route('documents.index', array_filter(['folder' => $folder->parent_id]))->with('status', trans_choice('folders.deleted_with_content', $trashed->count(), ['count' => $trashed->count()]));
     }
 
     /**

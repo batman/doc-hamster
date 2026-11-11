@@ -7,7 +7,9 @@ namespace App\Http\Controllers;
 use App\Domain\Audit\AuditLog;
 use App\Domain\Documents\Folder;
 use App\Domain\Documents\Tag;
+use App\Domain\Notes\Note;
 use App\Domain\Org\CurrentOrg;
+use App\Domain\Palette\PaletteColor;
 use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -52,6 +54,10 @@ final class TagController
             ->merge(Folder::query()->whereNotNull('color')->get(['id', 'color'])
                 ->filter(static fn (Folder $folder): bool => preg_match('/^#[0-9a-f]{6}$/', (string) $folder->color) === 1)
                 ->map(static fn (Folder $folder): string => sprintf('.fc-%s{--folder:%s}', $folder->id, $folder->color)))
+            // Palette and note colours as framework classes c-rrggbb (points 14-15).
+            ->merge(collect(PaletteColor::hexes())->merge(Note::query()->whereNotNull('color')->distinct()->pluck('color'))->push(Note::DEFAULT_COLOR)
+                ->filter(static fn (mixed $hex): bool => is_string($hex) && preg_match(PaletteColor::HEX, $hex) === 1)
+                ->unique()->map(static fn (string $hex): string => PaletteColor::cssRule($hex)))
             ->implode('
 ');
 
@@ -67,7 +73,7 @@ final class TagController
         $data = $request->validate(['name' => $this->nameRule(), 'color' => self::COLOR]);
 
         // A new tag gets a colour of the palette by chance, unless one was picked (PO, 2026-11-01).
-        $tag = Tag::query()->create(['name' => $data['name'], 'color' => $data['color'] ?? Tag::PALETTE[array_rand(Tag::PALETTE)]]);
+        $tag = Tag::query()->create(['name' => $data['name'], 'color' => $data['color'] ?? $this->randomColor()]);
         $this->log($audit, $request, $org, 'tag.created', $tag);
 
         return redirect()->route('tags.index', ['tag' => $tag->id])->with('status', __('tags.saved'));
@@ -98,6 +104,14 @@ final class TagController
         $tag->delete();
 
         return redirect()->route('tags.index')->with('status', __('tags.deleted'));
+    }
+
+    /** A colour of the shared palette (points 14-15); the old six if the palette is empty. */
+    private function randomColor(): string
+    {
+        $palette = PaletteColor::hexes() ?: Tag::PALETTE;
+
+        return $palette[array_rand($palette)];
     }
 
     /**

@@ -83,12 +83,19 @@ final class DocumentController
                 ->orWhereHas('tags', static fn ($tag) => $tag->where('name', 'like', $like)));
         }
 
-        // One folder, with everything below it (issue #77).
+        // Like an explorer (points 10-12): a folder shows only its own receipts, the top level only those
+        // without a folder; a search looks through everything below the current folder.
         $folders = Folder::flat();
         $wantedFolder = $request->query('folder');
         $folder = is_string($wantedFolder) && collect($folders)->contains(static fn (array $row): bool => $row['folder']->id === $wantedFolder) ? $wantedFolder : null;
-        if ($folder !== null) {
-            $query->whereIn('folder_id', Folder::branchIds($folder));
+        if ($q !== '') {
+            if ($folder !== null) {
+                $query->whereIn('folder_id', Folder::branchIds($folder));
+            }
+        } elseif ($folder !== null) {
+            $query->where('folder_id', $folder);
+        } else {
+            $query->whereNull('folder_id');
         }
 
         $saved = $this->user($request)->receipt_view;
@@ -104,7 +111,7 @@ final class DocumentController
             $documents = $query->latest()->limit(self::LIMIT + 1)->get();
         }
         // Filtering in the browser works only when the page holds every receipt (point 7).
-        $complete = $selected === [] && $folder === null && $q === '' &&($view === 'calendar' || $documents->count() <= self::LIMIT);
+        $complete = $selected === [] && $q === '' && ($view === 'calendar' || $documents->count() <= self::LIMIT);
 
         return [
             'open' => null,

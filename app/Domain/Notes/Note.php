@@ -8,6 +8,7 @@ use App\Domain\Auth\User;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\Tag;
 use App\Domain\Org\BelongsToOrg;
+use App\Domain\Palette\PaletteColor;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -27,7 +28,7 @@ use Illuminate\Support\Carbon;
  * @property bool $shared
  * @property bool $editable
  * @property string|null $title
- * @property string|null $color one of COLORS; null = yellow
+ * @property string|null $color #rrggbb from the palette; null = DEFAULT_COLOR
  * @property int|null $opacity percent, 30-100; null = 100
  * @property bool $locked nobody changes, moves or deletes it until it is unlocked
  * @property int|null $pos_x place on the board in px; null = next free slot
@@ -45,8 +46,8 @@ final class Note extends Model
     use BelongsToOrg;
     use HasUlids;
 
-    /** The PO's 20 sticky-note colours (2026-11-07); the values live in app.css (.note-<key>). */
-    public const COLORS = ['white', 'black', 'gray', 'red', 'bordeaux', 'orange', 'yellow', 'lightgreen', 'green', 'turquoise', 'lightblue', 'blue', 'navy', 'purple', 'lavender', 'pink', 'brown', 'beige', 'gold', 'mint'];
+    /** Colour of a note without one (yellow). Notes pick from the shared palette (points 14-15) and store the hex. */
+    public const DEFAULT_COLOR = '#fdd835';
 
     protected $fillable = ['org_id', 'user_id', 'body', 'checklist', 'shared', 'editable', 'title', 'color', 'opacity', 'locked', 'pos_x', 'pos_y', 'width', 'height', 'column_id', 'sort'];
 
@@ -91,6 +92,12 @@ final class Note extends Model
     public function scopeVisibleTo(Builder $query, string $userId): Builder
     {
         return $query->where(static fn (Builder $q) => $q->where('user_id', $userId)->orWhere('shared', true));
+    }
+
+    /** Framework colour class (c-rrggbb, rules from tags.css). */
+    public function colorClass(): string
+    {
+        return PaletteColor::cssClass($this->color ?? self::DEFAULT_COLOR);
     }
 
     public function editableBy(string $userId): bool

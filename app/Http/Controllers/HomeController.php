@@ -10,6 +10,7 @@ use App\Domain\Notes\Note;
 use App\Domain\Notes\NoteColumn;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
+use App\Domain\Palette\PaletteColor;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -142,7 +143,7 @@ final class HomeController
             'y' => ['sometimes', 'integer', 'min:0', 'max:20000'],
             'w' => ['sometimes', 'integer', 'min:160', 'max:4000'],
             'h' => ['sometimes', 'integer', 'min:120', 'max:4000'],
-            'color' => ['sometimes', Rule::in(Note::COLORS)],
+            'color' => ['sometimes', 'string', Rule::in($this->colors($note))],
             'opacity' => ['sometimes', 'integer', 'min:30', 'max:100'],
             'locked' => ['sometimes', 'boolean'],
         ]);
@@ -186,6 +187,16 @@ final class HomeController
         return redirect()->route($archived ? 'notes.archive' : 'home');
     }
 
+    /**
+     * A note takes any colour of the shared palette, and keeps its own one even if that left the palette.
+     *
+     * @return list<string>
+     */
+    private function colors(Note $note): array
+    {
+        return array_values(array_filter([...PaletteColor::hexes(), $note->color]));
+    }
+
     private function fill(Request $request, Note $note): void
     {
         $data = $request->validate([
@@ -193,7 +204,7 @@ final class HomeController
             'body' => ['nullable', 'string', 'max:5000'],
             'link' => ['nullable', 'string', 'max:250'],
             'unlink' => ['array'],
-            'color' => ['nullable', Rule::in(Note::COLORS)],
+            'color' => ['nullable', 'string', Rule::in($this->colors($note))],
             'opacity' => ['nullable', 'integer', 'min:30', 'max:100'],
             'column' => ['nullable', 'string', Rule::in(NoteColumn::query()->pluck('id')->all())],
             'tags' => ['array'],

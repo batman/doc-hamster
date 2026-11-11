@@ -131,11 +131,11 @@ it('keeps title, colour, opacity and place of a note, and a locked note stays as
     $note = Note::query()->withoutGlobalScope(OrgScope::class)->firstOrFail();
 
     $this->postJson('/notes/'.$note->id.'/look', ['x' => 120, 'y' => 40])->assertOk();
-    $this->post('/notes/'.$note->id, ['title' => 'Einkauf', 'body' => 'Milch', 'color' => 'navy', 'opacity' => 60])->assertRedirect(route('home'));
+    $this->post('/notes/'.$note->id, ['title' => 'Einkauf', 'body' => 'Milch', 'color' => '#0d1b4c', 'opacity' => 60])->assertRedirect(route('home'));
     $this->post('/notes/'.$note->id.'/look', ['color' => 'rainbow'])->assertSessionHasErrors('color');
     expect($note->fresh()->only(['title', 'color', 'opacity', 'pos_x', 'pos_y']))
-        ->toBe(['title' => 'Einkauf', 'color' => 'navy', 'opacity' => 60, 'pos_x' => 120, 'pos_y' => 40]);
-    $this->get('/')->assertSee('Einkauf')->assertSee('note-navy');
+        ->toBe(['title' => 'Einkauf', 'color' => '#0d1b4c', 'opacity' => 60, 'pos_x' => 120, 'pos_y' => 40]);
+    $this->get('/')->assertSee('Einkauf')->assertSee('c-0d1b4c');
 
     // Locked in the edit dialog (A13): the fields stay as they are, only the lock can change.
     $this->post('/notes/'.$note->id, ['title' => 'Einkauf', 'body' => 'Milch', 'locked' => 1])->assertRedirect();

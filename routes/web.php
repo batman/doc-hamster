@@ -13,6 +13,8 @@ use App\Http\Controllers\FolderImportController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\NoteColumnController;
+use App\Http\Controllers\OcrController;
+use App\Http\Controllers\PaletteController;
 use App\Http\Controllers\PhoneCheckController;
 use App\Http\Controllers\PrintTrayController;
 use App\Http\Controllers\RoleController;
@@ -52,6 +54,11 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::get('files/{id}/download', [DocumentController::class, 'download'])->name('documents.download');
     Route::get('files/{id}/thumb', [DocumentController::class, 'thumb'])->name('documents.thumb');
     Route::get('tags.css', [TagController::class, 'css'])->name('tags.css');
+    // Text recognition set-up and browser fallback (point 18).
+    Route::post('settings/ocr', [OcrController::class, 'setup'])->middleware('can:settings.manage')->name('ocr.setup');
+    Route::get('ocr/next', [OcrController::class, 'next'])->name('ocr.next');
+    Route::get('ocr/image/{id}', [OcrController::class, 'image'])->name('ocr.image');
+    Route::post('ocr/{id}', [OcrController::class, 'store'])->middleware('throttle:60,1')->name('ocr.store');
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::get('settings/{group}', [SettingsController::class, 'group'])->name('settings.group');
     Route::post('documents/{id}/tags', [DocumentController::class, 'updateTags'])->middleware('can:documents.edit')->name('documents.tags');
@@ -91,8 +98,17 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         });
     });
 
+    // Shared colour palette (points 14-15): org-wide, so only Admins (settings.manage).
+    Route::middleware('can:settings.manage')->prefix('palette')->name('palette.')->group(function (): void {
+        Route::get('/', [PaletteController::class, 'index'])->name('index');
+        Route::post('/', [PaletteController::class, 'store'])->name('store');
+        Route::post('order', [PaletteController::class, 'order'])->name('order');
+        Route::post('{id}', [PaletteController::class, 'update'])->name('update');
+        Route::post('{id}/delete', [PaletteController::class, 'destroy'])->name('destroy');
+    });
+
     Route::middleware('can:tags.manage')->group(function (): void {
-        Route::get('tags', [TagController::class, 'index'])->name('tags.index');
+        Route::get('tags',[TagController::class, 'index'])->name('tags.index');
         Route::post('tags', [TagController::class, 'store'])->name('tags.store');
         Route::post('tags/{id}', [TagController::class, 'update'])->name('tags.update');
         Route::post('tags/{id}/delete', [TagController::class, 'destroy'])->name('tags.destroy');

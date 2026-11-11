@@ -6,6 +6,7 @@ namespace App\Domain\Org;
 
 use App\Domain\Documents\Folder;
 use App\Domain\Documents\Tag;
+use App\Domain\Palette\PaletteColor;
 use Database\Factories\OrganizationFactory;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -38,6 +39,7 @@ final class Organization extends Model
             OrgRole::ensureDefaults($organization);
             Tag::addDefaults($organization);
             Folder::addDefaults($organization);
+            PaletteColor::addDefaults($organization);
         });
     }
 

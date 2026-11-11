@@ -1984,7 +1984,14 @@
         const r = frame.getBoundingClientRect();
         return { x: e.clientX - r.left - frame.clientLeft, y: e.clientY - r.top - frame.clientTop };
     };
+    // Point 17: the document never leaves the view – its edge stops at the frame's edge; smaller than the frame, it stays centred.
+    const clamp = (frame, st) => {
+        const fit = (pos, size, box, off) => size <= box ? (box - size) / 2 - off : Math.min(-off, Math.max(box - size - off, pos));
+        st.x = fit(st.x, st.img.offsetWidth * st.s, frame.clientWidth, st.img.offsetLeft);
+        st.y = fit(st.y, st.img.offsetHeight * st.s, frame.clientHeight, st.img.offsetTop);
+    };
     const apply = (frame, st) => {
+        clamp(frame, st);
         st.img.style.transformOrigin = '0 0';
         st.img.style.transform = st.s === 1 && !st.x && !st.y ? '' : `translate(${st.x}px, ${st.y}px) scale(${st.s})`;
         frame.classList.toggle('is-zoomed', st.s > 1);
@@ -2145,4 +2152,211 @@
     });
 
     document.addEventListener('keydown', e => { if (e.key === 'Escape') clearAll(); });
+})();
+
+/* Colour palette (points 14-15) */
+(() => {
+    const DocHamster = window.DocHamster;
+    const token = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+
+    // Einstellungen → Farben: the palette rows are a sortable list of the framework; a move saves the order.
+    DocHamster?.on('list:sorted', ({ list, ids }) => {
+        const url = list.dataset.paletteOrder;
+        if (!url) {
+            return;
+        }
+        const body = new FormData();
+        ids.forEach(id => body.append('order[]', id));
+        fetch(url, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' }, credentials: 'same-origin' })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(String(response.status));
+                }
+            })
+            .catch(() => {
+                if (!list.previousElementSibling?.matches('[data-order-error]')) {
+                    const error = document.createElement('p');
+                    error.className = 'error';
+                    error.setAttribute('role', 'alert');
+                    error.dataset.orderError = '';
+                    error.textContent = list.dataset.orderFailed;
+                    list.before(error);
+                }
+            });
+    });
+
+    // Note edit dialog: the picked palette colour (class c-rrggbb from tags.css) shows on the note right away;
+    // closing without saving puts the old colour back.
+    const colorClass = note => [...note.classList].find(name => /^c-[0-9a-f]{6}$/.test(name));
+    const setupNotePreview = () => document.querySelectorAll('[data-note-preview]').forEach(dialog => {
+        const note = document.querySelector(`[data-note-id="${dialog.dataset.notePreview}"]`);
+        const form = dialog.querySelector('form');
+        if (!note || !form) {
+            return;
+        }
+        let before = null;
+        let saved = false;
+        const show = name => {
+            const now = colorClass(note);
+            if (now) {
+                note.classList.remove(now);
+            }
+            if (name) {
+                note.classList.add(name);
+            }
+        };
+        form.addEventListener('input', () => {
+            const picked = form.querySelector('input[name="color"]:checked');
+            if (picked && /^#[0-9a-f]{6}$/.test(picked.value)) {
+                show(`c-${picked.value.slice(1)}`);
+            }
+        });
+        form.addEventListener('submit', () => { saved = true; });
+        new MutationObserver(() => {
+            if (!dialog.hidden) {
+                before = colorClass(note) ?? '';
+                saved = false;
+            } else if (before !== null && !saved) {
+                show(before);
+            }
+        }).observe(dialog, { attributes: true, attributeFilter: ['hidden'] });
+    });
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupNotePreview);
+    } else {
+        setupNotePreview();
+    }
+})();
+
+/* OCR fallback (point 18) */
+// Reads receipt text in the browser with self-hosted tesseract.js when the
+// server can't (body[data-ocr-browser]). One image at a time, only while the
+// page is visible and idle, not on cellular/data saver/low battery.
+(() => {
+  const startOcr = () => {
+    const base = document.body?.dataset.ocrBrowser;
+    const nextUrl = document.body?.dataset.ocrNext;
+    if (!base || !nextUrl || typeof Worker === 'undefined' || typeof WebAssembly === 'undefined') return;
+    const PAUSE_MS = 15000;
+    const WAIT_MS = 60000;
+    const skip = [];
+    let engine = null;
+
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const idle = () => new Promise(resolve => ('requestIdleCallback' in window
+        ? window.requestIdleCallback(() => resolve(), { timeout: 30000 })
+        : setTimeout(resolve, 1000)));
+    const allowed = async () => {
+        if (document.visibilityState !== 'visible') return false;
+        const c = navigator.connection;
+        if (c && (c.saveData === true || c.type === 'cellular')) return false;
+        if (navigator.getBattery) {
+            try {
+                const b = await navigator.getBattery();
+                if (!b.charging && b.level <= 0.2) return false;
+            } catch { /* no battery info */ }
+        }
+        return true;
+    };
+    const loadLib = () => (window.Tesseract ? Promise.resolve() : new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = base + '/tesseract.min.js';
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.append(s);
+    }));
+    const getEngine = async () => {
+        if (!engine) {
+            await loadLib();
+            engine = await window.Tesseract.createWorker('deu+eng', 1, {
+                workerPath: base + '/worker.min.js',
+                corePath: base + '/core',
+                langPath: base + '/lang',
+                gzip: false,
+                workerBlobURL: false,
+            });
+        }
+        return engine;
+    };
+    const stop = async () => {
+        if (!engine) return;
+        const e = engine;
+        engine = null;
+        try { await e.terminate(); } catch { /* already gone */ }
+    };
+    const token = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+
+    const step = async () => {
+        const url = new URL(nextUrl, location.href);
+        skip.forEach(id => url.searchParams.append('skip[]', id));
+        const res = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+        if (res.status !== 200) return false;
+        const job = await res.json();
+        try {
+            const { data } = await (await getEngine()).recognize(job.image);
+            const body = new FormData();
+            body.append('text', data?.text ?? '');
+            const saved = await fetch(job.save, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' }, credentials: 'same-origin' });
+            if (!saved.ok) skip.push(job.id);
+        } catch {
+            skip.push(job.id);
+        }
+        return true;
+    };
+
+    (async () => {
+        await sleep(5000);
+        for (;;) {
+            await idle();
+            if (!(await allowed())) {
+                await stop();
+                await sleep(WAIT_MS);
+                continue;
+            }
+            let more = false;
+            try { more = await step(); } catch { more = false; }
+            if (!more) { await stop(); return; }
+            await sleep(PAUSE_MS);
+        }
+    })();
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startOcr);
+  else startOcr();
+})();
+
+/* Folders explorer (points 10-12) */
+// Rename in place: "Umbenennen" in a folder row's menu swaps the name for a small form; Escape or X puts it back.
+(() => {
+    const show = (row, on) => {
+        const form = row?.querySelector('[data-folder-rename-form]');
+        const name = row?.querySelector('[data-folder-name]');
+        if (!form || !name) {
+            return;
+        }
+        form.hidden = !on;
+        name.hidden = on;
+        if (on) {
+            const input = form.querySelector('input[name="name"]');
+            input.focus();
+            input.select();
+        } else {
+            form.reset();
+        }
+    };
+    document.addEventListener('click', event => {
+        const start = event.target.closest('[data-folder-rename]');
+        if (start) {
+            show(start.closest('li'), true);
+            return;
+        }
+        const cancel = event.target.closest('[data-folder-rename-cancel]');
+        if (cancel) {
+            show(cancel.closest('li'), false);
+        }
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && event.target.closest?.('[data-folder-rename-form]')) {
+            show(event.target.closest('li'), false);
+        }
+    });
 })();

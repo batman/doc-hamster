@@ -1,41 +1,15 @@
-{{-- Folders on the window system (docs/design/FRAMEWORK.md §5): the list is the root window,
-     editing a folder or making a new one opens as a window to its right (issue #77, PO 2026-11-07).
-     Ids and dialog names carry the folder's id, so two folders can be open side by side. --}}
+{{-- Folder windows opened from the Dokumente window (points 10-12: folders are managed where they are shown):
+     the properties of a folder, or a new one. Ids and dialog names carry the folder's id, so two can be open side by side. --}}
 @extends('layouts.app')
 
-@section('title', $folder?->name ?? __('folders.title'))
+@section('title', $folder?->name ?? __('folders.new'))
 
 @section('main_class', 'page-windows')
 
 @section('content')
     <div class="windows" data-windows>
-    <x-window :title="__('folders.title')" icon="folder" :url="route('folders.index')">
-        <x-slot:actions>
-            <a class="icon-button" href="{{ route('folders.index', ['new' => 1]) }}" data-window aria-label="{{ __('folders.add') }}" data-tooltip="{{ __('folders.add') }}"><x-icon name="folder-plus" /></a>
-        </x-slot:actions>
-
-        @if (! $folder && ! $creating)
-            @if (session('status'))
-                <p class="check-ok" role="status">{{ session('status') }}</p>
-            @endif
-            @if ($errors->any())
-                <p class="error" role="alert">{{ $errors->first() }}</p>
-            @endif
-        @endif
-
-        @if ($rows === [])
-            <p class="muted">{{ __('folders.empty') }}</p>
-        @else
-            <ul class="folder-list">
-                @foreach ($rows as $row)
-                    <li class="folder-d{{ $row['depth'] }}"><a class="folder-link {{ $row['folder']->colorClass() }} @if ($folder?->id === $row['folder']->id) is-selected @endif" href="{{ route('folders.index', ['folder' => $row['folder']->id]) }}" data-window><x-icon :name="$row['folder']->iconName()" /><span>{{ $row['folder']->name }}</span><span class="muted">{{ $counts[$row['folder']->id] ?? 0 }}</span></a></li>
-                @endforeach
-            </ul>
-        @endif
-    </x-window>
-
     @if ($folder)
-        <x-window :title="$folder->name" :icon="$folder->iconName()" :url="route('folders.index', ['folder' => $folder->id])" :close="route('folders.index')" :class="$folder->colorClass()">
+        <x-window :title="$folder->name" :icon="$folder->iconName()" :url="route('folders.index', ['folder' => $folder->id])" :close="route('documents.index', ['folder' => $folder->id])" :class="$folder->colorClass()">
             @if (session('status'))
                 <p class="check-ok" role="status">{{ session('status') }}</p>
             @endif
@@ -82,7 +56,7 @@
             @endunless
         </x-window>
     @elseif ($creating)
-        <x-window :title="__('folders.new')" icon="folder-plus" :url="route('folders.index', array_filter(['new' => 1, 'parent' => request('parent')]))" :close="route('folders.index')">
+        <x-window :title="__('folders.new')" icon="folder-plus" :url="route('folders.index', array_filter(['new' => 1, 'parent' => request('parent')]))" :close="route('documents.index', array_filter(['folder' => request('parent')]))">
             @if ($errors->any())
                 <p class="error" role="alert">{{ $errors->first() }}</p>
             @endif

@@ -931,6 +931,10 @@ button .icon, .button .icon { width: 1.25rem; height: 1.25rem; }
 .button-group > :is(.is-active, [aria-pressed="true"]) { position: relative; z-index: 1; border-color: var(--primary); color: var(--primary-ink); }
 .button-group > :is(button, .button):not(.icon-button, .button-quiet):is(.is-active, [aria-pressed="true"]) { background: var(--primary-hover); color: var(--primary-text); }
 .button-group > :hover { position: relative; z-index: 2; }
+.win-head .button-group > .icon-button { border-radius: 0; }
+.win-head .button-group > .icon-button:first-child { border-radius: 8px 0 0 8px; }
+.win-head .button-group > .icon-button:last-child { border-radius: 0 8px 8px 0; }
+.win-head .button-group > .icon-button + .icon-button { margin-left: -1px; }
 .card-head .icon-button, .icon-button.button-small { width: 40px; min-height: 40px; }
 .icon-button[aria-expanded="true"], .icon-button.is-active { border-color: var(--primary); color: var(--primary-ink); }
 /* The upload in the menu keeps its layout, with the button corner and shadow */
@@ -1258,3 +1262,22 @@ html.has-tips [data-tooltip]::before, html.has-tips [data-tooltip]::after { visi
 .doc-zoom [aria-pressed="true"] { border-color: var(--primary); color: var(--primary); }
 .doc-box { position: absolute; z-index: 2; border: 2px dashed var(--primary); background: color-mix(in srgb, var(--primary) 12%, transparent); pointer-events: none; }
 .doc-box-actions { position: absolute; top: .35rem; left: .35rem; display: flex; gap: .35rem; pointer-events: auto; cursor: default; }
+
+/* Colour palette (points 14-15) */
+.palette-rows { margin: 1rem 0; }
+.palette-edit { display: flex; flex: 1; align-items: center; gap: .5rem; min-width: 0; margin: 0; }
+.palette-edit input[type="color"] { flex: none; width: 2.5rem; height: 2.5rem; min-height: 0; margin: 0; padding: 0; border-radius: 50%; cursor: pointer; }
+.palette-edit input:not([type="color"]) { flex: 1; min-width: 0; margin: 0; }
+.palette-row > form:not(.palette-edit) { display: contents; }
+.palette-add { margin-top: 1rem; }
+.palette-add button { flex: none; }
+
+/* Folders explorer (points 10-12) */
+/* Icon tile: a light tint square with the symbol in the darker tone; the folder's colour when it has one, else orange. */
+.icon-tile { flex: none; display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 8px; background: color-mix(in srgb, var(--folder, var(--primary)) 16%, var(--surface)); color: var(--folder, color-mix(in srgb, var(--primary) 80%, #000)); }
+.icon-tile > .icon { width: 22px; height: 22px; }
+.folder-rows .pick-row > [data-folder-name] { flex: 1; min-width: 0; }
+.folder-rows .pick-row > .more-menu { margin-left: auto; }
+.folder-rows .pick-row .more-menu button, .folder-rows .pick-row .folder-rename button { margin: 0; }
+.folder-rename:not([hidden]) { display: flex; flex: 1; min-width: 0; align-items: center; gap: .4rem; margin: 0; }
+.folder-rename input[name="name"] { flex: 1; min-width: 0; margin: 0; }

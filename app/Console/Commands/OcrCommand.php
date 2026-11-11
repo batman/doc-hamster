@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Domain\Documents\Document;
-use App\Infrastructure\Environment\Addon;
-use App\Infrastructure\Environment\Doctor;
+use App\Infrastructure\Environment\LocalOcr;
 use App\Jobs\Local\RecognizeText;
 use Illuminate\Console\Command;
 
@@ -20,10 +19,10 @@ final class OcrCommand extends Command
 
     protected $description = 'Recognise the text of receipts without text (OCR add-on)';
 
-    public function handle(Doctor $doctor): int
+    public function handle(LocalOcr $ocr): int
     {
-        if (! $doctor->isAvailable(Addon::Ocr)) {
-            $this->error('OCR is not available. Install: tesseract-ocr, tesseract-ocr-deu, ocrmypdf.');
+        if (! $ocr->systemAvailable() && ! $ocr->appAvailable()) {
+            $this->error('OCR is not available. Install: tesseract-ocr, tesseract-ocr-deu, ocrmypdf – or run `php artisan ocr:setup`.');
 
             return self::FAILURE;
         }
@@ -34,8 +33,8 @@ final class OcrCommand extends Command
         }
 
         $done = 0;
-        $query->select('id')->eachById(function (Document $document) use ($doctor, &$done): void {
-            (new RecognizeText($document->id))->handle($doctor);
+        $query->select('id')->eachById(function (Document $document) use ($ocr, &$done): void {
+            (new RecognizeText($document->id))->handle($ocr);
             $done++;
         });
         $this->info("{$done} receipts read.");

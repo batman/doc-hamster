@@ -42,12 +42,7 @@
     </select>
 @endif
 
-<fieldset class="note-color-field">
-    <legend>{{ __('home.color') }}</legend>
-    @foreach (\App\Domain\Notes\Note::COLORS as $choice)
-        <label class="note-swatch-choice"><input type="radio" class="visually-hidden" name="color" value="{{ $choice }}" @checked(($note?->color ?? 'yellow') === $choice)><span class="note-swatch note-{{ $choice }}" title="{{ __('home.colors.'.$choice) }}"></span><span class="visually-hidden">{{ __('home.colors.'.$choice) }}</span></label>
-    @endforeach
-</fieldset>
+<x-color-picker name="color" :value="$note?->color ?? \App\Domain\Notes\Note::DEFAULT_COLOR" :key="$key" :legend="__('home.color')" />
 
 <label for="opacity-{{ $key }}">{{ __('home.opacity') }}</label>
 <input id="opacity-{{ $key }}" class="note-opacity" type="range" name="opacity" min="30" max="100" step="5" value="{{ $note?->opacity ?? 100 }}">

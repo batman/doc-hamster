@@ -49,3 +49,6 @@ Thumbs.db
 *.sql.gz
 *.dump
 /deploy/*.local.*
+
+# Browser OCR fallback files, fetched on the server (point 18)
+/public/vendor/tesseract/

@@ -55,7 +55,7 @@
                 <div class="kanban-body">
                     <header class="kanban-head" @if ($canShare) draggable="true" data-kanban-grip @endif>
                         @if ($canShare)
-                            <input class="kanban-name" value="{{ $column->name }}" maxlength="60" aria-label="{{ __('home.column_name') }}" data-kanban-rename="{{ route('notes.columns.update', $column->id) }}">
+                            <input class="kanban-name input-small" value="{{ $column->name }}" maxlength="60" aria-label="{{ __('home.column_name') }}" data-kanban-rename="{{ route('notes.columns.update', $column->id) }}">
                         @else
                             <h2 class="kanban-name">{{ $column->name }}</h2>
                         @endif
@@ -81,7 +81,7 @@
             <form method="post" action="{{ route('notes.columns.store') }}" class="kanban-col kanban-new">
                 @csrf
                 <label for="new-column">{{ __('home.add_column') }}</label>
-                <input id="new-column" name="name" maxlength="60" required placeholder="{{ __('home.column_name') }}">
+                <input id="new-column" class="input-small" name="name" maxlength="60" required placeholder="{{ __('home.column_name') }}">
                 <button type="submit"><x-icon name="plus" />{{ __('home.add_column') }}</button>
             </form>
         @endif

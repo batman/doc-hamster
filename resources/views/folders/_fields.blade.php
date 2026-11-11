@@ -28,21 +28,7 @@
 </select>
 @endif
 
-<fieldset class="tag-color-field" data-color-field>
-    <legend>{{ __('folders.color') }}</legend>
-    <div class="tag-colors">
-        <label class="tag-color" title="{{ __('folders.no_color') }}"><input type="radio" name="color" value="none" @checked($color === null || $color === 'none') aria-label="{{ __('folders.no_color') }}"><span class="no-color"></span></label>
-        @foreach ($palette as $n => $hex)
-            <label class="tag-color" title="{{ $hex }}"><input type="radio" name="color" value="{{ $hex }}" @checked($color === $hex) aria-label="{{ $hex }}"><span class="tag-c{{ $n + 1 }}"></span></label>
-        @endforeach
-    </div>
-    <div class="tag-color-own">
-        <label for="color-picker-{{ $key }}">{{ __('folders.own_color') }}</label>
-        <input id="color-picker-{{ $key }}" type="color" value="{{ is_string($color) && str_starts_with($color, '#') ? $color : $palette[0] }}" data-color-picker>
-        <label for="color-hex-{{ $key }}" class="visually-hidden">{{ __('tags.hex') }}</label>
-        <input id="color-hex-{{ $key }}" name="color_hex" value="{{ is_string($color) && str_starts_with($color, '#') && ! in_array($color, $palette, true) ? $color : '' }}" placeholder="#rrggbb" maxlength="7" pattern="#[0-9a-fA-F]{6}" data-color-hex>
-    </div>
-</fieldset>
+<x-color-picker name="color" :value="$color" :allow-none="true" :allow-own="true" :key="$key" :legend="__('folders.color')" />
 
 <fieldset class="tag-color-field">
     <legend>{{ __('folders.icon') }}</legend>
