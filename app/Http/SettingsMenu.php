@@ -28,6 +28,9 @@ final class SettingsMenu
         'colors' => ['palette', [
             ['colors', 'palette.index', 'palette', 'settings.manage', ['palette.*']],
         ], true],
+        'ocr' => ['text-scan-2', [
+            ['ocr', 'ocr.show', 'text-scan-2', 'settings.manage', ['ocr.show']],
+        ], true],
         'export' => ['file-export', [
             ['export', 'exports.form', 'file-export', 'exports.create', ['exports.*']],
             ['shares', 'shares.index', 'send', 'exports.create', ['shares.*']],

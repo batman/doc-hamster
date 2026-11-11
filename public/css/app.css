@@ -1373,3 +1373,31 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
 .toast.toast-error { border-color: var(--danger); }
 .toast.toast-error::before { content: ""; flex: none; width: .5rem; height: .5rem; border-radius: 50%; background: var(--danger); }
 .win-detail form > button[type="submit"] { margin-top: 1rem; }
+/* Package G */
+/* Text recognition (points 35/43, A21-A23): spinner on Einstellungen, counts and progress on its page, state in the detail. */
+.nav-ocr { display: inline-grid; place-items: center; margin-left: auto; color: var(--muted); }
+.nav-ocr[hidden] { display: none; }
+.nav-ocr .icon { width: 1.1rem; height: 1.1rem; animation: spin 1s linear infinite; }
+.sidebar .nav-ocr[data-tooltip]::before, .sidebar .nav-ocr[data-tooltip]::after { display: block; }
+@media (min-width: 64rem) {
+    :is(html.nav-rail, .shell.nav-rail) .nav-ocr { position: absolute; top: .2rem; right: .2rem; margin: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .nav-ocr .icon { animation: none; } }
+.ocr-counts { display: flex; flex-wrap: wrap; gap: .5rem 2rem; margin: .25rem 0 1rem; padding: 0; list-style: none; }
+.ocr-counts li { display: grid; }
+.ocr-counts strong { font-size: 1.5rem; line-height: 1.2; }
+.ocr-counts span { color: var(--muted); font-size: .875rem; }
+.ocr-progress progress {
+    display: block; width: 100%; height: .75rem; margin: 0 0 .5rem;
+    appearance: none; border: 0; border-radius: var(--radius); overflow: hidden;
+    background: var(--surface); accent-color: var(--primary);
+}
+.ocr-progress progress::-webkit-progress-bar { background: var(--surface); }
+.ocr-progress progress::-webkit-progress-value { background: var(--primary); transition: width .3s; }
+.ocr-progress progress::-moz-progress-bar { background: var(--primary); }
+.ocr-progress p { margin: 0 0 .25rem; }
+.ocr-rerun { margin-top: 1rem; }
+.ocr-head { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-bottom: .5rem; }
+.ocr-head h3 { margin: 0; }
+.ocr-head form { margin: 0 0 0 auto; }
+.detail-section .ocr-head button, .win-detail .ocr-head form > button[type="submit"] { margin-top: 0; }

@@ -28,7 +28,12 @@
     <a class="skip-link" href="#main">{{ __('app.skip_to_content') }}</a>
     <div class="shell">
         @auth
-            @php $badges = \App\Http\Badges::counts(app(\App\Domain\Org\CurrentOrg::class)); @endphp
+            @php
+                $currentOrg = app(\App\Domain\Org\CurrentOrg::class);
+                $badges = \App\Http\Badges::counts($currentOrg);
+                // Text recognition waiting (A22): one cached count, the spinner on Einstellungen.
+                $ocrWaiting = $currentOrg->isSet() ? \App\Infrastructure\Environment\OcrProgress::waiting($currentOrg->id()) : 0;
+            @endphp
             <aside class="side" data-badges="{{ route('badges') }}">
                 <header class="site-header">
                     <button type="button" class="nav-toggle" aria-controls="nav" aria-expanded="true" aria-label="{{ __('app.nav.toggle') }}"><x-icon name="menu-2" /><span class="nav-dot" data-badge-any @unless (array_sum($badges) > 0) hidden @endunless></span></button>
@@ -53,10 +58,10 @@
                             ['print-tray.index', 'printer', 'print_tray.title', 'documents.upload', ['print-tray.*'], \App\Http\Badges::PRINT_TRAY],
                             ['mail-tray.index', 'mail', 'mail_tray.title', 'documents.upload', ['mail-tray.*'], null],
                             ['bank.index', 'building-bank', 'bank.title', 'banking.import', ['bank.index', 'bank.show'], null],
-                            ['settings.index', 'settings', 'settings.title', null, ['settings.*', 'members.*', 'roles.*', 'tags.*', 'exports.*', 'updates.*', 'bank.import*', 'bank.accounts.*', 'phone-check*'], null],
+                            ['settings.index', 'settings', 'settings.title', null, ['settings.*', 'members.*', 'roles.*', 'tags.*', 'exports.*', 'updates.*', 'ocr.show', 'palette.*', 'bank.import*', 'bank.accounts.*', 'phone-check*'], null],
                         ] as [$route, $icon, $label, $ability, $active, $badge])
                             @if ($ability === null || Gate::allows($ability))
-                                <li><a class="nav-item tooltip-right" href="{{ route($route) }}" data-tooltip="{{ __($label) }}" @if (request()->routeIs(...$active)) aria-current="page" @endif><x-icon :name="$icon" /><span class="nav-text">{{ __($label) }}</span> @if ($badge !== null) @php $count = $badges[$badge] ?? 0; @endphp <span class="nav-badge" data-badge="{{ $badge }}" @if ($count === 0) hidden @endif>{{ $count > 9 ? '9+' : $count }}</span> @endif</a></li>
+                                <li><a class="nav-item tooltip-right" href="{{ route($route) }}" data-tooltip="{{ __($label) }}" @if (request()->routeIs(...$active)) aria-current="page" @endif><x-icon :name="$icon" /><span class="nav-text">{{ __($label) }}</span> @if ($badge !== null) @php $count = $badges[$badge] ?? 0; @endphp <span class="nav-badge" data-badge="{{ $badge }}" @if ($count === 0) hidden @endif>{{ $count > 9 ? '9+' : $count }}</span> @endif @if ($route === 'settings.index') <span class="nav-ocr" data-ocr-nav="{{ route('ocr.status') }}" data-ocr-waiting="{{ $ocrWaiting }}" data-label="{{ __('ocr.nav_waiting', ['count' => ':count']) }}" data-tooltip="{{ __('ocr.nav_waiting', ['count' => $ocrWaiting]) }}" role="img" aria-label="{{ __('ocr.nav_waiting', ['count' => $ocrWaiting]) }}" @if ($ocrWaiting === 0) hidden @endif><x-icon name="loader-2" /></span> @endif</a></li>
                             @endif
                         @endforeach
                     </ul>

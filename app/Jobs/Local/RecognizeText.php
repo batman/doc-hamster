@@ -6,8 +6,11 @@ namespace App\Jobs\Local;
 
 use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
+use App\Domain\Documents\RichText;
+use App\Domain\Documents\TextDocument;
 use App\Domain\Org\OrgScope;
 use App\Infrastructure\Environment\LocalOcr;
+use App\Infrastructure\Environment\OcrProgress;
 use App\Queue\QueueName;
 use DateTimeInterface;
 use Illuminate\Bus\Queueable;
@@ -63,27 +66,51 @@ final class RecognizeText implements ShouldQueue
         if ($document === null) {
             return;
         }
-        $system = $ocr->systemAvailable();
-        if (! $system && ! $ocr->appAvailable()) {
-            $document->forceFill(['ocr_status' => 'unavailable'])->save();
-
-            return;
-        }
-
         $file = DocumentFile::query()->withoutGlobalScope(OrgScope::class)
             ->where('document_id', $document->id)->orderBy('page_no')->first();
-        // The portable binary reads images only; PDFs need ocrmypdf.
-        if ($file !== null && ! $system && ! $file->isImage()) {
-            $document->forceFill(['ocr_status' => 'unavailable'])->save();
+        // A text document written in the app: its text is known, nothing to read.
+        if ($file !== null && TextDocument::isText($file)) {
+            $display = TextDocument::display($file);
+            $plain = TextDocument::isRich($file) ? RichText::toPlainText($display) : $display;
+            self::finish($document, ['ocr_text' => $plain, 'ocr_status' => 'done']);
 
             return;
         }
-        $text = $file !== null ? self::recognize($file, $ocr, ! $system) : null;
 
-        $document->forceFill([
+        $system = $ocr->systemAvailable();
+        if (! $system && ! $ocr->appAvailable()) {
+            // The browser fallback picks up readable images itself; they keep waiting for it.
+            $browser = $file !== null && $ocr->mode() === 'browser' && $file->isImage() && ! in_array($file->mime, LocalOcr::BROWSER_SKIP_MIMES, true);
+            self::finish($document, ['ocr_status' => $browser ? 'pending' : 'unavailable']);
+
+            return;
+        }
+
+        // The portable binary reads images only; PDFs need ocrmypdf.
+        if ($file !== null && ! $system && ! $file->isImage()) {
+            self::finish($document, ['ocr_status' => 'unavailable']);
+
+            return;
+        }
+
+        OcrProgress::start($document);
+        try {
+            $text = $file !== null ? self::recognize($file, $ocr, ! $system) : null;
+        } finally {
+            OcrProgress::finish($document->id);
+        }
+
+        self::finish($document, [
             'ocr_text' => $text !== null ? trim($text) : null,
             'ocr_status' => $text !== null ? 'done' : 'failed',
-        ])->save();
+        ]);
+    }
+
+    /** @param array<string, mixed> $values */
+    private static function finish(Document $document, array $values): void
+    {
+        $document->forceFill($values)->save();
+        OcrProgress::forgetWaiting($document->org_id);
     }
 
     private static function recognize(DocumentFile $file, LocalOcr $ocr, bool $app): ?string

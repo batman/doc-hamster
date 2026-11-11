@@ -24,6 +24,9 @@ final class LocalOcr
 
     private const string MODE_KEY = 'ocr.mode';
 
+    /** Browsers can't decode these; the server converts them later. */
+    public const array BROWSER_SKIP_MIMES = ['image/heic', 'image/heif'];
+
     /** Static AppImage (glibc), extracted with --appimage-extract so no FUSE is needed. */
     private const array APPIMAGE = [
         'https://github.com/AlexanderP/tesseract-appimage/releases/download/v5.5.4/tesseract-5.5.4_lept-1.84-x86_64.AppImage',
