@@ -27,7 +27,12 @@ return [
     'current_percent' => 'Now: :title (:percent %)',
     'rerun' => 'Recognise all again',
     'rerun_started' => 'All documents are being recognised again.',
-    'nav_waiting' => 'Text recognition: :count waiting',
+    'nav_title' => 'OCR recognition',
+    'nav_open' => ':count open',
+    'nav_tooltip' => 'OCR recognition: :count open',
+    'nav_paused' => 'paused',
+    'pause' => 'Pause',
+    'resume' => 'Resume',
     'state' => [
         'waiting' => 'waiting',
         'running' => 'running',

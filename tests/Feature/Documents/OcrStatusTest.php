@@ -3,12 +3,14 @@
 declare(strict_types=1);
 
 use App\Domain\Documents\Document;
+use App\Domain\Documents\DocumentFile;
 use App\Domain\Org\Membership;
 use App\Domain\Org\OrgScope;
 use App\Domain\Org\RoleRight;
 use App\Infrastructure\Environment\OcrProgress;
 use App\Jobs\Local\RecognizeText;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 
 /*
@@ -33,11 +35,11 @@ it('shows counts and progress on its own settings page and in the JSON status', 
     $this->actingAs($this->admin->user)->get('/settings/ocr')->assertOk()
         ->assertSee('Texterkennung einrichten')->assertSee('1 von 2 erkannt')->assertSee('Gerade: b.jpg');
     $this->getJson('/ocr/status')->assertOk()
-        ->assertJson(['waiting' => 1, 'counts' => ['done' => 1, 'waiting' => 1, 'failed' => 1, 'unavailable' => 0], 'current' => ['title' => 'b.jpg']]);
+        ->assertJson(['waiting' => 1, 'open' => 1, 'total' => 2, 'passes' => 3, 'counts' => ['done' => 1, 'waiting' => 1, 'failed' => 1, 'unavailable' => 0], 'current' => ['title' => 'b.jpg']]);
 
     $clerk = Membership::factory()->withRights(RoleRight::Upload)->create(['org_id' => $this->admin->org_id]);
     $this->actingAs($clerk->user)->get('/settings/ocr')->assertForbidden();
-    $this->getJson('/ocr/status')->assertOk()->assertExactJson(['waiting' => 1]);
+    $this->getJson('/ocr/status')->assertOk()->assertExactJson(['waiting' => 1, 'open' => 1, 'total' => 2, 'passes' => 3]);
 });
 
 it('recognises all documents again and one from the detail window', function (): void {
@@ -52,4 +54,29 @@ it('recognises all documents again and one from the detail window', function ():
     $this->get('/documents/'.$document->id)->assertOk()->assertSee('fehlgeschlagen')->assertSee('Neu erkennen');
     $this->post('/documents/'.$document->id.'/ocr')->assertRedirect();
     expect($document->refresh()->ocr_status)->toBe('pending');
+});
+
+it('reads in three passes in the browser, the lowest pass first, and shows the indicator below Abmelden', function (): void {
+    Cache::put('ocr.mode', 'browser', 300);
+    $documents = Document::query()->withoutGlobalScope(OrgScope::class)->get()->keyBy('title');
+    foreach ($documents as $document) {
+        DocumentFile::query()->withoutGlobalScope(OrgScope::class)->create(['org_id' => $document->org_id, 'document_id' => $document->id, 'path' => 'x/'.$document->title, 'mime' => 'image/jpeg', 'size' => 4, 'sha256' => str_repeat('0', 64)]);
+    }
+    $a = $documents['a.jpg'];
+    $a->forceFill(['ocr_pass' => 1, 'ocr_text' => 'grob'])->save();
+    $b = $documents['b.jpg'];
+
+    $this->actingAs($this->admin->user)->get('/')->assertOk()->assertSee('OCR-Erkennung')->assertSee('2 offen');
+    $this->getJson('/ocr/next')->assertOk()->assertJson(['id' => $b->id, 'pass' => 1]);
+    $this->post('/ocr/'.$b->id, ['text' => 'erster', 'pass' => 1])->assertNoContent();
+    expect($b->refresh()->ocr_status)->toBe('done')->and($b->ocr_pass)->toBe(1);
+    expect(OcrProgress::counts($this->admin->org_id)['done'])->toBe(2);
+
+    $this->getJson('/ocr/next?skip[]='.$b->id)->assertOk()->assertJson(['id' => $a->id, 'pass' => 2]);
+    $this->post('/ocr/'.$a->id, ['failed' => 1, 'pass' => 2])->assertNoContent();
+    expect($a->refresh()->ocr_text)->toBe('grob')->and($a->ocr_pass)->toBe(2)->and($a->ocr_status)->toBe('done');
+    $this->post('/ocr/'.$a->id, ['text' => 'voll', 'pass' => 3])->assertNoContent();
+    $this->post('/ocr/'.$b->id, ['text' => 'voll', 'pass' => 3])->assertNoContent();
+    $this->getJson('/ocr/next')->assertNoContent();
+    $this->getJson('/ocr/status')->assertJson(['open' => 0, 'total' => 2, 'passes' => 6]);
 });

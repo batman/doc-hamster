@@ -27,7 +27,12 @@ return [
     'current_percent' => 'Gerade: :title (:percent %)',
     'rerun' => 'Alle neu erkennen',
     'rerun_started' => 'Alle Dokumente werden neu erkannt.',
-    'nav_waiting' => 'Texterkennung: :count wartend',
+    'nav_title' => 'OCR-Erkennung',
+    'nav_open' => ':count offen',
+    'nav_tooltip' => 'OCR-Erkennung: :count offen',
+    'nav_paused' => 'pausiert',
+    'pause' => 'Pausieren',
+    'resume' => 'Fortsetzen',
     'state' => [
         'waiting' => 'wartet',
         'running' => 'läuft gerade',

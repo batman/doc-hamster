@@ -72,7 +72,7 @@ final class RecognizeText implements ShouldQueue
         if ($file !== null && TextDocument::isText($file)) {
             $display = TextDocument::display($file);
             $plain = TextDocument::isRich($file) ? RichText::toPlainText($display) : $display;
-            self::finish($document, ['ocr_text' => $plain, 'ocr_status' => 'done']);
+            self::finish($document, ['ocr_text' => $plain, 'ocr_status' => 'done', 'ocr_pass' => OcrProgress::PASSES]);
 
             return;
         }
@@ -103,6 +103,8 @@ final class RecognizeText implements ShouldQueue
         self::finish($document, [
             'ocr_text' => $text !== null ? trim($text) : null,
             'ocr_status' => $text !== null ? 'done' : 'failed',
+            // The server reads once at full resolution: the last pass (point 56).
+            'ocr_pass' => $text !== null ? OcrProgress::PASSES : null,
         ]);
     }
 
