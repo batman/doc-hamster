@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
+use App\Domain\Ocr\OcrLog;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
 use App\Infrastructure\Environment\LocalOcr;
@@ -20,6 +21,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -34,10 +36,25 @@ final class OcrController extends Controller
 {
     private const array SKIP_MIMES = LocalOcr::BROWSER_SKIP_MIMES;
 
-    /** Einstellungen → Texterkennung (point 35): mode, counts, progress. */
-    public function show(LocalOcr $ocr, CurrentOrg $org): View
+    /** Einstellungen → Texterkennung (point 35): tabs "Übersicht" (mode, counts, progress) and "Protokoll" (point 61). */
+    public function show(Request $request, LocalOcr $ocr, CurrentOrg $org): View
     {
+        self::watchCron($org->id());
+        $tab = $request->query('tab') === 'log' ? 'log' : 'overview';
+        $onlyErrors = $request->boolean('errors');
+        $log = null;
+        if ($tab === 'log') {
+            $log = OcrLog::query()
+                ->with(['document' => static fn ($d) => $d->withTrashed()->select(['id', 'title'])])
+                ->when($onlyErrors, static fn ($q) => $q->whereIn('event', OcrLog::ERRORS))
+                ->orderByDesc('created_at')->orderByDesc('id')
+                ->paginate(OcrLog::PER_PAGE)->withQueryString();
+        }
+
         return view('settings.ocr', [
+            'tab' => $tab,
+            'log' => $log,
+            'onlyErrors' => $onlyErrors,
             'mode' => $ocr->mode(),
             'status' => $ocr->status(),
             'counts' => OcrProgress::counts($org->id()),
@@ -62,9 +79,19 @@ final class OcrController extends Controller
     {
         set_time_limit(300);
         ignore_user_abort(true);
+        $orgId = app(CurrentOrg::class)->id();
+        $userId = self::userId($request);
+        OcrLog::record($orgId, 'server-setup', 'setup_started', ['user_id' => $userId]);
+        $started = hrtime(true);
         $ocr->markRunning();
         SetUpOcr::dispatchSync();
         $status = $ocr->status();
+        $ok = ($status['state'] ?? null) === 'ok';
+        OcrLog::record($orgId, 'server-setup', $ok ? 'setup_ok' : 'setup_failed', [
+            'user_id' => $userId,
+            'duration_ms' => intdiv(hrtime(true) - $started, 1_000_000),
+            'message' => $ok ? $ocr->mode() : (is_string($status['reason'] ?? null) ? $status['reason'] : null),
+        ]);
 
         return $request->expectsJson() ? response()->json(['state' => $status['state'] ?? null, 'mode' => $ocr->mode()]) : back();
     }
@@ -74,6 +101,22 @@ final class OcrController extends Controller
     {
         $data = $request->validate(['reason' => ['required', 'string', 'max:500']]);
         $ocr->reportBrowserError((string) $data['reason']);
+        OcrLog::record(app(CurrentOrg::class)->id(), 'browser', 'engine_failed', ['message' => (string) $data['reason'], 'user_id' => self::userId($request)]);
+
+        return response()->noContent();
+    }
+
+    /** Point 61: browser events without a document – engine started (with its start time), paused, resumed. */
+    public function log(Request $request, CurrentOrg $org): Response
+    {
+        $data = $request->validate([
+            'event' => ['required', 'string', 'in:engine_started,paused,resumed'],
+            'duration' => ['nullable', 'integer', 'min:0', 'max:3600000'],
+        ]);
+        OcrLog::record($org->id(), 'browser', (string) $data['event'], [
+            'duration_ms' => isset($data['duration']) ? (int) $data['duration'] : null,
+            'user_id' => self::userId($request),
+        ]);
 
         return response()->noContent();
     }
@@ -104,6 +147,7 @@ final class OcrController extends Controller
      */
     public function status(LocalOcr $ocr, CurrentOrg $org): JsonResponse
     {
+        self::watchCron($org->id());
         $open = OcrProgress::open($org->id());
         $nav = ['waiting' => $open['waiting'], 'open' => $open['open'], 'total' => $open['total'], 'passes' => $open['passes']];
         // A61: why the browser engine does not start (menu tooltip); absent when it works.
@@ -143,15 +187,23 @@ final class OcrController extends Controller
         $skip = array_slice(array_filter((array) $request->query('skip', []), 'is_string'), 0, 100);
 
         // Point 56: three passes, the lowest first: every unread document fast, then all again slower, then in full.
-        $document = $this->editable($request)
+        // A77: nothing is reserved; a random document of the lowest open pass (and fewest recent failures) is handed
+        // out, so several windows mostly read different documents. A78: the second engine asks with only=1 for pass 1.
+        $level = "case when ocr_status = 'done' then ocr_pass else 0 end";
+        $open = fn (): Builder => $this->editable($request)
             ->where(static fn ($w) => $w->whereNull('ocr_status')->orWhereIn('ocr_status', ['pending', 'unavailable'])
                 ->orWhere(static fn ($d) => $d->where('ocr_status', 'done')->whereIn('ocr_pass', [1, 2])))
             ->whereNotIn('id', $skip)
-            ->whereHas('files', self::readable(...))
-            ->orderByRaw("case when ocr_status = 'done' then ocr_pass else 0 end")
-            // A document that failed lately goes behind the others of its pass, so one bad file does not block the rest.
-            ->orderBy('ocr_failures')
-            ->latest('created_at')->first();
+            ->whereHas('files', self::readable(...));
+        // A document that failed lately goes behind the others of its pass, so one bad file does not block the rest.
+        $lowest = $open()->selectRaw($level.' as lvl, ocr_failures')
+            ->orderByRaw($level)->orderBy('ocr_failures')->toBase()->first();
+        $document = null;
+        if ($lowest !== null && ! ($request->boolean('only') && (int) $lowest->lvl > 0)) {
+            $document = $open()->whereRaw($level.' = ?', [(int) $lowest->lvl])
+                ->where('ocr_failures', (int) $lowest->ocr_failures)
+                ->inRandomOrder()->first();
+        }
         if ($document === null) {
             return response()->noContent();
         }
@@ -178,16 +230,26 @@ final class OcrController extends Controller
         return Storage::disk('local')->response($file->path, null, ['Content-Type' => $file->mime, 'Cache-Control' => 'private, no-store']);
     }
 
-    public function store(Request $request, LocalOcr $ocr, string $id): Response
+    public function store(Request $request, LocalOcr $ocr, string $id): Response|JsonResponse
     {
         $data = $request->validate([
             'text' => ['nullable', 'string', 'max:200000'],
             'failed' => ['nullable', 'boolean'],
             'pass' => ['nullable', 'integer', 'min:1', 'max:'.OcrProgress::PASSES],
+            'duration' => ['nullable', 'integer', 'min:0', 'max:3600000'],
+            'reason' => ['nullable', 'string', 'max:300'],
         ]);
         $document = $this->editable($request)->whereKey($id)->firstOrFail();
         $pass = (int) ($data['pass'] ?? OcrProgress::PASSES);
+        // A84: another window or the server already reached this pass – only the first result of a pass counts.
+        if ($document->ocr_status === 'done' && (int) $document->ocr_pass >= $pass) {
+            OcrProgress::finish($document->id, $document->org_id);
+
+            return response()->json(['ignored' => true]);
+        }
         $read = $document->ocr_status === 'done' && $document->ocr_text !== null;
+        $duration = isset($data['duration']) ? (int) $data['duration'] : null;
+        $log = ['document_id' => $document->id, 'pass' => $pass, 'duration_ms' => $duration, 'user_id' => self::userId($request)];
         if ($data['failed'] ?? false) {
             // Point 58/A63: time limit or error. It comes again; after three failures it stops – a later pass
             // keeps the text of the earlier one, a document without text is marked failed.
@@ -197,14 +259,40 @@ final class OcrController extends Controller
                 $values += $read ? ['ocr_pass' => OcrProgress::PASSES] : ['ocr_status' => 'failed', 'ocr_pass' => null];
             }
             $document->forceFill($values)->save();
+            $reason = is_string($data['reason'] ?? null) ? $data['reason'] : null;
+            OcrLog::record($document->org_id, 'browser', $reason === 'timeout' ? 'timeout' : 'failed', [...$log, 'message' => $reason === 'timeout' ? null : $reason]);
         } else {
             // Each pass replaces the text of the one before (point 56).
-            $document->forceFill(['ocr_text' => trim((string) ($data['text'] ?? '')), 'ocr_status' => 'done', 'ocr_pass' => $pass, 'ocr_failures' => 0])->save();
+            $text = trim((string) ($data['text'] ?? ''));
+            $document->forceFill(['ocr_text' => $text, 'ocr_status' => 'done', 'ocr_pass' => $pass, 'ocr_failures' => 0])->save();
             $ocr->clearBrowserError();
+            OcrLog::record($document->org_id, 'browser', 'recognized', [...$log, 'chars' => mb_strlen($text)]);
         }
         OcrProgress::finish($document->id, $document->org_id);
 
         return response()->noContent();
+    }
+
+    /** Point 61: cron going missing or coming back is logged once per change (checked on the status poll and the page). */
+    private static function watchCron(string $orgId): void
+    {
+        $running = CronClock::running();
+        $key = 'ocr.cron.'.$orgId;
+        $before = Cache::get($key);
+        if ($before === $running) {
+            return;
+        }
+        Cache::forever($key, $running);
+        if ($before !== null || ! $running) {
+            OcrLog::record($orgId, 'system', $running ? 'cron_back' : 'cron_missing');
+        }
+    }
+
+    private static function userId(Request $request): ?string
+    {
+        $id = $request->user()?->getAuthIdentifier();
+
+        return is_string($id) ? $id : null;
     }
 
     /**

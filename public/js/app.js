@@ -2519,7 +2519,9 @@
 // Point 56: three passes, the server hands out the lowest first; each pass
 // replaces the text of the one before. Point 58/A60/A63: every pass has a time
 // limit per document; A61: an engine that does not start is reported and
-// retried after 5 minutes instead of spinning.
+// retried after 5 minutes instead of spinning. A78: with 4+ cores a second
+// engine reads pass-1 documents alongside; passes 2/3 stay one at a time.
+// Point 61: results carry their duration; engine start goes to the OCR log.
 (() => {
   const startOcr = () => {
     const base = document.body?.dataset.ocrBrowser;
@@ -2536,20 +2538,22 @@
     const ENGINE_MS = 60000;
     const ENGINE_RETRY_MS = 5 * 60000;
     const engineUrl = document.body?.dataset.ocrEngine;
+    const logUrl = document.body?.dataset.ocrLog;
     const PAUSE_KEY = 'dh.ocr.paused';
+    const TWO = (navigator.hardwareConcurrency ?? 1) >= 4;
     const skip = [];
-    let engine = null;
-    let running = null;
-    let wake = null;
+    // Lane 0 reads every pass; lane 1 (A78) only pass 1 and only on 4+ cores.
+    const lanes = [{ main: true, engine: null, running: null, active: true }, { main: false, engine: null, running: null, active: false }];
+    const wakers = new Set();
 
     const paused = () => {
         try { return localStorage.getItem(PAUSE_KEY) === '1'; } catch { return false; }
     };
     // A sleep that "Fortsetzen" ends early.
     const sleep = ms => new Promise(resolve => {
-        const done = () => { clearTimeout(timer); wake = null; resolve(); };
+        const done = () => { clearTimeout(timer); wakers.delete(done); resolve(); };
         const timer = setTimeout(done, ms);
-        wake = done;
+        wakers.add(done);
     });
     const idle = () => new Promise(resolve => ('requestIdleCallback' in window
         ? window.requestIdleCallback(() => resolve(), { timeout: 30000 })
@@ -2579,10 +2583,19 @@
         const limit = new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(reason)), ms); });
         return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
     };
+    const token = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const post = (url, fields) => {
+        if (!url) return;
+        const body = new FormData();
+        Object.entries(fields).forEach(([key, value]) => body.append(key, String(value)));
+        fetch(url, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' }, credentials: 'same-origin' })
+            .catch(() => { /* only a hint */ });
+    };
     // A61: the engine start has 60 s; a worker that comes up later is closed again.
-    const getEngine = async () => {
-        if (engine) return engine;
+    const getEngine = async lane => {
+        if (lane.engine) return lane.engine;
         let late = false;
+        const began = performance.now();
         const create = (async () => {
             await loadLib();
             return window.Tesseract.createWorker('deu+eng', 1, {
@@ -2591,48 +2604,47 @@
                 langPath: base + '/lang',
                 gzip: false,
                 workerBlobURL: false,
-                logger: m => document.dispatchEvent(new CustomEvent('dh:ocr-progress', { detail: m })),
+                // Only the main lane feeds the progress in the menu.
+                logger: lane.main ? m => document.dispatchEvent(new CustomEvent('dh:ocr-progress', { detail: m })) : () => {},
                 errorHandler: () => { /* surfaces as a rejected job */ },
             });
         })();
         create.then(w => { if (late) w.terminate().catch(() => {}); }, () => {});
         try {
-            engine = await within(create, ENGINE_MS, 'timeout 60 s');
+            lane.engine = await within(create, ENGINE_MS, 'timeout 60 s');
         } catch (e) {
             late = true;
             throw e;
         }
-        return engine;
+        // Once per lane and page, so pass 3 (engine closed between documents) does not flood the log.
+        if (!lane.logged) post(logUrl, { event: 'engine_started', duration: Math.round(performance.now() - began) });
+        lane.logged = true;
+        return lane.engine;
     };
-    const reportEngine = error => {
-        if (!engineUrl) return;
-        const body = new FormData();
-        body.append('reason', String(error?.message || error || 'unknown').slice(0, 300));
-        fetch(engineUrl, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' }, credentials: 'same-origin' })
-            .catch(() => { /* only a hint */ });
-    };
-    const stop = async () => {
-        if (!engine) return;
-        const e = engine;
-        engine = null;
+    const reportEngine = error => post(engineUrl, { reason: String(error?.message || error || 'unknown').slice(0, 300) });
+    const stop = async lane => {
+        if (!lane.engine) return;
+        const e = lane.engine;
+        lane.engine = null;
         try { await e.terminate(); } catch { /* already gone */ }
     };
-    // Pause (point 57): the running document is dropped unsaved and the engine closed, so the computer gets its resources back.
+    // Pause (point 57): the running documents are dropped unsaved and the engines closed, so the computer gets its resources back.
     const onPause = isPaused => {
         if (isPaused) {
-            if (running) running.aborted = true;
-            stop();
-        } else if (wake) {
-            wake();
+            lanes.forEach(lane => {
+                if (lane.running) lane.running.aborted = true;
+                stop(lane);
+            });
+        } else {
+            [...wakers].forEach(wake => wake());
         }
     };
     document.addEventListener('dh:ocr-pause', event => onPause(event.detail === true));
     window.addEventListener('storage', event => { if (event.key === PAUSE_KEY) onPause(event.newValue === '1'); });
-    const token = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     const check = run => { if (run.aborted || run.timedOut) throw new Error('stopped'); };
     // Images: scaled down to the pass's long side (pass 3: original), capped for memory.
-    const readImage = async (url, side, run) => {
-        if (typeof createImageBitmap === 'undefined') return (await (await getEngine()).recognize(url)).data?.text ?? '';
+    const readImage = async (lane, url, side, run) => {
+        if (typeof createImageBitmap === 'undefined') return (await (await getEngine(lane)).recognize(url)).data?.text ?? '';
         const res = await fetch(url, { credentials: 'same-origin' });
         if (!res.ok) throw new Error('image');
         const blob = await res.blob();
@@ -2640,13 +2652,13 @@
         try {
             check(run);
             const factor = Math.min(side > 0 ? side / Math.max(bitmap.width, bitmap.height) : 1, Math.sqrt(MAX_PIXELS / (bitmap.width * bitmap.height)));
-            if (factor >= 1) return (await (await getEngine()).recognize(blob)).data?.text ?? '';
+            if (factor >= 1) return (await (await getEngine(lane)).recognize(blob)).data?.text ?? '';
             const canvas = document.createElement('canvas');
             canvas.width = Math.max(1, Math.round(bitmap.width * factor));
             canvas.height = Math.max(1, Math.round(bitmap.height * factor));
             canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
             try {
-                return (await (await getEngine()).recognize(canvas)).data?.text ?? '';
+                return (await (await getEngine(lane)).recognize(canvas)).data?.text ?? '';
             } finally {
                 canvas.width = canvas.height = 0;
             }
@@ -2656,7 +2668,7 @@
     };
     // Point 34: PDFs page by page with pdf.js (document viewer block). A page that already carries text
     // gives that text; a scanned page is drawn at the pass's scale and read by tesseract. Pages joined by a blank line.
-    const readPdf = async (url, maxScale, run) => {
+    const readPdf = async (lane, url, maxScale, run) => {
         if (!DocHamster.openPdf) throw new Error('pdf.js not available');
         const doc = await DocHamster.openPdf(url);
         try {
@@ -2676,7 +2688,7 @@
                     canvas.width = Math.floor(viewport.width);
                     canvas.height = Math.floor(viewport.height);
                     await page.render({ canvas, canvasContext: canvas.getContext('2d'), viewport }).promise;
-                    const { data } = await (await getEngine()).recognize(canvas);
+                    const { data } = await (await getEngine(lane)).recognize(canvas);
                     texts.push((data?.text ?? '').trim());
                     canvas.width = canvas.height = 0;
                 }
@@ -2687,46 +2699,55 @@
             doc.destroy().catch(() => {});
         }
     };
+    const announce = (lane, job) => { if (lane.main) document.dispatchEvent(new CustomEvent('dh:ocr-job', { detail: job })); };
 
-    // One document of the lowest open pass; gives the pause before the next one, or null when nothing is left.
-    const step = async () => {
+    // One document of the lowest open pass (A77: the server picks at random among them); gives the pause before
+    // the next one, or null when nothing is left. The second lane asks for pass 1 only.
+    const step = async lane => {
         const url = new URL(nextUrl, location.href);
         skip.forEach(id => url.searchParams.append('skip[]', id));
+        if (!lane.main) url.searchParams.set('only', '1');
         const res = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
         if (res.status !== 200) return null;
         const job = await res.json();
         const pass = PASSES[job.pass] ? job.pass : 3;
+        if (!lane.main && pass !== 1) return null;
         // A61: no engine, no document – the reason goes to the server, the next try comes in 5 minutes.
         try {
-            await getEngine();
+            await getEngine(lane);
         } catch (e) {
             reportEngine(e);
-            await stop();
-            return ENGINE_RETRY_MS;
+            await stop(lane);
+            return lane.main ? ENGINE_RETRY_MS : null;
         }
+        // A78: a pass-1 document on the main lane wakes the second lane.
+        if (lane.main && pass === 1 && TWO && !lanes[1].active) runLane(lanes[1]);
         const run = { aborted: false, timedOut: false };
-        running = run;
-        document.dispatchEvent(new CustomEvent('dh:ocr-job', { detail: job }));
+        lane.running = run;
+        announce(lane, job);
         const body = new FormData();
         body.append('pass', String(pass));
+        const began = performance.now();
         try {
             const read = job.type === 'application/pdf'
-                ? readPdf(job.file, PASSES[pass].scale, run)
-                : readImage(job.file, PASSES[pass].side, run);
+                ? readPdf(lane, job.file, PASSES[pass].scale, run)
+                : readImage(lane, job.file, PASSES[pass].side, run);
             read.catch(() => {});
             body.append('text', await within(read, PASSES[pass].limit, 'timeout'));
         } catch (e) {
             // Point 58: over the time limit the engine is closed, so the computer gets its resources back.
             if (e?.message === 'timeout') {
                 run.timedOut = true;
-                await stop();
+                await stop(lane);
             }
             body.append('failed', '1');
+            body.append('reason', String(e?.message || e || 'unknown').slice(0, 290));
         }
-        running = null;
+        body.append('duration', String(Math.round(performance.now() - began)));
+        lane.running = null;
         if (run.aborted) {
             // Paused: nothing saved, the document comes again after "Fortsetzen".
-            document.dispatchEvent(new CustomEvent('dh:ocr-job', { detail: null }));
+            announce(lane, null);
             return 0;
         }
         try {
@@ -2735,33 +2756,40 @@
         } catch {
             skip.push(job.id);
         }
-        document.dispatchEvent(new CustomEvent('dh:ocr-job', { detail: null }));
+        announce(lane, null);
         return PASSES[pass].pause;
     };
 
-    (async () => {
-        await sleep(5000);
-        for (;;) {
-            if (paused()) {
-                await stop();
-                await sleep(WAIT_MS);
-                continue;
+    // The main lane runs until nothing is left; the second lane until no pass-1 document is left.
+    const runLane = async lane => {
+        lane.active = true;
+        try {
+            if (lane.main) await sleep(5000);
+            for (;;) {
+                if (paused()) {
+                    await stop(lane);
+                    await sleep(WAIT_MS);
+                    continue;
+                }
+                await idle();
+                if (paused()) continue;
+                if (!(await allowed())) {
+                    await stop(lane);
+                    await sleep(WAIT_MS);
+                    continue;
+                }
+                let pause = null;
+                try { pause = await step(lane); } catch { pause = null; }
+                if (pause === null) { await stop(lane); return; }
+                // Long pauses (pass 3) close the engine meanwhile.
+                if (pause >= 30000) await stop(lane);
+                if (pause > 0) await sleep(pause);
             }
-            await idle();
-            if (paused()) continue;
-            if (!(await allowed())) {
-                await stop();
-                await sleep(WAIT_MS);
-                continue;
-            }
-            let pause = null;
-            try { pause = await step(); } catch { pause = null; }
-            if (pause === null) { await stop(); return; }
-            // Long pauses (pass 3) close the engine meanwhile.
-            if (pause >= 30000) await stop();
-            if (pause > 0) await sleep(pause);
+        } finally {
+            lane.active = false;
         }
-    })();
+    };
+    runLane(lanes[0]);
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startOcr);
   else startOcr();
@@ -3526,6 +3554,14 @@
             } catch { /* this tab only */ }
             paintPause();
             document.dispatchEvent(new CustomEvent('dh:ocr-pause', { detail: paused }));
+            // Point 61: the OCR log notes who paused or resumed (only the tab that was clicked).
+            const logUrl = document.body?.dataset.ocrLog;
+            if (logUrl) {
+                const body = new FormData();
+                body.append('event', paused ? 'paused' : 'resumed');
+                fetch(logUrl, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' }, credentials: 'same-origin' })
+                    .catch(() => { /* only a log */ });
+            }
         });
         // Another tab paused or resumed.
         window.addEventListener('storage', event => { if (event.key === PAUSE_KEY) paintPause(); });

@@ -8,6 +8,7 @@ use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
 use App\Domain\Documents\RichText;
 use App\Domain\Documents\TextDocument;
+use App\Domain\Ocr\OcrLog;
 use App\Domain\Org\OrgScope;
 use App\Infrastructure\Environment\LocalOcr;
 use App\Infrastructure\Environment\OcrProgress;
@@ -19,6 +20,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Symfony\Component\Process\Process;
 use Throwable;
 
@@ -94,11 +96,21 @@ final class RecognizeText implements ShouldQueue
         }
 
         OcrProgress::start($document);
+        $started = hrtime(true);
+        $timedOut = false;
         try {
             $text = $file !== null ? self::recognize($file, $ocr, ! $system) : null;
+        } catch (ProcessTimedOutException) {
+            $text = null;
+            $timedOut = true;
         } finally {
             OcrProgress::finish($document->id);
         }
+        // Point 61: the OCR log, without the text itself.
+        $log = ['document_id' => $document->id, 'pass' => OcrProgress::PASSES, 'duration_ms' => intdiv(hrtime(true) - $started, 1_000_000)];
+        OcrLog::record($document->org_id, $system ? 'system' : 'app', $text !== null ? 'recognized' : ($timedOut ? 'timeout' : 'failed'), $text !== null
+            ? [...$log, 'chars' => mb_strlen(trim($text))]
+            : [...$log, 'message' => $file === null ? 'no file' : ($timedOut ? null : 'tesseract/ocrmypdf error')]);
 
         self::finish($document, [
             'ocr_text' => $text !== null ? trim($text) : null,
@@ -131,6 +143,8 @@ final class RecognizeText implements ShouldQueue
             if ($file->mime === 'application/pdf') {
                 return self::pdf($path, $ocr);
             }
+        } catch (ProcessTimedOutException $e) {
+            throw $e;
         } catch (Throwable) {
             return null;
         }

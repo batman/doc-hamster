@@ -1,4 +1,4 @@
-{{-- Einstellungen → Texterkennung (points 35/43, A21/A24): mode, set-up, counts, progress; refreshes itself while documents wait. --}}
+{{-- Einstellungen → Texterkennung (points 35/43/61, A21/A24): tab Übersicht (mode, set-up, counts, progress; refreshes itself while documents wait) and tab Protokoll. --}}
 @extends('layouts.settings')
 
 @section('title', __('ocr.title'))
@@ -18,6 +18,21 @@
     @if (session('status'))
         <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
     @endif
+
+    {{-- Point 61: tabs (FRAMEWORK.md "Tabs"): Übersicht and Protokoll. --}}
+    <nav class="tab-bar" aria-label="{{ __('ocr.title') }}">
+        @foreach (['overview' => 'text-scan-2', 'log' => 'list-details'] as $name => $tabIcon)
+            <a class="tab" href="{{ route('ocr.show', $name === 'log' ? ['tab' => 'log'] : []) }}" @if ($name === $tab) aria-current="page" @endif>
+                <x-icon :name="$tabIcon" />
+                <span>{{ __('ocr.tabs.'.$name) }}</span>
+                @if ($name === $tab)<span class="tab-mark"></span>@endif
+            </a>
+        @endforeach
+    </nav>
+
+    @if ($tab === 'log')
+        @include('settings._ocr-log')
+    @else
 
     <div data-ocr-page="{{ route('ocr.status') }}" data-ocr-busy="{{ $busy ? '1' : '0' }}"
         data-progress-label="{{ __('ocr.progress', ['done' => ':done', 'total' => ':total']) }}"
@@ -109,4 +124,5 @@
             </div>
         </div>
     </div>
+    @endif
 @endsection

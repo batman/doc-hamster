@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domain\Ocr\OcrLog;
 use App\Infrastructure\Environment\NativeSystemProbe;
 use App\Queue\QueueName;
 use Illuminate\Support\Facades\Cache;
@@ -24,3 +25,8 @@ Schedule::command('queue:work --queue='.QueueName::workerOrder().' --stop-when-e
     ->everyMinute()
     // Lock expires after 2 minutes, so a crashed run can't block the queue for long.
     ->withoutOverlapping(2);
+
+// Point 61: the OCR log keeps 30 days (writing also prunes now and then, for servers without cron).
+Schedule::call(static fn () => OcrLog::prune())
+    ->name('ocr-log-prune')
+    ->daily();

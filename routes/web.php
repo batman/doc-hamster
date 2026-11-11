@@ -73,6 +73,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::get('ocr/image/{id}', [OcrController::class, 'image'])->name('ocr.image');
     Route::post('ocr/{id}', [OcrController::class, 'store'])->name('ocr.store');
     Route::post('ocr-engine', [OcrController::class, 'engineError'])->name('ocr.engine');
+    Route::post('ocr-log', [OcrController::class, 'log'])->name('ocr.log');
     // A69/A74: without cron the open browser works off the queue, one job per call.
     Route::post('queue/tick', QueueTickController::class)->name('queue.tick');
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
