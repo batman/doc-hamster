@@ -28,5 +28,7 @@ return [
         'minimise' => 'Minimise',
         'unpin' => 'Pinned – unpin',
         'search_clear' => 'Clear the search',
+        'resize' => 'Change the window width',
+        'resize_hint' => 'Drag to change the width, double-click resets',
     ],
 ];

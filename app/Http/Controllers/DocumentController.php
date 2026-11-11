@@ -90,9 +90,15 @@ final class DocumentController
         $folders = Folder::flat();
         $wantedFolder = $request->query('folder');
         $folder = is_string($wantedFolder) && collect($folders)->contains(static fn (array $row): bool => $row['folder']->id === $wantedFolder) ? $wantedFolder : null;
+        // The view belongs to the window (point 52): ?view=… in its address; a window without one starts with the
+        // view the person chose last (receipt_view).
+        $wantedView = $request->query('view');
+        $saved = $this->user($request)->receipt_view;
+        $view = is_string($wantedView) && isset(self::VIEWS[$wantedView]) ? $wantedView
+            : ($saved !== null && isset(self::VIEWS[$saved]) ? $saved : 'details');
+
         // Calendar, timeline and the tag filter look, like a search, through everything below the current folder.
-        $savedView = $this->user($request)->receipt_view;
-        if ($q !== '' || $selected !== [] || in_array($savedView, ['calendar', 'timeline'], true)) {
+        if ($q !== '' || $selected !== [] || in_array($view, ['calendar', 'timeline'], true)) {
             if ($folder !== null) {
                 $query->whereIn('folder_id', Folder::branchIds($folder));
             }
@@ -101,9 +107,6 @@ final class DocumentController
         } else {
             $query->whereNull('folder_id');
         }
-
-        $saved = $this->user($request)->receipt_view;
-        $view = $saved !== null && isset(self::VIEWS[$saved]) ? $saved : 'details';
 
         $month = null;
         if ($view === 'calendar') {
@@ -133,14 +136,29 @@ final class DocumentController
         ];
     }
 
-    /** The chosen view is kept per person (point 11). */
+    /**
+     * The chosen view is the default for new windows (point 11); the window it was chosen in shows it via
+     * ?view=… (point 52). `back` is that window's address (only this app's own addresses count).
+     */
     public function setView(Request $request): RedirectResponse
     {
-        $data = $request->validate(['view' => ['required', Rule::in(array_keys(self::VIEWS))]]);
+        $data = $request->validate([
+            'view' => ['required', Rule::in(array_keys(self::VIEWS))],
+            'back' => ['nullable', 'string', 'max:2000'],
+        ]);
 
         $this->user($request)->forceFill(['receipt_view' => $data['view']])->save();
 
-        return back();
+        $root = url('/');
+        $back = is_string($data['back'] ?? null) && str_starts_with($data['back'].'/', $root.'/') ? $data['back'] : url()->previous(route('documents.index'));
+        if (! str_starts_with($back.'/', $root.'/')) {
+            $back = route('documents.index');
+        }
+        parse_str((string) parse_url($back, PHP_URL_QUERY), $query);
+        unset($query['page']);
+        $query['view'] = $data['view'];
+
+        return redirect()->to(explode('?', $back, 2)[0].'?'.http_build_query($query));
     }
 
     public function store(Request $request, AuditLog $audit, CurrentOrg $org): RedirectResponse

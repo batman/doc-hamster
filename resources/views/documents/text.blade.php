@@ -9,7 +9,7 @@
 
 @section('content')
     <div class="windows" data-windows>
-    <x-window :title="$document->title" icon="file-text" :url="route('documents.text', $document->id)" :close="route('documents.show', $document->id)" min="36rem" class="win-text">
+    <x-window :title="$document->title" icon="file-text" kind="text" :url="route('documents.text', $document->id)" :close="route('documents.show', $document->id)" min="36rem" class="win-text">
         @if ($canEdit)
             <x-slot:actions>
                 <div class="toolbar">

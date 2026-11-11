@@ -9,7 +9,7 @@
     <div class="windows" data-windows>
     {{-- Folders on the window system (PO, 2026-11-07; FRAMEWORK.md: the main menu has no sub-items): Dokumente lists the top folders
          and the Papierkorb as rows, a folder opens as a window on the right with its subfolders and receipts. --}}
-    <x-window :title="$openFolder?->name ?? __('documents.title')" :icon="$openFolder?->iconName() ?? 'file-text'"
+    <x-window :title="$openFolder?->name ?? __('documents.title')" kind="folder" :icon="$openFolder?->iconName() ?? 'file-text'"
               :url="route('documents.index', request()->except('page'))" :close="$openFolder ? route('documents.index') : null"
               :upload="$openFolder ? 'folder='.$openFolder->id : null" :class="$openFolder?->colorClass()"
               :search="__('documents.search')">
@@ -20,6 +20,9 @@
                     <form class="dropdown" data-kind="filter" data-complete="{{ $complete ? '1' : '0' }}" method="get" action="{{ route('documents.index') }}">
                         @if ($month)
                             <input type="hidden" name="month" value="{{ $month->format('Y-m') }}">
+                        @endif
+                        @if (request()->has('view'))
+                            <input type="hidden" name="view" value="{{ $view }}">
                         @endif
                         @if ($openFolder)
                             <input type="hidden" name="folder" value="{{ $openFolder->id }}">
@@ -43,15 +46,18 @@
                         </div>
                     </form>
                 @endif
-                {{-- The views as a button group (point 16); in a narrow window one dropdown button (point 41). --}}
-                <form class="button-group win-wide-only" role="group" aria-label="{{ __('documents.view') }}" method="post" action="{{ route('documents.view') }}">
+                {{-- The views as a button group (point 16); in a narrow window one dropdown button (point 41). The view belongs to
+                     this window (?view=…, point 52); app.js reloads only this window and saves the choice as the default. --}}
+                <form class="button-group win-wide-only" data-view-switch role="group" aria-label="{{ __('documents.view') }}" method="post" action="{{ route('documents.view') }}">
                     @csrf
+                    <input type="hidden" name="back" value="{{ route('documents.index', request()->except('page')) }}">
                     @foreach ($views as $name => $icon)
                         <button type="submit" name="view" value="{{ $name }}" class="icon-button button-small" aria-pressed="{{ $name === $view ? 'true' : 'false' }}" aria-label="{{ __('documents.views.'.$name) }}" data-tooltip="{{ __('documents.views.'.$name) }}"><x-icon :name="$icon" /></button>
                     @endforeach
                 </form>
-                <form class="dropdown win-narrow-only" method="post" action="{{ route('documents.view') }}">
+                <form class="dropdown win-narrow-only" data-view-switch method="post" action="{{ route('documents.view') }}">
                     @csrf
+                    <input type="hidden" name="back" value="{{ route('documents.index', request()->except('page')) }}">
                     <button type="button" class="icon-button" aria-label="{{ __('documents.view') }}: {{ __('documents.views.'.$view) }}" data-tooltip="{{ __('documents.view') }}" aria-haspopup="true" aria-expanded="false"><x-icon :name="$views[$view] ?? 'list'" /></button>
                     <div class="dropdown-panel" role="menu" hidden>
                         @foreach ($views as $name => $icon)

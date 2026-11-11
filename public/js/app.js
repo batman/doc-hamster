@@ -1064,6 +1064,31 @@
     // (same fetch as window links) and swaps only its body, so the field keeps focus and caret. The address
     // follows with replaceState (no history entry per key). What is found is up to the module (it reads q).
     // ---------------------------------------------------------------------------------------------
+    // A window loads its own address again (search A104, view point 52): only `part` of it (.win-body or
+    // .win-frame) is swapped, the window keeps its place, id and suffix; the address follows when it is active.
+    DocHamster.reloadWindow = (win, url, part = '.win-body', signal = undefined) => fetch(url, { credentials: 'same-origin', signal, headers: { 'X-DocHamster-Window': '1', Accept: 'text/html' } })
+        .then(response => (response.ok ? response.text() : Promise.reject(response)))
+        .then(html => {
+            const found = [...new DOMParser().parseFromString(html, 'text/html').querySelectorAll('section[data-window]')].pop();
+            const fresh = found?.querySelector(part);
+            const old = win.querySelector(part);
+            if (!fresh || !old) {
+                return Promise.reject(new Error('no window part'));
+            }
+            const next = document.importNode(fresh, true);
+            if (win.dataset.windowKey) {
+                isolate(next, win.dataset.windowKey);
+            }
+            old.replaceWith(next);
+            win.dataset.windowUrl = url.href;
+            if (win.classList.contains('is-active') || !win.closest('[data-windows]')) {
+                history.replaceState({ window: url.href, id: win.dataset.windowId }, '', url);
+            }
+            document.dispatchEvent(new Event('dh:window-url'));
+            DocHamster.emit('window:open', next);
+            return next;
+        });
+
     const setupWindowSearch = () => {
         const runs = new WeakMap();
         const fieldOf = form => form.querySelector('input[name="q"]');
@@ -1091,32 +1116,11 @@
             }
             run.abort = new AbortController();
             runs.set(form, run);
-            fetch(url, { credentials: 'same-origin', signal: run.abort.signal, headers: { 'X-DocHamster-Window': '1', Accept: 'text/html' } })
-                .then(response => (response.ok ? response.text() : Promise.reject(response)))
-                .then(html => {
-                    const found = [...new DOMParser().parseFromString(html, 'text/html').querySelectorAll('section[data-window]')].pop();
-                    const body = found?.querySelector('.win-body');
-                    const old = win.querySelector('.win-body');
-                    if (!body || !old) {
-                        return Promise.reject(new Error('no window body'));
-                    }
-                    const fresh = document.importNode(body, true);
-                    if (win.dataset.windowKey) {
-                        isolate(fresh, win.dataset.windowKey);
-                    }
-                    old.replaceWith(fresh);
-                    win.dataset.windowUrl = url.href;
-                    if (win.classList.contains('is-active') || !win.closest('[data-windows]')) {
-                        history.replaceState({ window: url.href, id: win.dataset.windowId }, '', url);
-                    }
-                    document.dispatchEvent(new Event('dh:window-url'));
-                    DocHamster.emit('window:open', fresh);
-                })
-                .catch(error => {
-                    if (error?.name !== 'AbortError') {
-                        location.href = url.href;
-                    }
-                });
+            DocHamster.reloadWindow(win, url, '.win-body', run.abort.signal).catch(error => {
+                if (error?.name !== 'AbortError') {
+                    location.href = url.href;
+                }
+            });
         };
         const later = form => {
             const run = runs.get(form) ?? {};
@@ -3360,6 +3364,151 @@
         setupNav();
         setupPage();
         setupBrowserProgress();
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+    else start();
+})();
+
+/* Package L */
+// Point 44 / A37: the drag edge right of a window changes that window's width (drag, arrow keys, double-click =
+// back to sharing). The browser remembers the width per module kind (data-window-kind); the last wide window
+// fills the rest and has no edge. Point 52 / A39: the view switcher of a list belongs to its window – it reloads
+// only that window with ?view=… and saves the choice as the default for new windows.
+(() => {
+    const DocHamster = window.DocHamster;
+    const WIDTHS = 'dh-win-widths';
+    const read = () => {
+        try {
+            const stored = JSON.parse(localStorage.getItem(WIDTHS));
+            return stored && typeof stored === 'object' ? stored : {};
+        } catch {
+            return {};
+        }
+    };
+    const write = (kind, width) => {
+        const all = read();
+        if (width === null) {
+            delete all[kind];
+        } else {
+            all[kind] = Math.round(width);
+        }
+        try { localStorage.setItem(WIDTHS, JSON.stringify(all)); } catch { /* not remembered */ }
+    };
+    const setWidth = (win, width) => {
+        win.classList.toggle('has-width', width !== null);
+        if (width === null) {
+            win.style.removeProperty('--win-width');
+        } else {
+            win.style.setProperty('--win-width', `${Math.round(width)}px`);
+        }
+    };
+    const kindOf = win => win.dataset.windowKind || 'page';
+    const applyStored = win => {
+        const width = read()[kindOf(win)];
+        if (typeof width === 'number' && !win.classList.contains('has-width')) {
+            setWidth(win, width);
+        }
+    };
+    const minOf = win => parseFloat(getComputedStyle(win).minWidth) || 0;
+    const resize = (win, width, save) => {
+        const box = win.closest('[data-windows]');
+        const most = Math.max(minOf(win), (box?.clientWidth ?? innerWidth) - 56);
+        const w = Math.max(minOf(win), Math.min(width, most));
+        setWidth(win, w);
+        if (save) {
+            write(kindOf(win), w);
+        }
+    };
+
+    const setup = () => {
+        const box = document.querySelector('[data-windows]');
+        if (!box) {
+            return;
+        }
+        box.classList.add('can-size');
+        const wins = () => [...box.querySelectorAll(':scope > section[data-window]')];
+        // The last wide window fills the rest of the row.
+        const mark = () => {
+            const fill = wins().filter(win => !win.classList.contains('is-min')).pop();
+            wins().forEach(win => {
+                if (win.classList.contains('is-fill') !== (win === fill)) {
+                    win.classList.toggle('is-fill', win === fill);
+                }
+            });
+        };
+        new MutationObserver(mark).observe(box, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+        wins().forEach(applyStored);
+        mark();
+        DocHamster.on('window:open', root => {
+            if (root?.matches?.('[data-windows] > section[data-window]')) {
+                applyStored(root);
+            }
+        });
+
+        box.addEventListener('pointerdown', event => {
+            const edge = event.target.closest('[data-window-edge]');
+            if (!edge || event.button !== 0) {
+                return;
+            }
+            event.preventDefault();
+            const win = edge.closest('section[data-window]');
+            const left = win.getBoundingClientRect().left;
+            edge.setPointerCapture(event.pointerId);
+            edge.classList.add('is-active');
+            box.classList.add('is-sizing');
+            const move = e => resize(win, e.clientX - left, false);
+            edge.addEventListener('pointermove', move);
+            edge.addEventListener('pointerup', e => {
+                edge.removeEventListener('pointermove', move);
+                edge.classList.remove('is-active');
+                box.classList.remove('is-sizing');
+                resize(win, e.clientX - left, true);
+            }, { once: true });
+        });
+        box.addEventListener('dblclick', event => {
+            const edge = event.target.closest('[data-window-edge]');
+            if (edge) {
+                const win = edge.closest('section[data-window]');
+                setWidth(win, null);
+                write(kindOf(win), null);
+            }
+        });
+        box.addEventListener('keydown', event => {
+            const edge = event.target.closest('[data-window-edge]');
+            if (!edge || !['ArrowLeft', 'ArrowRight'].includes(event.key)) {
+                return;
+            }
+            event.preventDefault();
+            const win = edge.closest('section[data-window]');
+            const step = (event.shiftKey ? 64 : 16) * (event.key === 'ArrowLeft' ? -1 : 1);
+            resize(win, win.getBoundingClientRect().width + step, true);
+        });
+    };
+
+    // The view switcher (point 52): the window loads itself again with ?view=…; the POST keeps it as the default.
+    const setupViews = () => {
+        document.addEventListener('submit', event => {
+            const form = event.target.closest('form[data-view-switch]');
+            const win = form?.closest('section[data-window]');
+            const view = event.submitter?.value;
+            if (!form || !win || !view || !DocHamster.reloadWindow) {
+                return;
+            }
+            event.preventDefault();
+            const body = new FormData(form);
+            body.set('view', view);
+            fetch(form.action, { method: 'POST', body, credentials: 'same-origin', redirect: 'manual', headers: { Accept: 'text/html' } })
+                .catch(() => { /* only the default for new windows */ });
+            const url = new URL(win.dataset.windowUrl ?? location.href, location.href);
+            url.searchParams.set('view', view);
+            url.searchParams.delete('page');
+            DocHamster.reloadWindow(win, url, '.win-frame').catch(() => { location.href = url.href; });
+        });
+    };
+
+    const start = () => {
+        setup();
+        setupViews();
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
     else start();

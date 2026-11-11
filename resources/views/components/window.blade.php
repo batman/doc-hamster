@@ -10,10 +10,12 @@
     head that follows the window's own width (container queries, point 41): one row, search on its own row, narrow.
     One window = one instance of a module for one record; the same record can be open twice (point 40), so ids inside
     a window loaded later get a per-window suffix in app.js – write plain ids, dialog names and labels as usual.
+    kind (the module type, e.g. "folder", "detail"; default the route name): the browser remembers a dragged width per kind (point 44).
 --}}
-@props(['title', 'icon' => 'file-text', 'url' => null, 'close' => null, 'upload' => null, 'min' => null, 'search' => null])
+@props(['title', 'icon' => 'file-text', 'url' => null, 'close' => null, 'upload' => null, 'min' => null, 'search' => null, 'kind' => null])
 @php
     $url ??= request()->fullUrl();
+    $kind ??= request()->route()?->getName() ?? 'page';
     // The search sends q; the window's other query fields go along, so a search without JavaScript keeps them (A104).
     $searchKeep = [];
     $searchTerm = '';
@@ -30,7 +32,7 @@
         }
     }
 @endphp
-<section {{ $attributes->class('win') }} data-window data-window-url="{{ $url }}" data-window-title="{{ $title }}" @if ($upload) data-window-upload="{{ $upload }}" @endif @if ($min) data-window-min="{{ $min }}" @endif aria-label="{{ $title }}">
+<section {{ $attributes->class('win') }} data-window data-window-url="{{ $url }}" data-window-title="{{ $title }}" @if ($upload) data-window-upload="{{ $upload }}" @endif @if ($min) data-window-min="{{ $min }}" @endif data-window-kind="{{ $kind }}" aria-label="{{ $title }}">
     <button type="button" class="win-strip" data-window-activate aria-label="{{ __('app.window.open', ['title' => $title]) }}">
         <x-icon name="chevron-right" />
         <span class="strip-label"><x-icon :name="$icon" /><span>{{ $title }}</span></span>
@@ -68,4 +70,6 @@
         @endif
         <div class="win-body">{{ $slot }}</div>
     </div>
+    {{-- The drag edge on the right (point 44): drag, arrow keys, double-click = default width. --}}
+    <div class="win-edge" data-window-edge role="separator" aria-orientation="vertical" tabindex="0" aria-label="{{ __('app.window.resize') }}" title="{{ __('app.window.resize_hint') }}"></div>
 </section>

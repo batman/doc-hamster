@@ -7,7 +7,7 @@
 
 @section('content')
     <div class="windows" data-windows>
-    <x-window :title="__('documents.trash')" icon="trash" :url="route('documents.trash')" :close="route('documents.index')">
+    <x-window :title="__('documents.trash')" icon="trash" kind="trash" :url="route('documents.trash')" :close="route('documents.index')">
         @if (session('status'))
             <p class="check-ok" role="status">{{ session('status') }}</p>
         @endif
