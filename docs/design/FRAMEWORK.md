@@ -38,8 +38,9 @@ Every `<button>` and `.button` is a button by default. Do not reuse its look for
 | Delete | `<button class="button-danger">` | Delete only |
 | Small | add `button-small` | 40 px instead of 48 px, e.g. in list rows |
 | Icon | `<button class="icon-button" aria-label="…" data-tooltip="…">` | Square, icon only, always with tooltip |
+| Group | `<div class="button-group" role="group" aria-label="…">` around buttons | Buttons side by side (e.g. view choice); rounded only outside, the chosen one `aria-pressed="true"` |
 
-48 px high (small 40 px), 10 px corners, semi-bold, no letter spacing, light shadow that presses in on click, orange focus ring for the keyboard, faded when disabled. A link stays underlined text and never looks like a button.
+48 px high (small 40 px), 10 px corners (icon buttons too, link or button), semi-bold, no letter spacing, light shadow that presses in on click, orange focus ring for the keyboard, faded when disabled. A link stays underlined text and never looks like a button.
 
 ## 3. Form fields, cards, lists, toasts, dialogs
 
@@ -65,6 +66,9 @@ Every `<button>` and `.button` is a button by default. Do not reuse its look for
 - **Dropdown** – `<div class="dropdown"><button type="button" class="icon-button" aria-expanded="false">…</button><div class="dropdown-panel" hidden>…</div></div>`. Works in every window, also in windows loaded later and several side by side; a click outside, on an entry or Escape closes it. A tag filter (`form.dropdown[data-kind="filter"]`) only filters the list of its own window.
 - **"⋯" menu** – `<x-more-menu><a class="menu-item" href="…" data-window><x-icon name="pencil" /><span>Bearbeiten</span></a>…</x-more-menu>`: entries with icon and text; an entry with `data-window` opens its target as a window on the right. Fits in a window's `actions`.
 - **Sortable list** – `<ul class="pick-list" data-sortable>` with rows `<li class="pick-row is-static" data-id="…"><button type="button" class="pick-handle" aria-label="Verschieben"><x-icon name="grip-vertical" /></button>…</li>`. The **whole row** is the grip: with the mouse it lifts after a few pixels, with a finger after a short hold (a quick swipe still scrolls; the handle lifts at once). The row hangs on the pointer, a dashed placeholder keeps its old place (nothing jumps), an orange bar shows where it lands, near the edge the list scrolls along; on release it glides to the bar, Escape puts it back. A short click still opens the row. Keyboard on the handle: Space picks up, arrow keys move, Space drops, Escape puts back. Afterwards `DocHamster.on('list:sorted', ({ list, ids }) => …)` gets the list and the row ids in their new order; **the module saves**.
+- **Icon tile** – `<span class="icon-tile"><x-icon … /></span>` in a row: 38 px square, 8 px corners, 22 px icon, spans both lines; light tint of the row colour (`--folder`), otherwise orange.
+- **Row hover** – every list row (pick rows, table rows, menu and nav items) highlights with rounded corners (`--row-radius`, 8 px).
+- **Colour picker** – `<x-color-picker name="color" :value="…" :allow-none :allow-own />`: the organisation's palette (Einstellungen → Farben, 20 colours to start), optionally "keine Farbe" and an own colour. Notes, folders and tags all use it; an item keeps its hex when the palette changes.
 - **Row colour** – a row's icon takes the record's colour: set `--row-color` on the row (or a class that sets `--folder`), otherwise orange.
 - **Tabs** – switch between views of one area:
   ```blade
@@ -86,13 +90,15 @@ Every `<button>` and `.button` is a button by default. Do not reuse its look for
 
 ## 5. Window system
 
+- **Search in the head** – `<x-window search="Placeholder">`: a small search field in the head; typing reloads the window body with `?q=…`, the module reads `q`.
+- **Progress dialog** – a dialog without `data-dialog` (not closable) with a `<progress>` and a step line, for long server work (update install).
+
 The general logic of the app (points 22, 24, 40, PO 2026-11-08): **every window is an area of its own** – it scrolls by itself and closes by itself, without touching the others.
 
 - A link with `data-window` in a window **closes every window right of that window**, makes that window **narrow** (a strip in the history on the left) and opens the new window on the right. A target already in the history just opens again.
 - A click on a strip makes that window **wide again – nothing else changes**: no other window gets narrow for it.
 - **Pin:** a window made wide again from its strip is **pinned**: opening something from it leaves it wide (everything right of it still closes). The pin needle in the head (left of the X) shows it – outlined when free, filled orange when pinned – and switches it; a pinned window's strip shows a small needle too.
 - **Strip:** like the settings strips – the unfold arrow on top on the head line, then icon and title turned by 90°, the pin mark, the small X.
-- **Fold arrow:** at the right end of the head, `<` like the settings arrows: the window becomes a strip and loses its pin; the others share the room. Shown only while another window is wide too (one window always stays wide); not on phones.
 - **Head:** title, the module's buttons (`actions`, small 36 px icon buttons), pin, X – all on one line, the line of the settings column heads; a fixed gap of 1rem to the content.
 - All wide windows **share the width**, each at least its minimum width (default 30rem, per window with the `min` prop). Too little room: the row scrolls sideways; the window just opened or opened again scrolls into view.
 - The **X** in a window's head closes just that window; the small X on a strip removes it from the history. If no wide window is left, the nearest strip opens. A window without a close target (`close` prop) can't be closed – the root of a module.
