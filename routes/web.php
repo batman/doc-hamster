@@ -62,8 +62,13 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::get('files/{id}/thumb', [DocumentController::class, 'thumb'])->name('documents.thumb');
     Route::get('tags.css', [TagController::class, 'css'])->name('tags.css');
     // Text recognition set-up and browser fallback (point 18).
+    Route::get('settings/ocr', [OcrController::class, 'show'])->middleware('can:settings.manage')->name('ocr.show');
     Route::post('settings/ocr', [OcrController::class, 'setup'])->middleware('can:settings.manage')->name('ocr.setup');
+    Route::post('settings/ocr/rerun', [OcrController::class, 'rerun'])->middleware('can:settings.manage')->name('ocr.rerun');
+    Route::post('documents/{id}/ocr', [OcrController::class, 'redo'])->middleware('can:documents.edit')->name('ocr.redo');
+    Route::get('ocr/status', [OcrController::class, 'status'])->name('ocr.status');
     Route::get('ocr/next', [OcrController::class, 'next'])->name('ocr.next');
+    Route::post('ocr/{id}/progress', [OcrController::class, 'progress'])->middleware('throttle:60,1')->name('ocr.progress');
     Route::get('ocr/image/{id}', [OcrController::class, 'image'])->name('ocr.image');
     Route::post('ocr/{id}', [OcrController::class, 'store'])->middleware('throttle:60,1')->name('ocr.store');
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');

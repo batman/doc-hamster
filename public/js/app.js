@@ -2416,6 +2416,7 @@
                 langPath: base + '/lang',
                 gzip: false,
                 workerBlobURL: false,
+                logger: m => document.dispatchEvent(new CustomEvent('dh:ocr-progress', { detail: m })),
             });
         }
         return engine;
@@ -2466,17 +2467,24 @@
         const res = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
         if (res.status !== 200) return false;
         const job = await res.json();
+        const worker = await getEngine();
+        document.dispatchEvent(new CustomEvent('dh:ocr-job', { detail: job }));
+        const body = new FormData();
         try {
             const text = job.type === 'application/pdf'
                 ? await readPdf(job.file)
-                : (await (await getEngine()).recognize(job.file)).data?.text ?? '';
-            const body = new FormData();
+                : (await worker.recognize(job.file)).data?.text ?? '';
             body.append('text', text);
+        } catch {
+            body.append('failed', '1');
+        }
+        try {
             const saved = await fetch(job.save, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' }, credentials: 'same-origin' });
             if (!saved.ok) skip.push(job.id);
         } catch {
             skip.push(job.id);
         }
+        document.dispatchEvent(new CustomEvent('dh:ocr-job', { detail: null }));
         return true;
     };
 
@@ -3155,4 +3163,132 @@
             box.focus();
         }
     }, { capture: true });
+})();
+/* Package G */
+// Text recognition progress (points 35/43, A21-A24): the spinner on Einstellungen polls while documents wait,
+// the Texterkennung page every 3 s while something waits or runs; the browser fallback reports its percent.
+(() => {
+    const getJson = url => fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+        .then(response => (response.ok ? response.json() : null))
+        .catch(() => null);
+    const token = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+
+    const showNav = waiting => {
+        const spin = document.querySelector('[data-ocr-nav]');
+        if (!spin) {
+            return;
+        }
+        const label = (spin.dataset.label ?? '').replace(':count', String(waiting));
+        spin.dataset.ocrWaiting = String(waiting);
+        spin.dataset.tooltip = label;
+        spin.setAttribute('aria-label', label);
+        spin.hidden = waiting === 0;
+    };
+
+    const setupNav = () => {
+        const spin = document.querySelector('[data-ocr-nav]');
+        if (!spin || document.querySelector('[data-ocr-page]') || Number(spin.dataset.ocrWaiting) === 0) {
+            return;
+        }
+        const timer = setInterval(() => {
+            if (document.hidden) {
+                return;
+            }
+            getJson(spin.dataset.ocrNav).then(data => {
+                if (!data) {
+                    return;
+                }
+                showNav(data.waiting ?? 0);
+                if (!data.waiting) {
+                    clearInterval(timer);
+                }
+            });
+        }, 10000);
+    };
+
+    const setupPage = () => {
+        const page = document.querySelector('[data-ocr-page]');
+        if (!page) {
+            return;
+        }
+        const box = page.querySelector('[data-ocr-progress]');
+        const bar = page.querySelector('[data-ocr-bar]');
+        const text = page.querySelector('[data-ocr-progress-text]');
+        const now = page.querySelector('[data-ocr-current]');
+        const show = data => {
+            const counts = data.counts ?? {};
+            Object.entries(counts).forEach(([key, value]) => {
+                const el = page.querySelector(`[data-ocr-count="${key}"]`);
+                if (el) {
+                    el.textContent = String(value);
+                }
+            });
+            const done = counts.done ?? 0;
+            const total = done + (counts.waiting ?? 0);
+            const busy = (counts.waiting ?? 0) > 0 || !!data.current;
+            box.hidden = !busy;
+            bar.max = Math.max(1, total);
+            bar.value = done;
+            text.textContent = (page.dataset.progressLabel ?? '').replace(':done', String(done)).replace(':total', String(total));
+            const current = data.current;
+            now.hidden = !current;
+            if (current) {
+                const withPercent = current.percent !== null && current.percent !== undefined;
+                const label = withPercent ? page.dataset.currentPercentLabel : page.dataset.currentLabel;
+                now.textContent = (label ?? '').replace(':percent', String(current.percent)).replace(':title', current.title);
+            }
+            showNav(data.waiting ?? 0);
+            return busy;
+        };
+        let busy = page.dataset.ocrBusy === '1';
+        const tick = () => {
+            if (!busy) {
+                return;
+            }
+            if (document.hidden) {
+                setTimeout(tick, 3000);
+                return;
+            }
+            getJson(page.dataset.ocrPage).then(data => {
+                if (data) {
+                    busy = show(data);
+                }
+                setTimeout(tick, 3000);
+            });
+        };
+        setTimeout(tick, 3000);
+    };
+
+    // Browser fallback: send the percent of the current document at most every 2 s.
+    const setupBrowserProgress = () => {
+        let job = null;
+        let last = 0;
+        document.addEventListener('dh:ocr-job', event => {
+            job = event.detail;
+            last = 0;
+        });
+        document.addEventListener('dh:ocr-progress', event => {
+            const m = event.detail;
+            if (!job?.progress || m?.status !== 'recognizing text' || typeof m.progress !== 'number') {
+                return;
+            }
+            const time = Date.now();
+            if (time - last < 2000) {
+                return;
+            }
+            last = time;
+            const body = new FormData();
+            body.append('percent', String(Math.round(m.progress * 100)));
+            fetch(job.progress, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' }, credentials: 'same-origin' })
+                .catch(() => { /* only a progress hint */ });
+        });
+    };
+
+    const start = () => {
+        setupNav();
+        setupPage();
+        setupBrowserProgress();
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+    else start();
 })();

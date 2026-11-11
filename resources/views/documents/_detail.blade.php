@@ -8,6 +8,14 @@
     $booking = $document->matches->map(fn ($match) => $match->transaction->booking_date->format('d.m.Y').' · '.$match->transaction->formattedAmount())->implode(', ');
     $shareUrl = session('share_url');
     $isText = \App\Domain\Documents\TextDocument::isText($file);
+    // Text recognition state (A23): running wins over the stored status.
+    $ocrRunning = (\App\Infrastructure\Environment\OcrProgress::current($document->org_id)['id'] ?? null) === $document->id;
+    $ocrState = $ocrRunning ? 'running' : match ($document->ocr_status) {
+        'done' => 'done',
+        'failed' => 'failed',
+        'unavailable' => 'unavailable',
+        default => 'waiting',
+    };
 @endphp
 <x-window :title="$document->title" icon="file-text" :url="route('documents.show', [$document->id, ...request()->query()])" :close="$close" class="win-detail">
     {{-- Only "Herunterladen" stays a button of its own; everything else is in the ⋯ menu (point 26). --}}
@@ -121,7 +129,18 @@
                 :placeholder="__('documents.note_placeholder')" aria-labelledby="note-{{ $document->id }}" />
         </section>
         <section class="detail-section">
-            <h3 id="ocr-{{ $document->id }}">{{ __('documents.ocr_text') }}</h3>
+            <div class="ocr-head">
+                <h3 id="ocr-{{ $document->id }}">{{ __('documents.ocr_text') }}</h3>
+                @unless ($isText)
+                    <span class="tag-outline">{{ __('ocr.state.'.$ocrState) }}</span>
+                    @if ($ocrState !== 'running')
+                        <form method="post" action="{{ route('ocr.redo', $document->id) }}">
+                            @csrf
+                            <button type="submit" class="button-quiet button-small">{{ __('ocr.redo') }}</button>
+                        </form>
+                    @endif
+                @endunless
+            </div>
             <x-edit-in-place name="ocr_text" :value="$document->ocr_text" :action="route('documents.field', $document->id)" multiline class="edit-in-place-small"
                 :placeholder="__('documents.ocr_placeholder')" aria-labelledby="ocr-{{ $document->id }}" />
         </section>
@@ -133,8 +152,14 @@
         @if ($document->note)
             <section class="detail-section"><h3>{{ __('documents.note') }}</h3><p>{{ $document->note }}</p></section>
         @endif
-        @if ($document->ocr_text)
-            <section class="detail-section"><h3>{{ __('documents.ocr_text') }}</h3><p class="edit-in-place-small is-plain">{{ $document->ocr_text }}</p></section>
+        @if ($document->ocr_text || ! $isText)
+            <section class="detail-section">
+                <div class="ocr-head">
+                    <h3>{{ __('documents.ocr_text') }}</h3>
+                    @unless ($isText)<span class="tag-outline">{{ __('ocr.state.'.$ocrState) }}</span>@endunless
+                </div>
+                @if ($document->ocr_text)<p class="edit-in-place-small is-plain">{{ $document->ocr_text }}</p>@endif
+            </section>
         @endif
     @endcan
 
