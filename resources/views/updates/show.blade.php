@@ -116,14 +116,16 @@
              data-title="{{ __('updates.progress_title') }}"
              data-steps="{{ json_encode(__('updates.progress_steps')) }}"
              data-failed="{{ __('updates.progress_failed') }}"
-             data-timeout="{{ __('updates.progress_timeout') }}">
+             data-timeout="{{ __('updates.progress_timeout') }}"
+             data-unreachable="{{ __('updates.progress_unreachable') }}">
             <div class="dialog update-progress" role="dialog" aria-modal="true" aria-labelledby="update-progress-title">
                 <h2 id="update-progress-title" data-progress-title></h2>
                 <progress max="100" value="0" data-progress-bar></progress>
                 <p role="status" data-progress-step></p>
                 <p class="error" role="alert" data-progress-error hidden></p>
                 <div class="dialog-actions" data-progress-actions hidden>
-                    <button type="button" data-progress-close>{{ __('updates.progress_close') }}</button>
+                    <button type="button" class="button-quiet" data-progress-close>{{ __('updates.progress_close') }}</button>
+                    <button type="button" data-progress-retry hidden>{{ __('updates.progress_retry') }}</button>
                 </div>
             </div>
         </div>

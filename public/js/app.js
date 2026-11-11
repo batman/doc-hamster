@@ -2829,13 +2829,23 @@
             bar.value = percent;
         }
     };
-    const fail = message => {
+    const retry = box.querySelector('[data-progress-retry]');
+    let retryForm = null;
+    const fail = (message, form = null) => {
         errorText.textContent = message;
         errorText.hidden = false;
         actions.hidden = false;
-        actions.querySelector('button').focus();
+        retryForm = form;
+        if (retry) retry.hidden = form === null;
+        (form && retry ? retry : actions.querySelector('[data-progress-close]')).focus();
     };
     box.querySelector('[data-progress-close]').addEventListener('click', () => { box.hidden = true; });
+    // A87: the first request failed – try again from the pop-up instead of the old error page.
+    retry?.addEventListener('click', () => {
+        const form = retryForm;
+        box.hidden = true;
+        if (form) form.requestSubmit();
+    });
 
     const follow = () => {
         const until = Date.now() + 5 * 60 * 1000;
@@ -2890,6 +2900,15 @@
         tick();
     };
 
+    const showUnreachable = (form, status) => {
+        document.querySelectorAll('[data-dialog]').forEach(dialog => { dialog.hidden = true; });
+        box.querySelector('[data-progress-title]').textContent = box.dataset.title.replace(':version', '');
+        percent = 0;
+        bar.value = 0;
+        stepText.textContent = '';
+        box.hidden = false;
+        fail((box.dataset.unreachable || box.dataset.failed).replace(':status', status ? String(status) : '–'), form);
+    };
     document.querySelectorAll('form[data-update-install]').forEach(form => form.addEventListener('submit', event => {
         event.preventDefault();
         const button = form.querySelector('button[type="submit"]');
@@ -2928,7 +2947,14 @@
                         }
                     });
             })
-            .catch(oldWay)
+            .catch(error => {
+                // A wrong password (422) or a redirect with a message: the page shows it, as before.
+                if (!(error instanceof Response) || error.status === 422) {
+                    if (error instanceof Response) oldWay(); else showUnreachable(form, 0);
+                    return;
+                }
+                showUnreachable(form, error.status);
+            })
             .finally(() => {
                 button.disabled = false;
                 button.classList.remove('is-busy');

@@ -60,4 +60,6 @@ return [
     'progress_failed' => 'Die Installation wurde nicht abgeschlossen. Bitte laden Sie die Seite neu und versuchen Sie es noch einmal.',
     'progress_timeout' => 'Die Installation meldet sich nicht mehr. Bitte laden Sie die Seite in ein paar Minuten neu.',
     'progress_close' => 'Schließen',
+    'progress_unreachable' => 'Der Server hat die Installation nicht angenommen (:status). Bitte gleich noch einmal versuchen.',
+    'progress_retry' => 'Erneut versuchen',
 ];

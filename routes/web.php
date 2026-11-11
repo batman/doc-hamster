@@ -69,12 +69,12 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('documents/{id}/ocr', [OcrController::class, 'redo'])->middleware('can:documents.edit')->name('ocr.redo');
     Route::get('ocr/status', [OcrController::class, 'status'])->name('ocr.status');
     Route::get('ocr/next', [OcrController::class, 'next'])->name('ocr.next');
-    Route::post('ocr/{id}/progress', [OcrController::class, 'progress'])->middleware('throttle:60,1')->name('ocr.progress');
+    Route::post('ocr/{id}/progress', [OcrController::class, 'progress'])->name('ocr.progress');
     Route::get('ocr/image/{id}', [OcrController::class, 'image'])->name('ocr.image');
-    Route::post('ocr/{id}', [OcrController::class, 'store'])->middleware('throttle:60,1')->name('ocr.store');
-    Route::post('ocr-engine', [OcrController::class, 'engineError'])->middleware('throttle:10,1')->name('ocr.engine');
+    Route::post('ocr/{id}', [OcrController::class, 'store'])->name('ocr.store');
+    Route::post('ocr-engine', [OcrController::class, 'engineError'])->name('ocr.engine');
     // A69/A74: without cron the open browser works off the queue, one job per call.
-    Route::post('queue/tick', QueueTickController::class)->middleware('throttle:12,1')->name('queue.tick');
+    Route::post('queue/tick', QueueTickController::class)->name('queue.tick');
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::get('settings/{group}', [SettingsController::class, 'group'])->name('settings.group');
     Route::post('documents/{id}/tags', [DocumentController::class, 'updateTags'])->middleware('can:documents.edit')->name('documents.tags');
@@ -107,12 +107,12 @@ Route::middleware(['auth', 'org'])->group(function (): void {
 
     Route::middleware('can:system.update')->group(function (): void {
         Route::get('update', [UpdateController::class, 'show'])->name('updates.show');
-        Route::post('update/check', [UpdateController::class, 'check'])->middleware('throttle:10,1')->name('updates.check');
-        Route::post('update/install', [UpdateController::class, 'install'])->middleware('throttle:10,1')->name('updates.install');
-        Route::post('update/install-main', [UpdateController::class, 'installMain'])->middleware('throttle:10,1')->name('updates.install-main');
+        Route::post('update/check', [UpdateController::class, 'check'])->name('updates.check');
+        Route::post('update/install', [UpdateController::class, 'install'])->name('updates.install');
+        Route::post('update/install-main', [UpdateController::class, 'installMain'])->name('updates.install-main');
         Route::middleware('can:system.update_preview')->group(function (): void {
-            Route::post('update/previews', [UpdateController::class, 'checkPreviews'])->middleware('throttle:10,1')->name('updates.previews');
-            Route::post('update/install-preview', [UpdateController::class, 'installPreview'])->middleware('throttle:10,1')->name('updates.install-preview');
+            Route::post('update/previews', [UpdateController::class, 'checkPreviews'])->name('updates.previews');
+            Route::post('update/install-preview', [UpdateController::class, 'installPreview'])->name('updates.install-preview');
         });
     });
 
@@ -137,7 +137,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('folders', [FolderController::class, 'store'])->name('folders.store');
         Route::post('folders/order', [FolderController::class, 'order'])->name('folders.order');
         Route::post('folders/import', [FolderImportController::class, 'start'])->middleware('can:documents.upload')->name('folders.import');
-        Route::post('folders/import/{id}/file', [FolderImportController::class, 'file'])->middleware(['can:documents.upload', 'throttle:600,1'])->name('folders.import.file');
+        Route::post('folders/import/{id}/file', [FolderImportController::class, 'file'])->middleware('can:documents.upload')->name('folders.import.file');
         Route::post('folders/{id}', [FolderController::class, 'update'])->name('folders.update');
         Route::post('folders/{id}/delete', [FolderController::class, 'destroy'])->name('folders.destroy');
     });
