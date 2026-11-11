@@ -20,5 +20,6 @@ return [
         'back' => 'Back',
         'pin' => 'Pin – stays wide',
         'unpin' => 'Pinned – unpin',
+        'search_clear' => 'Clear the search',
     ],
 ];

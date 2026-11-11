@@ -20,5 +20,6 @@ return [
         'back' => 'Zurück',
         'pin' => 'Anpinnen – bleibt groß',
         'unpin' => 'Angepinnt – lösen',
+        'search_clear' => 'Suche leeren',
     ],
 ];
