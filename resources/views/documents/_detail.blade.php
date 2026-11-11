@@ -52,10 +52,19 @@
         @else
             <pre class="plain-text-view text-doc">{{ $textContent }}</pre>
         @endif
+    @elseif ($file?->mime === 'application/pdf')
+        {{-- PDFs are drawn sharp with pdf.js (app.js "Document viewer"); the preview image stays if that fails (point 33). --}}
+        <span class="thumb-frame detail-doc" tabindex="0" data-pdf="{{ route('documents.file', $file->id) }}">
+            @if ($file->thumb_path)
+                <img class="thumb" src="{{ route('documents.thumb', $file->id) }}" alt="" draggable="false">
+            @else
+                <x-icon :name="$file->typeIcon()" />
+            @endif
+        </span>
     @elseif ($file)
         @include('documents._thumb', ['frameClass' => 'detail-doc'])
     @endif
-    @if ($file?->isImage() || $file?->thumb_path)
+    @if ($file?->isImage() || $file?->thumb_path || $file?->mime === 'application/pdf')
         {{-- Zoom bar for the viewer above (app.js "Document viewer"): wheel, slider, box zoom and box copy. --}}
         <div class="doc-zoom" data-doc-zoom data-label-zoom="{{ __('documents.zoom_in_area') }}" data-label-copy="{{ __('documents.copy_area') }}" data-label-copied="{{ __('documents.copied') }}">
             {{-- Two modes (point 25): Bewegen pans, Markieren draws a box; Bewegen is the default. --}}
@@ -65,6 +74,16 @@
             </div>
             <input type="range" min="25" max="400" step="1" value="100" aria-label="{{ __('documents.zoom') }}" data-zoom-range title="{{ __('documents.zoom_reset') }}">
             <button type="button" class="doc-zoom-value" data-zoom-reset aria-label="{{ __('documents.zoom_reset') }}" data-tooltip="{{ __('documents.zoom_reset') }}"><output data-zoom-value>100 %</output></button>
+            @if ($file?->mime === 'application/pdf')
+                {{-- Pages of a PDF (A19); app.js shows them only when there is more than one. --}}
+                <div class="doc-pages" data-doc-pages data-label="{{ __('documents.page_of') }}" hidden>
+                    <div class="button-group" role="group" aria-label="{{ __('documents.pages') }}">
+                        <button type="button" class="icon-button button-small" data-page-step="-1" aria-label="{{ __('documents.page_prev') }}" data-tooltip="{{ __('documents.page_prev') }}"><x-icon name="chevron-left" /></button>
+                        <button type="button" class="icon-button button-small" data-page-step="1" aria-label="{{ __('documents.page_next') }}" data-tooltip="{{ __('documents.page_next') }}"><x-icon name="chevron-right" /></button>
+                    </div>
+                    <output data-page-label></output>
+                </div>
+            @endif
         </div>
     @endif
 

@@ -14,6 +14,7 @@ DocHamster is MIT-licensed. Rules for third-party software: **D-022** in [`colla
 | `laravel/tinker` | 3.x | MIT | REPL for operators (`php artisan tinker`), part of the Laravel skeleton |
 | `bacon/bacon-qr-code` | 3.x | BSD-2-Clause | QR codes for connecting a phone (#37) |
 | jsQR (vendored in `public/js/vendor/`) | 1.4.0 | Apache-2.0 | Reads QR codes with the phone camera, not every browser can do it natively (#37) |
+| pdf.js (`pdfjs-dist` legacy build + JBIG2/JPX/ICC decoders, vendored in `public/vendor/pdfjs/`; `.mjs` renamed to `.js`; npm tarball checked against its sha512 integrity) | 6.4.299 | Apache-2.0 (decoders: BSD-3-Clause, BSD-2-Clause, MIT – licence files alongside) | Sharp PDF pages in the viewer, PDFs in the browser text recognition (points 33, 34) |
 | Tabler Icons (only the used SVGs, vendored in `resources/icons/tabler/`) | 3.49.0 | MIT | Icons, inlined via `<x-icon>` so they take the text colour |
 
 Transitive runtime packages (77 in total at P1-1, mostly Symfony and Laravel components): all MIT, BSD-3-Clause or Apache-2.0; two are dual-licensed `BSD-3-Clause OR GPL-2.0-only OR GPL-3.0-only` and used under BSD-3-Clause.
