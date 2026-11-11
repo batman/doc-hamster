@@ -49,7 +49,7 @@
                         {{-- Everything else (people, roles, tags, bank import, export, update, phone test) sits under Einstellungen. --}}
                         @foreach ([
                             ['home', 'home', 'home.title', null, ['home', 'notes.*'], null],
-                            ['documents.index', 'receipt', 'documents.title', null, ['documents.*', 'folders.*'], null],
+                            ['documents.index', 'file-text', 'documents.title', null, ['documents.*', 'folders.*'], null],
                             ['print-tray.index', 'printer', 'print_tray.title', 'documents.upload', ['print-tray.*'], \App\Http\Badges::PRINT_TRAY],
                             ['bank.index', 'building-bank', 'bank.title', 'banking.import', ['bank.index', 'bank.show'], null],
                             ['settings.index', 'settings', 'settings.title', null, ['settings.*', 'members.*', 'roles.*', 'tags.*', 'exports.*', 'updates.*', 'bank.import*', 'bank.accounts.*', 'phone-check*'], null],

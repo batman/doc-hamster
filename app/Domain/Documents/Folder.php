@@ -57,7 +57,7 @@ final class Folder extends Model
     /** The symbol to draw: the chosen one, else a receipt for the default folder and a folder for the others. */
     public function iconName(): string
     {
-        return is_string($this->icon) && in_array($this->icon, self::ICONS, true) ? $this->icon : ($this->is_default ? 'receipt' : 'folder');
+        return is_string($this->icon) && in_array($this->icon, self::ICONS, true) ? $this->icon : ($this->is_default ? 'file-text' : 'folder');
     }
 
     /** CSS class that gives the symbol its colour (rules come from tags.css; the CSP allows no inline styles). */

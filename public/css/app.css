@@ -343,6 +343,11 @@ input[type="radio"] { width: 1.25rem; height: 1.25rem; min-height: 0; max-width:
 .view-details th { padding: .5rem .75rem; text-align: left; font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--border); }
 .view-details td { padding: .5rem .75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .view-details tbody tr:hover { background: var(--surface); }
+/* Point 22: every list row's hover background has rounded corners (framework rule for all lists) */
+:root { --row-radius: 8px; }
+.view-list li, .pick-row, .settings-link, .col-item, .menu-item, .nav-item, .folder-link { border-radius: var(--row-radius); }
+.view-details tbody td:first-child { border-top-left-radius: var(--row-radius); border-bottom-left-radius: var(--row-radius); }
+.view-details tbody td:last-child { border-top-right-radius: var(--row-radius); border-bottom-right-radius: var(--row-radius); }
 .view-details .thumb { width: 2.5rem; height: 3rem; margin-right: .75rem; vertical-align: middle; }
 .view-list { margin: 1rem 0 0; padding: 0; list-style: none; }
 .view-list li { display: flex; align-items: center; gap: .75rem; padding: .35rem .5rem; border-bottom: 1px solid var(--border); }

@@ -9,7 +9,7 @@
     <div class="windows" data-windows>
     {{-- Folders on the window system (PO, 2026-11-07; FRAMEWORK.md: the main menu has no sub-items): Dokumente lists the top folders
          and the Papierkorb as rows, a folder opens as a window on the right with its subfolders and receipts. --}}
-    <x-window :title="$openFolder?->name ?? __('documents.title')" :icon="$openFolder?->iconName() ?? 'receipt'"
+    <x-window :title="$openFolder?->name ?? __('documents.title')" :icon="$openFolder?->iconName() ?? 'file-text'"
               :url="route('documents.index', request()->except('page'))" :close="$openFolder ? route('documents.index') : null"
               :upload="$openFolder ? 'folder='.$openFolder->id : null" :class="$openFolder?->colorClass()"
               :search="__('documents.search')">

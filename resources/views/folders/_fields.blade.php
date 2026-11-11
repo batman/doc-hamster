@@ -34,7 +34,7 @@
     <legend>{{ __('folders.icon') }}</legend>
     <div class="folder-icons">
         @foreach (\App\Domain\Documents\Folder::ICONS as $choice)
-            <label class="folder-icon-choice" title="{{ __('folders.icons.'.$choice) }}"><input type="radio" name="icon" value="{{ $choice }}" @checked(($icon ?? ($locked ? 'receipt' : 'folder')) === $choice) aria-label="{{ __('folders.icons.'.$choice) }}"><span><x-icon :name="$choice" /></span></label>
+            <label class="folder-icon-choice" title="{{ __('folders.icons.'.$choice) }}"><input type="radio" name="icon" value="{{ $choice }}" @checked(($icon ?? ($locked ? 'file-text' : 'folder')) === $choice) aria-label="{{ __('folders.icons.'.$choice) }}"><span><x-icon :name="$choice" /></span></label>
         @endforeach
     </div>
 </fieldset>
