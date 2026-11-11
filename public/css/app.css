@@ -1453,3 +1453,18 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
 .note-more { margin-top: 1rem; }
 .note-more > summary { display: inline-flex; align-items: center; min-height: 2.25rem; cursor: pointer; font-weight: 600; color: var(--muted); }
 .note-more > summary:hover { color: var(--text); }
+
+/* Package L */
+/* Point 44: a drag edge on the right of every wide window except the one that fills the rest (is-fill, set by
+   app.js); same look as the wall right of the menu. A dragged width (--win-width) holds, never below --win-min. */
+.win-edge { display: none; }
+.windows.can-size > .win:not(.is-min):not(.is-fill) > .win-edge { display: block; position: absolute; top: 0; right: -5px; z-index: 6; width: 10px; height: 100%; cursor: col-resize; }
+.win-edge::after { content: ""; position: absolute; top: 0; bottom: 0; left: 4px; width: 3px; background: var(--primary); opacity: 0; transition: opacity .15s; }
+.win-edge:hover::after, .win-edge:focus-visible::after, .win-edge.is-active::after { opacity: 1; }
+.win-edge:focus-visible { outline: none; box-shadow: none; }
+.windows.can-size > .win.has-width:not(.is-min):not(.is-fill) { flex: 0 0 var(--win-width); }
+.windows.is-sizing { cursor: col-resize; user-select: none; }
+@media (max-width: 63.99rem) {
+    .windows.can-size > .win > .win-edge { display: none; }
+    .windows.can-size > .win.has-width:not(.is-min):not(.is-fill) { flex: 1 1 0; }
+}

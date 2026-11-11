@@ -21,7 +21,7 @@ beforeEach(function (): void {
 });
 
 it('keeps the chosen view per person and shows the receipt in every view', function (string $view, string $marker): void {
-    $this->actingAs($this->admin->user)->from('/documents')->post('/documents/view', ['view' => $view])->assertRedirect('/documents');
+    $this->actingAs($this->admin->user)->from('/documents')->post('/documents/view', ['view' => $view])->assertRedirect('/documents?view='.$view);
 
     expect($this->admin->user->fresh()->receipt_view)->toBe($view);
     $this->get('/documents')->assertOk()->assertSee($marker, false)->assertSee('bon.jpg');
@@ -33,6 +33,16 @@ it('keeps the chosen view per person and shows the receipt in every view', funct
     ['timeline', 'class="timeline"'],
     ['calendar', 'class="calendar"'],
 ]);
+
+it('keeps the view per window in its address; a window without one starts with the last choice', function (): void {
+    $this->actingAs($this->admin->user)->post('/documents/view', ['view' => 'list', 'back' => url('/documents?folder=x&page=2')])
+        ->assertRedirect('/documents?folder=x&view=list');
+    $this->post('/documents/view', ['view' => 'list', 'back' => 'https://evil.example.com/'])->assertRedirect(route('documents.index').'?view=list');
+
+    $this->get('/documents?view=timeline')->assertOk()->assertSee('class="timeline"', false);
+    $this->get('/documents')->assertOk()->assertSee('class="view-list"', false);
+    expect($this->admin->user->fresh()->receipt_view)->toBe('list');
+});
 
 it('refuses unknown views and moves the calendar by month', function (): void {
     $this->actingAs($this->admin->user)->post('/documents/view', ['view' => 'gross'])->assertSessionHasErrors('view');

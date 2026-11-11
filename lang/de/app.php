@@ -28,5 +28,7 @@ return [
         'minimise' => 'Minimieren',
         'unpin' => 'Angepinnt – lösen',
         'search_clear' => 'Suche leeren',
+        'resize' => 'Fensterbreite ändern',
+        'resize_hint' => 'Ziehen ändert die Breite, Doppelklick setzt zurück',
     ],
 ];
