@@ -2517,20 +2517,25 @@
 // page is visible and idle, not on cellular/data saver/low battery, and not
 // while paused in the menu (point 57, localStorage dh.ocr.paused, every tab).
 // Point 56: three passes, the server hands out the lowest first; each pass
-// replaces the text of the one before.
+// replaces the text of the one before. Point 58/A60/A63: every pass has a time
+// limit per document; A61: an engine that does not start is reported and
+// retried after 5 minutes instead of spinning.
 (() => {
   const startOcr = () => {
     const base = document.body?.dataset.ocrBrowser;
     const nextUrl = document.body?.dataset.ocrNext;
     if (!base || !nextUrl || typeof Worker === 'undefined' || typeof WebAssembly === 'undefined') return;
-    // side = long image side in px (0 = original), scale = PDF page scale, pause after each document.
+    // side = long image side in px (0 = original), scale = PDF page scale, pause after each document, limit = time per document.
     const PASSES = {
-        1: { side: 1000, scale: 1, pause: 0 },
-        2: { side: 2000, scale: 2, pause: 5000 },
-        3: { side: 0, scale: 3.5, pause: 30000 },
+        1: { side: 1000, scale: 1, pause: 0, limit: 2 * 60000 },
+        2: { side: 2000, scale: 2, pause: 5000, limit: 5 * 60000 },
+        3: { side: 0, scale: 3.5, pause: 30000, limit: 10 * 60000 },
     };
     const MAX_PIXELS = 24e6;
     const WAIT_MS = 60000;
+    const ENGINE_MS = 60000;
+    const ENGINE_RETRY_MS = 5 * 60000;
+    const engineUrl = document.body?.dataset.ocrEngine;
     const PAUSE_KEY = 'dh.ocr.paused';
     const skip = [];
     let engine = null;
@@ -2568,19 +2573,43 @@
         s.onerror = reject;
         document.head.append(s);
     }));
+    // Rejects after ms; the timer is cleared either way.
+    const within = (promise, ms, reason) => {
+        let timer = null;
+        const limit = new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(reason)), ms); });
+        return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
+    };
+    // A61: the engine start has 60 s; a worker that comes up later is closed again.
     const getEngine = async () => {
-        if (!engine) {
+        if (engine) return engine;
+        let late = false;
+        const create = (async () => {
             await loadLib();
-            engine = await window.Tesseract.createWorker('deu+eng', 1, {
+            return window.Tesseract.createWorker('deu+eng', 1, {
                 workerPath: base + '/worker.min.js',
                 corePath: base + '/core',
                 langPath: base + '/lang',
                 gzip: false,
                 workerBlobURL: false,
                 logger: m => document.dispatchEvent(new CustomEvent('dh:ocr-progress', { detail: m })),
+                errorHandler: () => { /* surfaces as a rejected job */ },
             });
+        })();
+        create.then(w => { if (late) w.terminate().catch(() => {}); }, () => {});
+        try {
+            engine = await within(create, ENGINE_MS, 'timeout 60 s');
+        } catch (e) {
+            late = true;
+            throw e;
         }
         return engine;
+    };
+    const reportEngine = error => {
+        if (!engineUrl) return;
+        const body = new FormData();
+        body.append('reason', String(error?.message || error || 'unknown').slice(0, 300));
+        fetch(engineUrl, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' }, credentials: 'same-origin' })
+            .catch(() => { /* only a hint */ });
     };
     const stop = async () => {
         if (!engine) return;
@@ -2600,7 +2629,7 @@
     document.addEventListener('dh:ocr-pause', event => onPause(event.detail === true));
     window.addEventListener('storage', event => { if (event.key === PAUSE_KEY) onPause(event.newValue === '1'); });
     const token = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
-    const check = run => { if (run.aborted) throw new Error('paused'); };
+    const check = run => { if (run.aborted || run.timedOut) throw new Error('stopped'); };
     // Images: scaled down to the pass's long side (pass 3: original), capped for memory.
     const readImage = async (url, side, run) => {
         if (typeof createImageBitmap === 'undefined') return (await (await getEngine()).recognize(url)).data?.text ?? '';
@@ -2667,17 +2696,31 @@
         if (res.status !== 200) return null;
         const job = await res.json();
         const pass = PASSES[job.pass] ? job.pass : 3;
-        const run = { aborted: false };
+        // A61: no engine, no document – the reason goes to the server, the next try comes in 5 minutes.
+        try {
+            await getEngine();
+        } catch (e) {
+            reportEngine(e);
+            await stop();
+            return ENGINE_RETRY_MS;
+        }
+        const run = { aborted: false, timedOut: false };
         running = run;
         document.dispatchEvent(new CustomEvent('dh:ocr-job', { detail: job }));
         const body = new FormData();
         body.append('pass', String(pass));
         try {
-            const text = job.type === 'application/pdf'
-                ? await readPdf(job.file, PASSES[pass].scale, run)
-                : await readImage(job.file, PASSES[pass].side, run);
-            body.append('text', text);
-        } catch {
+            const read = job.type === 'application/pdf'
+                ? readPdf(job.file, PASSES[pass].scale, run)
+                : readImage(job.file, PASSES[pass].side, run);
+            read.catch(() => {});
+            body.append('text', await within(read, PASSES[pass].limit, 'timeout'));
+        } catch (e) {
+            // Point 58: over the time limit the engine is closed, so the computer gets its resources back.
+            if (e?.message === 'timeout') {
+                run.timedOut = true;
+                await stop();
+            }
             body.append('failed', '1');
         }
         running = null;
@@ -3409,9 +3452,14 @@
         if (count) {
             count.textContent = (nav.dataset.label ?? '').replace(':count', String(open)) + (paused ? ` · ${pausedLabel}` : '');
         }
+        // A61: why the browser engine does not start.
+        if (data.total !== undefined) {
+            nav.dataset.engineError = data.engine_error ? (nav.dataset.engineErrorLabel ?? '').replace(':reason', data.engine_error) : '';
+        }
+        const engineError = nav.dataset.engineError ?? '';
         const icon = nav.querySelector('[data-ocr-icon]');
         if (icon) {
-            const tip = (nav.dataset.tooltipLabel ?? '').replace(':count', String(open)) + (paused ? ` · ${pausedLabel}` : '');
+            const tip = (nav.dataset.tooltipLabel ?? '').replace(':count', String(open)) + (paused ? ` · ${pausedLabel}` : '') + (engineError ? ` · ${engineError}` : '');
             icon.dataset.tooltip = tip;
             icon.setAttribute('aria-label', tip);
         }
@@ -3543,6 +3591,56 @@
         setTimeout(tick, 3000);
     };
 
+    // A65/A68: "Erkennung auf dem Server einrichten" runs in the request; a progress dialog (not closable) meanwhile.
+    const setupServerOcr = () => {
+        const form = document.querySelector('form[data-ocr-setup]');
+        const dialog = document.querySelector('[data-ocr-setup-progress]');
+        if (!form || !dialog) {
+            return;
+        }
+        form.addEventListener('submit', event => {
+            event.preventDefault();
+            dialog.hidden = false;
+            const fail = () => {
+                const bar = dialog.querySelector('[data-progress-bar]');
+                if (bar) bar.hidden = true;
+                const step = dialog.querySelector('[data-progress-step]');
+                if (step) step.textContent = dialog.dataset.failed ?? '';
+                const actions = dialog.querySelector('[data-progress-actions]');
+                if (actions) actions.hidden = false;
+            };
+            dialog.querySelector('[data-progress-close]')?.addEventListener('click', () => location.reload(), { once: true });
+            fetch(form.action, { method: 'POST', body: new FormData(form), headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+                .then(response => (response.ok ? location.reload() : fail()))
+                .catch(fail);
+        });
+    };
+
+    // A69/A74: without cron (body[data-queue-tick]) the open, visible app works off the queue, one job per call:
+    // every 10 s while jobs wait, every minute otherwise; stops once the server reports cron.
+    const setupQueueTick = () => {
+        const url = document.body?.dataset.queueTick;
+        if (!url) {
+            return;
+        }
+        const tick = () => {
+            if (document.hidden) {
+                setTimeout(tick, 10000);
+                return;
+            }
+            fetch(url, { method: 'POST', headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' }, credentials: 'same-origin' })
+                .then(response => (response.ok ? response.json() : null))
+                .catch(() => null)
+                .then(data => {
+                    if (data?.cron) {
+                        return;
+                    }
+                    setTimeout(tick, data && data.waiting > 0 ? 10000 : 60000);
+                });
+        };
+        setTimeout(tick, 10000);
+    };
+
     // Browser fallback: send the percent of the current document at most every 2 s.
     const setupBrowserProgress = () => {
         let job = null;
@@ -3572,6 +3670,8 @@
         setupNav();
         setupPage();
         setupBrowserProgress();
+        setupServerOcr();
+        setupQueueTick();
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
     else start();

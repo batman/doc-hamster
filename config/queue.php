@@ -44,7 +44,7 @@ return [
             // D-020: jobs run on the queues 'local' (no outbound network) or
             // 'net' (the only way out); see App\Queue\QueueName.
             'queue' => env('DB_QUEUE', 'local'),
-            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 90),
+            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 600),
             'after_commit' => false,
         ],
 

@@ -15,14 +15,22 @@ use Throwable;
 /**
  * Text recognition without root (point 18): the system tools (tesseract +
  * ocrmypdf on the PATH) win; otherwise an app-owned portable Tesseract in
- * storage/app/ocr (A17); otherwise tesseract.js in the browser (A16).
+ * storage/app/ocr (A17); otherwise tesseract.js in the browser (A16), shipped
+ * in public/vendor/tesseract so it works right after an update (A64/A72).
  * Every download is pinned and checked against a hard-coded SHA-256.
  */
 final class LocalOcr
 {
     public const string STATUS_KEY = 'ocr.local.status';
 
-    private const string MODE_KEY = 'ocr.mode';
+    /** v2: the browser files ship with the app now, an older cached "none" must not stay (A64). */
+    public const string MODE_KEY = 'ocr.mode.v2';
+
+    /** Why the browser engine could not start (A61), reported by the browser. */
+    private const string BROWSER_ERROR_KEY = 'ocr.browser.error';
+
+    /** A set-up still "running" after this long died with its request or worker (A66). */
+    private const int RUNNING_MAX_SECONDS = 600;
 
     /** Browsers can't decode these; the server converts them later. */
     public const array BROWSER_SKIP_MIMES = ['image/heic', 'image/heif'];
@@ -39,12 +47,15 @@ final class LocalOcr
         'eng.traineddata' => ['https://github.com/tesseract-ocr/tessdata_fast/raw/4.1.0/eng.traineddata', '7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2'],
     ];
 
-    /** tesseract.js 5.1.1 + tesseract.js-core 5.1.1, served from public/vendor/tesseract (no CDN at runtime). */
+    /**
+     * tesseract.js 5.1.1 + tesseract.js-core 5.1.1 (lstm, plain and SIMD wasm builds) and the TESSDATA files
+     * under lang/, shipped in public/vendor/tesseract (no CDN at runtime, docs/DEPENDENCIES.md).
+     */
     private const array BROWSER = [
-        'tesseract.min.js' => ['https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js', 'a8e29918d098b2b06e1012bdaeffb4aec0445c5d5654709023e0bd1f442a80e8'],
-        'worker.min.js' => ['https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js', 'aca1229639fc9907d86f96e825955a2b7c5716d17f3bc3acd71f9c7ab66181fc'],
-        'core/tesseract-core-simd-lstm.wasm.js' => ['https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1/tesseract-core-simd-lstm.wasm.js', 'ce20eda9533cbed1e6c2b4276fbae1e0adc61b6754b5513084be601787b457cf'],
-        'core/tesseract-core-lstm.wasm.js' => ['https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1/tesseract-core-lstm.wasm.js', '8f04aa0cc81e7bde33f80e92fa01a7a665f0b4884d098acf5de9c7104a11dfaa'],
+        'tesseract.min.js',
+        'worker.min.js',
+        'core/tesseract-core-simd-lstm.wasm.js',
+        'core/tesseract-core-lstm.wasm.js',
     ];
 
     public function __construct(private readonly Doctor $doctor) {}
@@ -61,7 +72,7 @@ final class LocalOcr
 
     public function browserReady(): bool
     {
-        foreach (array_merge(array_keys(self::BROWSER), array_map(static fn (string $f): string => 'lang/'.$f, array_keys(self::TESSDATA))) as $file) {
+        foreach (array_merge(self::BROWSER, array_map(static fn (string $f): string => 'lang/'.$f, array_keys(self::TESSDATA))) as $file) {
             if (! is_file($this->browserDir().'/'.$file)) {
                 return false;
             }
@@ -84,19 +95,46 @@ final class LocalOcr
     }
 
     /**
-     * @return array{state?: string, reason?: string, browser?: string}
+     * @return array{state?: string, reason?: string, started?: int}
      */
     public function status(): array
     {
         $status = Cache::get(self::STATUS_KEY);
+        if (! is_array($status)) {
+            return [];
+        }
+        // A66: a set-up that died (killed request or worker) shows the button again after 10 minutes.
+        if (($status['state'] ?? null) === 'running' && time() - (int) ($status['started'] ?? 0) > self::RUNNING_MAX_SECONDS) {
+            Cache::forget(self::STATUS_KEY);
 
-        return is_array($status) ? $status : [];
+            return [];
+        }
+
+        return $status;
     }
 
     public function markRunning(): void
     {
-        Cache::forever(self::STATUS_KEY, ['state' => 'running']);
+        Cache::forever(self::STATUS_KEY, ['state' => 'running', 'started' => time()]);
         Cache::forget(self::MODE_KEY);
+    }
+
+    /** A61: the browser engine did not start (timeout, wasm blocked …); shown on the settings page and in the menu. */
+    public function reportBrowserError(string $reason): void
+    {
+        Cache::put(self::BROWSER_ERROR_KEY, mb_substr(trim($reason), 0, 200), now()->addDay());
+    }
+
+    public function browserError(): ?string
+    {
+        $error = Cache::get(self::BROWSER_ERROR_KEY);
+
+        return is_string($error) && $error !== '' ? $error : null;
+    }
+
+    public function clearBrowserError(): void
+    {
+        Cache::forget(self::BROWSER_ERROR_KEY);
     }
 
     /**
@@ -133,15 +171,15 @@ final class LocalOcr
     }
 
     /**
-     * Installs the portable Tesseract; if that fails here, fetches the
-     * browser fallback instead. Stores the outcome for the settings row.
+     * Installs the portable Tesseract (A65: "Erkennung auf dem Server einrichten") and stores the outcome for the
+     * settings page. The browser fallback ships with the app and needs nothing here.
      *
      * @param  Closure(string, string, string): void  $fetch  downloads url → target and checks the SHA-256 (lives in a net job, D-020)
-     * @return array{state?: string, reason?: string, browser?: string}
+     * @return array{state?: string, reason?: string, started?: int}
      */
     public function setUp(Closure $fetch): array
     {
-        $lock = Cache::lock('ocr.setup', 900);
+        $lock = Cache::lock('ocr.setup', self::RUNNING_MAX_SECONDS);
         if (! $lock->get()) {
             return $this->status();
         }
@@ -152,14 +190,6 @@ final class LocalOcr
                 $this->installApp($fetch);
             } catch (Throwable $e) {
                 $status = ['state' => 'failed', 'reason' => mb_substr($e->getMessage(), 0, 200)];
-            }
-            if ($status['state'] === 'failed' && ! $this->systemAvailable()) {
-                try {
-                    $this->installBrowser($fetch);
-                    $status['browser'] = 'ok';
-                } catch (Throwable $e) {
-                    $status['browser'] = mb_substr($e->getMessage(), 0, 200);
-                }
             }
             Cache::forever(self::STATUS_KEY, $status);
             Cache::forget(self::MODE_KEY);
@@ -183,7 +213,14 @@ final class LocalOcr
         $dir = $this->dir();
         File::ensureDirectoryExists($this->tessdataDir());
         foreach (self::TESSDATA as $file => [$url, $sha]) {
-            $fetch($url, $sha, $this->tessdataDir().'/'.$file);
+            // The same files ship for the browser: copied, not downloaded, when they are intact.
+            $shipped = $this->browserDir().'/lang/'.$file;
+            $target = $this->tessdataDir().'/'.$file;
+            if (is_file($shipped) && hash_equals($sha, (string) hash_file('sha256', $shipped))) {
+                File::copy($shipped, $target);
+            } else {
+                $fetch($url, $sha, $target);
+            }
         }
 
         $image = $dir.'/tesseract.AppImage';
@@ -209,26 +246,6 @@ final class LocalOcr
         if (! str_contains($langs->getOutput().$langs->getErrorOutput(), 'deu')) {
             throw new RuntimeException('Sprachdaten nicht gefunden');
         }
-    }
-
-    /** @param Closure(string, string, string): void $fetch */
-    public function installBrowser(Closure $fetch): void
-    {
-        $dir = $this->browserDir();
-        foreach (self::BROWSER as $file => [$url, $sha]) {
-            File::ensureDirectoryExists(dirname($dir.'/'.$file));
-            $fetch($url, $sha, $dir.'/'.$file);
-        }
-        File::ensureDirectoryExists($dir.'/lang');
-        foreach (self::TESSDATA as $file => [$url, $sha]) {
-            $local = $this->tessdataDir().'/'.$file;
-            if (is_file($local) && hash_equals($sha, (string) hash_file('sha256', $local))) {
-                File::copy($local, $dir.'/lang/'.$file);
-            } else {
-                $fetch($url, $sha, $dir.'/lang/'.$file);
-            }
-        }
-        Cache::forget(self::MODE_KEY);
     }
 
     public function dir(): string

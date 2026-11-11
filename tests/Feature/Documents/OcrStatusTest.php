@@ -7,6 +7,7 @@ use App\Domain\Documents\DocumentFile;
 use App\Domain\Org\Membership;
 use App\Domain\Org\OrgScope;
 use App\Domain\Org\RoleRight;
+use App\Infrastructure\Environment\LocalOcr;
 use App\Infrastructure\Environment\OcrProgress;
 use App\Jobs\Local\RecognizeText;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,7 +34,7 @@ it('shows counts and progress on its own settings page and in the JSON status', 
     OcrProgress::start($document);
 
     $this->actingAs($this->admin->user)->get('/settings/ocr')->assertOk()
-        ->assertSee('Texterkennung einrichten')->assertSee('1 von 2 erkannt')->assertSee('Gerade: b.jpg');
+        ->assertSee('Erkennung auf dem Server einrichten')->assertSee('1 von 2 erkannt')->assertSee('Gerade: b.jpg');
     $this->getJson('/ocr/status')->assertOk()
         ->assertJson(['waiting' => 1, 'open' => 1, 'total' => 2, 'passes' => 3, 'counts' => ['done' => 1, 'waiting' => 1, 'failed' => 1, 'unavailable' => 0], 'current' => ['title' => 'b.jpg']]);
 
@@ -57,7 +58,7 @@ it('recognises all documents again and one from the detail window', function ():
 });
 
 it('reads in three passes in the browser, the lowest pass first, and shows the indicator below Abmelden', function (): void {
-    Cache::put('ocr.mode', 'browser', 300);
+    Cache::put(LocalOcr::MODE_KEY, 'browser', 300);
     $documents = Document::query()->withoutGlobalScope(OrgScope::class)->get()->keyBy('title');
     foreach ($documents as $document) {
         DocumentFile::query()->withoutGlobalScope(OrgScope::class)->create(['org_id' => $document->org_id, 'document_id' => $document->id, 'path' => 'x/'.$document->title, 'mime' => 'image/jpeg', 'size' => 4, 'sha256' => str_repeat('0', 64)]);
@@ -73,10 +74,33 @@ it('reads in three passes in the browser, the lowest pass first, and shows the i
     expect(OcrProgress::counts($this->admin->org_id)['done'])->toBe(2);
 
     $this->getJson('/ocr/next?skip[]='.$b->id)->assertOk()->assertJson(['id' => $a->id, 'pass' => 2]);
+    // Point 58: a failed pass comes again; after three failures the earlier text stays final.
     $this->post('/ocr/'.$a->id, ['failed' => 1, 'pass' => 2])->assertNoContent();
-    expect($a->refresh()->ocr_text)->toBe('grob')->and($a->ocr_pass)->toBe(2)->and($a->ocr_status)->toBe('done');
+    expect($a->refresh()->ocr_pass)->toBe(1)->and($a->ocr_failures)->toBe(1);
+    $this->post('/ocr/'.$a->id, ['failed' => 1, 'pass' => 2])->assertNoContent();
+    $this->post('/ocr/'.$a->id, ['failed' => 1, 'pass' => 2])->assertNoContent();
+    expect($a->refresh()->ocr_text)->toBe('grob')->and($a->ocr_pass)->toBe(3)->and($a->ocr_status)->toBe('done');
     $this->post('/ocr/'.$a->id, ['text' => 'voll', 'pass' => 3])->assertNoContent();
     $this->post('/ocr/'.$b->id, ['text' => 'voll', 'pass' => 3])->assertNoContent();
     $this->getJson('/ocr/next')->assertNoContent();
     $this->getJson('/ocr/status')->assertJson(['open' => 0, 'total' => 2, 'passes' => 6]);
+});
+
+it('marks a document without text failed after three failures and shows engine errors and the cron state', function (): void {
+    Cache::put(LocalOcr::MODE_KEY, 'browser', 300);
+    $document = Document::query()->withoutGlobalScope(OrgScope::class)->where('title', 'b.jpg')->firstOrFail();
+
+    $this->actingAs($this->admin->user);
+    foreach ([1, 2, 3] as $try) {
+        $this->post('/ocr/'.$document->id, ['failed' => 1, 'pass' => 1])->assertNoContent();
+    }
+    expect($document->refresh()->ocr_status)->toBe('failed');
+
+    $this->post('/ocr-engine', ['reason' => 'CompileError: wasm blocked'])->assertNoContent();
+    $this->get('/settings/ocr')->assertOk()->assertSee('wasm blocked')->assertSee('Kein Cronjob')->assertSee('schedule:run');
+    $this->getJson('/ocr/status')->assertJson(['engine_error' => 'CompileError: wasm blocked']);
+
+    Cache::forever(LocalOcr::STATUS_KEY, ['state' => 'running', 'started' => time() - 700]);
+    expect(app(LocalOcr::class)->status())->toBe([]);
+    $this->postJson('/queue/tick')->assertOk()->assertJson(['cron' => false]);
 });

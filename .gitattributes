@@ -6,6 +6,7 @@
 *.pdf binary
 *.xlsx binary
 *.ico binary
+*.traineddata binary
 
 *.blade.php diff=html
 *.css diff=css

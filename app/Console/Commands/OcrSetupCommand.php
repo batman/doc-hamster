@@ -11,13 +11,13 @@ use Illuminate\Console\Command;
 /**
  * Sets up text recognition on a server without root (point 18, A17):
  * downloads a portable Tesseract into storage/app/ocr and test-runs it;
- * where that cannot work, fetches the browser fallback (A16) instead.
+ * where that cannot work, the browser fallback (A16, shipped) keeps reading.
  */
 final class OcrSetupCommand extends Command
 {
     protected $signature = 'ocr:setup';
 
-    protected $description = 'Download a portable Tesseract (or the browser OCR fallback) with pinned checksums';
+    protected $description = 'Download a portable Tesseract with pinned checksums';
 
     public function handle(LocalOcr $ocr): int
     {
@@ -34,10 +34,9 @@ final class OcrSetupCommand extends Command
 
             return self::SUCCESS;
         }
-        $this->warn('App-owned Tesseract does not work here: '.($status['reason'] ?? '?'));
-        $browser = $status['browser'] ?? '?';
-        $browser === 'ok' ? $this->info('Browser fallback installed.') : $this->error('Browser fallback failed: '.$browser);
+        $this->error('App-owned Tesseract does not work here: '.($status['reason'] ?? '?'));
+        $this->line('The browser keeps reading receipts while DocHamster is open.');
 
-        return $browser === 'ok' ? self::SUCCESS : self::FAILURE;
+        return self::FAILURE;
     }
 }

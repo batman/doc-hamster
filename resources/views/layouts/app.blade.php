@@ -22,9 +22,13 @@
     <script src="{{ asset('js/app.js') }}?v={{ config('dochamster.version') }}"></script>
     @stack('head')
 </head>
-{{-- Browser OCR fallback (point 18): only when the server can't read text itself. --}}
-@php $ocrBrowser = auth()->check() && app(\App\Infrastructure\Environment\LocalOcr::class)->mode() === 'browser'; @endphp
-<body data-pdfjs="{{ asset('vendor/pdfjs') }}" @if ($ocrBrowser) data-ocr-browser="{{ asset('vendor/tesseract') }}" data-ocr-next="{{ route('ocr.next') }}" @endif>
+{{-- Browser OCR fallback (point 18): only when the server can't read text itself. Without cron the open app works off the queue (A69/A74). --}}
+@php
+    $ocrBrowser = auth()->check() && app(\App\Infrastructure\Environment\LocalOcr::class)->mode() === 'browser';
+    $ocrEngineError = $ocrBrowser ? app(\App\Infrastructure\Environment\LocalOcr::class)->browserError() : null;
+    $queueTick = auth()->check() && ! \App\Queue\CronClock::running();
+@endphp
+<body data-pdfjs="{{ asset('vendor/pdfjs') }}" @if ($ocrBrowser) data-ocr-browser="{{ asset('vendor/tesseract') }}" data-ocr-next="{{ route('ocr.next') }}" data-ocr-engine="{{ route('ocr.engine') }}" @endif @if ($queueTick) data-queue-tick="{{ route('queue.tick') }}" @endif>
     <a class="skip-link" href="#main">{{ __('app.skip_to_content') }}</a>
     <div class="shell">
         @auth
@@ -34,7 +38,7 @@
                 // OCR indicator below Abmelden (point 57): one cached query, shown only while documents are open.
                 $ocrOpen = $currentOrg->isSet() ? \App\Infrastructure\Environment\OcrProgress::open($currentOrg->id()) : ['open' => 0, 'total' => 0, 'passes' => 0];
                 $ocrPasses = \App\Infrastructure\Environment\OcrProgress::PASSES;
-                $ocrTip = __('ocr.nav_tooltip', ['count' => $ocrOpen['open']]);
+                $ocrTip = __('ocr.nav_tooltip', ['count' => $ocrOpen['open']]).($ocrEngineError !== null ? ' · '.__('ocr.engine_error', ['reason' => $ocrEngineError]) : '');
             @endphp
             <aside class="side" data-badges="{{ route('badges') }}">
                 <header class="site-header">
@@ -74,6 +78,7 @@
                     {{-- Package G: OCR indicator (point 57); the pause button only where this browser reads (point 18). --}}
                     <div class="nav-ocr" data-ocr-nav="{{ route('ocr.status') }}" data-ocr-open="{{ $ocrOpen['open'] }}" data-passes="{{ $ocrPasses }}"
                         data-label="{{ __('ocr.nav_open', ['count' => ':count']) }}" data-tooltip-label="{{ __('ocr.nav_tooltip', ['count' => ':count']) }}" data-paused-label="{{ __('ocr.nav_paused') }}"
+                        data-engine-error="{{ $ocrEngineError !== null ? __('ocr.engine_error', ['reason' => $ocrEngineError]) : '' }}" data-engine-error-label="{{ __('ocr.engine_error', ['reason' => ':reason']) }}"
                         @if ($ocrOpen['open'] === 0) hidden @endif>
                         <span class="nav-ocr-icon tooltip-right" data-ocr-icon data-tooltip="{{ $ocrTip }}" role="img" aria-label="{{ $ocrTip }}"><x-icon name="search" /></span>
                         <span class="nav-ocr-body nav-text">

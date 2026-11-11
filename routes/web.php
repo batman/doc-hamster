@@ -17,6 +17,7 @@ use App\Http\Controllers\OcrController;
 use App\Http\Controllers\PaletteController;
 use App\Http\Controllers\PhoneCheckController;
 use App\Http\Controllers\PrintTrayController;
+use App\Http\Controllers\QueueTickController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SetupController;
@@ -71,6 +72,9 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('ocr/{id}/progress', [OcrController::class, 'progress'])->middleware('throttle:60,1')->name('ocr.progress');
     Route::get('ocr/image/{id}', [OcrController::class, 'image'])->name('ocr.image');
     Route::post('ocr/{id}', [OcrController::class, 'store'])->middleware('throttle:60,1')->name('ocr.store');
+    Route::post('ocr-engine', [OcrController::class, 'engineError'])->middleware('throttle:10,1')->name('ocr.engine');
+    // A69/A74: without cron the open browser works off the queue, one job per call.
+    Route::post('queue/tick', QueueTickController::class)->middleware('throttle:12,1')->name('queue.tick');
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::get('settings/{group}', [SettingsController::class, 'group'])->name('settings.group');
     Route::post('documents/{id}/tags', [DocumentController::class, 'updateTags'])->middleware('can:documents.edit')->name('documents.tags');

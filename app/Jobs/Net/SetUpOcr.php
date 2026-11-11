@@ -16,7 +16,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
-/** The settings button "Texterkennung einrichten" (point 18): downloads run in the cron worker on the net queue (D-020). */
+/** The settings button "Erkennung auf dem Server einrichten" (point 18, A65): run with dispatchSync in the request, so no cron is needed; downloads live in a net job (D-020). */
 final class SetUpOcr implements ShouldQueue
 {
     use Dispatchable;

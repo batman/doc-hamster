@@ -34,20 +34,47 @@
                             <small>{{ __('ocr.running_setup') }}</small>
                         @elseif ($state === 'failed' && ! in_array($mode, ['system', 'app'], true))
                             <small>{{ __('ocr.broken', ['reason' => $status['reason'] ?? '?']) }}</small>
-                            @if (isset($status['browser']) && $status['browser'] !== 'ok')
-                                <small>{{ __('ocr.browser_missing', ['reason' => $status['browser']]) }}</small>
-                            @endif
                         @endif
                         @if ($mode === 'browser')
                             <small>{{ __('ocr.browser_hint') }}</small>
+                            @if ($engineError !== null)
+                                <small class="error">{{ __('ocr.engine_error', ['reason' => $engineError]) }}</small>
+                            @endif
                         @endif
                     </span>
-                    @if (! in_array($mode, ['system', 'app'], true) && $state !== 'running')
-                        <form method="post" action="{{ route('ocr.setup') }}">
+                </li>
+                @if (! in_array($mode, ['system', 'app'], true) && $state !== 'running')
+                    {{-- A65/A68: runs in the request; JS shows the progress dialog, without JS the page just waits. --}}
+                    <li class="pick-row is-static">
+                        <x-icon name="download" />
+                        <span>
+                            <strong>{{ __('ocr.set_up') }}</strong>
+                            <small>{{ __('ocr.set_up_hint') }}</small>
+                        </span>
+                        <form method="post" action="{{ route('ocr.setup') }}" data-ocr-setup>
                             @csrf
                             <button type="submit" class="button-small">{{ __('ocr.set_up') }}</button>
                         </form>
-                    @endif
+                    </li>
+                @endif
+            </ul>
+        </section>
+
+        {{-- A67/A71/A75: is cron running? Without it the open app works off the queue. --}}
+        <section class="card">
+            <h2 class="card-head"><x-icon name="clock" />{{ __('ocr.cron_label') }}</h2>
+            <ul class="pick-list">
+                <li class="pick-row is-static">
+                    <x-icon :name="$cronRunning ? 'circle-check' : 'alert-triangle'" />
+                    <span>
+                        @if ($cronRunning)
+                            <strong>{{ __('ocr.cron_running', ['time' => \Illuminate\Support\Carbon::createFromTimestamp((int) $cronLast, config('app.timezone'))->format('H:i')]) }}</strong>
+                        @else
+                            <strong>{{ __('ocr.cron_missing') }}</strong>
+                            <small>{{ __('ocr.cron_hint') }}</small>
+                            <small><code>{{ $cronLine }}</code></small>
+                        @endif
+                    </span>
                 </li>
             </ul>
         </section>
@@ -69,5 +96,17 @@
                 <button type="submit" class="button-quiet button-small" @if ($mode === 'none') disabled @endif>{{ __('ocr.rerun') }}</button>
             </form>
         </section>
+    </div>
+
+    {{-- Progress dialog (FRAMEWORK §5): not closable while the set-up runs. --}}
+    <div class="dialog-backdrop" data-ocr-setup-progress hidden data-failed="{{ __('ocr.setup_failed') }}">
+        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="ocr-setup-title">
+            <h2 id="ocr-setup-title">{{ __('ocr.setup_title') }}</h2>
+            <progress data-progress-bar></progress>
+            <p role="status" data-progress-step>{{ __('ocr.setup_step') }}</p>
+            <div class="dialog-actions" data-progress-actions hidden>
+                <button type="button" data-progress-close>{{ __('ocr.setup_close') }}</button>
+            </div>
+        </div>
     </div>
 @endsection
