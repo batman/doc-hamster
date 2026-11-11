@@ -21,5 +21,6 @@ return [
         'pin' => 'Pin – stays wide',
         'fold' => 'Fold',
         'unpin' => 'Pinned – unpin',
+        'search_clear' => 'Clear the search',
     ],
 ];

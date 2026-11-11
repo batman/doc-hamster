@@ -1223,3 +1223,20 @@ html.has-tips [data-tooltip]::before, html.has-tips [data-tooltip]::after { visi
 .win-fold .icon { width: 1.25rem; height: 1.25rem; }
 .win-fold[hidden] { display: none; }
 @media (max-width: 63.99rem) { .win-fold { display: none !important; } }
+
+/* A104: search field in a window head (<x-window search="…">); on phones in its own row below the title */
+.win-search { position: relative; flex: 0 1 16rem; min-width: 8rem; margin: 0; }
+.win-search input[type="search"] { width: 100%; padding-right: 2.25rem; }
+.win-search input[type="search"]::-webkit-search-cancel-button { appearance: none; display: none; }
+.win-search-clear {
+    position: absolute; top: 50%; right: .25rem; translate: 0 -50%; display: inline-flex; align-items: center; justify-content: center;
+    width: 2rem; min-width: 2rem; height: 2rem; min-height: 2rem; margin: 0; padding: 0;
+    border: 0; border-radius: 6px; background: none; box-shadow: none; color: var(--muted);
+}
+.win-search-clear[hidden] { display: none; }
+.win-search-clear:hover { background: rgb(127 127 127 / .14); color: var(--text); }
+.win-search-clear .icon { width: 1rem; height: 1rem; }
+@media (max-width: 63.99rem) {
+    .win-head:has(.win-search) { flex-wrap: wrap; }
+    .win-search { order: 10; flex: 1 0 100%; }
+}

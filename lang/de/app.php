@@ -21,5 +21,6 @@ return [
         'pin' => 'Anpinnen – bleibt groß',
         'fold' => 'Einklappen',
         'unpin' => 'Angepinnt – lösen',
+        'search_clear' => 'Suche leeren',
     ],
 ];

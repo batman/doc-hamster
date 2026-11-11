@@ -988,6 +988,106 @@
             }
         });
         phone.addEventListener('change', () => focus(active() ?? wins().at(-1), false));
+        // A window changed its own address (search, A104): the stored history keeps it.
+        document.addEventListener('dh:window-url', remember);
+    };
+
+    // ---------------------------------------------------------------------------------------------
+    // Search field in a window head (A104): <x-window search="…">. Typing reloads that window with ?q=…
+    // (same fetch as window links) and swaps only its body, so the field keeps focus and caret. The address
+    // follows with replaceState (no history entry per key). What is found is up to the module (it reads q).
+    // ---------------------------------------------------------------------------------------------
+    const setupWindowSearch = () => {
+        const runs = new WeakMap();
+        const fieldOf = form => form.querySelector('input[name="q"]');
+        const search = form => {
+            const win = form.closest('section[data-window]');
+            const field = fieldOf(form);
+            const term = field.value.trim();
+            const run = runs.get(form) ?? {};
+            clearTimeout(run.timer);
+            run.abort?.abort();
+            form.querySelector('[data-window-search-clear]')?.toggleAttribute('hidden', field.value === '');
+            const url = new URL(win?.dataset.windowUrl ?? location.href, location.href);
+            if ((url.searchParams.get('q') ?? '') === term) {
+                return;
+            }
+            if (term === '') {
+                url.searchParams.delete('q');
+            } else {
+                url.searchParams.set('q', term);
+            }
+            url.searchParams.delete('page'); // a new search starts on its first page
+            if (!win) {
+                location.href = url.href;
+                return;
+            }
+            run.abort = new AbortController();
+            runs.set(form, run);
+            fetch(url, { credentials: 'same-origin', signal: run.abort.signal, headers: { 'X-DocHamster-Window': '1', Accept: 'text/html' } })
+                .then(response => (response.ok ? response.text() : Promise.reject(response)))
+                .then(html => {
+                    const found = [...new DOMParser().parseFromString(html, 'text/html').querySelectorAll('section[data-window]')].pop();
+                    const body = found?.querySelector('.win-body');
+                    const old = win.querySelector('.win-body');
+                    if (!body || !old) {
+                        return Promise.reject(new Error('no window body'));
+                    }
+                    const fresh = document.importNode(body, true);
+                    old.replaceWith(fresh);
+                    win.dataset.windowUrl = url.href;
+                    if (win.classList.contains('is-active') || !win.closest('[data-windows]')) {
+                        history.replaceState({ window: url.href }, '', url);
+                    }
+                    document.dispatchEvent(new Event('dh:window-url'));
+                    DocHamster.emit('window:open', fresh);
+                })
+                .catch(error => {
+                    if (error?.name !== 'AbortError') {
+                        location.href = url.href;
+                    }
+                });
+        };
+        const later = form => {
+            const run = runs.get(form) ?? {};
+            clearTimeout(run.timer);
+            run.timer = setTimeout(() => search(form), 300);
+            runs.set(form, run);
+        };
+        const clear = form => {
+            fieldOf(form).value = '';
+            search(form);
+            fieldOf(form).focus();
+        };
+        document.addEventListener('input', event => {
+            const form = event.target.closest('[data-window-search]');
+            if (form && event.target === fieldOf(form)) {
+                form.querySelector('[data-window-search-clear]')?.toggleAttribute('hidden', event.target.value === '');
+                later(form);
+            }
+        });
+        document.addEventListener('submit', event => {
+            const form = event.target.closest('[data-window-search]');
+            if (form) {
+                event.preventDefault();
+                search(form);
+            }
+        });
+        document.addEventListener('click', event => {
+            const button = event.target.closest('[data-window-search-clear]');
+            if (button) {
+                clear(button.closest('[data-window-search]'));
+            }
+        });
+        // Escape in a filled field clears the search; nothing else reacts to that key then.
+        document.addEventListener('keydown', event => {
+            const form = event.target.closest?.('[data-window-search]');
+            if (event.key === 'Escape' && form && fieldOf(form).value !== '') {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                clear(form);
+            }
+        }, true);
     };
 
     // Einstellungen columns: every pane folds to its strip and opens again on its own; the page gives way.
@@ -1848,6 +1948,7 @@
         setupHeadActions();
         setupDialogs();
         setupWindows();
+        setupWindowSearch();
         setupColumns();
         setupScrollHint();
         setupBadges();
