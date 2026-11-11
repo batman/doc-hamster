@@ -1468,3 +1468,10 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
     .windows.can-size > .win > .win-edge { display: none; }
     .windows.can-size > .win.has-width:not(.is-min):not(.is-fill) { flex: 1 1 0; }
 }
+
+/* Package M (point 53): dialogs, dropdown panels, toasts and the tooltip are lifted into the top layer
+   (popover="manual", app.js), above every window. Undo the browser's popover look; each part keeps its rules. */
+:where([data-dialog][popover], .dialog-backdrop[popover], .dropdown-panel[popover], .tip[popover], .toast[popover]) {
+    inset: auto; width: auto; height: auto; margin: 0; padding: 0; border: 0; overflow: visible; color: inherit; background: none;
+}
+.dropdown-panel:popover-open { position: fixed; overflow: auto; overscroll-behavior: contain; }
