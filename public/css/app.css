@@ -939,10 +939,10 @@ button .icon, .button .icon { width: 1.25rem; height: 1.25rem; }
 .button-group > :is(.is-active, [aria-pressed="true"]) { position: relative; z-index: 1; border-color: var(--primary); color: var(--primary-ink); }
 .button-group > :is(button, .button):not(.icon-button, .button-quiet):is(.is-active, [aria-pressed="true"]) { background: var(--primary-hover); color: var(--primary-text); }
 .button-group > :hover { position: relative; z-index: 2; }
-.win-head .button-group > .icon-button { border-radius: 0; }
-.win-head .button-group > .icon-button:first-child { border-radius: 8px 0 0 8px; }
-.win-head .button-group > .icon-button:last-child { border-radius: 0 8px 8px 0; }
-.win-head .button-group > .icon-button + .icon-button { margin-left: -1px; }
+.win-tools .button-group > .icon-button { border-radius: 0; }
+.win-tools .button-group > .icon-button:first-child { border-radius: 8px 0 0 8px; }
+.win-tools .button-group > .icon-button:last-child { border-radius: 0 8px 8px 0; }
+.win-tools .button-group > .icon-button + .icon-button { margin-left: -1px; }
 .card-head .icon-button, .icon-button.button-small { width: 40px; min-height: 40px; }
 .icon-button[aria-expanded="true"], .icon-button.is-active { border-color: var(--primary); color: var(--primary-ink); }
 /* The upload in the menu keeps its layout, with the button corner and shadow */
@@ -1002,15 +1002,15 @@ input[type="file"]::file-selector-button { border-radius: 10px; font-size: 1rem;
 .win.is-active { flex: 1 1 0; min-width: 30rem; }
 .win.is-prev { flex: 0 0 26rem; }
 .win.is-min { flex: 0 0 3.5rem; background: var(--surface); }
-.win-frame { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.win-frame { flex: 1; min-width: 0; display: flex; flex-direction: column; container: win / inline-size; }
 .win-head {
     display: flex; align-items: center; gap: .6rem; min-height: 48px;
     padding: 4.75rem 1.5rem .75rem; /* below the gap for the menu button, like the columns */
 }
 .win-head > .icon { flex: none; width: 1.5rem; height: 1.5rem; color: var(--folder, var(--primary)); }
 .win-title { flex: 1; min-width: 0; margin: 0; font-size: 1.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.win-actions { display: flex; align-items: center; gap: .5rem; }
-.win-actions .toolbar { margin: 0; }
+.win-actions { display: flex; align-items: center; gap: .5rem; margin-left: auto; min-width: 0; }
+.win-actions .toolbar { margin: 0; flex-wrap: wrap; justify-content: flex-end; }
 .win-close { flex: none; }
 .win-body { flex: 1; min-width: 0; padding: 0 1.5rem 3rem; overflow-x: auto; }
 .win.is-prev .win-title { font-size: 1.15rem; }
@@ -1038,7 +1038,8 @@ input[type="file"]::file-selector-button { border-radius: 10px; font-size: 1rem;
 @media (max-width: 63.99rem) {
     .windows:has(> .is-active) > .win:not(.is-active) { display: none; }
     .win.is-active { min-width: 0; }
-    .win-head { padding: 1rem var(--space) .75rem 4rem; flex-wrap: wrap; }
+    .win-head { padding: 1rem var(--space) .75rem 4rem; }
+    .win-tools { padding-inline: var(--space); }
     .win-body { padding-inline: var(--space); }
 }
 /* The receipt window keeps its old look inside */
@@ -1048,17 +1049,9 @@ input[type="file"]::file-selector-button { border-radius: 10px; font-size: 1rem;
 @media (max-width: 63.99rem) { .win-back:not([hidden]) { display: inline-flex; } }
 
 /* Framework round 6 (Go 2026-11-07, points 26-31) */
-/* "⋯" menu: entries with icon and text; in a window head only on phones (A80) */
+/* "⋯" menu: entries with icon and text */
 .more-menu .dropdown-panel { min-width: 14rem; }
 .more-menu .menu-item { text-decoration: none; }
-.win-more { display: none; }
-@media (max-width: 63.99rem) {
-    .win-actions { display: none; }
-    .win-more { display: block; }
-    .win-more .dropdown-panel { display: flex; flex-wrap: wrap; gap: .5rem; }
-    .win-more .dropdown-panel[hidden] { display: none; }
-    .win-head { flex-wrap: nowrap; }
-}
 /* Sortable list: a handle on the left, the carried row lifts (A78) */
 .pick-handle { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 2rem; min-height: 2rem; margin: 0; padding: 0;
     border: 0; border-radius: 8px; background: none; box-shadow: none; color: var(--muted); cursor: grab; touch-action: none; }
@@ -1210,13 +1203,13 @@ html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
 .win.is-pinned .win-pin .icon:first-child { display: none; }
 .win.is-pinned .win-pin .icon:last-child { display: block; color: var(--primary); }
 .win.is-pinned .win-pin { border-color: var(--primary); }
-@media (max-width: 63.99rem) { .win-pin { display: none; } }
+@media (max-width: 63.99rem) { .win-pin, .win-minimise { display: none; } }
 
 /* A101: head buttons small and quiet, on the title line, a fixed gap to the content */
 .win-head { padding-bottom: 1rem; }
-.win-head :is(.icon-button, .dropdown > .icon-button) { width: 36px; min-width: 36px; height: 36px; min-height: 36px; padding: 0; border-width: 1px; border-color: var(--border); border-radius: 8px; box-shadow: none; }
-.win-head :is(.icon-button, .dropdown > .icon-button) .icon { width: 1.1rem; height: 1.1rem; }
-.win-head .win-actions, .win-head .win-actions .toolbar { gap: .4rem; }
+:is(.win-head, .win-tools) :is(.icon-button, .dropdown > .icon-button) { width: 36px; min-width: 36px; height: 36px; min-height: 36px; padding: 0; border-width: 1px; border-color: var(--border); border-radius: 8px; box-shadow: none; }
+:is(.win-head, .win-tools) :is(.icon-button, .dropdown > .icon-button) .icon { width: 1.1rem; height: 1.1rem; }
+.win-tools .win-actions, .win-tools .win-actions .toolbar { gap: .4rem; }
 .win-body > :first-child { margin-top: 0; }
 
 /* The window head line sits where the column head line sits (padding + 48 px row), so strips line up with both */
@@ -1242,8 +1235,8 @@ html.has-tips [data-tooltip]::before, html.has-tips [data-tooltip]::after { visi
 @media (prefers-reduced-motion: reduce) { .tip { transition: none; } }
 
 
-/* A104: search field in a window head (<x-window search="…">); on phones in its own row below the title */
-.win-search { position: relative; flex: 0 1 16rem; min-width: 8rem; margin: 0; }
+/* A104: search field in the window toolbar (<x-window search="…">) */
+.win-search { position: relative; flex: 0 1 18rem; min-width: 8rem; margin: 0; }
 .win-search input[type="search"] { width: 100%; padding-right: 2.25rem; }
 .win-search input[type="search"]::-webkit-search-cancel-button { appearance: none; display: none; }
 .win-search-clear {
@@ -1254,10 +1247,6 @@ html.has-tips [data-tooltip]::before, html.has-tips [data-tooltip]::after { visi
 .win-search-clear[hidden] { display: none; }
 .win-search-clear:hover { background: rgb(127 127 127 / .14); color: var(--text); }
 .win-search-clear .icon { width: 1rem; height: 1rem; }
-@media (max-width: 63.99rem) {
-    .win-head:has(.win-search) { flex-wrap: wrap; }
-    .win-search { order: 10; flex: 1 0 100%; }
-}
 
 /* Document viewer in the detail window (app.js "Document viewer"): zoom, pan, box selection */
 .detail-doc:has(+ .doc-zoom) { position: relative; cursor: grab; user-select: none; }
@@ -1352,7 +1341,7 @@ html.has-tips [data-tooltip]::before, html.has-tips [data-tooltip]::after { visi
 
 /* Package E */
 /* "⋯" menu: entries never wrap, the menu is as wide as its longest entry; a line between groups; red for destructive ones */
-.more-menu:not(.win-more) .dropdown-panel { min-width: 0; width: max-content; max-width: calc(100vw - 2rem); }
+.more-menu .dropdown-panel { min-width: 0; width: max-content; max-width: calc(100vw - 2rem); }
 .more-menu .menu-item { white-space: nowrap; }
 .menu-separator { margin: .25rem .5rem; border: 0; border-top: 1px solid var(--border); }
 .menu-item.menu-danger, .menu-item.menu-danger .icon { color: var(--danger); }
@@ -1373,3 +1362,21 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
 .toast.toast-error { border-color: var(--danger); }
 .toast.toast-error::before { content: ""; flex: none; width: .5rem; height: .5rem; border-radius: 50%; background: var(--danger); }
 .win-detail form > button[type="submit"] { margin-top: 1rem; }
+
+/* Framework round 12 (points 40-42): window head like Windows – title, pin, minimise, X; search and the module's
+   buttons in a toolbar row below. The toolbar follows the width of its own window (container "win" on .win-frame),
+   not the screen: wide = one row; medium = the search on its own row; narrow = .win-wide-only parts hide and
+   .win-narrow-only parts show (a button group becomes one dropdown, extra buttons become ⋯ entries). It wraps
+   before anything is cut at the window edge. */
+.win-minimise { flex: none; }
+.win-minimise[hidden] { display: none; }
+.win-tools { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; min-width: 0; padding: 0 1.5rem 1rem; }
+.win-tools > .win-search:only-child { flex-basis: 24rem; }
+@container win (width < 44rem) {
+    .win-tools > .win-search { flex: 1 0 100%; }
+    .win-tools > .win-actions { margin-left: 0; }
+}
+@container win (width >= 28rem) { .win-narrow-only { display: none; } }
+@container win (width < 28rem) { .win-wide-only { display: none; } }
+
+.win-head:has(+ .win-tools) { padding-bottom: .75rem; }

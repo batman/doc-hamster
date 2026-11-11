@@ -43,29 +43,54 @@
                         </div>
                     </form>
                 @endif
-                {{-- The views as a button group (point 16). --}}
-                <form class="button-group" role="group" aria-label="{{ __('documents.view') }}" method="post" action="{{ route('documents.view') }}">
+                {{-- The views as a button group (point 16); in a narrow window one dropdown button (point 41). --}}
+                <form class="button-group win-wide-only" role="group" aria-label="{{ __('documents.view') }}" method="post" action="{{ route('documents.view') }}">
                     @csrf
                     @foreach ($views as $name => $icon)
                         <button type="submit" name="view" value="{{ $name }}" class="icon-button button-small" aria-pressed="{{ $name === $view ? 'true' : 'false' }}" aria-label="{{ __('documents.views.'.$name) }}" data-tooltip="{{ __('documents.views.'.$name) }}"><x-icon :name="$icon" /></button>
                     @endforeach
                 </form>
-                @can('documents.upload')
+                <form class="dropdown win-narrow-only" method="post" action="{{ route('documents.view') }}">
+                    @csrf
+                    <button type="button" class="icon-button" aria-label="{{ __('documents.view') }}: {{ __('documents.views.'.$view) }}" data-tooltip="{{ __('documents.view') }}" aria-haspopup="true" aria-expanded="false"><x-icon :name="$views[$view] ?? 'list'" /></button>
+                    <div class="dropdown-panel" role="menu" hidden>
+                        @foreach ($views as $name => $icon)
+                            <button type="submit" name="view" value="{{ $name }}" class="menu-item" role="menuitemradio" aria-checked="{{ $name === $view ? 'true' : 'false' }}"><x-icon :name="$icon" /><span>{{ __('documents.views.'.$name) }}</span></button>
+                        @endforeach
+                    </div>
+                </form>
+                @php
+                    $canUpload = Gate::allows('documents.upload');
+                    $canFolder = Gate::allows('documents.edit') && (! $openFolder || $openFolder->depth() < \App\Domain\Documents\Folder::MAX_DEPTH);
+                    $canEditFolder = $openFolder && Gate::allows('documents.edit');
+                    $addLabel = $openFolder ? __('folders.add_sub_short') : __('folders.add');
+                    $addUrl = route('folders.index', $openFolder ? ['parent' => $openFolder->id] : ['new' => 1]);
+                @endphp
+                @if ($canUpload)
                     {{-- A text document written in the app, in this folder (point 21). --}}
-                    <button type="button" class="icon-button" data-dialog-open="new-text-{{ $openFolder?->id ?? 'top' }}" aria-label="{{ __('documents.text.new') }}" data-tooltip="{{ __('documents.text.new') }}"><x-icon name="file-plus" /></button>
-                @endcan
-                @can('documents.edit')
+                    <button type="button" class="icon-button win-wide-only" data-dialog-open="new-text-{{ $openFolder?->id ?? 'top' }}" aria-label="{{ __('documents.text.new') }}" data-tooltip="{{ __('documents.text.new') }}"><x-icon name="file-plus" /></button>
+                @endif
+                @if ($canFolder)
                     {{-- Folders are managed where they are shown, like an explorer (points 10-12). --}}
-                    @if (! $openFolder || $openFolder->depth() < \App\Domain\Documents\Folder::MAX_DEPTH)
-                        @php $addLabel = $openFolder ? __('folders.add_sub_short') : __('folders.add'); @endphp
-                        <a class="icon-button" href="{{ route('folders.index', $openFolder ? ['parent' => $openFolder->id] : ['new' => 1]) }}" data-window aria-label="{{ $addLabel }}" data-tooltip="{{ $addLabel }}"><x-icon name="folder-plus" /></a>
-                    @endif
-                    @if ($openFolder)
-                        <x-more-menu>
+                    <a class="icon-button win-wide-only" href="{{ $addUrl }}" data-window aria-label="{{ $addLabel }}" data-tooltip="{{ $addLabel }}"><x-icon name="folder-plus" /></a>
+                @endif
+                @if ($canEditFolder || $canUpload || $canFolder)
+                    {{-- In a narrow window the extra buttons become entries of the ⋯ menu (point 41). --}}
+                    <x-more-menu class="{{ $canEditFolder ? '' : 'win-narrow-only' }}">
+                        @if ($canUpload)
+                            <button type="button" class="menu-item win-narrow-only" data-dialog-open="new-text-{{ $openFolder?->id ?? 'top' }}"><x-icon name="file-plus" /><span>{{ __('documents.text.new') }}</span></button>
+                        @endif
+                        @if ($canFolder)
+                            <a class="menu-item win-narrow-only" href="{{ $addUrl }}" data-window><x-icon name="folder-plus" /><span>{{ $addLabel }}</span></a>
+                        @endif
+                        @if ($canEditFolder)
+                            @if ($canUpload || $canFolder)
+                                <hr class="menu-separator win-narrow-only">
+                            @endif
                             <a class="menu-item" href="{{ route('folders.index', ['folder' => $openFolder->id]) }}" data-window><x-icon name="pencil" /><span>{{ __('folders.edit') }}</span></a>
-                        </x-more-menu>
-                    @endif
-                @endcan
+                        @endif
+                    </x-more-menu>
+                @endif
             </div>
         </x-slot:actions>
 
