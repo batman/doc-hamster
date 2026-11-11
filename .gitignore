@@ -52,3 +52,6 @@ Thumbs.db
 
 # Browser OCR fallback files, fetched on the server (point 18)
 /public/vendor/tesseract/
+
+# Claude Code agent worktrees
+.claude/worktrees/
