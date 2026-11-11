@@ -634,6 +634,19 @@
     // Our own confirm dialog: [data-dialog-open="x"] shows [data-dialog="x"]; Escape, the backdrop and "Abbrechen" close it.
     const setupDialogs = () => {
         const shut = dialog => { dialog.hidden = true; };
+        // Point 48 / A36: every dialog closes with an X at the top right instead of "Abbrechen".
+        const addX = root => (root.matches?.('.dialog') ? [root] : [...root.querySelectorAll('[data-dialog] .dialog, .dialog-backdrop .dialog')]).forEach(box => {
+            if (box.querySelector(':scope > .dialog-x') || box.closest('[data-update-progress], .update-progress')) return;
+            const x = document.createElement('button');
+            x.type = 'button';
+            x.className = 'icon-button button-small dialog-x';
+            x.setAttribute('data-dialog-close', '');
+            x.setAttribute('aria-label', document.documentElement.lang === 'en' ? 'Close' : 'Schließen');
+            x.innerHTML = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>';
+            box.prepend(x);
+        });
+        addX(document);
+        DocHamster.on('window:open', root => addX(root));
         const open = button => {
             const name = `[data-dialog="${button.dataset.dialogOpen}"]`;
             const dialog = button.closest('section[data-window]')?.querySelector(name) ?? document.querySelector(name);
@@ -641,8 +654,9 @@
             if (heading && button.dataset.dialogTitle) {
                 heading.textContent = button.dataset.dialogTitle;
             }
+            addX(dialog);
             dialog.hidden = false;
-            dialog.querySelector('[data-dialog-close], button, a, input')?.focus();
+            dialog.querySelector('input:not([type="hidden"]), select, textarea, button:not([data-dialog-close]), a, [data-dialog-close]')?.focus();
         };
         // The file is fetched ahead: the share menu has to open right on the click. Per window, also for later ones.
         const shared = new Map();

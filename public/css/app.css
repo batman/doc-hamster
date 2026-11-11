@@ -484,6 +484,19 @@ label.tag-choice { color: inherit; }
 .dialog h2 { margin: 0 0 .5rem; font-size: 1.25rem; }
 .dialog-actions { display: flex; gap: .75rem; margin-top: 1.25rem; }
 .dialog-actions button { flex: 1; margin: 0; }
+/* Point 48 / A36: an X at the top right closes every dialog; the "Abbrechen" button is gone */
+.dialog { position: relative; }
+.dialog > .dialog-x { position: absolute; top: .75rem; right: .75rem; width: 36px; min-width: 36px; height: 36px; min-height: 36px; margin: 0; }
+.dialog:has(> .dialog-x) > :is(h2, h3):first-of-type { padding-right: 2.75rem; }
+.dialog-actions > [data-dialog-close]:not(.dialog-x), .dialog-actions form > [data-dialog-close]:not(.dialog-x) { display: none; }
+/* Point 45 / A34: thin, round scrollbars in the theme colours, shown only while hovering or scrolling */
+* { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+*:hover, *:focus-within { scrollbar-color: color-mix(in srgb, var(--text) 28%, transparent) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { border-radius: 8px; background: transparent; }
+:hover::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text) 28%, transparent); }
+::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--primary) 70%, transparent); }
 .button-quiet { background: var(--bg); color: var(--text); border: 2px solid var(--border); }
 .button-danger { background: var(--error); color: var(--bg); }
 
