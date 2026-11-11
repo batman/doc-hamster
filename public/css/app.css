@@ -1455,18 +1455,23 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
 .note-more > summary:hover { color: var(--text); }
 
 /* Package L */
-/* Point 44: a drag edge on the right of every wide window except the one that fills the rest (is-fill, set by
-   app.js); same look as the wall right of the menu. A dragged width (--win-width) holds, never below --win-min. */
+/* Point 44: a drag edge on the right of every wide window; same look as the wall right of the menu. */
 .win-edge { display: none; }
-.windows.can-size > .win:not(.is-min):not(.is-fill) > .win-edge { display: block; position: absolute; top: 0; right: -5px; z-index: 6; width: 10px; height: 100%; cursor: col-resize; }
+.windows.can-size > .win:not(.is-min) > .win-edge { display: block; position: absolute; top: 0; right: -5px; z-index: 6; width: 10px; height: 100%; cursor: col-resize; }
 .win-edge::after { content: ""; position: absolute; top: 0; bottom: 0; left: 4px; width: 3px; background: var(--primary); opacity: 0; transition: opacity .15s; }
 .win-edge:hover::after, .win-edge:focus-visible::after, .win-edge.is-active::after { opacity: 1; }
 .win-edge:focus-visible { outline: none; box-shadow: none; }
-.windows.can-size > .win.has-width:not(.is-min):not(.is-fill) { flex: 0 0 var(--win-width); }
 .windows.is-sizing { cursor: col-resize; user-select: none; }
+/* Points 54, 55: app.js lays the row out like Finder's column view (is-laid): every wide window gets its width
+   (--win-w), what is left stays background; a pinned window sticks in view when the row scrolls (is-stuck). */
+@media (min-width: 64rem) {
+    .windows.is-laid { width: max-content; min-width: 100%; background: var(--surface); }
+    .windows.is-laid > .win:not(.is-min) { flex: 0 0 var(--win-w); min-width: 0; }
+    .windows.is-laid > .win:last-child { border-right: 1px solid var(--border); }
+    .windows.is-laid > .win.is-stuck { position: sticky; left: var(--win-stick, 0); z-index: 3; }
+}
 @media (max-width: 63.99rem) {
     .windows.can-size > .win > .win-edge { display: none; }
-    .windows.can-size > .win.has-width:not(.is-min):not(.is-fill) { flex: 1 1 0; }
 }
 
 /* Package M (point 53): dialogs, dropdown panels, toasts and the tooltip are lifted into the top layer

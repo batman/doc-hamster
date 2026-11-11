@@ -7,7 +7,7 @@
 
 @section('content')
     <div class="windows" data-windows>
-    <x-window :title="__('mail_tray.title')" icon="mail" :url="route('mail-tray.index')">
+    <x-window :title="__('mail_tray.title')" icon="mail" kind="mail" :url="route('mail-tray.index')">
         <p class="muted">{{ __('mail_tray.soon') }}</p>
     </x-window>
     </div>
