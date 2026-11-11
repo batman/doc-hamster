@@ -2514,18 +2514,38 @@
 /* OCR fallback (point 18) */
 // Reads receipt text in the browser with self-hosted tesseract.js when the
 // server can't (body[data-ocr-browser]). One image at a time, only while the
-// page is visible and idle, not on cellular/data saver/low battery.
+// page is visible and idle, not on cellular/data saver/low battery, and not
+// while paused in the menu (point 57, localStorage dh.ocr.paused, every tab).
+// Point 56: three passes, the server hands out the lowest first; each pass
+// replaces the text of the one before.
 (() => {
   const startOcr = () => {
     const base = document.body?.dataset.ocrBrowser;
     const nextUrl = document.body?.dataset.ocrNext;
     if (!base || !nextUrl || typeof Worker === 'undefined' || typeof WebAssembly === 'undefined') return;
-    const PAUSE_MS = 15000;
+    // side = long image side in px (0 = original), scale = PDF page scale, pause after each document.
+    const PASSES = {
+        1: { side: 1000, scale: 1, pause: 0 },
+        2: { side: 2000, scale: 2, pause: 5000 },
+        3: { side: 0, scale: 3.5, pause: 30000 },
+    };
+    const MAX_PIXELS = 24e6;
     const WAIT_MS = 60000;
+    const PAUSE_KEY = 'dh.ocr.paused';
     const skip = [];
     let engine = null;
+    let running = null;
+    let wake = null;
 
-    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const paused = () => {
+        try { return localStorage.getItem(PAUSE_KEY) === '1'; } catch { return false; }
+    };
+    // A sleep that "Fortsetzen" ends early.
+    const sleep = ms => new Promise(resolve => {
+        const done = () => { clearTimeout(timer); wake = null; resolve(); };
+        const timer = setTimeout(done, ms);
+        wake = done;
+    });
     const idle = () => new Promise(resolve => ('requestIdleCallback' in window
         ? window.requestIdleCallback(() => resolve(), { timeout: 30000 })
         : setTimeout(resolve, 1000)));
@@ -2568,15 +2588,52 @@
         engine = null;
         try { await e.terminate(); } catch { /* already gone */ }
     };
+    // Pause (point 57): the running document is dropped unsaved and the engine closed, so the computer gets its resources back.
+    const onPause = isPaused => {
+        if (isPaused) {
+            if (running) running.aborted = true;
+            stop();
+        } else if (wake) {
+            wake();
+        }
+    };
+    document.addEventListener('dh:ocr-pause', event => onPause(event.detail === true));
+    window.addEventListener('storage', event => { if (event.key === PAUSE_KEY) onPause(event.newValue === '1'); });
     const token = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const check = run => { if (run.aborted) throw new Error('paused'); };
+    // Images: scaled down to the pass's long side (pass 3: original), capped for memory.
+    const readImage = async (url, side, run) => {
+        if (typeof createImageBitmap === 'undefined') return (await (await getEngine()).recognize(url)).data?.text ?? '';
+        const res = await fetch(url, { credentials: 'same-origin' });
+        if (!res.ok) throw new Error('image');
+        const blob = await res.blob();
+        const bitmap = await createImageBitmap(blob);
+        try {
+            check(run);
+            const factor = Math.min(side > 0 ? side / Math.max(bitmap.width, bitmap.height) : 1, Math.sqrt(MAX_PIXELS / (bitmap.width * bitmap.height)));
+            if (factor >= 1) return (await (await getEngine()).recognize(blob)).data?.text ?? '';
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(bitmap.width * factor));
+            canvas.height = Math.max(1, Math.round(bitmap.height * factor));
+            canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+            try {
+                return (await (await getEngine()).recognize(canvas)).data?.text ?? '';
+            } finally {
+                canvas.width = canvas.height = 0;
+            }
+        } finally {
+            bitmap.close?.();
+        }
+    };
     // Point 34: PDFs page by page with pdf.js (document viewer block). A page that already carries text
-    // gives that text; a scanned page is drawn at scale 2 and read by tesseract. Pages joined by a blank line.
-    const readPdf = async url => {
+    // gives that text; a scanned page is drawn at the pass's scale and read by tesseract. Pages joined by a blank line.
+    const readPdf = async (url, maxScale, run) => {
         if (!DocHamster.openPdf) throw new Error('pdf.js not available');
         const doc = await DocHamster.openPdf(url);
         try {
             const texts = [];
             for (let n = 1; n <= Math.min(doc.numPages, 50); n++) {
+                check(run);
                 const page = await doc.getPage(n);
                 const layer = await page.getTextContent();
                 const own = layer.items.map(item => (item.str ?? '') + (item.hasEOL ? '\n' : ' ')).join('').trim();
@@ -2584,7 +2641,7 @@
                     texts.push(own);
                 } else {
                     const one = page.getViewport({ scale: 1 });
-                    const scale = Math.min(2, Math.sqrt(16e6 / (one.width * one.height)));
+                    const scale = Math.min(maxScale, Math.sqrt(MAX_PIXELS / (one.width * one.height)));
                     const viewport = page.getViewport({ scale });
                     const canvas = document.createElement('canvas');
                     canvas.width = Math.floor(viewport.width);
@@ -2602,22 +2659,32 @@
         }
     };
 
+    // One document of the lowest open pass; gives the pause before the next one, or null when nothing is left.
     const step = async () => {
         const url = new URL(nextUrl, location.href);
         skip.forEach(id => url.searchParams.append('skip[]', id));
         const res = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
-        if (res.status !== 200) return false;
+        if (res.status !== 200) return null;
         const job = await res.json();
-        const worker = await getEngine();
+        const pass = PASSES[job.pass] ? job.pass : 3;
+        const run = { aborted: false };
+        running = run;
         document.dispatchEvent(new CustomEvent('dh:ocr-job', { detail: job }));
         const body = new FormData();
+        body.append('pass', String(pass));
         try {
             const text = job.type === 'application/pdf'
-                ? await readPdf(job.file)
-                : (await worker.recognize(job.file)).data?.text ?? '';
+                ? await readPdf(job.file, PASSES[pass].scale, run)
+                : await readImage(job.file, PASSES[pass].side, run);
             body.append('text', text);
         } catch {
             body.append('failed', '1');
+        }
+        running = null;
+        if (run.aborted) {
+            // Paused: nothing saved, the document comes again after "Fortsetzen".
+            document.dispatchEvent(new CustomEvent('dh:ocr-job', { detail: null }));
+            return 0;
         }
         try {
             const saved = await fetch(job.save, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' }, credentials: 'same-origin' });
@@ -2626,22 +2693,30 @@
             skip.push(job.id);
         }
         document.dispatchEvent(new CustomEvent('dh:ocr-job', { detail: null }));
-        return true;
+        return PASSES[pass].pause;
     };
 
     (async () => {
         await sleep(5000);
         for (;;) {
+            if (paused()) {
+                await stop();
+                await sleep(WAIT_MS);
+                continue;
+            }
             await idle();
+            if (paused()) continue;
             if (!(await allowed())) {
                 await stop();
                 await sleep(WAIT_MS);
                 continue;
             }
-            let more = false;
-            try { more = await step(); } catch { more = false; }
-            if (!more) { await stop(); return; }
-            await sleep(PAUSE_MS);
+            let pause = null;
+            try { pause = await step(); } catch { pause = null; }
+            if (pause === null) { await stop(); return; }
+            // Long pauses (pass 3) close the engine meanwhile.
+            if (pause >= 30000) await stop();
+            if (pause > 0) await sleep(pause);
         }
     })();
   };
@@ -3307,7 +3382,7 @@
     }, { capture: true });
 })();
 /* Package G */
-// Text recognition progress (points 35/43, A21-A24): the spinner on Einstellungen polls while documents wait,
+// Text recognition progress (points 35/43, A21-A24, 57): the OCR indicator below Abmelden polls while documents are open,
 // the Texterkennung page every 3 s while something waits or runs; the browser fallback reports its percent.
 (() => {
     const getJson = url => fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
@@ -3315,37 +3390,104 @@
         .catch(() => null);
     const token = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 
-    const showNav = waiting => {
-        const spin = document.querySelector('[data-ocr-nav]');
-        if (!spin) {
+    const PAUSE_KEY = 'dh.ocr.paused';
+    const isPaused = () => {
+        try { return localStorage.getItem(PAUSE_KEY) === '1'; } catch { return false; }
+    };
+
+    // Point 57: OCR indicator below Abmelden – open count, small bar, pause per browser; hidden while nothing is open.
+    const showNav = data => {
+        const nav = document.querySelector('[data-ocr-nav]');
+        if (!nav || !data) {
             return;
         }
-        const label = (spin.dataset.label ?? '').replace(':count', String(waiting));
-        spin.dataset.ocrWaiting = String(waiting);
-        spin.dataset.tooltip = label;
-        spin.setAttribute('aria-label', label);
-        spin.hidden = waiting === 0;
+        const open = data.open ?? data.waiting ?? 0;
+        nav.dataset.ocrOpen = String(open);
+        const paused = isPaused() && !!nav.querySelector('[data-ocr-toggle]');
+        const count = nav.querySelector('[data-ocr-open-text]');
+        const pausedLabel = nav.dataset.pausedLabel ?? '';
+        if (count) {
+            count.textContent = (nav.dataset.label ?? '').replace(':count', String(open)) + (paused ? ` · ${pausedLabel}` : '');
+        }
+        const icon = nav.querySelector('[data-ocr-icon]');
+        if (icon) {
+            const tip = (nav.dataset.tooltipLabel ?? '').replace(':count', String(open)) + (paused ? ` · ${pausedLabel}` : '');
+            icon.dataset.tooltip = tip;
+            icon.setAttribute('aria-label', tip);
+        }
+        const bar = nav.querySelector('[data-ocr-nav-bar]');
+        if (bar && data.total !== undefined) {
+            bar.max = Math.max(1, (data.total ?? 0) * Number(nav.dataset.passes ?? 3));
+            bar.value = data.passes ?? 0;
+        }
+        nav.hidden = open === 0;
+    };
+
+    const paintPause = () => {
+        const nav = document.querySelector('[data-ocr-nav]');
+        const toggle = nav?.querySelector('[data-ocr-toggle]');
+        if (!toggle) {
+            return;
+        }
+        const paused = isPaused();
+        nav.classList.toggle('is-paused', paused);
+        const label = paused ? toggle.dataset.resume : toggle.dataset.pause;
+        toggle.dataset.tooltip = label ?? '';
+        toggle.setAttribute('aria-label', label ?? '');
+        toggle.setAttribute('aria-pressed', paused ? 'true' : 'false');
+        showNav({ open: Number(nav.dataset.ocrOpen ?? 0) });
     };
 
     const setupNav = () => {
-        const spin = document.querySelector('[data-ocr-nav]');
-        if (!spin || document.querySelector('[data-ocr-page]') || Number(spin.dataset.ocrWaiting) === 0) {
+        const nav = document.querySelector('[data-ocr-nav]');
+        if (!nav) {
             return;
         }
-        const timer = setInterval(() => {
-            if (document.hidden) {
-                return;
-            }
-            getJson(spin.dataset.ocrNav).then(data => {
+        paintPause();
+        nav.querySelector('[data-ocr-toggle]')?.addEventListener('click', () => {
+            const paused = !isPaused();
+            try {
+                if (paused) localStorage.setItem(PAUSE_KEY, '1');
+                else localStorage.removeItem(PAUSE_KEY);
+            } catch { /* this tab only */ }
+            paintPause();
+            document.dispatchEvent(new CustomEvent('dh:ocr-pause', { detail: paused }));
+        });
+        // Another tab paused or resumed.
+        window.addEventListener('storage', event => { if (event.key === PAUSE_KEY) paintPause(); });
+        if (document.querySelector('[data-ocr-page]')) {
+            return;
+        }
+        let timer = null;
+        let last = 0;
+        const refresh = () => {
+            last = Date.now();
+            getJson(nav.dataset.ocrNav).then(data => {
                 if (!data) {
                     return;
                 }
-                showNav(data.waiting ?? 0);
-                if (!data.waiting) {
+                showNav(data);
+                if (!(data.open ?? data.waiting) && timer) {
                     clearInterval(timer);
+                    timer = null;
                 }
             });
-        }, 10000);
+        };
+        const poll = () => {
+            if (!timer) {
+                timer = setInterval(() => { if (!document.hidden) refresh(); }, 10000);
+            }
+        };
+        if (Number(nav.dataset.ocrOpen) > 0) {
+            poll();
+        }
+        // The browser fallback finished a document: show it soon, at most every 3 s.
+        document.addEventListener('dh:ocr-job', event => {
+            if (event.detail === null && Date.now() - last > 3000) {
+                refresh();
+                poll();
+            }
+        });
     };
 
     const setupPage = () => {
@@ -3367,7 +3509,7 @@
             });
             const done = counts.done ?? 0;
             const total = done + (counts.waiting ?? 0);
-            const busy = (counts.waiting ?? 0) > 0 || !!data.current;
+            const busy = (counts.waiting ?? 0) > 0 || (data.open ?? 0) > 0 || !!data.current;
             box.hidden = !busy;
             bar.max = Math.max(1, total);
             bar.value = done;
@@ -3379,7 +3521,7 @@
                 const label = withPercent ? page.dataset.currentPercentLabel : page.dataset.currentLabel;
                 now.textContent = (label ?? '').replace(':percent', String(current.percent)).replace(':title', current.title);
             }
-            showNav(data.waiting ?? 0);
+            showNav(data);
             return busy;
         };
         let busy = page.dataset.ocrBusy === '1';

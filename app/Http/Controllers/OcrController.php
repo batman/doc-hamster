@@ -56,7 +56,7 @@ final class OcrController extends Controller
     /** "Alle neu erkennen": every document of the organisation waits again; the server or the browser reads them one by one. */
     public function rerun(CurrentOrg $org): RedirectResponse
     {
-        Document::query()->toBase()->update(['ocr_status' => 'pending']);
+        Document::query()->toBase()->update(['ocr_status' => 'pending', 'ocr_pass' => null]);
         Document::query()->select('id')->eachById(static fn (Document $d) => RecognizeText::dispatch($d->id));
         OcrProgress::forgetWaiting($org->id());
 
@@ -67,7 +67,7 @@ final class OcrController extends Controller
     public function redo(Request $request, string $id): RedirectResponse
     {
         $document = $this->editable($request)->whereKey($id)->firstOrFail();
-        $document->forceFill(['ocr_status' => 'pending'])->save();
+        $document->forceFill(['ocr_status' => 'pending', 'ocr_pass' => null])->save();
         RecognizeText::dispatch($document->id);
         OcrProgress::forgetWaiting($document->org_id);
 
@@ -75,17 +75,19 @@ final class OcrController extends Controller
     }
 
     /**
-     * Small JSON for polling (A21/A22): the waiting count for everyone, the details only for settings.manage.
+     * Small JSON for polling (A21/A22, point 57): the open count and bar for everyone, the details only for settings.manage.
      */
     public function status(LocalOcr $ocr, CurrentOrg $org): JsonResponse
     {
-        $waiting = OcrProgress::waiting($org->id());
+        $open = OcrProgress::open($org->id());
+        $nav = ['waiting' => $open['waiting'], 'open' => $open['open'], 'total' => $open['total'], 'passes' => $open['passes']];
         if (! Gate::allows(Permission::ManageSettings->value)) {
-            return response()->json(['waiting' => $waiting]);
+            return response()->json($nav);
         }
         $counts = OcrProgress::counts($org->id());
 
         return response()->json([
+            ...$nav,
             'waiting' => $counts['waiting'],
             'mode' => $ocr->mode(),
             'counts' => $counts,
@@ -110,14 +112,18 @@ final class OcrController extends Controller
         }
         $skip = array_slice(array_filter((array) $request->query('skip', []), 'is_string'), 0, 100);
 
+        // Point 56: three passes, the lowest first: every unread document fast, then all again slower, then in full.
         $document = $this->editable($request)
-            ->where(static fn ($w) => $w->whereNull('ocr_status')->orWhereIn('ocr_status', ['pending', 'unavailable']))
+            ->where(static fn ($w) => $w->whereNull('ocr_status')->orWhereIn('ocr_status', ['pending', 'unavailable'])
+                ->orWhere(static fn ($d) => $d->where('ocr_status', 'done')->whereIn('ocr_pass', [1, 2])))
             ->whereNotIn('id', $skip)
             ->whereHas('files', self::readable(...))
+            ->orderByRaw("case when ocr_status = 'done' then ocr_pass else 0 end")
             ->latest('created_at')->first();
         if ($document === null) {
             return response()->noContent();
         }
+        $pass = $document->ocr_status === 'done' ? (int) $document->ocr_pass + 1 : 1;
         $file = self::readable(DocumentFile::query()->where('document_id', $document->id))->orderBy('page_no')->firstOrFail();
         OcrProgress::start($document);
 
@@ -125,6 +131,7 @@ final class OcrController extends Controller
             'id' => $document->id,
             'file' => route('ocr.image', $file->id),
             'type' => $file->mime,
+            'pass' => $pass,
             'save' => route('ocr.store', $document->id),
             'progress' => route('ocr.progress', $document->id),
         ]);
@@ -141,11 +148,21 @@ final class OcrController extends Controller
 
     public function store(Request $request, string $id): Response
     {
-        $data = $request->validate(['text' => ['nullable', 'string', 'max:200000'], 'failed' => ['nullable', 'boolean']]);
+        $data = $request->validate([
+            'text' => ['nullable', 'string', 'max:200000'],
+            'failed' => ['nullable', 'boolean'],
+            'pass' => ['nullable', 'integer', 'min:1', 'max:'.OcrProgress::PASSES],
+        ]);
         $document = $this->editable($request)->whereKey($id)->firstOrFail();
-        $document->forceFill(($data['failed'] ?? false)
-            ? ['ocr_status' => 'failed']
-            : ['ocr_text' => trim((string) ($data['text'] ?? '')), 'ocr_status' => 'done'])->save();
+        $pass = (int) ($data['pass'] ?? OcrProgress::PASSES);
+        $read = $document->ocr_status === 'done' && $document->ocr_text !== null;
+        if ($data['failed'] ?? false) {
+            // A later pass that fails keeps the text of the earlier one and does not come back.
+            $document->forceFill($read ? ['ocr_pass' => $pass] : ['ocr_status' => 'failed', 'ocr_pass' => null])->save();
+        } else {
+            // Each pass replaces the text of the one before (point 56).
+            $document->forceFill(['ocr_text' => trim((string) ($data['text'] ?? '')), 'ocr_status' => 'done', 'ocr_pass' => $pass])->save();
+        }
         OcrProgress::finish($document->id, $document->org_id);
 
         return response()->noContent();

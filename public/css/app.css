@@ -1396,14 +1396,44 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
 
 /* Package G */
 /* Text recognition (points 35/43, A21-A23): spinner on Einstellungen, counts and progress on its page, state in the detail. */
-.nav-ocr { display: inline-grid; place-items: center; margin-left: auto; color: var(--muted); }
-.nav-ocr[hidden] { display: none; }
-.nav-ocr .icon { width: 1.1rem; height: 1.1rem; animation: spin 1s linear infinite; }
-.sidebar .nav-ocr[data-tooltip]::before, .sidebar .nav-ocr[data-tooltip]::after { display: block; }
-@media (min-width: 64rem) {
-    :is(html.nav-rail, .shell.nav-rail) .nav-ocr { position: absolute; top: .2rem; right: .2rem; margin: 0; }
+/* OCR indicator below Abmelden (point 57): circling magnifier, open count, pause button, small bar. */
+.nav-ocr {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .1rem .75rem;
+    margin: .25rem 0 0; padding: .4rem .85rem .5rem; border-radius: calc(var(--radius) / 2); color: var(--text);
 }
-@media (prefers-reduced-motion: reduce) { .nav-ocr .icon { animation: none; } }
+.nav-ocr[hidden] { display: none; }
+.nav-ocr-icon { display: inline-grid; place-items: center; width: 1.4rem; height: 1.4rem; color: var(--primary); }
+.nav-ocr-icon .icon { width: 1.25rem; height: 1.25rem; animation: ocr-orbit 1.6s linear infinite; }
+@keyframes ocr-orbit {
+    from { transform: rotate(0deg) translateX(3px) rotate(0deg); }
+    to { transform: rotate(360deg) translateX(3px) rotate(-360deg); }
+}
+.nav-ocr-body { display: grid; min-width: 0; line-height: 1.25; }
+.nav-ocr-title { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav-ocr-count { color: var(--muted); font-size: .8125rem; white-space: nowrap; }
+.sidebar .nav-ocr-toggle {
+    display: inline-grid; place-items: center; width: 2rem; min-height: 2rem; margin: 0; padding: 0;
+    border: 1px solid var(--border); border-radius: 50%; background: var(--bg); color: var(--muted); box-shadow: none;
+}
+.sidebar .nav-ocr-toggle:hover { background: var(--bg); color: var(--text); box-shadow: none; }
+.nav-ocr-toggle .icon { width: 1rem; height: 1rem; }
+.nav-ocr-toggle .icon + .icon, .nav-ocr.is-paused .nav-ocr-toggle .icon:first-child { display: none; }
+.nav-ocr.is-paused .nav-ocr-toggle .icon + .icon { display: block; }
+.nav-ocr-bar {
+    grid-column: 1 / -1; display: block; width: 100%; height: .3rem; margin: .3rem 0 0;
+    appearance: none; border: 0; border-radius: .15rem; overflow: hidden; background: var(--border); accent-color: var(--primary);
+}
+.nav-ocr-bar::-webkit-progress-bar { background: var(--border); }
+.nav-ocr-bar::-webkit-progress-value { background: var(--primary); transition: width .3s; }
+.nav-ocr-bar::-moz-progress-bar { background: var(--primary); }
+.nav-ocr.is-paused .nav-ocr-icon { color: var(--muted); }
+.nav-ocr.is-paused .nav-ocr-icon .icon { animation-play-state: paused; }
+.nav-ocr.is-paused .nav-ocr-bar::-webkit-progress-value { background: var(--muted); }
+.nav-ocr.is-paused .nav-ocr-bar::-moz-progress-bar { background: var(--muted); }
+@media (min-width: 64rem) {
+    :is(html.nav-rail, .shell.nav-rail) .nav-ocr { grid-template-columns: 1fr; justify-items: center; gap: .35rem; padding-inline: .25rem; }
+}
+@media (prefers-reduced-motion: reduce) { .nav-ocr-icon .icon { animation: none; } }
 .ocr-counts { display: flex; flex-wrap: wrap; gap: .5rem 2rem; margin: .25rem 0 1rem; padding: 0; list-style: none; }
 .ocr-counts li { display: grid; }
 .ocr-counts strong { font-size: 1.5rem; line-height: 1.2; }

@@ -23,6 +23,9 @@ final class OcrProgress
 
     private const int WAITING_TTL = 15;
 
+    /** Browser passes (point 56): 1 fast, 2 medium, 3 full resolution; the server reads once and sets 3. */
+    public const int PASSES = 3;
+
     public static function start(Document $document): void
     {
         Cache::put(self::CURRENT_KEY, [
@@ -100,11 +103,37 @@ final class OcrProgress
         return $counts;
     }
 
-    /** Waiting documents for the main menu, cached 15 s. */
+    /** Waiting documents (not read at all yet). */
     public static function waiting(string $orgId): int
     {
-        return Cache::remember(self::waitingKey($orgId), self::WAITING_TTL, static fn (): int => self::query($orgId)
-            ->where(static fn ($w) => $w->whereNull('ocr_status')->orWhere('ocr_status', 'pending'))->count());
+        return self::open($orgId)['waiting'];
+    }
+
+    /**
+     * The OCR indicator in the main menu (point 57), cached 15 s: documents still open (waiting, or read by the
+     * browser in pass 1 or 2 of 3, point 56), and the passes done of all readable documents for the small bar.
+     *
+     * @return array{open: int, waiting: int, total: int, passes: int}
+     */
+    public static function open(string $orgId): array
+    {
+        return Cache::remember(self::waitingKey($orgId), self::WAITING_TTL, static function () use ($orgId): array {
+            $row = self::query($orgId)
+                ->where(static fn ($w) => $w->whereNull('ocr_status')->orWhereIn('ocr_status', ['pending', 'done']))
+                ->selectRaw("sum(case when ocr_status is null or ocr_status = 'pending' then 1 else 0 end) as waiting")
+                ->selectRaw('sum(case when ocr_pass in (1, 2) and ocr_status = ? then 1 else 0 end) as reading', ['done'])
+                ->selectRaw('count(*) as total')
+                ->selectRaw("sum(case when ocr_status is null or ocr_status = 'pending' then 0 when ocr_pass in (1, 2) then ocr_pass else ".self::PASSES.' end) as passes')
+                ->toBase()->first();
+            $waiting = (int) ($row->waiting ?? 0);
+
+            return [
+                'open' => $waiting + (int) ($row->reading ?? 0),
+                'waiting' => $waiting,
+                'total' => (int) ($row->total ?? 0),
+                'passes' => (int) ($row->passes ?? 0),
+            ];
+        });
     }
 
     public static function forgetWaiting(string $orgId): void
@@ -120,6 +149,7 @@ final class OcrProgress
 
     private static function waitingKey(string $orgId): string
     {
-        return 'ocr.waiting.'.$orgId;
+        // Holds the open counts of point 57 (was a single waiting count under ocr.waiting.*).
+        return 'ocr.open.'.$orgId;
     }
 }

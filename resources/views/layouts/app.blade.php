@@ -31,8 +31,10 @@
             @php
                 $currentOrg = app(\App\Domain\Org\CurrentOrg::class);
                 $badges = \App\Http\Badges::counts($currentOrg);
-                // Text recognition waiting (A22): one cached count, the spinner on Einstellungen.
-                $ocrWaiting = $currentOrg->isSet() ? \App\Infrastructure\Environment\OcrProgress::waiting($currentOrg->id()) : 0;
+                // OCR indicator below Abmelden (point 57): one cached query, shown only while documents are open.
+                $ocrOpen = $currentOrg->isSet() ? \App\Infrastructure\Environment\OcrProgress::open($currentOrg->id()) : ['open' => 0, 'total' => 0, 'passes' => 0];
+                $ocrPasses = \App\Infrastructure\Environment\OcrProgress::PASSES;
+                $ocrTip = __('ocr.nav_tooltip', ['count' => $ocrOpen['open']]);
             @endphp
             <aside class="side" data-badges="{{ route('badges') }}">
                 <header class="site-header">
@@ -61,7 +63,7 @@
                             ['settings.index', 'settings', 'settings.title', null, ['settings.*', 'members.*', 'roles.*', 'tags.*', 'exports.*', 'updates.*', 'ocr.show', 'palette.*', 'bank.import*', 'bank.accounts.*', 'phone-check*'], null],
                         ] as [$route, $icon, $label, $ability, $active, $badge])
                             @if ($ability === null || Gate::allows($ability))
-                                <li><a class="nav-item tooltip-right" href="{{ route($route) }}" data-tooltip="{{ __($label) }}" @if (request()->routeIs(...$active)) aria-current="page" @endif><x-icon :name="$icon" /><span class="nav-text">{{ __($label) }}</span> @if ($badge !== null) @php $count = $badges[$badge] ?? 0; @endphp <span class="nav-badge" data-badge="{{ $badge }}" @if ($count === 0) hidden @endif>{{ $count > 9 ? '9+' : $count }}</span> @endif @if ($route === 'settings.index') <span class="nav-ocr" data-ocr-nav="{{ route('ocr.status') }}" data-ocr-waiting="{{ $ocrWaiting }}" data-label="{{ __('ocr.nav_waiting', ['count' => ':count']) }}" data-tooltip="{{ __('ocr.nav_waiting', ['count' => $ocrWaiting]) }}" role="img" aria-label="{{ __('ocr.nav_waiting', ['count' => $ocrWaiting]) }}" @if ($ocrWaiting === 0) hidden @endif><x-icon name="loader-2" /></span> @endif</a></li>
+                                <li><a class="nav-item tooltip-right" href="{{ route($route) }}" data-tooltip="{{ __($label) }}" @if (request()->routeIs(...$active)) aria-current="page" @endif><x-icon :name="$icon" /><span class="nav-text">{{ __($label) }}</span> @if ($badge !== null) @php $count = $badges[$badge] ?? 0; @endphp <span class="nav-badge" data-badge="{{ $badge }}" @if ($count === 0) hidden @endif>{{ $count > 9 ? '9+' : $count }}</span> @endif</a></li>
                             @endif
                         @endforeach
                     </ul>
@@ -69,6 +71,20 @@
                         @csrf
                         <button type="submit" class="nav-item tooltip-right" data-tooltip="{{ __('auth.logout') }}"><x-icon name="power" /><span class="nav-text">{{ __('auth.logout') }}</span></button>
                     </form>
+                    {{-- Package G: OCR indicator (point 57); the pause button only where this browser reads (point 18). --}}
+                    <div class="nav-ocr" data-ocr-nav="{{ route('ocr.status') }}" data-ocr-open="{{ $ocrOpen['open'] }}" data-passes="{{ $ocrPasses }}"
+                        data-label="{{ __('ocr.nav_open', ['count' => ':count']) }}" data-tooltip-label="{{ __('ocr.nav_tooltip', ['count' => ':count']) }}" data-paused-label="{{ __('ocr.nav_paused') }}"
+                        @if ($ocrOpen['open'] === 0) hidden @endif>
+                        <span class="nav-ocr-icon tooltip-right" data-ocr-icon data-tooltip="{{ $ocrTip }}" role="img" aria-label="{{ $ocrTip }}"><x-icon name="search" /></span>
+                        <span class="nav-ocr-body nav-text">
+                            <span class="nav-ocr-title">{{ __('ocr.nav_title') }}</span>
+                            <span class="nav-ocr-count" data-ocr-open-text>{{ __('ocr.nav_open', ['count' => $ocrOpen['open']]) }}</span>
+                        </span>
+                        @if ($ocrBrowser)
+                            <button type="button" class="nav-ocr-toggle tooltip-right" data-ocr-toggle data-pause="{{ __('ocr.pause') }}" data-resume="{{ __('ocr.resume') }}" data-tooltip="{{ __('ocr.pause') }}" aria-label="{{ __('ocr.pause') }}" aria-pressed="false"><x-icon name="player-pause" /><x-icon name="player-play" /></button>
+                        @endif
+                        <progress class="nav-ocr-bar" max="{{ max(1, $ocrOpen['total'] * $ocrPasses) }}" value="{{ $ocrOpen['passes'] }}" data-ocr-nav-bar aria-label="{{ __('ocr.nav_title') }}"></progress>
+                    </div>
                     <small class="nav-version tooltip-right" data-tooltip="{{ __('app.version', ['version' => config('dochamster.version')]) }}"><span class="nav-text">{{ __('app.version', ['version' => config('dochamster.version')]) }}</span></small>
                     <button type="button" class="nav-collapse" aria-label="{{ __('app.nav.collapse') }}" data-collapse="{{ __('app.nav.collapse') }}" data-expand="{{ __('app.nav.expand') }}"><x-icon name="chevron-left" /></button>
                 </nav>
