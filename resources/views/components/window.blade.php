@@ -31,6 +31,7 @@
             @if ($close)
                 <a class="icon-button win-close" href="{{ $close }}" data-window-close aria-label="{{ __('app.window.close') }}" data-tooltip="{{ __('app.window.close') }}"><x-icon name="x" /></a>
             @endif
+            <button type="button" class="win-fold" data-window-fold aria-label="{{ __('app.window.fold') }}" data-tooltip="{{ __('app.window.fold') }}" hidden><x-icon name="chevron-left" /></button>
         </header>
         <div class="win-body">{{ $slot }}</div>
     </div>

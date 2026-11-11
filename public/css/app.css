@@ -894,15 +894,15 @@ ul.pick-list { margin: .75rem 0; }
    keep their own look and are left out here. */
 :root { --button-shadow: 0 1px 0 rgb(0 0 0 / .12), 0 2px 6px rgb(0 0 0 / .14); --primary-hover: #ee6410; --danger: #d92d20; --danger-hover: #b9251a; }
 @media (prefers-color-scheme: dark) { :root { --button-shadow: 0 1px 0 rgb(0 0 0 / .4), 0 2px 8px rgb(0 0 0 / .45); } }
-:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .col-item, .col-strip, .col-fold, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)) {
+:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .col-item, .col-strip, .col-fold, .win-fold, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)) {
     display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
     min-height: 48px; padding: 0 1.25rem; border: 2px solid transparent; border-radius: 10px;
     background: var(--primary); color: var(--primary-text); box-shadow: var(--button-shadow);
     font: inherit; font-size: 1rem; font-weight: 600; letter-spacing: 0; line-height: 1.2; text-decoration: none;
     cursor: pointer; transition: background-color .12s, box-shadow .12s, translate .06s;
 }
-:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .col-item, .col-strip, .col-fold, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)):hover { background: var(--primary-hover); box-shadow: var(--button-shadow); }
-:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .col-item, .col-strip, .col-fold, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)):active:not(:disabled) { translate: 0 1px; box-shadow: none; }
+:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .col-item, .col-strip, .col-fold, .win-fold, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)):hover { background: var(--primary-hover); box-shadow: var(--button-shadow); }
+:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .col-item, .col-strip, .col-fold, .win-fold, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)):active:not(:disabled) { translate: 0 1px; box-shadow: none; }
 :is(button, .button):focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; box-shadow: none; }
 :is(button, .button):disabled { opacity: .45; box-shadow: none; cursor: not-allowed; translate: none; }
 button .icon, .button .icon { width: 1.25rem; height: 1.25rem; }
@@ -1197,3 +1197,29 @@ html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
 
 /* The window head line sits where the column head line sits (padding + 48 px row), so strips line up with both */
 @media (min-width: 64rem) { .win-head { box-sizing: content-box; } }
+
+/* Framework round 11 (Go 2026-11-11, points 46, 47) */
+
+/* A103: tooltips lie above everything – one layer on <body> (app.js) instead of the element's own ::after, which
+   cards, columns and scrolling windows cut off. The ::after rules above still decide WHETHER a tooltip shows
+   (display: none hides it); without JavaScript they draw it as before. */
+html.has-tips [data-tooltip]::before, html.has-tips [data-tooltip]::after { visibility: hidden !important; }
+.tip {
+    position: fixed; z-index: 1000; top: 0; left: 0; max-width: min(24rem, calc(100vw - 16px));
+    padding: .35rem .75rem; border-radius: calc(var(--radius) / 2); background: var(--tooltip-bg); color: var(--tooltip-text);
+    box-shadow: var(--shadow); font-size: .875rem; font-weight: 500; letter-spacing: normal; line-height: 1.3;
+    pointer-events: none; opacity: 0; transition: opacity .15s ease-out;
+}
+.tip.is-shown { opacity: 1; }
+.tip::before { content: ""; position: absolute; width: 10px; height: 10px; rotate: 45deg; background: inherit; }
+.tip[data-side="below"]::before { top: -5px; left: var(--tip-arrow, 50%); margin-left: -5px; }
+.tip[data-side="right"]::before { left: -5px; top: 50%; margin-top: -5px; }
+.tip[data-side="above"]::before { bottom: -5px; left: var(--tip-arrow, 50%); margin-left: -5px; }
+@media (prefers-reduced-motion: reduce) { .tip { transition: none; } }
+
+/* A102: the fold arrow at the right end of a window head, like the arrows of the settings columns */
+.win-fold { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 36px; min-height: 36px; margin: 0 -.5rem 0 0; padding: 0; border: 0; border-radius: 8px; background: none; box-shadow: none; color: var(--text); }
+.win-fold:hover { background: none; box-shadow: none; color: var(--primary-ink); }
+.win-fold .icon { width: 1.25rem; height: 1.25rem; }
+.win-fold[hidden] { display: none; }
+@media (max-width: 63.99rem) { .win-fold { display: none !important; } }

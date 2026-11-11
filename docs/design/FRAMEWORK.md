@@ -74,7 +74,7 @@ Every `<button>` and `.button` is a button by default. Do not reuse its look for
   </nav>
   ```
   Tabs over a thin line, the active one in text colour with an orange bar (`.tab-mark`, only in the active tab) that glides to the next tab; the others quiet, darker on hover. Icon and count are optional. Too narrow: the bar scrolls sideways, no wrapping. Arrow keys, Home and End move between tabs. One tab bar per page (the gliding bar has one name). An empty view below shows `<p class="list-empty">…</p>`.
-- **Tooltip** – `data-tooltip="…"`, to the right with `.tooltip-right`.
+- **Tooltip** – `data-tooltip="…"`, to the right with `.tooltip-right`. Tooltips lie **above everything** (one layer on the page, drawn by app.js), so cards, columns and windows never cover or cut them; below the element, above it when there is no room. Mouse and keyboard only. A CSS rule that sets the element's `::after` to `display: none` still switches its tooltip off.
 - **Icons** – Tabler 3.49.0 outline, `<x-icon name="…" />`, files in `resources/icons/tabler/`.
 
 ## 4. Layout
@@ -92,6 +92,7 @@ The general logic of the app (points 22, 24, 40, PO 2026-11-08): **every window 
 - A click on a strip makes that window **wide again – nothing else changes**: no other window gets narrow for it.
 - **Pin:** a window made wide again from its strip is **pinned**: opening something from it leaves it wide (everything right of it still closes). The pin needle in the head (left of the X) shows it – outlined when free, filled orange when pinned – and switches it; a pinned window's strip shows a small needle too.
 - **Strip:** like the settings strips – the unfold arrow on top on the head line, then icon and title turned by 90°, the pin mark, the small X.
+- **Fold arrow:** at the right end of the head, `<` like the settings arrows: the window becomes a strip and loses its pin; the others share the room. Shown only while another window is wide too (one window always stays wide); not on phones.
 - **Head:** title, the module's buttons (`actions`, small 36 px icon buttons), pin, X – all on one line, the line of the settings column heads; a fixed gap of 1rem to the content.
 - All wide windows **share the width**, each at least its minimum width (default 30rem, per window with the `min` prop). Too little room: the row scrolls sideways; the window just opened or opened again scrolls into view.
 - The **X** in a window's head closes just that window; the small X on a strip removes it from the history. If no wide window is left, the nearest strip opens. A window without a close target (`close` prop) can't be closed – the root of a module.

@@ -19,6 +19,7 @@ return [
         'close' => 'Close',
         'back' => 'Back',
         'pin' => 'Pin – stays wide',
+        'fold' => 'Fold',
         'unpin' => 'Pinned – unpin',
     ],
 ];

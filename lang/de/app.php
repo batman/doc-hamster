@@ -19,6 +19,7 @@ return [
         'close' => 'Schließen',
         'back' => 'Zurück',
         'pin' => 'Anpinnen – bleibt groß',
+        'fold' => 'Einklappen',
         'unpin' => 'Angepinnt – lösen',
     ],
 ];
