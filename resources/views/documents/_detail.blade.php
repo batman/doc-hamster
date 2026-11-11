@@ -10,26 +10,36 @@
     $isText = \App\Domain\Documents\TextDocument::isText($file);
 @endphp
 <x-window :title="$document->title" icon="file-text" :url="route('documents.show', [$document->id, ...request()->query()])" :close="$close" class="win-detail">
+    {{-- Only "Herunterladen" stays a button of its own; everything else is in the ⋯ menu (point 26). --}}
+    @php
+        $canEdit = Gate::allows('documents.edit');
+        $canTrash = Gate::allows('documents.trash');
+    @endphp
     <div class="detail-actions">
         @if ($file)
             <a class="icon-button" href="{{ route('documents.download', $file->id) }}" aria-label="{{ __('documents.download') }}" data-tooltip="{{ __('documents.download') }}"><x-icon name="download" /></a>
         @endif
-        @if ($isText)
-            {{-- Text documents open in their own editor window (point 21); without documents.edit it only reads. --}}
-            @php $textLabel = Gate::allows('documents.edit') ? __('documents.text.edit') : __('documents.text.open'); @endphp
-            <a class="icon-button" href="{{ route('documents.text', $document->id) }}" data-window aria-label="{{ $textLabel }}" data-tooltip="{{ $textLabel }}"><x-icon name="file-pencil" /></a>
+        @if ($isText || $canEdit || $file || $canTrash)
+            <x-more-menu>
+                @if ($isText)
+                    {{-- Text documents open in their own editor window (point 21); without documents.edit it only reads. --}}
+                    <a class="menu-item" href="{{ route('documents.text', $document->id) }}" data-window><x-icon name="pencil" /><span>{{ $canEdit ? __('documents.edit') : __('documents.text.open') }}</span></a>
+                @elseif ($canEdit)
+                    <a class="menu-item" href="#title-{{ $document->id }}" data-focus="title-{{ $document->id }}"><x-icon name="pencil" /><span>{{ __('documents.edit') }}</span></a>
+                @endif
+                @if ($file)
+                    {{-- The device's share menu with the file itself (A2); where there is none, our dialog with mail and link (A3). --}}
+                    <button type="button" class="menu-item" data-share="{{ route('documents.download', $file->id) }}" data-share-name="{{ $document->title }}" data-share-type="{{ $file->mime }}" data-dialog-open="share-document-{{ $document->id }}"><x-icon name="send" /><span>{{ __('documents.send') }}</span></button>
+                @endif
+                @if ($canEdit)
+                    <button type="button" class="menu-item" data-dialog-open="move-document-{{ $document->id }}"><x-icon name="arrows-move" /><span>{{ __('documents.move') }}</span></button>
+                @endif
+                @if ($canTrash)
+                    <hr class="menu-separator">
+                    <button type="button" class="menu-item menu-danger" data-dialog-open="delete-document-{{ $document->id }}"><x-icon name="trash" /><span>{{ __('documents.delete') }}</span></button>
+                @endif
+            </x-more-menu>
         @endif
-        @can('documents.edit')
-            <a class="icon-button" href="#title-{{ $document->id }}" aria-label="{{ __('documents.edit') }}" data-tooltip="{{ __('documents.edit') }}"><x-icon name="pencil" /></a>
-        @endcan
-        @if ($file)
-            {{-- The device's share menu with the file itself (A2); where there is none, our dialog with mail and link (A3). --}}
-            <button type="button" class="icon-button" aria-label="{{ __('documents.send') }}" data-tooltip="{{ __('documents.send') }}"
-                data-share="{{ route('documents.download', $file->id) }}" data-share-name="{{ $document->title }}" data-share-type="{{ $file->mime }}" data-dialog-open="share-document-{{ $document->id }}"><x-icon name="send" /></button>
-        @endif
-        @can('documents.trash')
-            <button type="button" class="icon-button" aria-label="{{ __('documents.delete') }}" data-tooltip="{{ __('documents.delete') }}" data-dialog-open="delete-document-{{ $document->id }}"><x-icon name="trash" /></button>
-        @endcan
     </div>
 
     @if ($file?->isImage())
@@ -48,9 +58,13 @@
     @if ($file?->isImage() || $file?->thumb_path)
         {{-- Zoom bar for the viewer above (app.js "Document viewer"): wheel, slider, box zoom and box copy. --}}
         <div class="doc-zoom" data-doc-zoom data-label-zoom="{{ __('documents.zoom_in_area') }}" data-label-copy="{{ __('documents.copy_area') }}" data-label-copied="{{ __('documents.copied') }}">
-            <input type="range" min="25" max="400" step="1" value="100" aria-label="{{ __('documents.zoom') }}" data-zoom-range>
-            <output data-zoom-value>100 %</output>
-            <button type="button" class="button-small button-quiet" aria-pressed="false" data-zoom-select>{{ __('documents.select_area') }}</button>
+            {{-- Two modes (point 25): Bewegen pans, Markieren draws a box; Bewegen is the default. --}}
+            <div class="button-group" role="group" aria-label="{{ __('documents.zoom_mode') }}">
+                <button type="button" class="icon-button button-small" aria-pressed="true" data-zoom-mode="move" aria-label="{{ __('documents.mode_move') }}" data-tooltip="{{ __('documents.mode_move') }}"><x-icon name="hand-stop" /></button>
+                <button type="button" class="icon-button button-small" aria-pressed="false" data-zoom-mode="select" aria-label="{{ __('documents.mode_select') }}" data-tooltip="{{ __('documents.mode_select') }}"><x-icon name="zoom-in-area" /></button>
+            </div>
+            <input type="range" min="25" max="400" step="1" value="100" aria-label="{{ __('documents.zoom') }}" data-zoom-range title="{{ __('documents.zoom_reset') }}">
+            <button type="button" class="doc-zoom-value" data-zoom-reset aria-label="{{ __('documents.zoom_reset') }}" data-tooltip="{{ __('documents.zoom_reset') }}"><output data-zoom-value>100 %</output></button>
         </div>
     @endif
 
@@ -79,12 +93,19 @@
                     </div>
                 </section>
             @endif
-            <section class="detail-section">
-                <h3><label for="note-{{ $document->id }}">{{ __('documents.note') }}</label></h3>
-                <textarea id="note-{{ $document->id }}" name="note" placeholder="{{ __('documents.note_placeholder') }}">{{ old('note', $document->note) }}</textarea>
-                <button type="submit">{{ __('documents.save') }}</button>
-            </section>
+            <button type="submit">{{ __('documents.save') }}</button>
         </form>
+        {{-- Note and recognised text are edited in place and save on their own (points 27/28). --}}
+        <section class="detail-section">
+            <h3 id="note-{{ $document->id }}">{{ __('documents.note') }}</h3>
+            <x-edit-in-place name="note" :value="$document->note" :action="route('documents.field', $document->id)" multiline maxlength="5000"
+                :placeholder="__('documents.note_placeholder')" aria-labelledby="note-{{ $document->id }}" />
+        </section>
+        <section class="detail-section">
+            <h3 id="ocr-{{ $document->id }}">{{ __('documents.ocr_text') }}</h3>
+            <x-edit-in-place name="ocr_text" :value="$document->ocr_text" :action="route('documents.field', $document->id)" multiline class="edit-in-place-small"
+                :placeholder="__('documents.ocr_placeholder')" aria-labelledby="ocr-{{ $document->id }}" />
+        </section>
     @else
         <section class="detail-section">
             <h3>{{ __('documents.tags') }}</h3>
@@ -92,6 +113,9 @@
         </section>
         @if ($document->note)
             <section class="detail-section"><h3>{{ __('documents.note') }}</h3><p>{{ $document->note }}</p></section>
+        @endif
+        @if ($document->ocr_text)
+            <section class="detail-section"><h3>{{ __('documents.ocr_text') }}</h3><p class="edit-in-place-small is-plain">{{ $document->ocr_text }}</p></section>
         @endif
     @endcan
 
@@ -137,6 +161,27 @@
         </div>
     </div>
 @endif
+
+@can('documents.edit')
+    <div class="dialog-backdrop" data-dialog="move-document-{{ $document->id }}" hidden>
+        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="move-document-{{ $document->id }}-title">
+            <h2 id="move-document-{{ $document->id }}-title">{{ __('documents.move') }}</h2>
+            <form method="post" action="{{ route('documents.move', $document->id) }}">
+                @csrf
+                <label for="move-folder-{{ $document->id }}" class="visually-hidden">{{ __('folders.folder') }}</label>
+                <select id="move-folder-{{ $document->id }}" name="folder" required>
+                    @foreach ($folders as $row)
+                        <option value="{{ $row['folder']->id }}" @selected($document->folder_id === $row['folder']->id)>{{ str_repeat('– ', $row['depth']) }}{{ $row['folder']->name }}</option>
+                    @endforeach
+                </select>
+                <div class="dialog-actions">
+                    <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
+                    <button type="submit">{{ __('documents.move_submit') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+@endcan
 
 @can('documents.trash')
     <div class="dialog-backdrop" data-dialog="delete-document-{{ $document->id }}" hidden>

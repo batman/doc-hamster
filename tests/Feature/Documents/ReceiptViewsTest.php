@@ -67,6 +67,12 @@ it('opens a receipt beside the list, saves title, note and tags, and deletes int
     $document->refresh();
     expect([$document->title, $document->note, $document->tags()->pluck('tags.id')->all()])->toBe(['Tankquittung', 'Fahrt nach Köln', [$tag->id]]);
 
+    // Note and recognised text are edited in place (points 27/28); the form keeps the note when it doesn't send it.
+    $this->postJson('/documents/'.$document->id.'/field', ['field' => 'ocr_text', 'value' => 'SUMME 12,00'])->assertOk()->assertJson(['value' => 'SUMME 12,00']);
+    $this->postJson('/documents/'.$document->id.'/field', ['field' => 'title', 'value' => 'x'])->assertUnprocessable();
+    $this->post('/documents/'.$document->id, ['title' => 'Tankquittung'])->assertRedirect();
+    expect($document->refresh()->only(['note', 'ocr_text']))->toBe(['note' => 'Fahrt nach Köln', 'ocr_text' => 'SUMME 12,00']);
+
     $this->post('/documents/'.$document->id.'/delete')->assertRedirect(route('documents.index'));
     expect(Document::query()->withoutGlobalScope(OrgScope::class)->count())->toBe(0)
         ->and(Document::withTrashed()->withoutGlobalScope(OrgScope::class)->count())->toBe(1);

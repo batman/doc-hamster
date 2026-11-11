@@ -55,6 +55,8 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('documents/view', [DocumentController::class, 'setView'])->name('documents.view');
     Route::get('documents/{id}', [DocumentController::class, 'show'])->name('documents.show');
     Route::post('documents/{id}', [DocumentController::class, 'update'])->middleware('can:documents.edit')->name('documents.update');
+    Route::post('documents/{id}/field', [DocumentController::class, 'updateField'])->middleware('can:documents.edit')->name('documents.field');
+    Route::post('documents/{id}/move', [DocumentController::class, 'move'])->middleware('can:documents.edit')->name('documents.move');
     Route::post('documents/{id}/delete', [DocumentController::class, 'destroy'])->middleware('can:documents.trash')->name('documents.destroy');
     Route::get('files/{id}/download', [DocumentController::class, 'download'])->name('documents.download');
     Route::get('files/{id}/thumb', [DocumentController::class, 'thumb'])->name('documents.thumb');
@@ -71,6 +73,8 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::get('phone-check/qr', [PhoneCheckController::class, 'qr'])->name('phone-check.qr');
 
     // Druckerablage: what was printed on "Hamster" (print tray).
+    // E-Mail-Ablage (point 30): placeholder until the function comes.
+    Route::view('mail-tray', 'mail_tray.index')->middleware('can:documents.upload')->name('mail-tray.index');
     Route::middleware('can:documents.upload')->prefix('print-tray')->name('print-tray.')->group(function (): void {
         Route::get('/', [PrintTrayController::class, 'index'])->name('index');
         Route::post('printers', [PrintTrayController::class, 'setup'])->name('setup');

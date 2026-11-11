@@ -27,6 +27,11 @@ return [
     'download' => 'Download',
     'edit' => 'Edit',
     'send' => 'Send',
+    'move' => 'Move to folder',
+    'move_submit' => 'Move',
+    'moved' => 'Receipt moved.',
+    'ocr_text' => 'Recognised text',
+    'ocr_placeholder' => 'No text recognised',
     'send_later' => 'Sending comes later',
     'delete' => 'Delete',
     'delete_title' => 'Delete receipt?',
@@ -69,6 +74,10 @@ return [
     'copy_area' => 'Copy',
     'copied' => 'Area copied',
     'select_area' => 'Select area',
+    'zoom_mode' => 'Mode',
+    'mode_move' => 'Move',
+    'mode_select' => 'Select',
+    'zoom_reset' => 'Reset to 100 %',
     // Text documents written in the app (point 21).
     'text' => [
         'new' => 'New document',

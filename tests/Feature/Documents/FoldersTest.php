@@ -153,6 +153,11 @@ it('moves a receipt to another folder from its detail view; an empty choice mean
 
     $this->post('/documents/'.$document->id, ['title' => 'v.jpg', 'folder' => ''])->assertRedirect();
     expect(titled('v.jpg')->folder_id)->toBe(belegeOf($this->orgId)->id);
+
+    // "In Ordner verschieben" from the ⋯ menu changes only the folder (point 26).
+    $this->post('/documents/'.$document->id.'/move', ['folder' => $folder->id])->assertRedirect();
+    expect(titled('v.jpg')->folder_id)->toBe($folder->id);
+    $this->post('/documents/'.$document->id.'/move', ['folder' => ''])->assertSessionHasErrors('folder');
 });
 
 it('keeps the folder when a form without the folder field saves the receipt', function (): void {
@@ -297,7 +302,7 @@ it('shows the folders as sortable rows in the Dokumente window, not in the main 
         ->assertSee('data-id="'.$phone->id.'"', false)
         ->assertSee('1 Dokument')
         ->assertDontSee('data-id="trash"', false)
-        ->assertSee('Unterordner anlegen');
+        ->assertSee('Ordner anlegen');
     $this->get('/documents/trash')->assertOk()->assertSee('data-window-title="Papierkorb"', false);
 });
 

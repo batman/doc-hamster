@@ -12,6 +12,11 @@ return [
         'expand' => 'Menü vergrößern',
     ],
     'more' => 'Mehr',
+    'edit_in_place' => [
+        'hint' => 'Zum Bearbeiten klicken',
+        'saved' => 'Gespeichert.',
+        'failed' => 'Speichern fehlgeschlagen.',
+    ],
     'window' => [
         'open' => 'Öffnen: :title',
         'remove' => ':title aus dem Verlauf entfernen',

@@ -12,6 +12,11 @@ return [
         'expand' => 'Widen menu',
     ],
     'more' => 'More',
+    'edit_in_place' => [
+        'hint' => 'Click to edit',
+        'saved' => 'Saved.',
+        'failed' => 'Saving failed.',
+    ],
     'window' => [
         'open' => 'Open: :title',
         'remove' => 'Remove :title from the history',

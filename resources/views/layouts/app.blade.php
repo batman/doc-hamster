@@ -51,6 +51,7 @@
                             ['home', 'home', 'home.title', null, ['home', 'notes.*'], null],
                             ['documents.index', 'file-text', 'documents.title', null, ['documents.*', 'folders.*'], null],
                             ['print-tray.index', 'printer', 'print_tray.title', 'documents.upload', ['print-tray.*'], \App\Http\Badges::PRINT_TRAY],
+                            ['mail-tray.index', 'mail', 'mail_tray.title', 'documents.upload', ['mail-tray.*'], null],
                             ['bank.index', 'building-bank', 'bank.title', 'banking.import', ['bank.index', 'bank.show'], null],
                             ['settings.index', 'settings', 'settings.title', null, ['settings.*', 'members.*', 'roles.*', 'tags.*', 'exports.*', 'updates.*', 'bank.import*', 'bank.accounts.*', 'phone-check*'], null],
                         ] as [$route, $icon, $label, $ability, $active, $badge])

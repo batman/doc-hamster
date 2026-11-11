@@ -2094,13 +2094,26 @@
         zoomAt(frame, st, e.target.value / 100, center(frame));
     });
 
-    // "Bereich wählen": when zoomed, a plain drag draws a box instead of panning (Alt does the same).
+    // Point 25: Bewegen (pan, default) or Markieren (box); Alt+drag marks in either mode.
+    // Point 23: a click on the percent value resets to 100 %, like a double click on the slider.
     document.addEventListener('click', e => {
-        const btn = e.target.closest?.('[data-zoom-select]');
-        if (!btn) return;
-        const on = btn.getAttribute('aria-pressed') !== 'true';
-        btn.setAttribute('aria-pressed', String(on));
-        btn.closest('[data-doc-zoom]').previousElementSibling.classList.toggle('is-selecting', on);
+        const mode = e.target.closest?.('[data-zoom-mode]');
+        if (mode) {
+            const bar = mode.closest('[data-doc-zoom]');
+            bar.querySelectorAll('[data-zoom-mode]').forEach(b => b.setAttribute('aria-pressed', String(b === mode)));
+            bar.previousElementSibling.classList.toggle('is-selecting', mode.dataset.zoomMode === 'select');
+            return;
+        }
+        const resetBtn = e.target.closest?.('[data-zoom-reset]');
+        if (resetBtn) {
+            const frame = frameOf(resetBtn.closest('[data-doc-zoom]').previousElementSibling);
+            if (frame) { const st = stateOf(frame); clearBox(st); reset(frame, st); }
+        }
+    });
+    document.addEventListener('dblclick', e => {
+        if (!e.target.matches?.('[data-zoom-range]')) return;
+        const frame = frameOf(e.target.closest('[data-doc-zoom]').previousElementSibling);
+        if (frame) { const st = stateOf(frame); clearBox(st); reset(frame, st); }
     });
 
     document.addEventListener('pointerdown', e => {
@@ -2110,7 +2123,7 @@
         if (!frame || e.button !== 0 || e.pointerType === 'touch') return;
         e.preventDefault();
         const st = stateOf(frame);
-        const select = st.s <= 1 || e.altKey || frame.classList.contains('is-selecting');
+        const select = e.altKey || frame.classList.contains('is-selecting');
         const start = point(frame, e);
         let last = start, box = null;
         frame.setPointerCapture(e.pointerId);
@@ -2859,4 +2872,124 @@
             event.returnValue = '';
         }
     });
+})();
+
+/* Package E */
+// Click-to-edit (point 28, <x-edit-in-place>): plain text until clicked or Enter, then a field of the same size.
+// Blur or Ctrl+Enter saves (POST field + value, JSON answer), Escape restores the old text. Works in windows
+// loaded later too (one listener for the page). Also: [data-focus="id"] menu entries focus that field.
+(() => {
+    const token = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const note = (text, failed) => {
+        const el = document.createElement('div');
+        el.className = failed ? 'toast toast-error' : 'toast';
+        el.setAttribute('role', failed ? 'alert' : 'status');
+        el.textContent = text;
+        document.body.append(el);
+        const leave = () => { el.classList.add('is-leaving'); setTimeout(() => el.remove(), 300); };
+        el.addEventListener('click', leave);
+        setTimeout(leave, failed ? 5000 : 2000);
+    };
+    const grow = field => {
+        if (field.tagName === 'TEXTAREA') {
+            field.style.height = 'auto';
+            field.style.height = `${field.scrollHeight + 2}px`;
+        }
+    };
+    const finish = (box, field) => {
+        field.remove();
+        box.hidden = false;
+    };
+    const save = (box, field) => {
+        const old = box.textContent;
+        const value = field.value;
+        finish(box, field);
+        if (value.trim() === old.trim()) {
+            return;
+        }
+        box.textContent = value.trim();
+        box.classList.add('is-saving');
+        const body = new FormData();
+        body.append('field', box.dataset.field);
+        body.append('value', value);
+        fetch(box.dataset.editInPlace, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' }, credentials: 'same-origin' })
+            .then(response => (response.ok ? response.json() : Promise.reject(new Error(String(response.status)))))
+            .then(data => {
+                box.textContent = typeof data.value === 'string' ? data.value : value.trim();
+                note(box.dataset.saved, false);
+            })
+            .catch(() => {
+                box.textContent = old;
+                note(box.dataset.failed, true);
+            })
+            .finally(() => box.classList.remove('is-saving'));
+    };
+    const start = box => {
+        if (box.hidden || box.classList.contains('is-saving')) {
+            return;
+        }
+        const multiline = box.classList.contains('is-multiline');
+        const field = document.createElement(multiline ? 'textarea' : 'input');
+        field.className = `edit-in-place-field ${box.className.replace(/\bedit-in-place\b/, '')}`.trim();
+        field.value = box.textContent;
+        field.placeholder = box.dataset.placeholder ?? '';
+        if (box.dataset.maxlength) {
+            field.maxLength = Number(box.dataset.maxlength);
+        }
+        const labelledBy = box.getAttribute('aria-labelledby');
+        if (labelledBy) {
+            field.setAttribute('aria-labelledby', labelledBy);
+        }
+        const height = box.offsetHeight;
+        box.hidden = true;
+        box.after(field);
+        if (multiline) {
+            field.style.minHeight = `${height}px`;
+            grow(field);
+        }
+        field.focus();
+        field.addEventListener('input', () => grow(field));
+        field.addEventListener('blur', () => { if (field.isConnected && !field.dataset.cancelled) save(box, field); });
+        field.addEventListener('keydown', event => {
+            if (event.key === 'Enter' && (event.ctrlKey || event.metaKey || !multiline)) {
+                event.preventDefault();
+                field.blur();
+                box.focus();
+            }
+        });
+    };
+    document.addEventListener('click', event => {
+        const box = event.target.closest('[data-edit-in-place]');
+        if (box) {
+            start(box);
+            return;
+        }
+        const jump = event.target.closest('[data-focus]');
+        const target = jump && document.getElementById(jump.dataset.focus);
+        if (target) {
+            event.preventDefault();
+            target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            target.focus({ preventScroll: true });
+            target.select?.();
+        }
+    });
+    document.addEventListener('keydown', event => {
+        const box = event.target.closest?.('[data-edit-in-place]');
+        if (box && event.key === 'Enter') {
+            event.preventDefault();
+            start(box);
+        }
+    });
+    // Escape first, before windows, columns and dialogs react to the same key (window capture runs before document).
+    window.addEventListener('keydown', event => {
+        const field = event.target.closest?.('.edit-in-place-field');
+        if (field && event.key === 'Escape') {
+            event.preventDefault();
+            event.stopPropagation();
+            const box = field.previousElementSibling;
+            field.dataset.cancelled = '1';
+            finish(box, field);
+            box.focus();
+        }
+    }, { capture: true });
 })();

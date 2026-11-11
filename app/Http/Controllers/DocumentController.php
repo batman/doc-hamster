@@ -17,6 +17,7 @@ use App\Domain\Org\Permission;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -203,8 +204,9 @@ final class DocumentController
         $document = $this->visible($request)->whereKey($id)->firstOrFail();
 
         // The folder changes only when the form has the field, so other forms never clear it.
+        // The note is edited in place now (click-to-edit), so the form only changes it when it sends it.
         $document->update([
-            'note' => $data['note'] ?? null,
+            ...($request->has('note') ? ['note' => $data['note'] ?? null] : []),
             ...(isset($data['title']) ? ['title' => $data['title']] : []),
             ...($request->has('folder') ? ['folder_id' => $data['folder'] ?? Folder::defaultIdFor($org->id())] : []),
         ]);
@@ -212,6 +214,37 @@ final class DocumentController
         $audit->record('document.changed', orgId: $org->id(), userId: $this->userId($request), subject: $document, ip: $request->ip());
 
         return back()->with('status', __('documents.changed'));
+    }
+
+    /**
+     * One text field edited in place (click-to-edit, points 27/28): the note or the recognised text.
+     * Answers with JSON, the page stays as it is.
+     */
+    public function updateField(Request $request, string $id, AuditLog $audit, CurrentOrg $org): JsonResponse
+    {
+        $data = $request->validate([
+            'field' => ['required', 'string', Rule::in(['note', 'ocr_text'])],
+            'value' => ['nullable', 'string', $request->input('field') === 'note' ? 'max:5000' : 'max:1000000'],
+        ]);
+        $document = $this->visible($request)->whereKey($id)->firstOrFail();
+        $value = trim((string) ($data['value'] ?? ''));
+
+        $document->forceFill([$data['field'] => $value !== '' ? $value : null])->save();
+        $audit->record('document.changed', orgId: $org->id(), userId: $this->userId($request), subject: $document, ip: $request->ip());
+
+        return response()->json(['value' => $value, 'message' => __('documents.changed')]);
+    }
+
+    /** "In Ordner verschieben" from the ⋯ menu of the receipt window (point 26): only the folder changes. */
+    public function move(Request $request, string $id, AuditLog $audit, CurrentOrg $org): RedirectResponse
+    {
+        $data = $request->validate(['folder' => ['required', ...self::folderRule()['folder']]]);
+        $document = $this->visible($request)->whereKey($id)->firstOrFail();
+
+        $document->update(['folder_id' => $data['folder']]);
+        $audit->record('document.changed', orgId: $org->id(), userId: $this->userId($request), subject: $document, ip: $request->ip());
+
+        return back()->with('status', __('documents.moved'));
     }
 
     /** Into the trash: the receipt leaves every list, the file stays (#30, "Belege löschen"). */
