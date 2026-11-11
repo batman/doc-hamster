@@ -2,11 +2,14 @@
     One window of the window system (Go 2026-11-07, points 22 and 24, see docs/design/FRAMEWORK.md).
     A module only fills the body; title, icon, close, strip, history and animation come from the framework.
     Props: title, icon (Tabler name), url (this window's address, default the current one),
-    close (where the X leads without JavaScript; null = the window can't be closed), slot "actions" for the head,
+    close (where the X leads without JavaScript; null = the window can't be closed), slot "actions" for the toolbar,
     upload (where an upload belongs while this window is active, e.g. "folder=01H…"; sent as extra form fields),
     min (the window's minimum width when it shares the room, e.g. "40rem"; default 30rem),
-    search (placeholder of a search field in the head, A104: typing reloads the window body with ?q=…; the module reads q).
-    On phones the actions move into a "⋯" menu, so the title keeps its room.
+    search (placeholder of a search field in the toolbar, A104: typing reloads the window body with ?q=…; the module reads q).
+    Head like Windows (point 42): title (ellipsis), pin, minimise, X. Search and actions stand in a toolbar row below the
+    head that follows the window's own width (container queries, point 41): one row, search on its own row, narrow.
+    One window = one instance of a module for one record; the same record can be open twice (point 40), so ids inside
+    a window loaded later get a per-window suffix in app.js – write plain ids, dialog names and labels as usual.
 --}}
 @props(['title', 'icon' => 'file-text', 'url' => null, 'close' => null, 'upload' => null, 'min' => null, 'search' => null])
 @php
@@ -40,25 +43,29 @@
         <header class="win-head">
             <button type="button" class="win-back icon-button" data-window-back aria-label="{{ __('app.window.back') }}" hidden><x-icon name="chevron-left" /></button>
             <x-icon :name="$icon" />
-            <h1 class="win-title">{{ $title }}</h1>
-            @if ($search)
-                <form class="win-search" role="search" method="get" action="{{ strtok($url, '?') }}" data-window-search>
-                    @foreach ($searchKeep as [$key, $value])
-                        <input type="hidden" name="{{ $key }}" value="{{ $value }}">
-                    @endforeach
-                    <input type="search" class="input-small" name="q" value="{{ $searchTerm }}" placeholder="{{ $search }}" aria-label="{{ $search }}" autocomplete="off" enterkeyhint="search">
-                    <button type="button" class="win-search-clear" data-window-search-clear aria-label="{{ __('app.window.search_clear') }}" data-tooltip="{{ __('app.window.search_clear') }}" @if ($searchTerm === '') hidden @endif><x-icon name="x" /></button>
-                </form>
-            @endif
-            @isset($actions)
-                <div class="win-actions" data-win-actions>{{ $actions }}</div>
-                <x-more-menu class="win-more" data-win-more />
-            @endisset
+            <h1 class="win-title" title="{{ $title }}">{{ $title }}</h1>
             <button type="button" class="icon-button win-pin" data-window-pin aria-pressed="false" aria-label="{{ __('app.window.pin') }}" data-tooltip="{{ __('app.window.pin') }}" data-label-pin="{{ __('app.window.pin') }}" data-label-unpin="{{ __('app.window.unpin') }}"><x-icon name="pin" /><x-icon name="pin-filled" /></button>
+            <button type="button" class="icon-button win-minimise" data-window-fold aria-label="{{ __('app.window.minimise') }}" data-tooltip="{{ __('app.window.minimise') }}" hidden><x-icon name="minus" /></button>
             @if ($close)
                 <a class="icon-button win-close" href="{{ $close }}" data-window-close aria-label="{{ __('app.window.close') }}" data-tooltip="{{ __('app.window.close') }}"><x-icon name="x" /></a>
             @endif
         </header>
+        @if ($search || isset($actions))
+            <div class="win-tools">
+                @if ($search)
+                    <form class="win-search" role="search" method="get" action="{{ strtok($url, '?') }}" data-window-search>
+                        @foreach ($searchKeep as [$key, $value])
+                            <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                        @endforeach
+                        <input type="search" class="input-small" name="q" value="{{ $searchTerm }}" placeholder="{{ $search }}" aria-label="{{ $search }}" autocomplete="off" enterkeyhint="search">
+                        <button type="button" class="win-search-clear" data-window-search-clear aria-label="{{ __('app.window.search_clear') }}" data-tooltip="{{ __('app.window.search_clear') }}" @if ($searchTerm === '') hidden @endif><x-icon name="x" /></button>
+                    </form>
+                @endif
+                @isset($actions)
+                    <div class="win-actions">{{ $actions }}</div>
+                @endisset
+            </div>
+        @endif
         <div class="win-body">{{ $slot }}</div>
     </div>
 </section>

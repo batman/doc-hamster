@@ -25,6 +25,7 @@ return [
         'back' => 'Zurück',
         'pin' => 'Anpinnen – bleibt groß',
         'fold' => 'Einklappen',
+        'minimise' => 'Minimieren',
         'unpin' => 'Angepinnt – lösen',
         'search_clear' => 'Suche leeren',
     ],
