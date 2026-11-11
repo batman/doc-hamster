@@ -88,7 +88,9 @@ final class DocumentController
         $folders = Folder::flat();
         $wantedFolder = $request->query('folder');
         $folder = is_string($wantedFolder) && collect($folders)->contains(static fn (array $row): bool => $row['folder']->id === $wantedFolder) ? $wantedFolder : null;
-        if ($q !== '') {
+        // Calendar and timeline are date views: like a search they show everything below the current folder.
+        $savedView = $this->user($request)->receipt_view;
+        if ($q !== '' || in_array($savedView, ['calendar', 'timeline'], true)) {
             if ($folder !== null) {
                 $query->whereIn('folder_id', Folder::branchIds($folder));
             }
@@ -308,17 +310,8 @@ final class DocumentController
     {
         $direct = Document::query()->visibleTo($this->userId($request), Gate::allows(Permission::ViewAllDocuments->value))
             ->whereNotNull('folder_id')->selectRaw('folder_id, count(*) as total')->groupBy('folder_id')->pluck('total', 'folder_id');
-        // Sum up from the deepest level, so each folder holds what lies below it (one query, no recursion).
-        $sum = [];
-        foreach (array_reverse($folders) as $row) {
-            $id = $row['folder']->id;
-            $sum[$id] = ($sum[$id] ?? 0) + (int) ($direct[$id] ?? 0);
-            $parent = $row['folder']->parent_id;
-            if ($parent !== null) {
-                $sum[$parent] = ($sum[$parent] ?? 0) + $sum[$id];
-            }
-        }
-        $total = static fn (string $id): int => $sum[$id] ?? 0;
+        // Like an explorer: a folder row counts only the documents directly in it (point 12).
+        $total = static fn (string $id): int => (int) ($direct[$id] ?? 0);
 
         $out = [];
         if ($folder !== null) {
