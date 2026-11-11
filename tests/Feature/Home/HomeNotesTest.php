@@ -168,7 +168,7 @@ it('puts notes on a board of columns, moves, archives and tags them', function (
     // Columns: any number, renamed, ordered; only with the right.
     $this->post('/notes/columns', ['name' => 'Erledigt'])->assertRedirect(route('home'));
     $done = NoteColumn::query()->withoutGlobalScope(OrgScope::class)->where('name', 'Erledigt')->firstOrFail();
-    $this->postJson('/notes/columns/'.$done->id, ['name' => 'Fertig'])->assertOk();
+    $this->postJson('/notes/columns/'.$done->id, ['field' => 'name', 'value' => ' Fertig '])->assertOk()->assertJson(['value' => 'Fertig']);
     $this->postJson('/notes/columns/order', ['order' => [$done->id, $first->id]])->assertOk();
     expect($done->fresh()->only(['name', 'sort']))->toBe(['name' => 'Fertig', 'sort' => 0]);
     $this->actingAs($clerk->user)->post('/notes/columns', ['name' => 'X'])->assertForbidden();

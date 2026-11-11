@@ -31,10 +31,15 @@ final class NoteColumnController
     public function update(Request $request, string $id): JsonResponse|RedirectResponse
     {
         $this->authorize();
+        // Click-to-edit (<x-edit-in-place>, point 46) sends the text as "value".
+        if (! $request->has('name')) {
+            $request->merge(['name' => $request->input('value')]);
+        }
         $data = $request->validate(['name' => ['required', 'string', 'max:60']]);
-        NoteColumn::query()->findOrFail($id)->update(['name' => trim($data['name'])]);
+        $name = trim($data['name']);
+        NoteColumn::query()->findOrFail($id)->update(['name' => $name]);
 
-        return $request->expectsJson() ? response()->json(['ok' => true]) : redirect()->route('home');
+        return $request->expectsJson() ? response()->json(['ok' => true, 'value' => $name]) : redirect()->route('home');
     }
 
     /** Columns dragged into a new order (A30). */

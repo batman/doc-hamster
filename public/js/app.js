@@ -1437,9 +1437,9 @@
         });
         // Edit dialog of a locked note: unticking "Gesperrt" frees the fields right away.
         document.querySelectorAll('[data-note-lock]').forEach(box => {
-            const fields = box.form.querySelector('[data-note-fields]');
-            const locked = fields.disabled;
-            box.addEventListener('change', () => { fields.disabled = locked && box.checked; });
+            const fields = box.form.querySelectorAll('[data-note-fields]');
+            const locked = fields[0]?.disabled ?? false;
+            box.addEventListener('change', () => fields.forEach(set => { set.disabled = locked && box.checked; }));
         });
 
         const send = (url, fields) => {
@@ -1475,62 +1475,6 @@
         }));
         notes.filter(note => note.dataset.noteLook).forEach(note => sized.observe(note));
 
-        // Folding (A39): the column becomes a strip with its name; this browser remembers it.
-        const FOLDED = 'notes.folded';
-        let folded = [];
-        try { folded = JSON.parse(localStorage.getItem(FOLDED) || '[]'); } catch { /* not remembered */ }
-        const fold = (column, on) => {
-            column.classList.toggle('is-folded', on);
-            column.querySelector('.kanban-body').hidden = on;
-            column.querySelector('[data-kanban-unfold]').hidden = !on;
-            folded = folded.filter(id => id !== column.dataset.columnId).concat(on ? [column.dataset.columnId] : []);
-            try { localStorage.setItem(FOLDED, JSON.stringify(folded)); } catch { /* not remembered */ }
-        };
-        board.querySelectorAll('.kanban-col[data-column-id]').forEach(column => {
-            if (folded.includes(column.dataset.columnId)) {
-                fold(column, true);
-            }
-        });
-        board.addEventListener('click', event => {
-            const folder = event.target.closest('[data-kanban-fold]');
-            const opener = event.target.closest('[data-kanban-unfold]');
-            if (folder || opener) {
-                const column = (folder || opener).closest('.kanban-col');
-                fold(column, Boolean(folder));
-                column.querySelector(folder ? '[data-kanban-unfold]' : '[data-kanban-fold]')?.focus();
-            }
-        });
-
-        // Renaming: click on the name and type, like Trello. Enter or leaving saves, Esc goes back.
-        board.querySelectorAll('[data-kanban-rename]').forEach(input => {
-            let saved = input.value;
-            input.addEventListener('keydown', event => {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    input.blur();
-                } else if (event.key === 'Escape') {
-                    input.value = saved;
-                    input.blur();
-                }
-            });
-            input.addEventListener('change', () => {
-                const name = input.value.trim();
-                if (name === '') {
-                    input.value = saved;
-                    return;
-                }
-                send(input.dataset.kanbanRename, { name }).then(response => {
-                    if (!response.ok) {
-                        failed();
-                    }
-                    saved = name;
-                    const column = input.closest('.kanban-col');
-                    column.setAttribute('aria-label', name);
-                    column.querySelector('.strip-label > span').textContent = name;
-                }).catch(failed);
-            });
-        });
-
         // Drag & drop (A32, 73): a gap shows where the note or column lands.
         const counts = () => board.querySelectorAll('.kanban-col[data-column-id]').forEach(column => {
             const n = String(column.querySelectorAll('.kanban-cards > .note').length);
@@ -1564,6 +1508,8 @@
             const gap = dragged.matches('.note') ? noteGap : columnGap;
             gap.style.height = dragged.matches('.note') ? `${dragged.offsetHeight}px` : '';
             gap.style.width = dragged.matches('.note') ? '' : `${dragged.offsetWidth}px`;
+            // Point 50 (A40): while a note is dragged, every column shows its background as a drop target.
+            board.classList.toggle('is-note-dragging', dragged.matches('.note'));
             // Hidden only after the browser took its picture of it.
             requestAnimationFrame(() => {
                 dragged?.after(gap);
@@ -1577,7 +1523,7 @@
             event.preventDefault();
             if (dragged.matches('.note')) {
                 const list = event.target.closest('.kanban-col')?.querySelector('.kanban-cards');
-                if (!list || list.closest('.kanban-col').classList.contains('is-folded')) {
+                if (!list) {
                     return;
                 }
                 const before = [...list.querySelectorAll(':scope > .note:not(.is-dragging)')]
@@ -1616,6 +1562,7 @@
             noteGap.remove();
             columnGap.remove();
             dragged?.classList.remove('is-dragging');
+            board.classList.remove('is-note-dragging');
             board.querySelectorAll('[draggable="true"]').forEach(el => { el.draggable = false; });
             dragged = null;
         });
@@ -3363,4 +3310,22 @@
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
     else start();
+})();
+
+/* Package J */
+// "Weitere Optionen" in the note dialogs (point 47, A38): collapsed by default, this browser remembers open or closed.
+(() => {
+    const KEY = 'notes.more';
+    const folds = [...document.querySelectorAll('[data-note-more]')];
+    let open = false;
+    try { open = localStorage.getItem(KEY) === '1'; } catch { /* not remembered */ }
+    folds.forEach(fold => { fold.open = open; });
+    folds.forEach(fold => fold.addEventListener('toggle', () => {
+        if (fold.open === open) {
+            return;
+        }
+        open = fold.open;
+        try { localStorage.setItem(KEY, open ? '1' : '0'); } catch { /* not remembered */ }
+        folds.forEach(other => { if (other !== fold) other.open = open; });
+    }));
 })();

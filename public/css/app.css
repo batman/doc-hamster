@@ -583,13 +583,11 @@ a.col-item { text-decoration: none; }
    there are many (A35); every note is as wide as its column (A34), its height follows the text up to a limit. */
 .kanban { display: flex; align-items: flex-start; gap: 1rem; margin: 1rem 0 0; padding: 0 0 1rem; overflow-x: auto; }
 .kanban-col {
-    flex: none; display: flex; box-sizing: border-box; width: 18rem; max-height: calc(100dvh - 10rem);
-    border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+    flex: none; display: flex; flex-direction: column; box-sizing: border-box; width: 18rem; max-height: calc(100dvh - 10rem);
+    border: 1px solid transparent; border-radius: var(--radius); background: transparent; transition: background-color .15s, border-color .15s;
 }
-.kanban-body { display: flex; flex-direction: column; width: 100%; min-width: 0; }
-.kanban-col.is-folded { width: auto; }
-.kanban-body[hidden], .kanban-strip[hidden] { display: none; }
-.kanban-col.is-folded .col-strip { border-right: 0; border-radius: var(--radius); }
+/* Point 50: background and border only on hover, and on every column while a note is dragged (A40). */
+.kanban-col:hover, .kanban.is-note-dragging > .kanban-col { border-color: var(--border); background: var(--surface); }
 .kanban-col.is-dragging, .note.is-dragging { display: none; }
 .kanban-head { display: flex; align-items: center; gap: .25rem; padding: .5rem .5rem .25rem .75rem; }
 .kanban-head[data-kanban-grip] { cursor: grab; }
@@ -597,8 +595,6 @@ a.col-item { text-decoration: none; }
     flex: 1; min-width: 0; min-height: 2.25rem; margin: 0; padding: .25rem .4rem; border: 1px solid transparent; border-radius: calc(var(--radius) / 2);
     background: transparent; color: var(--text); font: inherit; font-size: 1rem; font-weight: 700; max-width: none;
 }
-input.kanban-name:hover { border-color: var(--border); }
-input.kanban-name:focus { border-color: var(--primary); background: var(--bg); }
 .kanban-count { flex: none; min-width: 1.5rem; font-size: .8rem; color: var(--muted); text-align: center; }
 .kanban-head .note-tool { color: var(--muted); }
 .kanban-head .note-tool:hover { background: var(--bg); }
@@ -1444,3 +1440,16 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
 @container win (width < 28rem) { .win-wide-only { display: none; } }
 
 .win-head:has(+ .win-tools) { padding-bottom: .75rem; }
+
+/* Package J */
+/* Column titles as click-to-edit (point 46): same size as the plain heading, the field look only on hover or while editing. */
+.kanban-head .edit-in-place.kanban-name, .kanban-head .edit-in-place-field.kanban-name {
+    width: auto; min-height: 2.25rem; margin: 0; padding: .25rem .4rem; font-size: 1rem; font-weight: 700; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.kanban-head .edit-in-place.kanban-name:hover { background: var(--bg); }
+.kanban-head .edit-in-place-field.kanban-name { border-color: var(--primary); background: var(--bg); }
+.kanban-cards > .note { border-radius: 10px; }
+/* "Weitere Optionen" in the note dialogs (point 47). */
+.note-more { margin-top: 1rem; }
+.note-more > summary { display: inline-flex; align-items: center; min-height: 2.25rem; cursor: pointer; font-weight: 600; color: var(--muted); }
+.note-more > summary:hover { color: var(--text); }

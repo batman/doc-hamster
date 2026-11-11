@@ -1,4 +1,6 @@
 @php($key = $note?->id ?? 'new')
+{{-- Two parts (point 47): "main" is title and text, "more" the rest, shown in the "Weitere Optionen" fold. --}}
+@if ($part === 'main')
 <label for="title-{{ $key }}">{{ __('home.note_title') }}</label>
 <input id="title-{{ $key }}" name="title" maxlength="100" value="{{ $note?->title }}" placeholder="{{ __('home.untitled') }}">
 
@@ -9,6 +11,7 @@
 @else
     <p class="note-hint">{{ __('home.text_hint') }}</p>
 @endif
+@else
 <p class="note-hint">{{ __('home.list_hint') }}</p>
 
 <label for="link-{{ $key }}">{{ __('home.link') }}</label>
@@ -51,4 +54,5 @@
     {{-- A new note is for everyone and changeable by default (Go of 2026-11-07). --}}
     <label><input type="checkbox" name="shared" value="1" @checked($note?->shared ?? true)> {{ __('home.share') }}</label>
     <label><input type="checkbox" name="editable" value="1" @checked($note?->editable ?? true)> {{ __('home.let_edit') }}</label>
+@endif
 @endif

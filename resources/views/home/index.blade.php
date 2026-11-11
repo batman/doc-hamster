@@ -32,9 +32,15 @@
                 @csrf
                 <input type="hidden" name="column" value="{{ $columns->first()?->id }}" data-note-new-column>
                 <fieldset class="note-fields">
-                    @include('home._fields', ['note' => null])
+                    @include('home._fields', ['note' => null, 'part' => 'main'])
                 </fieldset>
-                <label class="note-lock-choice"><input type="checkbox" name="locked" value="1"> {{ __('home.locked') }}</label>
+                <details class="note-more" data-note-more>
+                    <summary>{{ __('home.more_options') }}</summary>
+                    <fieldset class="note-fields">
+                        @include('home._fields', ['note' => null, 'part' => 'more'])
+                    </fieldset>
+                    <label class="note-lock-choice"><input type="checkbox" name="locked" value="1"> {{ __('home.locked') }}</label>
+                </details>
                 <div class="dialog-actions">
                     <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
                     <button type="submit">{{ __('home.save') }}</button>
@@ -47,33 +53,26 @@
     <div class="kanban" data-notes data-csrf="{{ csrf_token() }}" @if ($canShare) data-columns-order="{{ route('notes.columns.order') }}" @endif>
         @foreach ($columns as $column)
             @php($cards = $byColumn->get($column->id, collect()))
-            <section class="kanban-col" data-column-id="{{ $column->id }}" aria-label="{{ $column->name }}">
-                <button type="button" class="col-strip kanban-strip" data-kanban-unfold aria-label="{{ __('home.column_unfold', ['name' => $column->name]) }}" hidden>
-                    <x-icon name="chevron-right" />
-                    <span class="strip-label"><span>{{ $column->name }}</span><span class="kanban-count">{{ $cards->count() }}</span></span>
-                </button>
-                <div class="kanban-body">
-                    <header class="kanban-head" @if ($canShare) draggable="true" data-kanban-grip @endif>
-                        @if ($canShare)
-                            <input class="kanban-name input-small" value="{{ $column->name }}" maxlength="60" aria-label="{{ __('home.column_name') }}" data-kanban-rename="{{ route('notes.columns.update', $column->id) }}">
-                        @else
-                            <h2 class="kanban-name">{{ $column->name }}</h2>
-                        @endif
-                        <span class="kanban-count">{{ $cards->count() }}</span>
-                        <button type="button" class="note-tool" data-kanban-fold aria-label="{{ __('home.column_fold') }}" data-tooltip="{{ __('home.column_fold') }}"><x-icon name="chevron-left" /></button>
-                        @if ($canShare && $columns->count() > 1)
-                            <button type="button" class="note-tool" data-dialog-open="delete-column-{{ $column->id }}" aria-label="{{ __('home.column_delete') }}" data-tooltip="{{ __('home.column_delete') }}"><x-icon name="trash" /></button>
-                        @endif
-                    </header>
+            <section class="kanban-col" data-column-id="{{ $column->id }}" aria-labelledby="column-name-{{ $column->id }}">
+                <header class="kanban-head" @if ($canShare) draggable="true" data-kanban-grip @endif>
+                    @if ($canShare)
+                        <x-edit-in-place id="column-name-{{ $column->id }}" class="kanban-name" name="name" :value="$column->name" :action="route('notes.columns.update', $column->id)" maxlength="60" />
+                    @else
+                        <h2 id="column-name-{{ $column->id }}" class="kanban-name">{{ $column->name }}</h2>
+                    @endif
+                    <span class="kanban-count">{{ $cards->count() }}</span>
+                    @if ($canShare && $columns->count() > 1)
+                        <button type="button" class="note-tool" data-dialog-open="delete-column-{{ $column->id }}" aria-label="{{ __('home.column_delete') }}" data-tooltip="{{ __('home.column_delete') }}"><x-icon name="trash" /></button>
+                    @endif
+                </header>
 
-                    <ul class="kanban-cards" data-kanban-cards="{{ $column->id }}">
-                        @foreach ($cards as $note)
-                            @include('home._note', ['note' => $note])
-                        @endforeach
-                    </ul>
+                <ul class="kanban-cards" data-kanban-cards="{{ $column->id }}">
+                    @foreach ($cards as $note)
+                        @include('home._note', ['note' => $note])
+                    @endforeach
+                </ul>
 
-                    <button type="button" class="button-quiet kanban-add" data-dialog-open="note-new" data-note-column="{{ $column->id }}"><x-icon name="plus" />{{ __('home.add_note') }}</button>
-                </div>
+                <button type="button" class="button-quiet kanban-add" data-dialog-open="note-new" data-note-column="{{ $column->id }}"><x-icon name="plus" />{{ __('home.add_note') }}</button>
             </section>
         @endforeach
 
@@ -114,9 +113,15 @@
                     <form method="post" action="{{ route('notes.update', $note->id) }}">
                         @csrf
                         <fieldset class="note-fields" data-note-fields @disabled($note->locked)>
-                            @include('home._fields', ['note' => $note])
+                            @include('home._fields', ['note' => $note, 'part' => 'main'])
                         </fieldset>
-                        <label class="note-lock-choice"><input type="checkbox" name="locked" value="1" @checked($note->locked) data-note-lock> {{ __('home.locked') }}</label>
+                        <details class="note-more" data-note-more>
+                            <summary>{{ __('home.more_options') }}</summary>
+                            <fieldset class="note-fields" data-note-fields @disabled($note->locked)>
+                                @include('home._fields', ['note' => $note, 'part' => 'more'])
+                            </fieldset>
+                            <label class="note-lock-choice"><input type="checkbox" name="locked" value="1" @checked($note->locked) data-note-lock> {{ __('home.locked') }}</label>
+                        </details>
                         <div class="dialog-actions">
                             <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
                             <button type="submit">{{ __('home.save') }}</button>
