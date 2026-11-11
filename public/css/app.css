@@ -1138,6 +1138,15 @@ a { text-decoration: none; }
 .pick-row.is-static > span a:focus-visible { outline: none; }
 .pick-row.is-static:has(> span a:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
 .pick-row.is-static > :is(button, form, .dropdown, .tag-outline) { position: relative; z-index: 1; }
+/* Point 32: an open menu lies above every row and button below it (framework rule for all menus) */
+.dropdown:has(> .dropdown-panel:not([hidden])), .pick-row.is-static > .dropdown:has(> .dropdown-panel:not([hidden])) { position: relative; z-index: 40; }
+li:has(> .dropdown > .dropdown-panel:not([hidden])), tr:has(.dropdown-panel:not([hidden])) { position: relative; z-index: 40; }
+/* Point 36: a colour field shows its colour as one full round dot – no square inside, no extra frame */
+input[type="color"] { -webkit-appearance: none; appearance: none; border: 0; padding: 0; overflow: hidden; background: none; }
+input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 50%; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .15); }
+input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .15); }
+input[type="color"]:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
 /* A92: drag to sort – the whole row is the grip, a dashed placeholder keeps its place, an orange bar shows the target */
 [data-sortable] { position: relative; }
@@ -1181,6 +1190,10 @@ html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
     .page-windows > .windows { height: 100%; min-height: 0; }
     .win { height: 100%; }
     .win-frame { overflow: auto; overscroll-behavior: contain; }
+    /* Point 38: the Einstellungen columns scroll each on their own, like windows; menu and page stay put */
+    .content > .page-split:has(> .cols) { height: calc(100% + 3.5rem); min-height: 0; }
+    .page-split > .cols { height: 100%; min-height: 0; }
+    .page-split > .cols > .col { height: 100%; overflow-y: auto; overscroll-behavior: contain; }
     .win-frame > .win-body { flex: 1 0 auto; overflow: visible; }
     .win.is-min .win-strip { height: 100%; overflow: hidden; }
 }

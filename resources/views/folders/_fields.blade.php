@@ -10,13 +10,11 @@
     $key = $self ?? 'new';
 @endphp
 <input type="hidden" name="look" value="1">
-@if ($locked)
-    <label for="name-{{ $key }}">{{ __('folders.name') }}</label>
-    <input id="name-{{ $key }}" value="{{ $name }}" disabled>
-    <p class="muted">{{ __('folders.default_note') }}</p>
-@else
 <label for="name-{{ $key }}">{{ __('folders.name') }}</label>
 <input id="name-{{ $key }}" name="name" value="{{ old('name', $name) }}" maxlength="100" required @if ($name === '') autofocus @endif>
+@if ($locked)
+    <p class="muted">{{ __('folders.default_note') }}</p>
+@else
 <label for="parent_id-{{ $key }}">{{ __('folders.parent') }}</label>
 <select id="parent_id-{{ $key }}" name="parent_id">
     <option value="">{{ __('folders.top') }}</option>

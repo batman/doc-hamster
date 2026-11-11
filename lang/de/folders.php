@@ -7,7 +7,7 @@ return [
     'all' => 'Alle Dokumente',
     'default' => 'Dokumente allgemein',
     'invoices' => 'Rechnungen',
-    'default_note' => 'Dieser Ordner ist immer da. Neue Dokumente landen hier, wenn du keinen anderen Ordner wählst. Er kann nicht gelöscht oder umbenannt werden.',
+    'default_note' => 'Dieser Ordner ist immer da. Neue Dokumente landen hier, wenn du keinen anderen Ordner wählst. Er kann umbenannt, aber nicht gelöscht oder verschoben werden.',
     'default_locked' => 'Der Ordner „Dokumente allgemein“ kann nicht gelöscht werden.',
     'trash' => 'Papierkorb',
     'trash_note' => 'Der Papierkorb ist immer da und kann nicht gelöscht werden. Seine Stelle in der Liste kannst du per Ziehen ändern.',

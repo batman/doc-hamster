@@ -10,7 +10,9 @@
         [$group, $item] = \App\Http\SettingsMenu::current(request());
         $current = $group !== null ? ($groups[$group] ?? null) : null;
         $hasPage = trim($__env->yieldContent('page')) !== '';
-        $toGroup = $hasPage && $current && ! $current['leaf'];
+        // Point 37: a group with a single entry and no own middle content gets no middle column.
+        $single = $current !== null && count($current['items']) === 1 && ! $__env->hasSection('pane');
+        $toGroup = $hasPage && $current && ! $current['leaf'] && ! $single;
     @endphp
     <div class="cols" data-cols data-wall-label="{{ __('settings.wall') }}">
         @if ($current)
@@ -35,7 +37,7 @@
             @yield('nav_footer')
         </nav>
 
-        @if ($current)
+        @if ($current && ! $single)
             <button type="button" class="col-strip tooltip-right" data-strip="1" data-tooltip="{{ __('settings.open') }}" aria-label="{{ __('settings.expand', ['name' => __('settings.groups.'.$group)]) }}" hidden>
                 <x-icon name="chevron-right" />
                 <span class="strip-label"><x-icon :name="$current['icon']" /><span>{{ __('settings.groups.'.$group) }}</span></span>

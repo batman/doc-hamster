@@ -250,7 +250,7 @@ it('keeps folder management to people who may edit receipts', function (): void 
     $this->actingAs($editor->user)->get('/folders?new=1')->assertOk();
 });
 
-it('keeps the name of "Dokumente allgemein"; "Rechnungen" may be renamed and deleted', function (): void {
+it('lets "Dokumente allgemein" be renamed but keeps it on top (A18); "Rechnungen" may be renamed and deleted', function (): void {
     $belege = belegeOf($this->orgId);
     $invoices = folderNamed('Rechnungen');
     $this->actingAs($this->admin->user);
@@ -258,7 +258,8 @@ it('keeps the name of "Dokumente allgemein"; "Rechnungen" may be renamed and del
     $this->post('/folders/'.$belege->id, ['name' => 'Anders', 'look' => '1', 'icon' => 'star'])->assertRedirect();
     $this->post('/folders/'.$invoices->id, ['name' => 'Eingangsrechnungen'])->assertRedirect();
 
-    expect(folderRow($belege->id)?->name)->toBe('Dokumente allgemein')
+    expect(folderRow($belege->id)?->name)->toBe('Anders')
+        ->and(folderRow($belege->id)?->parent_id)->toBeNull()
         ->and(folderRow($belege->id)?->icon)->toBe('star')
         ->and(folderRow($invoices->id)?->name)->toBe('Eingangsrechnungen');
 

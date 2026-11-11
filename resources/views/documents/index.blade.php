@@ -113,8 +113,8 @@
                             <span class="icon-tile"><x-icon :name="$f->iconName()" /></span>
                             <span data-folder-name><strong><a href="{{ route('documents.index', ['folder' => $f->id]) }}" data-window>{{ $f->name }}</a></strong><small>{{ trans_choice('folders.used', $row['count'], ['count' => $row['count']]) }}</small></span>
                             @can('documents.edit')
-                                @unless ($f->is_default)
-                                    {{-- Rename in place (app.js: "Umbenennen" in the row menu shows this form). --}}
+                                {{-- Rename in place (app.js: "Umbenennen" in the row menu shows this form); also "Dokumente allgemein" (A18). --}}
+                                @if ($f->exists)
                                     <form class="folder-rename" method="post" action="{{ route('folders.update', $f->id) }}" data-folder-rename-form hidden>
                                         @csrf
                                         <input type="hidden" name="parent_id" value="{{ $f->parent_id }}">
@@ -123,10 +123,10 @@
                                         <button type="submit" class="icon-button" aria-label="{{ __('folders.save') }}" data-tooltip="{{ __('folders.save') }}"><x-icon name="check" /></button>
                                         <button type="button" class="icon-button" data-folder-rename-cancel aria-label="{{ __('folders.cancel') }}" data-tooltip="{{ __('folders.cancel') }}"><x-icon name="x" /></button>
                                     </form>
-                                @endunless
+                                @endif
                                 <x-more-menu :label="__('folders.actions', ['name' => $f->name])">
+                                    <button type="button" class="menu-item" data-folder-rename><x-icon name="pencil" /><span>{{ __('folders.rename') }}</span></button>
                                     @unless ($f->is_default)
-                                        <button type="button" class="menu-item" data-folder-rename><x-icon name="pencil" /><span>{{ __('folders.rename') }}</span></button>
                                         <button type="button" class="menu-item" data-dialog-open="folder-move-{{ $f->id }}"><x-icon name="arrows-move" /><span>{{ __('folders.move') }}</span></button>
                                     @endunless
                                     <a class="menu-item" href="{{ route('folders.index', ['folder' => $f->id]) }}" data-window><x-icon name="settings" /><span>{{ __('folders.properties') }}</span></a>

@@ -65,9 +65,9 @@ final class FolderController
         $folder = Folder::query()->whereKey($id)->firstOrFail();
         $data = $this->validated($request, $folder);
 
-        // "Belege allgemein" keeps its name and stays on the top level.
+        // "Dokumente allgemein" may be renamed (A18) but stays on the top level.
         $folder->update([
-            'name' => $folder->is_default ? $folder->name : $data['name'],
+            'name' => $data['name'],
             'parent_id' => $folder->is_default ? null : $data['parent_id'],
             'color' => $request->has('look') ? $data['color'] : $folder->color,
             'icon' => $request->has('look') ? $data['icon'] : $folder->icon,
@@ -178,8 +178,7 @@ final class FolderController
      */
     private function validated(Request $request, ?Folder $folder = null): array
     {
-        // The default folder's name is fixed, whatever is sent.
-        $name = $folder !== null && $folder->is_default ? $folder->name : trim((string) $request->input('name'));
+        $name = trim((string) $request->input('name'));
         // An own colour beats the palette; "none" or empty = the text colour.
         $color = $request->filled('color_hex') ? $request->input('color_hex') : $request->input('color');
         $request->merge([
