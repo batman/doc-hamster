@@ -108,7 +108,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     });
 
     Route::middleware('can:tags.manage')->group(function (): void {
-        Route::get('tags',[TagController::class, 'index'])->name('tags.index');
+        Route::get('tags', [TagController::class, 'index'])->name('tags.index');
         Route::post('tags', [TagController::class, 'store'])->name('tags.store');
         Route::post('tags/{id}', [TagController::class, 'update'])->name('tags.update');
         Route::post('tags/{id}/delete', [TagController::class, 'destroy'])->name('tags.destroy');

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Infrastructure\Environment\LocalOcr;
-use App\Jobs\Local\SetUpOcr;
+use App\Jobs\Net\SetUpOcr;
 use Illuminate\Console\Command;
 
 /**
@@ -27,7 +27,7 @@ final class OcrSetupCommand extends Command
             return self::SUCCESS;
         }
         $ocr->markRunning();
-        $status = $ocr->setUp();
+        $status = $ocr->setUp(SetUpOcr::fetcher());
         if (($status['state'] ?? null) === 'ok') {
             SetUpOcr::queueWaiting();
             $this->info('App-owned Tesseract works; waiting receipts are queued.');

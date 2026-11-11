@@ -47,4 +47,17 @@ return [
     'preview_newer' => 'Neuer Stand von #:number · :branch',
     'preview_gone' => 'Dieser Branch ist nicht mehr freigegeben. Zurück geht es mit der Hauptversion unter „Installiert“.',
     'update_short' => 'Aktualisieren',
+    'progress_title' => 'Version :version wird installiert, bitte einen Moment Geduld.',
+    'progress_steps' => [
+        'start' => 'Wird vorbereitet …',
+        'download' => 'Herunterladen …',
+        'verify' => 'Prüfen …',
+        'unpack' => 'Entpacken …',
+        'swap' => 'Austauschen …',
+        'database' => 'Datenbank …',
+        'done' => 'Fertig.',
+    ],
+    'progress_failed' => 'Die Installation wurde nicht abgeschlossen. Bitte laden Sie die Seite neu und versuchen Sie es noch einmal.',
+    'progress_timeout' => 'Die Installation meldet sich nicht mehr. Bitte laden Sie die Seite in ein paar Minuten neu.',
+    'progress_close' => 'Schließen',
 ];

@@ -23,8 +23,15 @@ final class UpdateController
 {
     private const PREVIEW_INFO = 'preview-installed.json';
 
+    /** Progress file install.php writes into the web root during an update the pop-up started. */
+    private const STATUS_FILE = 'install-status.json';
+
     public function show(Request $request): View
     {
+        if ($request->query('updated') === '1') {
+            @unlink($this->webRoot($request).'/'.self::STATUS_FILE);
+        }
+
         return view('updates.show', [
             'current' => (string) config('dochamster.version'),
             'available' => session('update.available'),
@@ -103,7 +110,7 @@ final class UpdateController
         return $this->answer($request, 'updates._previews', ['branches' => $branches, 'failed' => false], fn () => back()->with('updates.preview_branches', $branches));
     }
 
-    public function install(Request $request, UpdateSource $source, AuditLog $audit, CurrentOrg $org): RedirectResponse
+    public function install(Request $request, UpdateSource $source, AuditLog $audit, CurrentOrg $org): JsonResponse|RedirectResponse
     {
         $request->validate(['password' => ['required', 'current_password']]);
         abort_unless($this->supported($request), 403);
@@ -122,7 +129,7 @@ final class UpdateController
         return $this->handoff($request, $installer, $audit, $org, ['version' => $latest['version'], 'channel' => 'stable']);
     }
 
-    public function installMain(Request $request, UpdateSource $source, AuditLog $audit, CurrentOrg $org): RedirectResponse
+    public function installMain(Request $request, UpdateSource $source, AuditLog $audit, CurrentOrg $org): JsonResponse|RedirectResponse
     {
         $request->validate(['password' => ['required', 'current_password']]);
         abort_unless($this->supported($request), 403);
@@ -141,7 +148,7 @@ final class UpdateController
         return $this->handoff($request, $installer, $audit, $org, ['version' => $latest['version'], 'channel' => 'stable']);
     }
 
-    public function installPreview(Request $request, UpdateSource $source, AuditLog $audit, CurrentOrg $org): RedirectResponse
+    public function installPreview(Request $request, UpdateSource $source, AuditLog $audit, CurrentOrg $org): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
             'password' => ['required', 'current_password'],
@@ -205,11 +212,19 @@ final class UpdateController
         return ['number' => (int) $m[1], 'sha' => $m[2], 'branch' => (string) ($info['branch'] ?? ''), 'title' => (string) ($info['title'] ?? '')];
     }
 
-    /** @param array<string, int|string> $meta */
-    private function handoff(Request $request, string $installer, AuditLog $audit, CurrentOrg $org, array $meta): RedirectResponse
+    /**
+     * Places install.php and hands over. The page's pop-up asks by Ajax and gets the address; it then
+     * runs the installer itself and follows its progress file. Without JavaScript, and for an installer
+     * that writes no progress yet, the browser goes to install.php as before.
+     *
+     * @param  array<string, int|string>  $meta
+     */
+    private function handoff(Request $request, string $installer, AuditLog $audit, CurrentOrg $org, array $meta): JsonResponse|RedirectResponse
     {
         $webRoot = $this->webRoot($request);
         $code = strtoupper(bin2hex(random_bytes(10)));
+        // An old progress file must never be taken for this run.
+        @unlink($webRoot.'/'.self::STATUS_FILE);
 
         if (@file_put_contents($webRoot.'/install.php', $installer) === false
             || @file_put_contents(dirname($webRoot).'/dochamster-install-code.txt', $code."\n") === false) {
@@ -220,7 +235,12 @@ final class UpdateController
 
         $audit->record('update.started', orgId: $org->id(), userId: $org->membership()->user_id, meta: $meta, ip: $request->ip());
 
-        return redirect()->to('/install.php?code='.$code.'&update=1');
+        $url = '/install.php?code='.$code.'&update=1';
+        if ($request->expectsJson()) {
+            return response()->json(['url' => $url, 'version' => (string) $meta['version'], 'progress' => str_contains($installer, self::STATUS_FILE)]);
+        }
+
+        return redirect()->to($url);
     }
 
     /** Only the layout install.php creates: app folder next to the web root. */

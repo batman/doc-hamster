@@ -47,4 +47,17 @@ return [
     'preview_newer' => 'Newer state of #:number · :branch',
     'preview_gone' => 'This branch is no longer released for previews. The main version under "Installed" takes you back.',
     'update_short' => 'Update',
+    'progress_title' => 'Installing version :version, please wait a moment.',
+    'progress_steps' => [
+        'start' => 'Preparing …',
+        'download' => 'Downloading …',
+        'verify' => 'Checking …',
+        'unpack' => 'Unpacking …',
+        'swap' => 'Replacing …',
+        'database' => 'Database …',
+        'done' => 'Done.',
+    ],
+    'progress_failed' => 'The installation did not finish. Please reload the page and try again.',
+    'progress_timeout' => 'The installation stopped responding. Please reload the page in a few minutes.',
+    'progress_close' => 'Close',
 ];

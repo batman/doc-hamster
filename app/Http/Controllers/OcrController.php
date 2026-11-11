@@ -8,7 +8,7 @@ use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
 use App\Domain\Org\Permission;
 use App\Infrastructure\Environment\LocalOcr;
-use App\Jobs\Local\SetUpOcr;
+use App\Jobs\Net\SetUpOcr;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;

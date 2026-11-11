@@ -98,6 +98,28 @@ function codeFile(string $webRoot, bool $outside): string
     return $existing[0] ?? $webRoot.'/dochamster-install-code-'.bin2hex(random_bytes(8)).'.txt';
 }
 
+/**
+ * Progress for the app's update pop-up: a small JSON file next to install.php (step, percent, state,
+ * short message – never paths or secrets). Does nothing unless the update run switched it on.
+ */
+function reportProgress(string $step, int $percent, string $state = 'running', string $message = ''): void
+{
+    $file = $GLOBALS['dhStatusFile'] ?? null;
+    if (! is_string($file)) {
+        return;
+    }
+    $data = ['step' => $step, 'percent' => max(0, min(100, $percent)), 'state' => $state];
+    if ($message !== '') {
+        $data['message'] = $message;
+    }
+    $json = (string) json_encode($data, JSON_UNESCAPED_UNICODE);
+    // Written aside and renamed, so the pop-up never reads half a file.
+    if (@file_put_contents($file.'.tmp', $json) === false || ! @rename($file.'.tmp', $file)) {
+        @unlink($file.'.tmp');
+        @file_put_contents($file, $json);
+    }
+}
+
 /** GET a URL; into $file if given (streamed, no big strings in memory), else returned. */
 function http(string $url, ?string $file = null): string
 {
@@ -108,6 +130,20 @@ function http(string $url, ?string $file = null): string
         CURLOPT_HTTPHEADER => ['Accept: application/json, application/octet-stream'],
     ]);
     $out === null ? curl_setopt($ch, CURLOPT_RETURNTRANSFER, true) : curl_setopt($ch, CURLOPT_FILE, $out);
+    // The download is 0–60 % of the pop-up's bar, written at most every 300 ms.
+    if ($out !== null && isset($GLOBALS['dhStatusFile'])) {
+        $last = 0.0;
+        curl_setopt($ch, CURLOPT_NOPROGRESS, false);
+        curl_setopt($ch, defined('CURLOPT_XFERINFOFUNCTION') ? constant('CURLOPT_XFERINFOFUNCTION') : CURLOPT_PROGRESSFUNCTION, static function ($handle, $total, $done) use (&$last) {
+            $now = microtime(true);
+            if ($total > 0 && $now - $last >= 0.3) {
+                $last = $now;
+                reportProgress('download', (int) floor(60 * $done / $total));
+            }
+
+            return 0;
+        });
+    }
     $body = curl_exec($ch);
     $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
     curl_close($ch);
@@ -363,6 +399,9 @@ function extractZipEntries(ZipArchive $zip, string $tmpDir, int $maxBytes = DH_M
     for ($i = 0; $i < $zip->numFiles; $i++) {
         $name = (string) $zip->getNameIndex($i);
         assertZipEntry($name);
+        if ($i % 250 === 0) {
+            reportProgress('unpack', 65 + (int) floor(15 * $i / max(1, $zip->numFiles)));
+        }
         if (! $zip->extractTo($tmpDir, $name)) {
             throw new RuntimeException('Entpacken fehlgeschlagen (Speicherplatz?).');
         }
@@ -397,6 +436,7 @@ function unpackRelease(array $release, string $tmpDir, string $zipFile): string
         removeTree($tmpDir);
     }
     http($release['url'], $zipFile);
+    reportProgress('verify', 60);
     if (! hash_equals((string) $release['sha256'], (string) hash_file('sha256', $zipFile))) {
         throw new RuntimeException('Die heruntergeladene Datei ist beschädigt (Prüfsumme stimmt nicht). Bitte erneut versuchen.');
     }
@@ -406,6 +446,7 @@ function unpackRelease(array $release, string $tmpDir, string $zipFile): string
         throw new RuntimeException('ZIP-Datei lässt sich nicht öffnen.');
     }
     assertZipPaths($zip);
+    reportProgress('unpack', 65);
     extractZipEntries($zip, $tmpDir);
     $zip->close();
     @unlink($zipFile);
@@ -526,6 +567,12 @@ if (defined('DH_TESTING')) {
     return;
 }
 
+// A progress file left over from an earlier update (the app removes it when it shows the result).
+$statusFile = $webRoot.'/install-status.json';
+if (is_file($statusFile) && time() - (int) filemtime($statusFile) > 600) {
+    @unlink($statusFile);
+}
+
 // The installer stays usable for two hours after its first run (not after upload: FTP clients may keep old file dates).
 $codeFile = codeFile($webRoot, $outside);
 if (is_file($codeFile) && time() - (int) filemtime($codeFile) > DH_MAX_AGE_SECONDS) {
@@ -607,6 +654,10 @@ if ($existing) {
             page('docHamster wird aktualisiert', '<meta http-equiv="refresh" content="1;url='.h(basename(__FILE__)).'?run=1"><p>Version '.h($release['version']).' wird installiert. Das dauert etwa eine Minute, bitte die Seite nicht schließen.</p>');
         }
         $action = 'update';
+        // The app's pop-up follows this run through the progress file and may stop listening early.
+        $GLOBALS['dhStatusFile'] = $statusFile;
+        @ignore_user_abort(true);
+        reportProgress('download', 0);
     }
 
     if ($action === '') {
@@ -666,7 +717,9 @@ if ($existing) {
     }
 
     try {
-        swapApp($appDir, unpackRelease($release, $tmpDir, $zipFile));
+        $new = unpackRelease($release, $tmpDir, $zipFile);
+        reportProgress('swap', 80);
+        swapApp($appDir, $new);
         removeTree($tmpDir);
         if ($outside) {
             wireWebRoot($appDir, $webRoot, false);
@@ -675,6 +728,7 @@ if ($existing) {
             file_put_contents($appDir.'/.htaccess', "Require all denied\n");
             file_put_contents($appDir.'/public/.htaccess', "Require all granted\n".(string) file_get_contents($appDir.'/public/.htaccess'));
         }
+        reportProgress('database', 88);
         migrate($appDir);
 
         // Without users nobody can log in: back to the wizard, which then only asks for the new owner.
@@ -688,6 +742,8 @@ if ($existing) {
     } catch (Throwable $e) {
         @unlink($zipFile);
         removeTree($tmpDir);
+        // Only our own short messages go into the web-readable file, nothing from PHP or the database.
+        reportProgress('error', 100, 'error', get_class($e) === RuntimeException::class ? $e->getMessage() : 'Die Aktualisierung ist fehlgeschlagen.');
         page('Fehler', '<p class="fail">'.h($e->getMessage()).'</p><p>Ihre Einstellungen sind erhalten. Laden Sie die Seite neu, um es noch einmal zu versuchen.</p>');
     }
 
@@ -699,6 +755,7 @@ if ($existing) {
         page('Fast fertig', '<p class="ok">DocHamster '.h($release['version']).' ist installiert.'.$selfDeleted.'</p><p>Jetzt legen Sie noch Ihr Inhaber-Konto an.</p>'
             .'<a class="button" href="/setup?code='.rawurlencode($code).'">Weiter</a>');
     }
+    reportProgress('done', 100, 'done');
     // Back to the app, which says which version is now installed.
     if ($auto && $selfDeleted === '') {
         header('Location: /update?updated=1');

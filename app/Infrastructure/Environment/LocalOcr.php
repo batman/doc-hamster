@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Environment;
 
+use Closure;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Http;
 use RuntimeException;
 use Symfony\Component\Process\ExecutableFinder;
 use Symfony\Component\Process\Process;
@@ -133,9 +133,10 @@ final class LocalOcr
      * Installs the portable Tesseract; if that fails here, fetches the
      * browser fallback instead. Stores the outcome for the settings row.
      *
+     * @param  Closure(string, string, string): void  $fetch  downloads url → target and checks the SHA-256 (lives in a net job, D-020)
      * @return array{state?: string, reason?: string, browser?: string}
      */
-    public function setUp(): array
+    public function setUp(Closure $fetch): array
     {
         $lock = Cache::lock('ocr.setup', 900);
         if (! $lock->get()) {
@@ -145,13 +146,13 @@ final class LocalOcr
         try {
             $status = ['state' => 'ok', 'reason' => ''];
             try {
-                $this->installApp();
+                $this->installApp($fetch);
             } catch (Throwable $e) {
                 $status = ['state' => 'failed', 'reason' => mb_substr($e->getMessage(), 0, 200)];
             }
             if ($status['state'] === 'failed' && ! $this->systemAvailable()) {
                 try {
-                    $this->installBrowser();
+                    $this->installBrowser($fetch);
                     $status['browser'] = 'ok';
                 } catch (Throwable $e) {
                     $status['browser'] = mb_substr($e->getMessage(), 0, 200);
@@ -166,7 +167,8 @@ final class LocalOcr
         }
     }
 
-    public function installApp(): void
+    /** @param Closure(string, string, string): void $fetch */
+    public function installApp(Closure $fetch): void
     {
         if (PHP_OS_FAMILY !== 'Linux' || php_uname('m') !== 'x86_64') {
             throw new RuntimeException('Nur für Linux x86_64 ('.PHP_OS_FAMILY.' '.php_uname('m').')');
@@ -178,11 +180,11 @@ final class LocalOcr
         $dir = $this->dir();
         File::ensureDirectoryExists($this->tessdataDir());
         foreach (self::TESSDATA as $file => [$url, $sha]) {
-            $this->fetch($url, $sha, $this->tessdataDir().'/'.$file);
+            $fetch($url, $sha, $this->tessdataDir().'/'.$file);
         }
 
         $image = $dir.'/tesseract.AppImage';
-        $this->fetch(self::APPIMAGE[0], self::APPIMAGE[1], $image);
+        $fetch(self::APPIMAGE[0], self::APPIMAGE[1], $image);
         if (! @chmod($image, 0755)) {
             throw new RuntimeException('chmod fehlgeschlagen');
         }
@@ -206,12 +208,13 @@ final class LocalOcr
         }
     }
 
-    public function installBrowser(): void
+    /** @param Closure(string, string, string): void $fetch */
+    public function installBrowser(Closure $fetch): void
     {
         $dir = $this->browserDir();
         foreach (self::BROWSER as $file => [$url, $sha]) {
             File::ensureDirectoryExists(dirname($dir.'/'.$file));
-            $this->fetch($url, $sha, $dir.'/'.$file);
+            $fetch($url, $sha, $dir.'/'.$file);
         }
         File::ensureDirectoryExists($dir.'/lang');
         foreach (self::TESSDATA as $file => [$url, $sha]) {
@@ -219,7 +222,7 @@ final class LocalOcr
             if (is_file($local) && hash_equals($sha, (string) hash_file('sha256', $local))) {
                 File::copy($local, $dir.'/lang/'.$file);
             } else {
-                $this->fetch($url, $sha, $dir.'/lang/'.$file);
+                $fetch($url, $sha, $dir.'/lang/'.$file);
             }
         }
         Cache::forget(self::MODE_KEY);
@@ -253,27 +256,5 @@ final class LocalOcr
         $nice = (new ExecutableFinder)->find('nice');
 
         return $nice !== null ? [$nice, '-n', '19'] : [];
-    }
-
-    private function fetch(string $url, string $sha, string $target): void
-    {
-        if (is_file($target) && hash_equals($sha, (string) hash_file('sha256', $target))) {
-            return;
-        }
-        $tmp = $target.'.part';
-        try {
-            Http::timeout(600)->withOptions(['sink' => $tmp])->get($url)->throw();
-            $actual = (string) hash_file('sha256', $tmp);
-            if (! hash_equals($sha, $actual)) {
-                throw new RuntimeException('Prüfsumme falsch: '.basename($target));
-            }
-            if (! @rename($tmp, $target)) {
-                throw new RuntimeException('Schreiben fehlgeschlagen: '.basename($target));
-            }
-        } finally {
-            if (is_file($tmp)) {
-                @unlink($tmp);
-            }
-        }
     }
 }

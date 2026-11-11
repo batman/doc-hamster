@@ -77,7 +77,7 @@
         @can('system.update_preview')
             <div class="dialog-backdrop" data-dialog="update-preview" hidden>
                 <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="update-preview-title">
-                    <form method="post" action="{{ route('updates.install-preview') }}">
+                    <form method="post" action="{{ route('updates.install-preview') }}" data-update-install>
                         @csrf
                         <input type="hidden" name="confirm_preview" value="1">
                         <input type="hidden" name="preview_pr" value="" data-preview-pr-field>
@@ -97,7 +97,7 @@
         @foreach (['update-release' => route('updates.install'), 'update-main' => route('updates.install-main')] as $key => $action)
             <div class="dialog-backdrop" data-dialog="{{ $key }}" hidden>
                 <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="{{ $key }}-title">
-                    <form method="post" action="{{ $action }}">
+                    <form method="post" action="{{ $action }}" data-update-install>
                         @csrf
                         <h2 id="{{ $key }}-title" data-dialog-heading>{{ __('updates.install') }}</h2>
                         <p>{{ __('updates.password_hint') }}</p>
@@ -111,5 +111,21 @@
                 </div>
             </div>
         @endforeach
+        {{-- The install runs here instead of on install.php's own page: not closable while running (no data-dialog). --}}
+        <div class="dialog-backdrop" data-update-progress hidden
+             data-title="{{ __('updates.progress_title') }}"
+             data-steps="{{ json_encode(__('updates.progress_steps')) }}"
+             data-failed="{{ __('updates.progress_failed') }}"
+             data-timeout="{{ __('updates.progress_timeout') }}">
+            <div class="dialog update-progress" role="dialog" aria-modal="true" aria-labelledby="update-progress-title">
+                <h2 id="update-progress-title" data-progress-title></h2>
+                <progress max="100" value="0" data-progress-bar></progress>
+                <p role="status" data-progress-step></p>
+                <p class="error" role="alert" data-progress-error hidden></p>
+                <div class="dialog-actions" data-progress-actions hidden>
+                    <button type="button" data-progress-close>{{ __('updates.progress_close') }}</button>
+                </div>
+            </div>
+        </div>
     @endif
 @endsection

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Infrastructure\Environment\LocalOcr;
+use App\Jobs\Net\SetUpOcr;
 use Illuminate\Console\Command;
 use Throwable;
 
@@ -22,7 +23,7 @@ final class OcrBrowserAssetsCommand extends Command
     public function handle(LocalOcr $ocr): int
     {
         try {
-            $ocr->installBrowser();
+            $ocr->installBrowser(SetUpOcr::fetcher());
         } catch (Throwable $e) {
             $this->error($e->getMessage());
 

@@ -1286,3 +1286,14 @@ html.has-tips [data-tooltip]::before, html.has-tips [data-tooltip]::after { visi
 .folder-rows .pick-row .more-menu button, .folder-rows .pick-row .folder-rename button { margin: 0; }
 .folder-rename:not([hidden]) { display: flex; flex: 1; min-width: 0; align-items: center; gap: .4rem; margin: 0; }
 .folder-rename input[name="name"] { flex: 1; min-width: 0; margin: 0; }
+
+/* Update pop-up: progress bar of the running install. */
+.update-progress progress {
+    display: block; width: 100%; height: .75rem; margin: 1rem 0 .5rem;
+    appearance: none; border: 0; border-radius: var(--radius); overflow: hidden;
+    background: var(--surface); accent-color: var(--primary);
+}
+.update-progress progress::-webkit-progress-bar { background: var(--surface); }
+.update-progress progress::-webkit-progress-value { background: var(--primary); transition: width .3s; }
+.update-progress progress::-moz-progress-bar { background: var(--primary); }
+.update-progress [data-progress-step] { margin: 0; }

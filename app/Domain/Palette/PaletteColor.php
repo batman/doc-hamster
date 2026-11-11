@@ -72,7 +72,7 @@ final class PaletteColor extends Model
      */
     public static function hexes(): array
     {
-        return self::ordered()->pluck('hex')->values()->all();
+        return array_values(self::ordered()->map(static fn (self $color): string => (string) $color->hex)->all());
     }
 
     /** Framework colour class `c-rrggbb`; its rule comes from tags.css (the CSP allows no inline styles). */
