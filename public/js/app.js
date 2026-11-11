@@ -949,9 +949,7 @@
 
         box.addEventListener('click', event => {
             const win = event.target.closest('section[data-window]');
-            if (event.target.closest('[data-window-fold]')) {
-                fold(win);
-            } else if (event.target.closest('[data-window-pin]')) {
+            if (event.target.closest('[data-window-pin]')) {
                 pin(win, !win.classList.contains('is-pinned'));
                 remember();
             } else if (event.target.closest('[data-window-close]')) {
@@ -1962,4 +1960,189 @@
             DocHamster.emit('window:open', document);
         }
     });
+})();
+
+// Document viewer in the detail window: wheel zoom towards the mouse, drag to pan, slider 25-400 %,
+// box selection with "Zoomen" / "Kopieren", double click back to fit. Delegated, so windows loaded later work too.
+(() => {
+    const MIN = 0.25, MAX = 4;
+    const states = new WeakMap();
+    const frameOf = el => {
+        const frame = el?.closest?.('.detail-doc');
+        return frame && frame.querySelector('img.thumb') && frame.nextElementSibling?.matches('[data-doc-zoom]') ? frame : null;
+    };
+    const stateOf = frame => {
+        let st = states.get(frame);
+        if (!st) {
+            st = { s: 1, x: 0, y: 0, img: frame.querySelector('img.thumb'), bar: frame.nextElementSibling, box: null };
+            states.set(frame, st);
+        }
+        return st;
+    };
+    // Point relative to the frame's padding box (where the box overlay and offsetLeft live).
+    const point = (frame, e) => {
+        const r = frame.getBoundingClientRect();
+        return { x: e.clientX - r.left - frame.clientLeft, y: e.clientY - r.top - frame.clientTop };
+    };
+    const apply = (frame, st) => {
+        st.img.style.transformOrigin = '0 0';
+        st.img.style.transform = st.s === 1 && !st.x && !st.y ? '' : `translate(${st.x}px, ${st.y}px) scale(${st.s})`;
+        frame.classList.toggle('is-zoomed', st.s > 1);
+        const pct = Math.round(st.s * 100);
+        st.bar.querySelector('[data-zoom-range]').value = pct;
+        st.bar.querySelector('[data-zoom-value]').textContent = pct + ' %';
+    };
+    // Zoom to scale s keeping the frame point p fixed.
+    const zoomAt = (frame, st, s, p) => {
+        s = Math.min(MAX, Math.max(MIN, s));
+        const ox = st.img.offsetLeft, oy = st.img.offsetTop;
+        const qx = (p.x - ox - st.x) / st.s, qy = (p.y - oy - st.y) / st.s;
+        st.x = p.x - ox - s * qx;
+        st.y = p.y - oy - s * qy;
+        st.s = s;
+        apply(frame, st);
+    };
+    const center = frame => ({ x: frame.clientWidth / 2, y: frame.clientHeight / 2 });
+    const reset = (frame, st) => { st.s = 1; st.x = 0; st.y = 0; apply(frame, st); };
+    const clearBox = st => { st.box?.remove(); st.box = null; };
+    const clearAll = () => document.querySelectorAll('.doc-box').forEach(box => {
+        const st = states.get(box.parentElement);
+        if (st) clearBox(st); else box.remove();
+    });
+    const toast = text => {
+        const el = document.createElement('div');
+        el.className = 'toast';
+        el.setAttribute('role', 'status');
+        el.textContent = text;
+        document.body.append(el);
+        const leave = () => { el.classList.add('is-leaving'); setTimeout(() => el.remove(), 300); };
+        el.addEventListener('click', leave);
+        setTimeout(leave, 3000);
+    };
+    // Box (frame coords) to natural pixels of the shown picture (object-fit: contain).
+    const crop = (st, b) => {
+        const img = st.img, w = img.clientWidth, h = img.clientHeight;
+        const nw = img.naturalWidth, nh = img.naturalHeight;
+        const c = Math.min(w / nw, h / nh), cx = (w - nw * c) / 2, cy = (h - nh * c) / 2;
+        const toNat = (px, py) => ({
+            x: Math.min(nw, Math.max(0, ((px - img.offsetLeft - st.x) / st.s - cx) / c)),
+            y: Math.min(nh, Math.max(0, ((py - img.offsetTop - st.y) / st.s - cy) / c)),
+        });
+        const a = toNat(b.x, b.y), z = toNat(b.x + b.w, b.y + b.h);
+        return { x: a.x, y: a.y, w: z.x - a.x, h: z.y - a.y };
+    };
+    const copy = (st, b) => {
+        const r = crop(st, b);
+        if (r.w < 1 || r.h < 1 || !navigator.clipboard?.write || typeof ClipboardItem === 'undefined') return;
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(r.w);
+        canvas.height = Math.round(r.h);
+        canvas.getContext('2d').drawImage(st.img, r.x, r.y, r.w, r.h, 0, 0, canvas.width, canvas.height);
+        const blob = new Promise(done => canvas.toBlob(done, 'image/png'));
+        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+            .then(() => toast(st.bar.dataset.labelCopied))
+            .catch(() => {});
+    };
+    const zoomBox = (frame, st, b) => {
+        const W = frame.clientWidth, H = frame.clientHeight;
+        const s = Math.min(MAX, Math.max(MIN, st.s * Math.min(W / b.w, H / b.h)));
+        const ox = st.img.offsetLeft, oy = st.img.offsetTop;
+        const qx = (b.x + b.w / 2 - ox - st.x) / st.s, qy = (b.y + b.h / 2 - oy - st.y) / st.s;
+        st.s = s;
+        st.x = W / 2 - ox - s * qx;
+        st.y = H / 2 - oy - s * qy;
+        apply(frame, st);
+    };
+    const showActions = (frame, st, b) => {
+        const actions = document.createElement('div');
+        actions.className = 'doc-box-actions';
+        const make = (label, run) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'button-small';
+            btn.textContent = label;
+            btn.addEventListener('click', e => { e.stopPropagation(); run(); clearBox(st); });
+            actions.append(btn);
+        };
+        make(st.bar.dataset.labelZoom, () => zoomBox(frame, st, b));
+        make(st.bar.dataset.labelCopy, () => copy(st, b));
+        st.box.append(actions);
+    };
+
+    document.addEventListener('wheel', e => {
+        const frame = frameOf(e.target);
+        if (!frame) return;
+        e.preventDefault();
+        const st = stateOf(frame);
+        clearBox(st);
+        zoomAt(frame, st, st.s * Math.exp(-e.deltaY * (e.deltaMode ? 0.05 : 0.0015)), point(frame, e));
+    }, { passive: false });
+
+    document.addEventListener('input', e => {
+        if (!e.target.matches?.('[data-zoom-range]')) return;
+        const frame = frameOf(e.target.closest('[data-doc-zoom]').previousElementSibling);
+        if (!frame) return;
+        const st = stateOf(frame);
+        clearBox(st);
+        zoomAt(frame, st, e.target.value / 100, center(frame));
+    });
+
+    // "Bereich wählen": when zoomed, a plain drag draws a box instead of panning (Alt does the same).
+    document.addEventListener('click', e => {
+        const btn = e.target.closest?.('[data-zoom-select]');
+        if (!btn) return;
+        const on = btn.getAttribute('aria-pressed') !== 'true';
+        btn.setAttribute('aria-pressed', String(on));
+        btn.closest('[data-doc-zoom]').previousElementSibling.classList.toggle('is-selecting', on);
+    });
+
+    document.addEventListener('pointerdown', e => {
+        if (e.target.closest?.('.doc-box-actions')) return;
+        clearAll();
+        const frame = frameOf(e.target);
+        if (!frame || e.button !== 0 || e.pointerType === 'touch') return;
+        e.preventDefault();
+        const st = stateOf(frame);
+        const select = st.s <= 1 || e.altKey || frame.classList.contains('is-selecting');
+        const start = point(frame, e);
+        let last = start, box = null;
+        frame.setPointerCapture(e.pointerId);
+        const move = ev => {
+            const p = point(frame, ev);
+            if (select) {
+                const b = { x: Math.min(start.x, p.x), y: Math.min(start.y, p.y), w: Math.abs(p.x - start.x), h: Math.abs(p.y - start.y) };
+                if (!box && b.w < 5 && b.h < 5) return;
+                if (!box) { box = document.createElement('div'); box.className = 'doc-box'; frame.append(box); st.box = box; }
+                box.b = b;
+                Object.assign(box.style, { left: b.x + 'px', top: b.y + 'px', width: b.w + 'px', height: b.h + 'px' });
+            } else {
+                st.x += p.x - last.x;
+                st.y += p.y - last.y;
+                last = p;
+                frame.classList.add('is-panning');
+                apply(frame, st);
+            }
+        };
+        const up = () => {
+            frame.removeEventListener('pointermove', move);
+            frame.removeEventListener('pointerup', up);
+            frame.removeEventListener('pointercancel', up);
+            frame.classList.remove('is-panning');
+            if (box && box.b.w >= 5 && box.b.h >= 5) showActions(frame, st, box.b);
+            else if (box) clearBox(st);
+        };
+        frame.addEventListener('pointermove', move);
+        frame.addEventListener('pointerup', up);
+        frame.addEventListener('pointercancel', up);
+    });
+
+    document.addEventListener('dblclick', e => {
+        const frame = frameOf(e.target);
+        if (!frame || e.target.closest('.doc-box-actions')) return;
+        const st = stateOf(frame);
+        clearBox(st);
+        reset(frame, st);
+    });
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') clearAll(); });
 })();

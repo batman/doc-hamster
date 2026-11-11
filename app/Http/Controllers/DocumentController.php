@@ -79,6 +79,7 @@ final class DocumentController
             $like = '%'.addcslashes($q, '%_\\').'%';
             $query->where(static fn ($w) => $w->where('title', 'like', $like)
                 ->orWhere('note', 'like', $like)
+                ->orWhere('ocr_text', 'like', $like)
                 ->orWhereHas('tags', static fn ($tag) => $tag->where('name', 'like', $like)));
         }
 

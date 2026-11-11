@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Documents;
 
+use App\Jobs\Local\RecognizeText;
 use finfo;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -69,6 +70,10 @@ final class DocumentIntake
         // Once, at upload: lists show only this small copy (design point 14).
         $file = $document->files()->firstOrFail();
         $file->update(['thumb_path' => Thumbnail::make($file)]);
+
+        // Text for the search, in the background (cron worker, local queue).
+        $document->forceFill(['ocr_status' => 'pending'])->save();
+        RecognizeText::dispatch($document->id);
 
         return $document;
     }

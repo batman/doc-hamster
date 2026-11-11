@@ -8,6 +8,11 @@ return [
     'fold' => 'Zuklappen',
     'expand' => ':name aufklappen',
     'open' => 'Aufklappen',
+    'addons' => [
+        'ocr' => 'Texterkennung (OCR)',
+        'available' => 'verfügbar',
+        'missing' => 'fehlt – auf dem Server installieren: :install',
+    ],
     'groups' => [
         'people' => 'Personen & Rollen',
         'bank' => 'Bank',
@@ -19,10 +24,10 @@ return [
     'links' => [
         'members' => ['title' => 'Personen', 'text' => 'Wer Zugang hat'],
         'roles' => ['title' => 'Rollen', 'text' => 'Was eine Rolle darf'],
-        'tags' => ['title' => 'Tags', 'text' => 'Etiketten für Belege verwalten'],
-        'folders' => ['title' => 'Ordner', 'text' => 'Ordner für Belege anlegen und ordnen'],
+        'tags' => ['title' => 'Tags', 'text' => 'Etiketten für Dokumente verwalten'],
+        'folders' => ['title' => 'Ordner', 'text' => 'Ordner für Dokumente anlegen und ordnen'],
         'bank' => ['title' => 'Konten und Import', 'text' => 'Kontoauszüge importieren, Konten verwalten'],
-        'export' => ['title' => 'Export', 'text' => 'Belege als ZIP, zum Beispiel für den Steuerberater'],
+        'export' => ['title' => 'Export', 'text' => 'Dokumente als ZIP, zum Beispiel für den Steuerberater'],
         'shares' => ['title' => 'Links', 'text' => 'Gültigkeit und gültige Links zum Versenden'],
         'update' => ['title' => 'Update', 'text' => 'Neue Version suchen und installieren'],
         'phone' => ['title' => 'Handy-Test', 'text' => 'Prüfen, ob dein Handy alles kann'],

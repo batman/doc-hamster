@@ -7,6 +7,7 @@ return [
     'logout' => 'Abmelden',
     'username' => 'Benutzername',
     'password' => 'Passwort',
+    'remember' => 'Angemeldet bleiben',
     'failed' => 'Benutzername oder Passwort ist falsch.',
     'throttle' => 'Zu viele Versuche. Bitte warte kurz.',
     'owner' => [

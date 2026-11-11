@@ -7,7 +7,7 @@
 @section('content')
     @php $openFolder = $folder !== null ? collect($folders)->pluck('folder')->firstWhere('id', $folder) : null; @endphp
     <div class="windows" data-windows>
-    {{-- Folders on the window system (PO, 2026-11-07; FRAMEWORK.md: the main menu has no sub-items): Belege lists the top folders
+    {{-- Folders on the window system (PO, 2026-11-07; FRAMEWORK.md: the main menu has no sub-items): Dokumente lists the top folders
          and the Papierkorb as rows, a folder opens as a window on the right with its subfolders and receipts. --}}
     <x-window :title="$openFolder?->name ?? __('documents.title')" :icon="$openFolder?->iconName() ?? 'receipt'"
               :url="route('documents.index', request()->except('page'))" :close="$openFolder ? route('documents.index') : null"

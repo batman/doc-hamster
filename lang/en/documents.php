@@ -64,4 +64,9 @@ return [
     'previous_month' => 'Previous month',
     'next_month' => 'Next month',
     'wrong_type' => 'Please upload a photo (JPG, PNG, WebP, HEIC) or a PDF.',
+    'zoom' => 'Zoom',
+    'zoom_in_area' => 'Zoom',
+    'copy_area' => 'Copy',
+    'copied' => 'Area copied',
+    'select_area' => 'Select area',
 ];

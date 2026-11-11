@@ -1,4 +1,4 @@
-{{-- Name, place, colour, symbol and bank matching of a folder. $locked: the folder "Belege allgemein" (name and place fixed). $self hides the folder itself
+{{-- Name, place, colour, symbol and bank matching of a folder. $locked: the folder "Dokumente allgemein" (name and place fixed). $self hides the folder itself
      and what lies below it from the parent list. Colour: none, the six colours of the design, or an own one; symbol from Folder::ICONS (PO, 2026-11-07). --}}
 @php
     $all = \App\Domain\Documents\Folder::flat();

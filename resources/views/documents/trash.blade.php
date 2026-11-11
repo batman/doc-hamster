@@ -1,4 +1,4 @@
-{{-- The Papierkorb as a window (window system): it opens on the right from its row among the folders in Belege. --}}
+{{-- The Papierkorb as a window (window system): it opens on the right from its row among the folders in Dokumente. --}}
 @extends('layouts.app')
 
 @section('title', __('documents.trash'))

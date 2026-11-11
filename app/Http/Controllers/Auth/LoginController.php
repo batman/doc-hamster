@@ -26,7 +26,9 @@ final class LoginController extends Controller
         $data = $request->validate(['username' => ['required', 'string'], 'password' => ['required', 'string']]);
         $username = mb_strtolower($data['username']);
 
-        if (! Auth::attempt(['username' => $username, 'password' => $data['password']])) {
+        // "Angemeldet bleiben" keeps the login for 30 days on this device (A11).
+        Auth::guard('web')->setRememberDuration(60 * 24 * 30);
+        if (! Auth::attempt(['username' => $username, 'password' => $data['password']], $request->boolean('remember'))) {
             // Auth::attempt() only hashes when the user exists and has a
             // password – without this, the response time reveals whether a
             // username exists (issue #6). The dummy verify costs one hash

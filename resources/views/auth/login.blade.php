@@ -14,6 +14,7 @@
             <label for="password">{{ __('auth.password') }}</label>
             <input id="password" type="password" name="password" autocomplete="current-password" required>
         </div>
+        <label class="chip"><input type="checkbox" name="remember" value="1" checked> <span>{{ __('auth.remember') }}</span></label>
         @error('username')<p class="error" role="alert">{{ $message }}</p>@enderror
         <button type="submit">{{ __('auth.login') }}</button>
     </form>

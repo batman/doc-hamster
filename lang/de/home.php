@@ -8,7 +8,7 @@ return [
     'body' => 'Text',
     'text_hint' => 'Den Text schreibst du direkt auf der Notiz. Listen setzt sie beim Verlassen untereinander.',
     'list_hint' => 'Liste: [Eintrag 1, Eintrag 2, #erledigter Eintrag] – an beliebiger Stelle im Text, auch mehrere. Ein Klick auf das Kästchen hakt ab.',
-    'link' => 'Beleg verknüpfen',
+    'link' => 'Dokument verknüpfen',
     'link_hint' => 'Namen eintippen',
     'unlink' => '„:title“ lösen',
     'share' => 'Für alle zeigen',

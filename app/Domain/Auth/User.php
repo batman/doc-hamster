@@ -36,9 +36,6 @@ final class User extends Authenticatable
     /** Laravel reads the password from here instead of `password`. */
     protected $authPasswordName = 'password_hash';
 
-    /** No "remember me" tokens: long-lived logins are device tokens (PLAN §11.1). */
-    protected $rememberTokenName = '';
-
     protected $fillable = ['username', 'email', 'display_name', 'locale', 'password_hash'];
 
     protected $hidden = ['password_hash'];

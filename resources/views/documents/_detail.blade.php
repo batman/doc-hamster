@@ -31,6 +31,14 @@
     @elseif ($file)
         @include('documents._thumb', ['frameClass' => 'detail-doc'])
     @endif
+    @if ($file?->isImage() || $file?->thumb_path)
+        {{-- Zoom bar for the viewer above (app.js "Document viewer"): wheel, slider, box zoom and box copy. --}}
+        <div class="doc-zoom" data-doc-zoom data-label-zoom="{{ __('documents.zoom_in_area') }}" data-label-copy="{{ __('documents.copy_area') }}" data-label-copied="{{ __('documents.copied') }}">
+            <input type="range" min="25" max="400" step="1" value="100" aria-label="{{ __('documents.zoom') }}" data-zoom-range>
+            <output data-zoom-value>100 %</output>
+            <button type="button" class="button-small button-quiet" aria-pressed="false" data-zoom-select>{{ __('documents.select_area') }}</button>
+        </div>
+    @endif
 
     @can('documents.edit')
         <form method="post" action="{{ route('documents.update', $document->id) }}">

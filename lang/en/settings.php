@@ -8,6 +8,11 @@ return [
     'fold' => 'Fold',
     'expand' => 'Open :name',
     'open' => 'Open',
+    'addons' => [
+        'ocr' => 'Text recognition (OCR)',
+        'available' => 'available',
+        'missing' => 'missing – install on the server: :install',
+    ],
     'groups' => [
         'people' => 'People & roles',
         'bank' => 'Bank',
