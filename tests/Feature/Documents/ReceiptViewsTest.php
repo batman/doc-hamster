@@ -7,6 +7,7 @@ use App\Domain\Documents\Tag;
 use App\Domain\Org\Membership;
 use App\Domain\Org\OrgScope;
 use App\Domain\Org\RoleRight;
+use App\Domain\Palette\PaletteColor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 /*
@@ -74,7 +75,7 @@ it('opens a receipt beside the list, saves title, note and tags, and deletes int
 it('colours tags: a palette colour by chance, any colour by hand, and serves them as a stylesheet', function (): void {
     $this->actingAs($this->admin->user)->post('/tags', ['name' => 'Reise'])->assertRedirect();
     $travel = Tag::query()->where('name', 'Reise')->firstOrFail();
-    expect(Tag::PALETTE)->toContain($travel->color);
+    expect(PaletteColor::DEFAULTS)->toContain($travel->color);
 
     $this->post('/tags/'.$travel->id, ['name' => 'Reise', 'color' => '#ff7622', 'color_hex' => '#12345A'])->assertRedirect();
     expect($travel->fresh()->color)->toBe('#12345a');

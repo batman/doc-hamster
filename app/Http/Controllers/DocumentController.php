@@ -11,6 +11,7 @@ use App\Domain\Documents\DocumentFile;
 use App\Domain\Documents\DocumentIntake;
 use App\Domain\Documents\Folder;
 use App\Domain\Documents\Tag;
+use App\Domain\Documents\TextDocument;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
 use Carbon\CarbonImmutable;
@@ -88,9 +89,9 @@ final class DocumentController
         $folders = Folder::flat();
         $wantedFolder = $request->query('folder');
         $folder = is_string($wantedFolder) && collect($folders)->contains(static fn (array $row): bool => $row['folder']->id === $wantedFolder) ? $wantedFolder : null;
-        // Calendar and timeline are date views: like a search they show everything below the current folder.
+        // Calendar, timeline and the tag filter look, like a search, through everything below the current folder.
         $savedView = $this->user($request)->receipt_view;
-        if ($q !== '' || in_array($savedView, ['calendar', 'timeline'], true)) {
+        if ($q !== '' || $selected !== [] || in_array($savedView, ['calendar', 'timeline'], true)) {
             if ($folder !== null) {
                 $query->whereIn('folder_id', Folder::branchIds($folder));
             }
@@ -245,8 +246,10 @@ final class DocumentController
     {
         [$file, $document] = $this->visibleFile($request, $id);
         $document->forceFill(['last_opened_at' => now()])->saveQuietly();
+        // Text documents are shown as plain text, never as a page of this site (point 21).
+        $type = TextDocument::isText($file) ? 'text/plain; charset=UTF-8' : $file->mime;
 
-        return Storage::disk('local')->response($file->path, null, ['Content-Type' => $file->mime]);
+        return Storage::disk('local')->response($file->path, null, ['Content-Type' => $type, 'X-Content-Type-Options' => 'nosniff']);
     }
 
     public function download(Request $request, string $id): Response

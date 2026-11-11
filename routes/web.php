@@ -22,6 +22,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SetupController;
 use App\Http\Controllers\ShareController;
 use App\Http\Controllers\TagController;
+use App\Http\Controllers\TextDocumentController;
 use App\Http\Controllers\UpdateController;
 use Illuminate\Support\Facades\Route;
 
@@ -47,6 +48,10 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('documents/{id}/restore', [DocumentController::class, 'restore'])->middleware('can:documents.trash')->name('documents.restore');
     Route::post('documents/{id}/share-link', [ShareController::class, 'store'])->middleware('can:exports.create')->name('documents.share');
     Route::post('documents', [DocumentController::class, 'store'])->middleware('can:documents.upload')->name('documents.store');
+    // Text documents written in the app (point 21), before documents/{id} so "text" is no id.
+    Route::post('documents/text', [TextDocumentController::class, 'store'])->middleware('can:documents.upload')->name('documents.text.store');
+    Route::get('documents/{id}/text', [TextDocumentController::class, 'edit'])->name('documents.text');
+    Route::post('documents/{id}/text', [TextDocumentController::class, 'update'])->middleware('can:documents.edit')->name('documents.text.update');
     Route::post('documents/view', [DocumentController::class, 'setView'])->name('documents.view');
     Route::get('documents/{id}', [DocumentController::class, 'show'])->name('documents.show');
     Route::post('documents/{id}', [DocumentController::class, 'update'])->middleware('can:documents.edit')->name('documents.update');

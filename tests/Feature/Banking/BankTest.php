@@ -153,7 +153,7 @@ it('links a receipt, moves it between the views and can undo it', function (): v
 
     expect(TransactionMatch::query()->count())->toBe(1);
     $this->get('/bank')->assertDontSee('Muster GmbH');
-    $this->get('/bank?view=matched')->assertSee('Muster GmbH')->assertSee('1 Beleg');
+    $this->get('/bank?view=matched')->assertSee('Muster GmbH')->assertSee('1 Dokument');
     $this->get('/bank?view=receipts')->assertDontSee('bon.jpg');
 
     $this->post('/bank/transactions/'.$transaction->id.'/unmatch', ['document_id' => $document->id])->assertRedirect();
@@ -200,7 +200,7 @@ it('needs the checkbox, and without "Alle Belege sehen" only own receipts can be
     $second = transactions()->whereKeyNot($transaction->id)->firstOrFail();
     $this->actingAs($clerk->user)->get('/bank/transactions/'.$second->id)->assertSee('meins.jpg')->assertDontSee('chef.jpg');
     $this->get('/bank?view=receipts')->assertSee('meins.jpg');
-    $this->get('/bank/transactions/'.$transaction->id)->assertDontSee('chef.jpg')->assertSee('1 Beleg, den Sie nicht sehen');
+    $this->get('/bank/transactions/'.$transaction->id)->assertDontSee('chef.jpg')->assertSee('1 Dokument, das Sie nicht sehen');
 
     $this->post('/bank/transactions/'.$second->id.'/match', ['document_id' => $foreign->id])->assertSessionHasErrors('document_id');
     $this->post('/bank/transactions/'.$transaction->id.'/unmatch', ['document_id' => $foreign->id])->assertNotFound();

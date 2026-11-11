@@ -49,13 +49,13 @@ function belegeOf(string $orgId): Folder
     return Folder::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $orgId)->where('is_default', true)->firstOrFail();
 }
 
-it('gives every organisation "Belege allgemein" and "Rechnungen", with bank matching on', function (): void {
+it('gives every organisation "Dokumente allgemein" and "Rechnungen", with bank matching on', function (): void {
     $org = Organization::factory()->create();
 
     $belege = belegeOf($org->id);
     $invoices = Folder::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $org->id)->where('name', 'Rechnungen')->firstOrFail();
 
-    expect($belege->name)->toBe('Belege allgemein')
+    expect($belege->name)->toBe('Dokumente allgemein')
         ->and($belege->bank_matching)->toBeTrue()
         ->and($belege->parent_id)->toBeNull()
         ->and($invoices->is_default)->toBeFalse()
@@ -80,7 +80,8 @@ it('creates a folder and one inside it; new folders have bank matching off unles
         ->and(folderNamed('Miete')->parent_id)->toBe($top->id)
         ->and(folderNamed('Miete')->bank_matching)->toBeTrue()
         ->and($top->org_id)->toBe($this->orgId);
-    $this->get('/folders')->assertOk()->assertSee('Verträge')->assertSee('Miete');
+    $this->get('/documents')->assertOk()->assertSee('Verträge');
+    $this->get('/documents?folder='.$top->id)->assertOk()->assertSee('Miete');
 });
 
 it('switches bank matching on and off for any folder, "Belege" included', function (): void {
@@ -126,7 +127,7 @@ it('does not move a folder into itself, below itself or too deep, and keeps "Bel
     expect(folderRow($belege->id)?->parent_id)->toBeNull();
 });
 
-it('files an upload into a folder and shows a folder with everything below it', function (): void {
+it('files an upload into a folder; a folder shows its own receipts, a search everything below', function (): void {
     $top = makeFolder($this->orgId, 'Steuer');
     $sub = makeFolder($this->orgId, 'Quittungen', $top->id);
     $this->actingAs($this->admin->user);
@@ -135,10 +136,11 @@ it('files an upload into a folder and shows a folder with everything below it', 
     $this->post('/documents', ['file' => UploadedFile::fake()->image('unten.jpg'), 'folder' => $sub->id])->assertRedirect('/documents');
     $this->post('/documents', ['file' => UploadedFile::fake()->image('lose.jpg')])->assertRedirect('/documents');
 
-    $this->get('/documents?folder='.$top->id)->assertSee('oben.jpg')->assertSee('unten.jpg')->assertDontSee('lose.jpg');
+    $this->get('/documents?folder='.$top->id)->assertSee('oben.jpg')->assertDontSee('unten.jpg')->assertDontSee('lose.jpg');
+    $this->get('/documents?folder='.$top->id.'&q=.jpg')->assertSee('oben.jpg')->assertSee('unten.jpg')->assertDontSee('lose.jpg');
     $this->get('/documents?folder='.$sub->id)->assertDontSee('oben.jpg')->assertSee('unten.jpg');
     $this->get('/documents?folder='.belegeOf($this->orgId)->id)->assertSee('lose.jpg')->assertDontSee('oben.jpg');
-    $this->get('/documents')->assertSee('oben.jpg')->assertSee('lose.jpg');
+    $this->get('/documents?q=.jpg')->assertSee('oben.jpg')->assertSee('lose.jpg');
 });
 
 it('moves a receipt to another folder from its detail view; an empty choice means "Belege"', function (): void {
@@ -168,13 +170,13 @@ it('moves receipts and subfolders up when a folder is deleted; a top folder hand
     $leaf = makeFolder($this->orgId, 'Unten', $middle->id);
     $this->actingAs($this->admin->user)->post('/documents', ['file' => UploadedFile::fake()->image('m.jpg'), 'folder' => $middle->id]);
 
-    $this->post('/folders/'.$middle->id.'/delete')->assertRedirect('/folders');
+    $this->post('/folders/'.$middle->id.'/delete')->assertRedirect('/documents?folder='.$top->id);
 
     expect(folderRow($middle->id))->toBeNull()
         ->and(folderRow($leaf->id)?->parent_id)->toBe($top->id)
         ->and(titled('m.jpg')->folder_id)->toBe($top->id);
 
-    $this->post('/folders/'.$top->id.'/delete')->assertRedirect('/folders');
+    $this->post('/folders/'.$top->id.'/delete')->assertRedirect('/documents');
     expect(titled('m.jpg')->folder_id)->toBe(belegeOf($this->orgId)->id)
         ->and(folderRow($leaf->id)?->parent_id)->toBeNull();
 });
@@ -189,7 +191,7 @@ it('deletes a folder with its content: subfolders go, receipts land in the Papie
     $this->post('/documents', ['file' => UploadedFile::fake()->image('unten.jpg'), 'folder' => $leaf->id]);
     $this->post('/documents', ['file' => UploadedFile::fake()->image('daneben.jpg'), 'folder' => $sibling->id]);
 
-    $this->post('/folders/'.$middle->id.'/delete', ['with_content' => '1'])->assertRedirect('/folders');
+    $this->post('/folders/'.$middle->id.'/delete', ['with_content' => '1'])->assertRedirect('/documents?folder='.$top->id);
 
     $inTrash = static fn (string $title): Document => Document::query()->withoutGlobalScope(OrgScope::class)->withTrashed()->where('title', $title)->firstOrFail();
     expect(folderRow($middle->id))->toBeNull()
@@ -224,7 +226,8 @@ it('never shows, uses or changes folders of another organisation', function (): 
     $foreign = makeFolder($other->id, 'Fremd');
     $this->actingAs($this->admin->user);
 
-    $this->get('/folders?folder='.$foreign->id)->assertOk()->assertDontSee('Fremd');
+    $this->get('/folders?folder='.$foreign->id)->assertRedirect('/documents');
+    $this->get('/documents?folder='.$foreign->id)->assertOk()->assertDontSee('Fremd');
     $this->post('/folders/'.$foreign->id, ['name' => 'Gekapert'])->assertNotFound();
     $this->post('/folders/'.$foreign->id.'/delete')->assertNotFound();
     $this->post('/folders', ['name' => 'Eigen', 'parent_id' => $foreign->id])->assertSessionHasErrors('parent_id');
@@ -239,10 +242,10 @@ it('keeps folder management to people who may edit receipts', function (): void 
 
     $this->actingAs($viewer->user)->get('/folders')->assertForbidden();
     $this->post('/folders', ['name' => 'Heimlich'])->assertForbidden();
-    $this->actingAs($editor->user)->get('/folders')->assertOk();
+    $this->actingAs($editor->user)->get('/folders?new=1')->assertOk();
 });
 
-it('keeps the name of "Belege allgemein"; "Rechnungen" may be renamed and deleted', function (): void {
+it('keeps the name of "Dokumente allgemein"; "Rechnungen" may be renamed and deleted', function (): void {
     $belege = belegeOf($this->orgId);
     $invoices = folderNamed('Rechnungen');
     $this->actingAs($this->admin->user);
@@ -250,11 +253,11 @@ it('keeps the name of "Belege allgemein"; "Rechnungen" may be renamed and delete
     $this->post('/folders/'.$belege->id, ['name' => 'Anders', 'look' => '1', 'icon' => 'star'])->assertRedirect();
     $this->post('/folders/'.$invoices->id, ['name' => 'Eingangsrechnungen'])->assertRedirect();
 
-    expect(folderRow($belege->id)?->name)->toBe('Belege allgemein')
+    expect(folderRow($belege->id)?->name)->toBe('Dokumente allgemein')
         ->and(folderRow($belege->id)?->icon)->toBe('star')
         ->and(folderRow($invoices->id)?->name)->toBe('Eingangsrechnungen');
 
-    $this->post('/folders/'.$invoices->id.'/delete')->assertRedirect('/folders');
+    $this->post('/folders/'.$invoices->id.'/delete')->assertRedirect('/documents');
     expect(folderRow($invoices->id))->toBeNull();
 });
 
@@ -278,7 +281,7 @@ it('gives a folder a colour and a symbol from the fixed set, and serves the colo
     expect(folderRow($auto->id)?->icon)->toBe('car')->and(folderRow($auto->id)?->color)->toBe('#3fb68f');
 });
 
-it('shows the folders as sortable rows in the Belege window, not in the main menu; a folder shows its subfolders', function (): void {
+it('shows the folders as sortable rows in the Dokumente window, not in the main menu; a folder shows its subfolders', function (): void {
     $invoices = folderNamed('Rechnungen');
     $phone = makeFolder($this->orgId, 'Telefon', $invoices->id);
     $this->actingAs($this->admin->user);
@@ -288,10 +291,11 @@ it('shows the folders as sortable rows in the Belege window, not in the main men
         ->assertDontSee('nav-folders', false)
         ->assertSee('data-sortable', false)
         ->assertSee('data-id="trash"', false)
-        ->assertSeeInOrder(['Belege allgemein', 'Rechnungen', '1 Beleg', 'Papierkorb']);
+        ->assertSeeInOrder(['Dokumente allgemein', 'Rechnungen', 'Kein Dokument', 'Papierkorb']);
     $this->get('/documents?folder='.$invoices->id)->assertOk()
         ->assertSee('data-window-upload="folder='.$invoices->id.'"', false)
         ->assertSee('data-id="'.$phone->id.'"', false)
+        ->assertSee('1 Dokument')
         ->assertDontSee('data-id="trash"', false)
         ->assertSee('Unterordner anlegen');
     $this->get('/documents/trash')->assertOk()->assertSee('data-window-title="Papierkorb"', false);
@@ -308,7 +312,7 @@ it('saves the order of one level by drag and drop, the Papierkorb included', fun
     expect(folderRow($other->id)?->position)->toBe(0)
         ->and(folderRow($belege->id)?->position)->toBe(2)
         ->and(data_get(Organization::query()->findOrFail($this->orgId)->settings_json, 'folders.trash_slot'))->toBe(1);
-    $this->get('/documents')->assertSeeInOrder(['Zuerst', 'Papierkorb', 'Rechnungen', 'Belege allgemein']);
+    $this->get('/documents')->assertSeeInOrder(['Zuerst', 'Papierkorb', 'Rechnungen', 'Dokumente allgemein']);
 
     $sub = makeFolder($this->orgId, 'Unter', $other->id);
     $this->postJson('/folders/order', ['parent_id' => $other->id, 'order' => [$sub->id, 'trash']])->assertStatus(422);
@@ -353,7 +357,7 @@ it('shows folders as windows: the list as root, a folder or a new one to its rig
     $this->actingAs($this->admin->user);
     $travel = makeFolder($this->orgId, 'Reisen');
 
-    $this->get('/folders')->assertOk()->assertSee('data-windows', false)->assertDontSee('data-folder-import', false);
+    $this->get('/folders')->assertRedirect('/documents');
     $this->get('/folders?new=1')->assertOk()->assertSee('Neuen Ordner anlegen')->assertSee('data-folder-import', false)->assertSee('id="name-new"', false);
     $this->get('/folders?parent='.$travel->id)->assertOk()->assertSee('data-folder-import', false);
     $this->get('/folders?folder='.$travel->id)->assertOk()

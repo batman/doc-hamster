@@ -7,11 +7,17 @@
     $when = fn ($date) => $date?->format('d.m.Y H:i') ?? __('documents.never');
     $booking = $document->matches->map(fn ($match) => $match->transaction->booking_date->format('d.m.Y').' · '.$match->transaction->formattedAmount())->implode(', ');
     $shareUrl = session('share_url');
+    $isText = \App\Domain\Documents\TextDocument::isText($file);
 @endphp
 <x-window :title="$document->title" icon="file-text" :url="route('documents.show', [$document->id, ...request()->query()])" :close="$close" class="win-detail">
     <div class="detail-actions">
         @if ($file)
             <a class="icon-button" href="{{ route('documents.download', $file->id) }}" aria-label="{{ __('documents.download') }}" data-tooltip="{{ __('documents.download') }}"><x-icon name="download" /></a>
+        @endif
+        @if ($isText)
+            {{-- Text documents open in their own editor window (point 21); without documents.edit it only reads. --}}
+            @php $textLabel = Gate::allows('documents.edit') ? __('documents.text.edit') : __('documents.text.open'); @endphp
+            <a class="icon-button" href="{{ route('documents.text', $document->id) }}" data-window aria-label="{{ $textLabel }}" data-tooltip="{{ $textLabel }}"><x-icon name="file-pencil" /></a>
         @endif
         @can('documents.edit')
             <a class="icon-button" href="#title-{{ $document->id }}" aria-label="{{ __('documents.edit') }}" data-tooltip="{{ __('documents.edit') }}"><x-icon name="pencil" /></a>
@@ -28,6 +34,14 @@
 
     @if ($file?->isImage())
         <span class="thumb-frame detail-doc"><img class="thumb" src="{{ route('documents.file', $file->id) }}" alt="" draggable="false"></span>
+    @elseif ($isText)
+        {{-- Formatted text is sanitized again before it is shown (TextDocument::display). --}}
+        @php $textContent = \App\Domain\Documents\TextDocument::display($file); @endphp
+        @if (\App\Domain\Documents\TextDocument::isRich($file))
+            <div class="rich-text text-doc">{!! $textContent !!}</div>
+        @else
+            <pre class="plain-text-view text-doc">{{ $textContent }}</pre>
+        @endif
     @elseif ($file)
         @include('documents._thumb', ['frameClass' => 'detail-doc'])
     @endif

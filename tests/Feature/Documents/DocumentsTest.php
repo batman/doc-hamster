@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
+use App\Domain\Documents\Folder;
 use App\Domain\Org\Membership;
 use App\Domain\Org\OrgScope;
 use App\Domain\Org\RoleRight;
@@ -35,7 +36,8 @@ it('lets an owner upload a receipt, see it and open the file', function (): void
         ->and($file->mime)->toBe('image/jpeg');
     Storage::disk('local')->assertExists($file->path);
 
-    $this->get('/documents')->assertOk()->assertSee('bon.jpg');
+    // Without a chosen folder it lands in "Dokumente allgemein".
+    $this->get('/documents?folder='.Folder::defaultIdFor($owner->org_id))->assertOk()->assertSee('bon.jpg');
     $this->get('/files/'.$file->id)->assertOk()->assertHeader('Content-Type', 'image/jpeg');
 });
 

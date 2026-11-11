@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Domain\Auth\User;
 use App\Domain\Documents\Document;
+use App\Domain\Documents\Folder;
 use App\Domain\Documents\Tag;
 use App\Domain\Org\Membership;
 use App\Domain\Org\Organization;
@@ -81,8 +82,9 @@ it('filters the list, and several tags must all match', function (): void {
     $this->post('/documents', ['file' => UploadedFile::fake()->image('beide.jpg'), 'tags' => [$invoice->id, $contract->id]]);
     $this->post('/documents', ['file' => UploadedFile::fake()->image('eins.jpg'), 'tags' => [$invoice->id]]);
 
-    $this->get('/documents?'.http_build_query(['tags' => [$invoice->id]]))->assertSee('beide.jpg')->assertSee('eins.jpg');
-    $this->get('/documents?'.http_build_query(['tags' => [$invoice->id, $contract->id]]))->assertSee('beide.jpg')->assertDontSee('eins.jpg');
+    $folder = Folder::defaultIdFor($this->orgId);
+    $this->get('/documents?'.http_build_query(['folder' => $folder, 'tags' => [$invoice->id]]))->assertSee('beide.jpg')->assertSee('eins.jpg');
+    $this->get('/documents?'.http_build_query(['folder' => $folder, 'tags' => [$invoice->id, $contract->id]]))->assertSee('beide.jpg')->assertDontSee('eins.jpg');
 });
 
 it('lets those who may edit a receipt change its tags, limited to what they can see', function (): void {
@@ -98,7 +100,7 @@ it('lets those who may edit a receipt change its tags, limited to what they can 
 
     $advisor = Membership::factory()->accountant()->create(['org_id' => $this->orgId]);
     $this->actingAs($advisor->user)->post('/documents/'.$document->id.'/tags', ['tags' => []])->assertForbidden();
-    $this->get('/documents?'.http_build_query(['tags' => [$invoice->id]]))->assertOk()->assertSee('bon.jpg');
+    $this->get('/documents?'.http_build_query(['folder' => Folder::defaultIdFor($this->orgId), 'tags' => [$invoice->id]]))->assertOk()->assertSee('bon.jpg');
 
     expect(DB::table('document_tags')->where('document_id', $document->id)->count())->toBe(1);
 });

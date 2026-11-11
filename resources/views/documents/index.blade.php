@@ -50,6 +50,10 @@
                         <button type="submit" name="view" value="{{ $name }}" class="icon-button button-small" aria-pressed="{{ $name === $view ? 'true' : 'false' }}" aria-label="{{ __('documents.views.'.$name) }}" data-tooltip="{{ __('documents.views.'.$name) }}"><x-icon :name="$icon" /></button>
                     @endforeach
                 </form>
+                @can('documents.upload')
+                    {{-- A text document written in the app, in this folder (point 21). --}}
+                    <button type="button" class="icon-button" data-dialog-open="new-text-{{ $openFolder?->id ?? 'top' }}" aria-label="{{ __('documents.text.new') }}" data-tooltip="{{ __('documents.text.new') }}"><x-icon name="file-plus" /></button>
+                @endcan
                 @can('documents.edit')
                     {{-- Folders are managed where they are shown, like an explorer (points 10-12). --}}
                     @if (! $openFolder || $openFolder->depth() < \App\Domain\Documents\Folder::MAX_DEPTH)
@@ -64,6 +68,32 @@
                 @endcan
             </div>
         </x-slot:actions>
+
+        @can('documents.upload')
+            @php $newText = 'new-text-'.($openFolder?->id ?? 'top'); @endphp
+            <div class="dialog-backdrop" data-dialog="{{ $newText }}" hidden>
+                <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="{{ $newText }}-title">
+                    <h2 id="{{ $newText }}-title">{{ __('documents.text.new_title') }}</h2>
+                    <form method="post" action="{{ route('documents.text.store') }}" data-text-create>
+                        @csrf
+                        <input type="hidden" name="folder" value="{{ $openFolder?->id }}">
+                        <div class="field">
+                            <label for="{{ $newText }}-name">{{ __('documents.name') }}</label>
+                            <input id="{{ $newText }}-name" name="name" maxlength="250" required placeholder="{{ __('documents.text.name_placeholder') }}">
+                        </div>
+                        <fieldset class="text-kinds">
+                            <legend>{{ __('documents.text.kind') }}</legend>
+                            <label class="text-kind"><input type="radio" name="kind" value="plain" checked><span><strong>{{ __('documents.text.plain') }}</strong><small>{{ __('documents.text.plain_hint') }}</small></span></label>
+                            <label class="text-kind"><input type="radio" name="kind" value="rich"><span><strong>{{ __('documents.text.rich') }}</strong><small>{{ __('documents.text.rich_hint') }}</small></span></label>
+                        </fieldset>
+                        <div class="dialog-actions">
+                            <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
+                            <button type="submit">{{ __('documents.text.create') }}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        @endcan
 
         @if ($folderRows !== [])
             {{-- Sortable rows (FRAMEWORK.md "Sortable list"); app.js saves the order on list:sorted. The Papierkorb only on top. --}}
