@@ -73,6 +73,15 @@ final class DocumentController
             $query->whereHas('tags', static fn ($tag) => $tag->whereKey($tagId));
         }
 
+        // Search in the window head: title, note or tag name (A104).
+        $q = trim((string) $request->query('q', ''));
+        if ($q !== '') {
+            $like = '%'.addcslashes($q, '%_\\').'%';
+            $query->where(static fn ($w) => $w->where('title', 'like', $like)
+                ->orWhere('note', 'like', $like)
+                ->orWhereHas('tags', static fn ($tag) => $tag->where('name', 'like', $like)));
+        }
+
         // One folder, with everything below it (issue #77).
         $folders = Folder::flat();
         $wantedFolder = $request->query('folder');
@@ -94,7 +103,7 @@ final class DocumentController
             $documents = $query->latest()->limit(self::LIMIT + 1)->get();
         }
         // Filtering in the browser works only when the page holds every receipt (point 7).
-        $complete = $selected === [] && $folder === null && ($view === 'calendar' || $documents->count() <= self::LIMIT);
+        $complete = $selected === [] && $folder === null && $q === '' &&($view === 'calendar' || $documents->count() <= self::LIMIT);
 
         return [
             'open' => null,

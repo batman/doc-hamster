@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 return [
     'title' => 'Receipts',
+    'search' => 'Search receipts',
     'choose' => 'Choose a photo or PDF',
     'upload' => 'Upload receipt',
     'saved' => 'Receipt saved.',

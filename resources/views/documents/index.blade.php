@@ -11,7 +11,8 @@
          and the Papierkorb as rows, a folder opens as a window on the right with its subfolders and receipts. --}}
     <x-window :title="$openFolder?->name ?? __('documents.title')" :icon="$openFolder?->iconName() ?? 'receipt'"
               :url="route('documents.index', request()->except('page'))" :close="$openFolder ? route('documents.index') : null"
-              :upload="$openFolder ? 'folder='.$openFolder->id : null" :class="$openFolder?->colorClass()">
+              :upload="$openFolder ? 'folder='.$openFolder->id : null" :class="$openFolder?->colorClass()"
+              :search="__('documents.search')">
         <x-slot:actions>
             <div class="toolbar">
                 @if ($tags->isNotEmpty())

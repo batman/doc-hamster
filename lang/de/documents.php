@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 return [
     'title' => 'Belege',
+    'search' => 'Belege durchsuchen',
     'choose' => 'Foto oder PDF auswählen',
     'upload' => 'Beleg hochladen',
     'saved' => '{1} Beleg gespeichert.|[2,*] :count Belege gespeichert.',
