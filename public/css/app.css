@@ -1386,3 +1386,12 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
 .toast.toast-error { border-color: var(--danger); }
 .toast.toast-error::before { content: ""; flex: none; width: .5rem; height: .5rem; border-radius: 50%; background: var(--danger); }
 .win-detail form > button[type="submit"] { margin-top: 1rem; }
+
+/* Package H */
+/* PDF pages under the document (A19); the bar may wrap on narrow windows. */
+.doc-zoom { flex-wrap: wrap; }
+.doc-pages { display: flex; align-items: center; gap: .5rem; }
+.doc-pages[hidden] { display: none; }
+.doc-pages output { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.detail-doc[data-pdf]:focus { outline: none; }
+.detail-doc[data-pdf]:focus-visible { outline: 2px solid color-mix(in srgb, var(--primary) 45%, transparent); outline-offset: 2px; }

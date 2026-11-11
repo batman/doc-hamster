@@ -20,13 +20,16 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Text recognition set-up and the browser fallback (point 18, A16/A17).
- * The browser reads one image at a time and posts the text back; only for
- * receipts the user may edit (documents.edit) or uploaded themself.
+ * The browser reads one image or PDF (point 34, page by page with pdf.js) at a
+ * time and posts the text back; only for receipts the user may edit
+ * (documents.edit) or uploaded themself.
  */
 final class OcrController extends Controller
 {
     /** Browsers can't decode these; the server converts them later. */
     private const array SKIP_MIMES = ['image/heic', 'image/heif'];
+
+    private const string PDF = 'application/pdf';
 
     public function setup(LocalOcr $ocr): RedirectResponse
     {
@@ -46,26 +49,25 @@ final class OcrController extends Controller
         $document = $this->editable($request)
             ->where(static fn ($w) => $w->whereNull('ocr_status')->orWhereIn('ocr_status', ['pending', 'unavailable']))
             ->whereNotIn('id', $skip)
-            ->whereHas('files', static fn ($f) => $f->where('mime', 'like', 'image/%')->whereNotIn('mime', self::SKIP_MIMES))
+            ->whereHas('files', self::readable(...))
             ->latest('created_at')->first();
         if ($document === null) {
             return response()->noContent();
         }
-        $file = DocumentFile::query()->where('document_id', $document->id)
-            ->where('mime', 'like', 'image/%')->whereNotIn('mime', self::SKIP_MIMES)
-            ->orderBy('page_no')->firstOrFail();
+        $file = self::readable(DocumentFile::query()->where('document_id', $document->id))->orderBy('page_no')->firstOrFail();
 
         return response()->json([
             'id' => $document->id,
-            'image' => route('ocr.image', $file->id),
+            'file' => route('ocr.image', $file->id),
+            'type' => $file->mime,
             'save' => route('ocr.store', $document->id),
         ]);
     }
 
-    /** Serves the image without touching last_opened_at (unlike documents.file). */
+    /** Serves the image or PDF without touching last_opened_at (unlike documents.file). */
     public function image(Request $request, string $id): StreamedResponse
     {
-        $file = DocumentFile::query()->whereKey($id)->where('mime', 'like', 'image/%')->firstOrFail();
+        $file = self::readable(DocumentFile::query()->whereKey($id))->firstOrFail();
         $this->editable($request)->whereKey($file->document_id)->firstOrFail();
 
         return Storage::disk('local')->response($file->path, null, ['Content-Type' => $file->mime, 'Cache-Control' => 'private, no-store']);
@@ -78,6 +80,21 @@ final class OcrController extends Controller
         $document->forceFill(['ocr_text' => trim((string) ($data['text'] ?? '')), 'ocr_status' => 'done'])->save();
 
         return response()->noContent();
+    }
+
+    /**
+     * Files the browser can read: images it decodes, and PDFs.
+     *
+     * @template TQuery of Builder<DocumentFile>
+     *
+     * @param  TQuery  $query
+     * @return TQuery
+     */
+    private static function readable(Builder $query): Builder
+    {
+        return $query->where(static fn (Builder $w) => $w
+            ->where(static fn (Builder $i) => $i->where('mime', 'like', 'image/%')->whereNotIn('mime', self::SKIP_MIMES))
+            ->orWhere('mime', self::PDF));
     }
 
     /**

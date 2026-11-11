@@ -24,7 +24,7 @@
 </head>
 {{-- Browser OCR fallback (point 18): only when the server can't read text itself. --}}
 @php $ocrBrowser = auth()->check() && app(\App\Infrastructure\Environment\LocalOcr::class)->mode() === 'browser'; @endphp
-<body @if ($ocrBrowser) data-ocr-browser="{{ asset('vendor/tesseract') }}" data-ocr-next="{{ route('ocr.next') }}" @endif>
+<body data-pdfjs="{{ asset('vendor/pdfjs') }}" @if ($ocrBrowser) data-ocr-browser="{{ asset('vendor/tesseract') }}" data-ocr-next="{{ route('ocr.next') }}" @endif>
     <a class="skip-link" href="#main">{{ __('app.skip_to_content') }}</a>
     <div class="shell">
         @auth

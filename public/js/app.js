@@ -1964,17 +1964,20 @@
 
 // Document viewer in the detail window: wheel zoom towards the mouse, drag to pan, slider 25-400 %,
 // box selection with "Zoomen" / "Kopieren", double click back to fit. Delegated, so windows loaded later work too.
+// PDFs (frame[data-pdf], point 33/A19): pdf.js draws the page into a canvas.thumb that takes the image's place;
+// it is drawn again at device pixels x zoom after each zoom, so the text stays sharp. All state lives per frame.
 (() => {
     const MIN = 0.25, MAX = 4;
     const states = new WeakMap();
+    const pdfs = new WeakMap();
     const frameOf = el => {
         const frame = el?.closest?.('.detail-doc');
-        return frame && frame.querySelector('img.thumb') && frame.nextElementSibling?.matches('[data-doc-zoom]') ? frame : null;
+        return frame && frame.querySelector(':scope > .thumb') && frame.nextElementSibling?.matches('[data-doc-zoom]') ? frame : null;
     };
     const stateOf = frame => {
         let st = states.get(frame);
         if (!st) {
-            st = { s: 1, x: 0, y: 0, img: frame.querySelector('img.thumb'), bar: frame.nextElementSibling, box: null };
+            st = { s: 1, x: 0, y: 0, img: frame.querySelector(':scope > .thumb'), bar: frame.nextElementSibling, box: null };
             states.set(frame, st);
         }
         return st;
@@ -1998,6 +2001,8 @@
         const pct = Math.round(st.s * 100);
         st.bar.querySelector('[data-zoom-range]').value = pct;
         st.bar.querySelector('[data-zoom-value]').textContent = pct + ' %';
+        const pdf = pdfs.get(frame);
+        if (pdf && pdf.drawn !== Math.max(1, st.s)) redraw(frame, pdf, 150);
     };
     // Zoom to scale s keeping the frame point p fixed.
     const zoomAt = (frame, st, s, p) => {
@@ -2029,7 +2034,7 @@
     // Box (frame coords) to natural pixels of the shown picture (object-fit: contain).
     const crop = (st, b) => {
         const img = st.img, w = img.clientWidth, h = img.clientHeight;
-        const nw = img.naturalWidth, nh = img.naturalHeight;
+        const nw = img.naturalWidth || img.width, nh = img.naturalHeight || img.height;
         const c = Math.min(w / nw, h / nh), cx = (w - nw * c) / 2, cy = (h - nh * c) / 2;
         const toNat = (px, py) => ({
             x: Math.min(nw, Math.max(0, ((px - img.offsetLeft - st.x) / st.s - cx) / c)),
@@ -2122,6 +2127,7 @@
         const frame = frameOf(e.target);
         if (!frame || e.button !== 0 || e.pointerType === 'touch') return;
         e.preventDefault();
+        if (frame.tabIndex >= 0) frame.focus({ preventScroll: true });
         const st = stateOf(frame);
         const select = e.altKey || frame.classList.contains('is-selecting');
         const start = point(frame, e);
@@ -2165,6 +2171,129 @@
     });
 
     document.addEventListener('keydown', e => { if (e.key === 'Escape') clearAll(); });
+
+    // pdf.js (self-hosted in public/vendor/pdfjs, body[data-pdfjs]); loaded once, one worker for all documents.
+    let pdfLib = null;
+    const loadPdf = () => (pdfLib ??= (async () => {
+        const base = document.body?.dataset.pdfjs;
+        if (!base) throw new Error('pdf.js not available');
+        const lib = await import(base + '/pdf.min.js');
+        lib.GlobalWorkerOptions.workerSrc = base + '/pdf.worker.min.js';
+        let worker = null;
+        try { worker = new lib.PDFWorker({ name: 'dochamster' }); } catch { /* pdf.js makes its own */ }
+        return { lib, base, worker };
+    })());
+    // Opens a PDF (also used by the browser text recognition). The file comes with the session cookie.
+    const openPdf = async url => {
+        const { lib, base, worker } = await loadPdf();
+        const res = await fetch(url, { credentials: 'same-origin' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = new Uint8Array(await res.arrayBuffer());
+        return lib.getDocument({ data, worker, enableXfa: false, wasmUrl: base + '/wasm/' }).promise;
+    };
+    DocHamster.openPdf = openPdf;
+
+    const PDF_MAX_PX = 16e6; // canvas limit of mobile Safari
+    const live = new Set();
+    const drop = frame => {
+        const pdf = pdfs.get(frame);
+        if (!pdf) return;
+        pdfs.delete(frame);
+        live.delete(frame);
+        clearTimeout(pdf.timer);
+        pdf.task?.cancel();
+        resized?.unobserve(frame);
+        pdf.doc.destroy().catch(() => {});
+    };
+    const sweep = () => live.forEach(frame => { if (!frame.isConnected) drop(frame); });
+    const draw = async (frame, pdf) => {
+        const gen = ++pdf.gen;
+        const st = states.get(frame);
+        const level = Math.max(1, st?.s ?? 1);
+        let page;
+        try { page = await pdf.doc.getPage(pdf.page); } catch { return; }
+        if (gen !== pdf.gen || !frame.isConnected) return;
+        const one = page.getViewport({ scale: 1 });
+        const cs = getComputedStyle(frame);
+        const w = frame.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+        const h = frame.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+        if (w <= 0 || h <= 0) return; // hidden window: drawn when it gets a size
+        let scale = Math.min(w / one.width, h / one.height) * (window.devicePixelRatio || 1) * level;
+        const px = one.width * one.height * scale * scale;
+        if (px > PDF_MAX_PX) scale *= Math.sqrt(PDF_MAX_PX / px);
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.className = 'thumb doc-canvas';
+        canvas.width = Math.max(1, Math.floor(viewport.width));
+        canvas.height = Math.max(1, Math.floor(viewport.height));
+        pdf.task?.cancel();
+        const task = pdf.task = page.render({ canvas, canvasContext: canvas.getContext('2d'), viewport });
+        try { await task.promise; } catch { return; } // cancelled by a newer drawing, or failed: the old picture stays
+        if (gen !== pdf.gen || !frame.isConnected) return;
+        pdf.task = null;
+        pdf.drawn = level;
+        const old = frame.querySelector(':scope > .thumb, :scope > .icon');
+        if (old) old.replaceWith(canvas); else frame.prepend(canvas);
+        const now = stateOf(frame);
+        now.img = canvas;
+        apply(frame, now);
+    };
+    const redraw = (frame, pdf, wait) => {
+        clearTimeout(pdf.timer);
+        pdf.timer = setTimeout(() => draw(frame, pdf), wait);
+    };
+    const resized = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(entries => entries.forEach(entry => {
+        const pdf = pdfs.get(entry.target);
+        if (pdf) { pdf.drawn = null; redraw(entry.target, pdf, 150); }
+    }));
+    // A19: "Seite 1 von 3" with previous/next, only for more than one page.
+    const showPages = (frame, pdf) => {
+        const box = frame.nextElementSibling?.querySelector('[data-doc-pages]');
+        if (!box) return;
+        box.hidden = pdf.pages < 2;
+        box.querySelector('[data-page-label]').textContent = box.dataset.label.replace(':pages', pdf.pages).replace(':page', pdf.page);
+        box.querySelector('[data-page-step="-1"]').disabled = pdf.page <= 1;
+        box.querySelector('[data-page-step="1"]').disabled = pdf.page >= pdf.pages;
+    };
+    const turn = (frame, step) => {
+        const pdf = pdfs.get(frame);
+        const to = pdf ? Math.min(pdf.pages, Math.max(1, pdf.page + step)) : 0;
+        if (!pdf || to === pdf.page) return;
+        pdf.page = to;
+        const st = states.get(frame);
+        if (st) { clearBox(st); st.s = 1; st.x = 0; st.y = 0; }
+        pdf.drawn = null;
+        showPages(frame, pdf);
+        redraw(frame, pdf, 0);
+    };
+    const initPdf = async frame => {
+        if (frame.dataset.pdfReady !== undefined) return;
+        frame.dataset.pdfReady = '';
+        sweep();
+        let doc;
+        try { doc = await openPdf(frame.dataset.pdf); } catch { return; } // the preview image stays
+        if (!frame.isConnected) { doc.destroy().catch(() => {}); return; }
+        const pdf = { doc, page: 1, pages: doc.numPages, gen: 0, drawn: null, timer: 0, task: null };
+        pdfs.set(frame, pdf);
+        live.add(frame);
+        showPages(frame, pdf);
+        if (resized) resized.observe(frame); else redraw(frame, pdf, 0);
+    };
+    DocHamster.on('window:open', root => root.querySelectorAll?.('.detail-doc[data-pdf]').forEach(initPdf));
+    DocHamster.on('window:close', root => root.querySelectorAll?.('.detail-doc[data-pdf]').forEach(drop));
+    document.addEventListener('click', e => {
+        const btn = e.target.closest?.('[data-page-step]');
+        const frame = btn?.closest('[data-doc-zoom]')?.previousElementSibling;
+        if (frame) turn(frame, Number(btn.dataset.pageStep));
+    });
+    document.addEventListener('keydown', e => {
+        if (e.key !== 'PageUp' && e.key !== 'PageDown') return;
+        if (e.target.matches?.('input, textarea, select, [contenteditable]')) return;
+        const frame = e.target.closest?.('.detail-doc[data-pdf]') ?? e.target.closest?.('[data-doc-zoom]')?.previousElementSibling;
+        if (!frame || !pdfs.has(frame)) return;
+        e.preventDefault();
+        turn(frame, e.key === 'PageDown' ? 1 : -1);
+    });
 })();
 
 /* Colour palette (points 14-15) */
@@ -2298,6 +2427,38 @@
         try { await e.terminate(); } catch { /* already gone */ }
     };
     const token = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    // Point 34: PDFs page by page with pdf.js (document viewer block). A page that already carries text
+    // gives that text; a scanned page is drawn at scale 2 and read by tesseract. Pages joined by a blank line.
+    const readPdf = async url => {
+        if (!DocHamster.openPdf) throw new Error('pdf.js not available');
+        const doc = await DocHamster.openPdf(url);
+        try {
+            const texts = [];
+            for (let n = 1; n <= Math.min(doc.numPages, 50); n++) {
+                const page = await doc.getPage(n);
+                const layer = await page.getTextContent();
+                const own = layer.items.map(item => (item.str ?? '') + (item.hasEOL ? '\n' : ' ')).join('').trim();
+                if (own.replace(/\s/g, '').length >= 20) {
+                    texts.push(own);
+                } else {
+                    const one = page.getViewport({ scale: 1 });
+                    const scale = Math.min(2, Math.sqrt(16e6 / (one.width * one.height)));
+                    const viewport = page.getViewport({ scale });
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.floor(viewport.width);
+                    canvas.height = Math.floor(viewport.height);
+                    await page.render({ canvas, canvasContext: canvas.getContext('2d'), viewport }).promise;
+                    const { data } = await (await getEngine()).recognize(canvas);
+                    texts.push((data?.text ?? '').trim());
+                    canvas.width = canvas.height = 0;
+                }
+                page.cleanup();
+            }
+            return texts.filter(Boolean).join('\n\n');
+        } finally {
+            doc.destroy().catch(() => {});
+        }
+    };
 
     const step = async () => {
         const url = new URL(nextUrl, location.href);
@@ -2306,9 +2467,11 @@
         if (res.status !== 200) return false;
         const job = await res.json();
         try {
-            const { data } = await (await getEngine()).recognize(job.image);
+            const text = job.type === 'application/pdf'
+                ? await readPdf(job.file)
+                : (await (await getEngine()).recognize(job.file)).data?.text ?? '';
             const body = new FormData();
-            body.append('text', data?.text ?? '');
+            body.append('text', text);
             const saved = await fetch(job.save, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' }, credentials: 'same-origin' });
             if (!saved.ok) skip.push(job.id);
         } catch {

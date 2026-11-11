@@ -78,6 +78,10 @@ return [
     'mode_move' => 'Move',
     'mode_select' => 'Select',
     'zoom_reset' => 'Reset to 100 %',
+    'pages' => 'Pages',
+    'page_of' => 'Page :page of :pages',
+    'page_prev' => 'Previous page',
+    'page_next' => 'Next page',
     // Text documents written in the app (point 21).
     'text' => [
         'new' => 'New document',
