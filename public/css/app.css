@@ -1584,8 +1584,9 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
 .view-list li .row-actions { margin-left: .25rem; }
 .trash-list li { flex-wrap: wrap; row-gap: .1rem; }
 .trash-title { flex: 1 1 10rem; min-width: 0; overflow-wrap: anywhere; }
-.doc-rename { flex: 1; min-width: 8rem; margin: 0; }
-.pick-row.is-renaming .row-actions { display: none; }
+.doc-rename { flex: 1; min-width: 8rem; display: inline-flex; align-items: center; gap: .25rem; margin: 0; }
+.doc-rename input { flex: 1; min-width: 0; margin: 0; }
+.is-renaming .row-actions { display: none; }
 .folder-rows { position: relative; }
 .folder-rows > .folder-row { position: relative; }
 /* Drag and drop: the row or window a drop lands on is orange (A131, A175); picked document rows (A132) are tinted. */
@@ -1613,3 +1614,51 @@ html.is-carrying, html.is-carrying * { cursor: grabbing !important; }
 .folder-step .actions { display: flex; flex-wrap: wrap; gap: .5rem; }
 .folder-step form { margin: 0; }
 .folder-step button .icon { width: 1.1rem; height: 1.1rem; margin-right: .35rem; }
+
+/* Cursor (A192, one rule for the framework): everything clickable shows the hand – buttons, control and icon buttons,
+   row actions, menu entries, links (also rows), summary, strips, tabs, colour swatches, icon choices, chips, checkbox and
+   radio labels, selects. Zero specificity (:where), so a module's grab, text or col-resize cursor still wins. */
+:where(button, .button, [role="button"], a[href], summary, select, label[for], .control-button, .icon-button, .menu-item, .tab,
+    .win-strip, .tag-color, .tag-choice, .folder-icon-choice, .chip, .text-kind, label.check,
+    label:has(> input:is([type="checkbox"], [type="radio"], [type="color"], [type="file"])),
+    input:is([type="checkbox"], [type="radio"], [type="color"], [type="file"], [type="submit"], [type="button"], [type="reset"])):where(:not(:disabled, [aria-disabled="true"])) { cursor: pointer; }
+:where(.tag-color, .tag-choice, .folder-icon-choice) > * { cursor: inherit; }
+/* Icon choice: the hidden radio covers the whole tile (the general radio size must not shrink it). */
+.folder-icon-choice > input[type="radio"] { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; margin: 0; opacity: 0; }
+.folder-icon-choice span:hover { border-color: var(--primary); }
+
+/* Long press on a row's name (A190): a thin orange line fills under the name, 2 s mouse / 1 s finger. */
+.is-pressing { background: linear-gradient(var(--primary), var(--primary)) no-repeat left bottom / 0 2px; animation: press-line 2s linear forwards; }
+.is-pressing.is-touch { animation-duration: 1s; }
+@keyframes press-line { to { background-size: 100% 2px; } }
+[data-folder-row] [data-folder-name] a, [data-doc-title] { -webkit-touch-callout: none; }
+.pick-row [data-folder-name] strong { width: fit-content; max-width: 100%; }
+
+/* Field with symbol ("Feld mit Symbol", A195-A199), like input groups: a leading symbol or text (@, €, search), a
+   button inside the field on the right (✓ save, X clear, eye) and/or a state symbol (green ✓, red !). The field keeps
+   its own look, frame and focus ring; the parts lie on top of it. 48 px, small fields (input-small) 40 px. */
+.field-addon { position: relative; display: block; width: 100%; max-width: 40rem; }
+.field-addon > :is(input, select) { margin: 0; }
+.field-addon > .addon-lead { position: absolute; inset: 0 auto 0 0; display: grid; place-items: center; width: 2.75rem;
+    color: var(--muted); font-weight: 600; pointer-events: none; }
+.field-addon > .addon-lead .icon { width: 1.2rem; height: 1.2rem; }
+.field-addon:has(> .addon-lead) > :is(input, select) { padding-left: 2.6rem; }
+.field-addon > .addon-end { position: absolute; inset: 4px 4px 4px auto; display: flex; align-items: center; gap: 2px; }
+.field-addon > .addon-end > .control-button { width: 40px; min-width: 40px; height: 40px; min-height: 0; border-radius: 6px; }
+.field-addon > .addon-end > .control-button:hover { background: color-mix(in srgb, var(--primary) 10%, transparent); }
+.field-addon > .addon-end > .control-button[aria-pressed="true"] > .icon:first-of-type,
+.field-addon > .addon-end > .control-button:not([aria-pressed="true"]) > .icon + .icon { display: none; }
+.field-addon > .addon-end > .addon-state { display: grid; place-items: center; width: 2rem; height: 100%; }
+.field-addon > .addon-end > .addon-state .icon { width: 1.25rem; height: 1.25rem; }
+.field-addon:has(> .addon-end > :not([hidden])) > :is(input, select) { padding-right: 3rem; }
+.field-addon:has(> .addon-end > :not([hidden]) ~ :not([hidden])) > :is(input, select) { padding-right: 5.25rem; }
+.field-addon:has(> .addon-end > :not([hidden])) > select { background-position: right 3.2rem center; }
+.field-addon:has(> .input-small) > .addon-lead { width: 2.4rem; }
+.field-addon:has(> .input-small) > .addon-end { inset: 3px 3px 3px auto; }
+.field-addon:has(> .input-small) > .addon-end > .control-button { width: 34px; min-width: 34px; height: 34px; }
+.field-addon:has(> .input-small):has(> .addon-lead) > input { padding-left: 2.3rem; }
+.field-addon:has(> .input-small):has(> .addon-end > :not([hidden])) > input { padding-right: 2.6rem; }
+.field-addon.is-ok > :is(input, select) { border-color: var(--ok); }
+.field-addon.is-ok .addon-state { color: var(--ok); }
+.field-addon.is-error > :is(input, select), .field.has-error .field-addon > :is(input, select) { border-color: var(--danger); }
+.field-addon.is-error .addon-state { color: var(--error); }

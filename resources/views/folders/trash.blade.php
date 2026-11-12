@@ -16,17 +16,21 @@
                 <p class="error" role="alert">{{ $errors->first() }}</p>
             @endif
             <p><a href="{{ route('documents.trash') }}" data-window>{{ trans_choice('folders.used', $count, ['count' => $count]) }}</a></p>
-            <form method="post" action="{{ route('folders.trash') }}">
+            {{-- Saves on change like every properties module (A191-A194); without JavaScript the button posts. --}}
+            <form method="post" action="{{ route('folders.trash') }}" data-autosave>
                 @csrf
                 <input type="hidden" name="look" value="1">
                 <div class="field">
                     <label for="name-trash">{{ __('folders.name') }}</label>
-                    <input id="name-trash" name="name" value="{{ old('name', $name) }}" maxlength="100" required>
+                    <div class="field-addon">
+                        <input id="name-trash" name="name" value="{{ old('name', $name) }}" maxlength="100" required>
+                        <span class="addon-end"><button type="button" class="control-button addon-button" data-field-save aria-label="{{ __('folders.save') }}" data-tooltip="{{ __('folders.save') }}" hidden><x-icon name="check" /></button></span>
+                    </div>
                     <p class="field-hint">{{ __('folders.trash_note') }}</p>
                 </div>
                 <x-color-picker name="color" :value="old('color_hex') ?: old('color', $color ?? 'none')" :allow-none="true" :allow-own="true" key="trash" :legend="__('folders.color')" />
                 <div class="actions">
-                    <button type="submit">{{ __('folders.save') }}</button>
+                    <noscript><button type="submit">{{ __('folders.save') }}</button></noscript>
                     @if ($count > 0)
                         <button type="button" class="button-danger" data-dialog-open="trash-empty">{{ __('documents.bulk.empty') }}</button>
                     @endif

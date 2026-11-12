@@ -201,3 +201,16 @@ it('draws folder rows with row actions instead of a ⋯ menu; only normal folder
     preg_match('/<li[^>]*data-id="'.Folder::defaultIdFor($this->orgId).'"[^>]*>/', $html, $default);
     expect($default[0] ?? '')->not->toContain('data-drag-folder');
 });
+
+it('saves folder properties on change and answers what other windows need (A191-A194)', function (): void {
+    $a = dndFolder($this->orgId, 'A');
+    $b = dndFolder($this->orgId, 'B');
+
+    $this->postJson('/folders/'.$b->id, ['look' => 1, 'name' => 'B2', 'parent_id' => $a->id, 'color' => '#1e5bc6', 'icon' => 'folder'])
+        ->assertOk()
+        ->assertJsonPath('folder.id', $b->id)
+        ->assertJsonPath('folder.name', 'B2')
+        ->assertJsonPath('folder.rowClass', 'row-color c-1e5bc6')
+        ->assertJsonPath('folder.moved', true);
+    $this->get('/folders?folder='.$b->id)->assertOk()->assertSee('data-autosave', false)->assertSee('data-field-save', false);
+});

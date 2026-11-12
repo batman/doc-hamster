@@ -14,6 +14,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -74,6 +75,7 @@ final class FolderController
     {
         $folder = Folder::query()->whereKey($id)->firstOrFail();
         $data = $this->validated($request, $folder);
+        $parentBefore = $folder->parent_id;
 
         // "Dokumente allgemein" may be renamed (A18) but stays on the top level.
         $folder->update([
@@ -85,9 +87,20 @@ final class FolderController
         ]);
         $this->log($audit, $request, $org, 'folder.changed', $folder);
 
-        // Renamed in its row (pencil, A161): the row keeps its place, the answer says the new name.
+        // Renamed in its row (pencil, A161) or saved on change in its properties (A191): the answer carries what the
+        // other open windows need to follow at once – name, row colour classes, symbol, and whether it moved.
         if ($request->wantsJson()) {
-            return response()->json(['message' => __('folders.saved'), 'name' => $folder->name]);
+            return response()->json([
+                'message' => __('folders.saved'),
+                'name' => $folder->name,
+                'folder' => [
+                    'id' => $folder->id,
+                    'name' => $folder->name,
+                    'rowClass' => $folder->rowClass(),
+                    'icon' => Blade::render('<x-icon :name="$name" />', ['name' => $folder->iconName()]),
+                    'moved' => $folder->parent_id !== $parentBefore,
+                ],
+            ]);
         }
 
         // Back to the window it was changed in (a row of the Dokumente window or its properties window).
@@ -158,7 +171,11 @@ final class FolderController
         $audit->record('folder.trash_changed', orgId: $org->id(), userId: $org->membership()->user_id, meta: ['name' => $data['name']], ip: $request->ip());
 
         if ($request->wantsJson()) {
-            return response()->json(['message' => __('folders.saved'), 'name' => $data['name']]);
+            return response()->json([
+                'message' => __('folders.saved'),
+                'name' => $data['name'],
+                'folder' => ['id' => 'trash', 'name' => $data['name'], 'rowClass' => Folder::rowClassFor(Folder::trashColor($organization)), 'icon' => null, 'moved' => false],
+            ]);
         }
 
         return back()->with('status', __('folders.saved'));

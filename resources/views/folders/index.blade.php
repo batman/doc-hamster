@@ -17,11 +17,12 @@
                 <p class="error" role="alert">{{ $errors->first() }}</p>
             @endif
             <p><a href="{{ route('documents.index', ['folder' => $folder->id]) }}">{{ trans_choice('folders.used', $counts[$folder->id] ?? 0, ['count' => $counts[$folder->id] ?? 0]) }}</a></p>
-            <form method="post" action="{{ route('folders.update', $folder->id) }}">
+            {{-- Properties save on change (A191-A194, FRAMEWORK.md "Properties module"); without JavaScript the button posts. --}}
+            <form method="post" action="{{ route('folders.update', $folder->id) }}" data-autosave>
                 @csrf
                 @include('folders._fields', ['name' => $folder->name, 'parent' => $folder->parent_id, 'self' => $folder->id, 'matching' => $folder->bank_matching, 'locked' => $folder->is_default, 'color' => $folder->color, 'icon' => $folder->icon])
                 <div class="actions">
-                    <button type="submit">{{ __('folders.save') }}</button>
+                    <noscript><button type="submit">{{ __('folders.save') }}</button></noscript>
                     @unless ($folder->is_default)
                         <button type="button" class="button-danger" data-dialog-open="delete-folder-{{ $folder->id }}">{{ __('folders.delete') }}</button>
                     @endunless

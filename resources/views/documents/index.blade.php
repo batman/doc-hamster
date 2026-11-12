@@ -140,7 +140,6 @@
                                     @csrf
                                     <input class="input-small" name="name" value="{{ $trashName }}" maxlength="100" required aria-label="{{ __('folders.name') }}">
                                     <button type="submit" class="control-button" aria-label="{{ __('folders.save') }}" data-tooltip="{{ __('folders.save') }}"><x-icon name="check" /></button>
-                                    <button type="button" class="control-button" data-folder-rename-cancel aria-label="{{ __('folders.cancel') }}" data-tooltip="{{ __('folders.cancel') }}"><x-icon name="x" /></button>
                                 </form>
                                 <span class="row-actions">
                                     <button type="button" class="control-button" data-folder-rename aria-label="{{ __('folders.rename') }}: {{ $trashName }}" data-tooltip="{{ __('folders.rename') }}"><x-icon name="pencil" /></button>
@@ -157,14 +156,13 @@
                             <span class="row-icon"><x-icon :name="$f->iconName()" /></span>
                             <span data-folder-name><strong><a href="{{ route('documents.index', ['folder' => $f->id]) }}" data-window>{{ $f->name }}</a></strong><small>{{ trans_choice('folders.used', $row['count'], ['count' => $row['count']]) }}</small></span>
                             @if ($canEdit)
-                                {{-- Rename in place (pencil, A161); also "Dokumente allgemein" (A18). --}}
+                                {{-- Rename in place (pencil or a long press on the name, A161, A188-A190); also "Dokumente allgemein" (A18). --}}
                                 <form class="folder-rename" method="post" action="{{ route('folders.update', $f->id) }}" data-folder-rename-form hidden>
                                     @csrf
                                     <input type="hidden" name="parent_id" value="{{ $f->parent_id }}">
                                     @if ($f->bank_matching)<input type="hidden" name="bank_matching" value="1">@endif
                                     <input class="input-small" name="name" value="{{ $f->name }}" maxlength="100" required aria-label="{{ __('folders.name') }}">
                                     <button type="submit" class="control-button" aria-label="{{ __('folders.save') }}" data-tooltip="{{ __('folders.save') }}"><x-icon name="check" /></button>
-                                    <button type="button" class="control-button" data-folder-rename-cancel aria-label="{{ __('folders.cancel') }}" data-tooltip="{{ __('folders.cancel') }}"><x-icon name="x" /></button>
                                 </form>
                                 <span class="row-actions">
                                     <button type="button" class="control-button" data-folder-rename aria-label="{{ __('folders.rename') }}: {{ $f->name }}" data-tooltip="{{ __('folders.rename') }}"><x-icon name="pencil" /></button>

@@ -10,8 +10,18 @@
     $key = $self ?? 'new';
 @endphp
 <input type="hidden" name="look" value="1">
-<label for="name-{{ $key }}">{{ __('folders.name') }}</label>
-<input id="name-{{ $key }}" name="name" value="{{ old('name', $name) }}" maxlength="100" required @if ($name === '') autofocus @endif>
+<div class="field">
+    <label for="name-{{ $key }}">{{ __('folders.name') }}</label>
+    @if ($self !== null)
+        {{-- Properties save on change (A191-A194): the ✓ inside the field shows once the name differs; Enter or ✓ saves. --}}
+        <div class="field-addon">
+            <input id="name-{{ $key }}" name="name" value="{{ old('name', $name) }}" maxlength="100" required>
+            <span class="addon-end"><button type="button" class="control-button addon-button" data-field-save aria-label="{{ __('folders.save') }}" data-tooltip="{{ __('folders.save') }}" hidden><x-icon name="check" /></button></span>
+        </div>
+    @else
+        <input id="name-{{ $key }}" name="name" value="{{ old('name', $name) }}" maxlength="100" required @if ($name === '') autofocus @endif>
+    @endif
+</div>
 @if ($locked)
     <p class="muted">{{ __('folders.default_note') }}</p>
 @else
