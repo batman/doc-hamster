@@ -27,7 +27,6 @@ return [
         'minimise' => 'Minimieren',
         'maximise' => 'Maximieren',
         'restore' => 'Wiederherstellen',
-        'notes_beside' => 'Notizen daneben öffnen',
         'search_clear' => 'Suche leeren',
         'resize' => 'Fensterbreite ändern',
         'resize_hint' => 'Ziehen ändert die Breite, Doppelklick setzt zurück',

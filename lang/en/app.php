@@ -27,7 +27,6 @@ return [
         'minimise' => 'Minimise',
         'maximise' => 'Maximise',
         'restore' => 'Restore',
-        'notes_beside' => 'Open notes beside',
         'search_clear' => 'Clear the search',
         'resize' => 'Change the window width',
         'resize_hint' => 'Drag to change the width, double-click resets',

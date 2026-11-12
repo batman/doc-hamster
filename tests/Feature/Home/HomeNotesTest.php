@@ -151,7 +151,7 @@ it('keeps title, colour, opacity and place of a note, and a locked note stays as
     expect(Note::query()->withoutGlobalScope(OrgScope::class)->count())->toBe(0);
 });
 
-it('puts notes on a board of columns, moves, archives and tags them', function (): void {
+it('puts notes on a board of columns, moves and tags them', function (): void {
     $clerk = Membership::factory()->withRights(RoleRight::Upload)->create(['org_id' => $this->admin->org_id]);
     $tag = Tag::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $this->admin->org_id)->firstOrFail();
 
@@ -178,20 +178,20 @@ it('puts notes on a board of columns, moves, archives and tags them', function (
     $this->postJson('/notes/'.$a->id.'/move', ['column' => $done->id, 'order' => [$b->id, $a->id]])->assertOk();
     expect([$b->fresh()->sort, $a->fresh()->sort, $a->fresh()->column_id])->toBe([0, 1, $done->id]);
 
-    // The tag filter shows only A; the pill links to the receipts with that tag.
-    $this->get('/?tag='.$tag->id)->assertSee('>A<', false)->assertDontSee('>B<', false);
-
-    // Archive and back; deleting a column moves its notes to the first other one.
-    $this->post('/notes/'.$a->id.'/archive')->assertRedirect(route('home'));
-    $this->get('/')->assertDontSee('>A<', false);
-    $this->get('/notes/archive')->assertOk()->assertSee('A');
-    $this->post('/notes/'.$a->id.'/restore')->assertRedirect(route('notes.archive'));
+    // Deleting a column moves its notes to the first other one.
     $this->post('/notes/columns/'.$done->id.'/delete')->assertRedirect(route('home'));
-    expect($a->fresh()->column_id)->toBe($first->id)->and($a->fresh()->archived_at)->toBeNull();
+    expect($a->fresh()->column_id)->toBe($first->id);
+
+    // "+" adds a column "Neue Spalte" at once and starts its rename (point 94).
+    $this->post('/notes/columns')->assertRedirect(route('home'))->assertSessionHas('note_column_new');
+    $this->get('/')->assertSee('Neue Spalte')->assertSee('data-rename-now', false);
+    $this->get('/')->assertDontSee('data-rename-now', false);
+    $new = NoteColumn::query()->withoutGlobalScope(OrgScope::class)->where('name', 'Neue Spalte')->firstOrFail();
+    $this->post('/notes/columns/'.$new->id.'/delete')->assertRedirect(route('home'));
     $this->post('/notes/columns/'.$first->id.'/delete')->assertStatus(422);
 });
 
-it('sets a column look and sorting from its menu and archives all its notes', function (): void {
+it('sets a column look and sorting from its menu', function (): void {
     $this->actingAs($this->admin->user)->get('/')->assertOk();
     $column = NoteColumn::query()->withoutGlobalScope(OrgScope::class)->firstOrFail();
 
@@ -205,7 +205,4 @@ it('sets a column look and sorting from its menu and archives all its notes', fu
 
     $this->postJson('/notes/columns/'.$column->id.'/look', ['color' => 'none'])->assertOk();
     expect($column->fresh()->color)->toBeNull();
-
-    $this->post('/notes/columns/'.$column->id.'/archive')->assertRedirect(route('home'));
-    expect(Note::query()->withoutGlobalScope(OrgScope::class)->whereNull('archived_at')->count())->toBe(0);
 });

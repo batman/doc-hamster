@@ -22,24 +22,21 @@ use Illuminate\Validation\Rule;
 
 /**
  * Home: sticky notes (collected 2026-11-03) on a board like Trello (Go of
- * 2026-11-08): columns, notes dragged between and within them, an archive,
- * tags. Text with inline lists ("[Milch, #Brot]", set and drawn by app.js)
+ * 2026-11-08): columns, notes dragged between and within them,
+ * tags (no archive any more, point 92). Text with inline lists ("[Milch, #Brot]", set and drawn by app.js)
  * and links to receipts. A note is private; with the right "Notizen für
  * alle zeigen" its author shows it to everyone and decides whether others
  * may change it.
  */
 final class HomeController
 {
-    public function index(Request $request, CurrentOrg $org): View
+    public function index(CurrentOrg $org): View
     {
         $userId = $org->membership()->user_id;
         $columns = NoteColumn::board();
         $tags = Tag::query()->orderBy('name')->get();
-        $filter = $tags->firstWhere('id', $request->query('tag'));
 
-        $notes = $this->notes($userId)->whereNull('archived_at')
-            ->when($filter !== null, static fn (Builder $query) => $query->whereHas('tags', static fn (Builder $tag) => $tag->whereKey($filter?->id)))
-            ->orderBy('sort')->orderBy('created_at')->get();
+        $notes = $this->notes($userId)->orderBy('sort')->orderBy('created_at')->get();
         // A note without a column (or whose column is gone) lies in the first one.
         $first = (string) $columns->first()?->id;
         $byColumn = $notes->groupBy(static fn (Note $note): string => $columns->contains('id', $note->column_id) ? (string) $note->column_id : $first);
@@ -51,21 +48,9 @@ final class HomeController
             'byColumn' => $byColumn,
             'notes' => $notes,
             'tags' => $tags,
-            'filter' => $filter,
             'userId' => $userId,
             'canShare' => Gate::allows(Permission::ShareNotes->value),
             'documents' => $this->visibleDocuments()->latest()->limit(500)->get(['id', 'title']),
-        ]);
-    }
-
-    /** Archived notes (A41): back to the board or deleted for good. */
-    public function archive(CurrentOrg $org): View
-    {
-        $userId = $org->membership()->user_id;
-
-        return view('home.archive', [
-            'notes' => $this->notes($userId)->whereNotNull('archived_at')->latest('archived_at')->get(),
-            'userId' => $userId,
         ]);
     }
 
@@ -93,22 +78,6 @@ final class HomeController
         }
 
         return $request->expectsJson() ? response()->json(['ok' => true]) : redirect()->route('home');
-    }
-
-    public function archiveNote(string $id, CurrentOrg $org): RedirectResponse
-    {
-        $this->editable($id, $org, unlocked: true)->forceFill(['archived_at' => now()])->save();
-
-        return redirect()->route('home');
-    }
-
-    /** Back from the archive: at the end of its column. */
-    public function restore(string $id, CurrentOrg $org): RedirectResponse
-    {
-        $note = $this->editable($id, $org);
-        $note->forceFill(['archived_at' => null, 'sort' => $this->endOf($note->column_id)])->save();
-
-        return redirect()->route('notes.archive');
     }
 
     public function store(Request $request, CurrentOrg $org): RedirectResponse
@@ -182,11 +151,9 @@ final class HomeController
 
     public function destroy(string $id, CurrentOrg $org): RedirectResponse
     {
-        $note = $this->editable($id, $org, unlocked: true);
-        $archived = $note->archived_at !== null;
-        $note->delete();
+        $this->editable($id, $org, unlocked: true)->delete();
 
-        return redirect()->route($archived ? 'notes.archive' : 'home');
+        return redirect()->route('home');
     }
 
     /**

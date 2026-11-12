@@ -587,7 +587,10 @@ a.col-item { text-decoration: none; }
     flex: 1; min-width: 0; min-height: 2.25rem; margin: 0; padding: .25rem .4rem; border: 1px solid transparent; border-radius: calc(var(--radius) / 2);
     background: transparent; color: var(--text); font: inherit; font-size: 1rem; font-weight: 700; max-width: none;
 }
-.kanban-count { flex: none; min-width: 1.5rem; font-size: .8rem; color: var(--muted); text-align: center; }
+/* Point 93: the note count only while the column is hovered or has focus; its space stays, so nothing jumps. */
+.kanban-count { flex: none; min-width: 1.5rem; font-size: .8rem; color: var(--muted); text-align: center; visibility: hidden; opacity: 0; transition: opacity .15s; }
+.kanban-col:hover .kanban-count, .kanban-col:focus-within .kanban-count { visibility: visible; opacity: 1; }
+@media (hover: none) { .kanban-count { visibility: visible; opacity: 1; } }
 .kanban-head .note-tool { color: var(--muted); }
 .kanban-head .note-tool:hover { background: var(--bg); }
 .kanban-cards { display: grid; align-content: start; gap: .75rem; flex: 1; min-height: 3rem; margin: 0; padding: .25rem .75rem .75rem; overflow-y: auto; list-style: none; }
@@ -602,11 +605,7 @@ a.col-item { text-decoration: none; }
 .kanban-col:hover .kanban-menu, .kanban-menu:focus-within, .kanban-menu:has(> [aria-expanded="true"]) { opacity: 1; }
 @media (hover: none) { .kanban-menu { opacity: 1; } }
 .kanban-new { display: block; padding: .75rem; }
-.kanban-new label { margin-top: 0; }
-.kanban-new input { max-width: none; }
-.kanban-new button { display: inline-flex; align-items: center; gap: .4rem; margin-top: .5rem; }
-.note-filter { margin: .5rem 0 0; }
-.note-filter-all { --tag: var(--surface); --tag-text: var(--text); }
+.kanban-new button { display: inline-flex; align-items: center; gap: .4rem; }
 .kanban-cards > .note { min-height: 7.5rem; max-height: 24rem; overflow: hidden; }
 /* Height: dragged at the bottom-right corner; the width is the column's (A34). */
 .kanban-cards > .note[data-note-look] { resize: vertical; }
@@ -650,7 +649,6 @@ a.col-item { text-decoration: none; }
 .note:is(.note-black, .note-red, .note-bordeaux, .note-green, .note-blue, .note-navy, .note-purple, .note-pink, .note-brown) .note-tool:hover { background: rgb(255 255 255 / .15); }
 .note-head { display: flex; align-items: center; gap: .25rem; min-height: 2.75rem; padding: .25rem .25rem 0 .75rem; }
 .note[data-note-move] .note-head { cursor: grab; }
-.note-tool-form { display: contents; }
 .note-title { flex: 1; min-width: 0; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .note-tool {
     display: inline-flex; align-items: center; justify-content: center; flex: none;

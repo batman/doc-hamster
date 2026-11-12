@@ -7,24 +7,13 @@
 @section('content')
     <div class="windows" data-windows>
     {{-- The whole board is one module (points 71, 73): one window "Notizen"; its columns are plain content and never
-         fold. It can be opened beside any module ("Notizen daneben öffnen" in every ⋯ menu) and several times. --}}
-    <x-window :title="__('home.notes')" icon="note" kind="notes" :url="route('home', request()->only('tag'))" :close="route('home')" class="win-notes">
+         fold. It can be open several times. --}}
+    <x-window :title="__('home.notes')" icon="note" kind="notes" :url="route('home')" :close="route('home')" class="win-notes">
         <x-slot:actions>
             <div class="toolbar">
-                <a class="icon-button" href="{{ route('notes.archive') }}" aria-label="{{ __('home.archive') }}" data-tooltip="{{ __('home.archive') }}"><x-icon name="archive" /></a>
                 <button type="button" class="icon-button" data-dialog-open="note-new" data-note-column="{{ $columns->first()?->id }}" data-note-color="{{ $columns->first()?->newNoteColor() }}" aria-label="{{ __('home.new') }}" data-tooltip="{{ __('home.new') }}"><x-icon name="plus" /></button>
             </div>
         </x-slot:actions>
-
-    {{-- Tag filter (A40): only notes with the chosen tag. --}}
-    @if ($tags->isNotEmpty())
-        <ul class="tags note-filter" aria-label="{{ __('home.filter') }}">
-            <li><a class="tag note-filter-all @if ($filter === null) is-selected @endif" href="{{ route('home') }}">{{ __('home.filter_all') }}</a></li>
-            @foreach ($tags as $tag)
-                <li><a class="tag tag-{{ $tag->id }} @if ($filter?->id === $tag->id) is-selected @endif" href="{{ route('home', ['tag' => $tag->id]) }}">{{ $tag->name }}</a></li>
-            @endforeach
-        </ul>
-    @endif
 
     <datalist id="note-documents">
         @foreach ($documents as $document)
@@ -64,7 +53,7 @@
             <section @class(['kanban-col', 'has-color' => $column->color !== null, \App\Domain\Palette\PaletteColor::cssClass($column->color)]) data-column-id="{{ $column->id }}" data-sort="{{ $column->note_sort }}" aria-labelledby="column-name-{{ $column->id }}">
                 <header class="kanban-head" @if ($canShare) draggable="true" data-kanban-grip @endif>
                     @if ($canShare)
-                        <x-edit-in-place id="column-name-{{ $column->id }}" class="kanban-name" name="name" :value="$column->name" :action="route('notes.columns.update', $column->id)" maxlength="60" />
+                        <x-edit-in-place id="column-name-{{ $column->id }}" class="kanban-name" name="name" :value="$column->name" :action="route('notes.columns.update', $column->id)" maxlength="60" :data-rename-now="session('note_column_new') === $column->id" />
                     @else
                         <h2 id="column-name-{{ $column->id }}" class="kanban-name">{{ $column->name }}</h2>
                     @endif
@@ -84,10 +73,6 @@
                                 <button type="submit" class="menu-item" form="column-sort-{{ $column->id }}" name="sort" value="{{ $sort }}" role="menuitemradio" aria-checked="{{ $column->note_sort === $sort ? 'true' : 'false' }}"><x-icon name="arrows-sort" /><span>{{ __('home.sort_'.$sort) }}</span></button>
                             @endforeach
                         @endif
-                        @if ($cards->isNotEmpty())
-                            <hr class="menu-separator">
-                            <button type="button" class="menu-item" data-dialog-open="archive-column-{{ $column->id }}"><x-icon name="archive" /><span>{{ __('home.column_archive') }}</span></button>
-                        @endif
                         @if ($canShare && $columns->count() > 1)
                             <hr class="menu-separator">
                             <button type="button" class="menu-item menu-danger" data-dialog-open="delete-column-{{ $column->id }}"><x-icon name="trash" /><span>{{ __('home.column_delete') }}</span></button>
@@ -104,11 +89,10 @@
         @endforeach
 
         @if ($canShare)
+            {{-- Point 94: "+" adds a column named "Neue Spalte" at once; its rename starts right away (app.js). --}}
             <form method="post" action="{{ route('notes.columns.store') }}" class="kanban-col kanban-new">
                 @csrf
-                <label for="new-column">{{ __('home.add_column') }}</label>
-                <input id="new-column" class="input-small" name="name" maxlength="60" required placeholder="{{ __('home.column_name') }}">
-                <button type="submit"><x-icon name="plus" />{{ __('home.add_column') }}</button>
+                <button type="submit" class="button-quiet"><x-icon name="plus" />{{ __('home.add_column') }}</button>
             </form>
         @endif
     </div>
@@ -131,21 +115,6 @@
                     </div>
                 </div>
             @endforeach
-        @endif
-        @if ($byColumn->get($column->id, collect())->isNotEmpty())
-            <div class="dialog-backdrop" data-dialog="archive-column-{{ $column->id }}" hidden>
-                <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="archive-column-{{ $column->id }}-title">
-                    <h2 id="archive-column-{{ $column->id }}-title">{{ __('home.column_archive_title', ['name' => $column->name]) }}</h2>
-                    <p>{{ __('home.column_archive_hint') }}</p>
-                    <div class="dialog-actions">
-                        <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
-                        <form method="post" action="{{ route('notes.columns.archive', $column->id) }}">
-                            @csrf
-                            <button type="submit">{{ __('home.column_archive') }}</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
         @endif
         @if ($canShare && $columns->count() > 1)
             <div class="dialog-backdrop" data-dialog="delete-column-{{ $column->id }}" hidden>

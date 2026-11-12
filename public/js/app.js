@@ -2119,15 +2119,15 @@
             }
         }
     });
-    // The tag filter of a board reloads only its own window (window state lives in its address, point 52).
-    document.addEventListener('click', event => {
-        const link = event.target.closest('.note-filter a[href]');
-        const win = link?.closest('[data-windows] > section[data-window]');
-        if (win && event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
-            event.preventDefault();
-            DocHamster.reloadWindow(win, new URL(link.href), '.win-body').catch(() => { location.href = link.href; });
+    // A column just added by "+" (point 94) starts its rename at once, its default name selected.
+    DocHamster.on('window:open', root => root.querySelectorAll?.('[data-rename-now]').forEach(box => {
+        box.removeAttribute('data-rename-now');
+        box.click();
+        const field = box.nextElementSibling;
+        if (field?.matches('input, textarea')) {
+            field.select();
         }
-    });
+    }));
 
     // Toasts close themselves after a few seconds; a click closes them at once.
     const setupToasts = () => {

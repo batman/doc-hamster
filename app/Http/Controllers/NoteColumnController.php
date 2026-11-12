@@ -6,10 +6,8 @@ namespace App\Http\Controllers;
 
 use App\Domain\Notes\Note;
 use App\Domain\Notes\NoteColumn;
-use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
 use App\Domain\Palette\PaletteColor;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,13 +21,18 @@ use Illuminate\Validation\Rule;
  */
 final class NoteColumnController
 {
+    /** "+" adds a column at once (point 94), named "Neue Spalte" unless a name is sent; the board starts its rename. */
     public function store(Request $request): RedirectResponse
     {
         $this->authorize();
-        $data = $request->validate(['name' => ['required', 'string', 'max:60']]);
-        NoteColumn::query()->create(['name' => trim($data['name']), 'sort' => (int) NoteColumn::query()->max('sort') + 1]);
+        $data = $request->validate(['name' => ['nullable', 'string', 'max:60']]);
+        $name = trim((string) ($data['name'] ?? ''));
+        $column = NoteColumn::query()->create([
+            'name' => $name !== '' ? $name : __('home.new_column'),
+            'sort' => (int) NoteColumn::query()->max('sort') + 1,
+        ]);
 
-        return redirect()->route('home');
+        return redirect()->route('home')->with('note_column_new', $column->id);
     }
 
     public function update(Request $request, string $id): JsonResponse|RedirectResponse
@@ -82,28 +85,7 @@ final class NoteColumnController
         return $request->expectsJson() ? response()->json(['ok' => true]) : redirect()->route('home');
     }
 
-    /**
-     * "Alle Notizen archivieren" (A105): every note of the column the person may change and that isn't locked.
-     * The first column also holds the notes without a (still existing) column.
-     */
-    public function archive(string $id, CurrentOrg $org): RedirectResponse
-    {
-        $userId = $org->membership()->user_id;
-        $column = NoteColumn::query()->findOrFail($id);
-        $columns = NoteColumn::board();
-        $first = $columns->first()?->id === $column->id;
-
-        Note::query()->visibleTo($userId)->whereNull('archived_at')->where('locked', false)
-            ->where(static fn (Builder $query) => $query->where('column_id', $column->id)
-                ->when($first, static fn (Builder $q) => $q->orWhereNull('column_id')->orWhereNotIn('column_id', $columns->pluck('id')->all())))
-            ->get()
-            ->filter(static fn (Note $note): bool => $note->editableBy($userId))
-            ->each(static fn (Note $note) => $note->forceFill(['archived_at' => now()])->save());
-
-        return redirect()->route('home');
-    }
-
-    /** Its notes, archived ones too, go to the end of the first other column; the last column stays (A38). */
+    /** Its notes go to the end of the first other column; the last column stays (A38). */
     public function destroy(string $id): RedirectResponse
     {
         $this->authorize();

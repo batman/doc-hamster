@@ -13,10 +13,6 @@
             <button type="button" class="note-tool" data-dialog-open="edit-note-{{ $note->id }}" aria-label="{{ __('home.edit') }}" data-tooltip="{{ __('home.edit') }}"><x-icon name="pencil" /></button>
         @endif
         @if ($open)
-            <form method="post" action="{{ route('notes.archive_note', $note->id) }}" class="note-tool-form">
-                @csrf
-                <button type="submit" class="note-tool" aria-label="{{ __('home.archive_note') }}" data-tooltip="{{ __('home.archive_note') }}"><x-icon name="archive" /></button>
-            </form>
             <button type="button" class="note-tool" data-dialog-open="delete-note-{{ $note->id }}" aria-label="{{ __('home.delete') }}" data-tooltip="{{ __('home.delete') }}"><x-icon name="x" /></button>
         @endif
     </div>

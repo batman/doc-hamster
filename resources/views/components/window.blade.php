@@ -8,7 +8,7 @@
     priority the later the window becomes a strip; defaults per kind below),
     search (placeholder of a search field in the toolbar, A104: typing reloads the window body with ?q=…; the module reads q).
     Head like Windows (points 70, 72): title (ellipsis), then the three window controls minimise (‹), maximise, X.
-    Search, actions and the module's ⋯ menu (slot "menu"; the framework adds "Notizen daneben öffnen" on top) stand in
+    Search, actions and the module's ⋯ menu (slot "menu"; no ⋯ button without entries) stand in
     a toolbar row below the head that follows the window's own width (container queries, point 41).
     One window = one instance of a module for one record; the same record can be open twice (point 40), so ids inside
     a window loaded later get a per-window suffix in app.js – write plain ids, dialog names and labels as usual.
@@ -79,14 +79,10 @@
             @endif
             <div class="win-actions">
                 {{ $actions ?? '' }}
-                {{-- The module's ⋯ menu (points 71, 73): the framework's entries on top, then the module's own (slot "menu"). --}}
-                <x-more-menu class="win-menu">
-                    <a class="menu-item" href="{{ route('home') }}" data-window><x-icon name="note" /><span>{{ __('app.window.notes_beside') }}</span></a>
-                    @if (isset($menu) && $menu->hasActualContent())
-                        <hr class="menu-separator">
-                        {{ $menu }}
-                    @endif
-                </x-more-menu>
+                {{-- The module's ⋯ menu (points 71, 73, A200): only the module's own entries (slot "menu"); none, no button. --}}
+                @if (isset($menu) && $menu->hasActualContent())
+                    <x-more-menu class="win-menu">{{ $menu }}</x-more-menu>
+                @endif
             </div>
         </div>
         <div class="win-body">{{ $slot }}</div>
