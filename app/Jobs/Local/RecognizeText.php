@@ -81,8 +81,9 @@ final class RecognizeText implements ShouldQueue
 
         $system = $ocr->systemAvailable();
         if (! $system && ! $ocr->appAvailable()) {
-            // The browser fallback picks up readable images itself; they keep waiting for it.
-            $browser = $file !== null && $ocr->mode() === 'browser' && $file->isImage() && ! in_array($file->mime, LocalOcr::BROWSER_SKIP_MIMES, true);
+            // The browser fallback picks up readable images and PDFs (pdf.js) itself; they keep waiting for it (point 68).
+            $browser = $file !== null && $ocr->mode() === 'browser'
+                && ($file->mime === 'application/pdf' || ($file->isImage() && ! in_array($file->mime, LocalOcr::BROWSER_SKIP_MIMES, true)));
             self::finish($document, ['ocr_status' => $browser ? 'pending' : 'unavailable']);
 
             return;
