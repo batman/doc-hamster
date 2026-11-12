@@ -127,10 +127,58 @@ it('logs browser results, engine and pause events and cron, shows them on the Pr
 
     $this->get('/settings/ocr?tab=log')->assertOk()->assertSee('Protokoll')->assertSee('b.jpg')
         ->assertSee('erkannt · 11 Zeichen')->assertSee('Zeitlimit')->assertSee('pausiert')->assertDontSee('Summe 12,00');
-    $this->get('/settings/ocr?tab=log&errors=1')->assertOk()->assertSee('Zeitlimit')->assertDontSee('erkannt · 11 Zeichen');
+    $this->get('/settings/ocr?tab=log&result=timeout')->assertOk()->assertSee('Zeitlimit')->assertDontSee('erkannt · 11 Zeichen');
 
     OcrLog::query()->where('event', 'paused')->toBase()->update(['created_at' => now()->subDays(31)]);
     expect(OcrLog::prune())->toBe(1);
+});
+
+it('logs file details, browser and reasons once per document, filters and sums up the log (point 69)', function (): void {
+    Cache::put(LocalOcr::MODE_KEY, 'browser', 300);
+    $documents = Document::query()->withoutGlobalScope(OrgScope::class)->get()->keyBy('title');
+    $file = fn (Document $d, string $mime) => DocumentFile::query()->withoutGlobalScope(OrgScope::class)->create(['org_id' => $d->org_id, 'document_id' => $d->id, 'path' => 'x/'.$d->id, 'mime' => $mime, 'size' => 2_500_000, 'sha256' => str_repeat('0', 64)]);
+    $file($documents['a.jpg'], 'image/heic');
+    $file($documents['b.jpg'], 'application/pdf');
+
+    // A108: HEIC cannot be read – logged once with its reason; the PDF waits for the browser without an entry.
+    (new RecognizeText($documents['a.jpg']->id))->handle(app(LocalOcr::class));
+    (new RecognizeText($documents['a.jpg']->id))->handle(app(LocalOcr::class));
+    (new RecognizeText($documents['b.jpg']->id))->handle(app(LocalOcr::class));
+    expect($documents['a.jpg']->refresh()->ocr_status)->toBe('unavailable')
+        ->and($documents['b.jpg']->refresh()->ocr_status)->toBe('pending')
+        ->and(OcrLog::query()->withoutGlobalScope(OrgScope::class)->where('event', 'unavailable')->pluck('message')->all())->toBe(['HEIC im Browser nicht lesbar']);
+
+    // A106/A109/A114: the browser took the text layer of both pages.
+    $this->actingAs($this->admin->user)
+        ->withHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36')
+        ->post('/ocr/'.$documents['b.jpg']->id, ['text' => 'Rechnung', 'pass' => 1, 'pages' => 2, 'layer' => 2, 'duration' => 900])->assertNoContent();
+    expect(OcrLog::query()->withoutGlobalScope(OrgScope::class)->where('event', 'text_layer')->firstOrFail())
+        ->file_type->toBe('PDF')->size->toBe(2_500_000)->pages->toBe(2)->agent->toBe('Chrome 142 / Windows');
+
+    // A110/A112: filters and the summary of "nicht möglich" by reason.
+    $this->get('/settings/ocr?tab=log')->assertOk()->assertSee('Nicht möglich – nach Grund')
+        ->assertSee('Textebene übernommen · 8 Zeichen')->assertSee('PDF · 2,4 MB · 2 Seiten')->assertSee('Chrome 142 / Windows');
+    $this->get('/settings/ocr?tab=log&result=unavailable')->assertOk()->assertSee('HEIC im Browser nicht lesbar')->assertDontSee('Textebene übernommen');
+    $this->get('/settings/ocr?tab=log&engine=browser&q=b.jpg')->assertOk()->assertSee('Textebene übernommen')->assertDontSee('nicht möglich: HEIC');
+    $this->get('/settings/ocr?tab=log&doc='.$documents['a.jpg']->id)->assertOk()->assertSee('Dokument: a.jpg')->assertDontSee('Textebene übernommen');
+
+    // A111: "Alle neu erkennen" with count and who.
+    Queue::fake();
+    $this->post('/settings/ocr/rerun')->assertRedirect();
+    expect(OcrLog::query()->withoutGlobalScope(OrgScope::class)->where('event', 'rerun')->firstOrFail())->message->toBe('3')->user_id->toBe($this->admin->user_id);
+});
+
+it('lets the browser read only the PDFs while the app-owned server engine has no PDF converter', function (): void {
+    Cache::put(LocalOcr::MODE_KEY, 'app', 300);
+    $documents = Document::query()->withoutGlobalScope(OrgScope::class)->get()->keyBy('title');
+    foreach (['a.jpg' => 'image/jpeg', 'b.jpg' => 'application/pdf'] as $title => $mime) {
+        DocumentFile::query()->withoutGlobalScope(OrgScope::class)->create(['org_id' => $documents[$title]->org_id, 'document_id' => $documents[$title]->id, 'path' => 'x/'.$title, 'mime' => $mime, 'size' => 4, 'sha256' => str_repeat('0', 64)]);
+    }
+    $documents['a.jpg']->forceFill(['ocr_status' => 'pending'])->save();
+
+    expect(app(LocalOcr::class)->browserLoop())->toBeTrue();
+    $this->actingAs($this->admin->user)->getJson('/ocr/next?skip[]=x')->assertOk()->assertJson(['id' => $documents['b.jpg']->id, 'type' => 'application/pdf']);
+    $this->getJson('/ocr/next?skip[]='.$documents['b.jpg']->id)->assertNoContent();
 });
 
 it('hands out a random document of the lowest pass and only pass 1 to the second engine', function (): void {

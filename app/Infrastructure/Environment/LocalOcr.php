@@ -18,6 +18,8 @@ use Throwable;
  * storage/app/ocr (A17); otherwise tesseract.js in the browser (A16), shipped
  * in public/vendor/tesseract so it works right after an update (A64/A72).
  * Every download is pinned and checked against a hard-coded SHA-256.
+ * Point 69 (A113): next to the portable Tesseract, the Xpdf command line tools
+ * (pdftopng, pdftotext) let the server read PDFs without ocrmypdf.
  */
 final class LocalOcr
 {
@@ -46,6 +48,21 @@ final class LocalOcr
         'deu.traineddata' => ['https://github.com/tesseract-ocr/tessdata_fast/raw/4.1.0/deu.traineddata', '19d219bbb6672c869d20a9636c6816a81eb9a71796cb93ebe0cb1530e2cdb22d'],
         'eng.traineddata' => ['https://github.com/tesseract-ocr/tessdata_fast/raw/4.1.0/eng.traineddata', '7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2'],
     ];
+
+    /**
+     * A113: Xpdf command line tools 4.06 for Linux (Glyph & Cog, xpdfreader.com, GPL; signature checked against the
+     * publisher's key when pinned). Only bin64/pdftopng and bin64/pdftotext are unpacked; they need glibc,
+     * libstdc++ and fontconfig, which the test run checks. The tarball moves away on the next Xpdf release –
+     * then the download fails and PDFs simply stay with the browser until this pin is updated.
+     */
+    private const array XPDF = [
+        'https://dl.xpdfreader.com/xpdf-tools-linux-4.06.tar.gz',
+        '940c137cbd1856e45813da1a25c12e8dd3dc8997b8ea735feb858684603031e3',
+        'xpdf-tools-linux-4.06/bin64/',
+    ];
+
+    /** A113: PDFs longer than this are read up to this page. */
+    public const int PDF_MAX_PAGES = 50;
 
     /**
      * tesseract.js 5.1.1 + tesseract.js-core 5.1.1 (lstm, plain and SIMD wasm builds) and the TESSDATA files
@@ -81,6 +98,45 @@ final class LocalOcr
         return true;
     }
 
+    /** A113: the app-owned PDF converter (Xpdf pdftopng + pdftotext) is installed and ran its test. */
+    public function pdfAvailable(): bool
+    {
+        return ($this->status()['pdf'] ?? null) === 'ok' && is_file($this->pdfTool('pdftopng')) && is_file($this->pdfTool('pdftotext'));
+    }
+
+    /** The server reads PDFs: ocrmypdf (system) or the app-owned converter next to a working Tesseract. */
+    public function serverReadsPdf(): bool
+    {
+        return $this->systemAvailable() || ($this->appAvailable() && $this->pdfAvailable());
+    }
+
+    /**
+     * Point 69: the browser loop runs in mode browser, and in mode app while the server cannot read PDFs
+     * (the browser then reads only the PDFs). Cached with the mode.
+     */
+    public function browserLoop(): bool
+    {
+        $mode = $this->mode();
+
+        return $mode === 'browser' || ($mode === 'app' && $this->browserReady() && ! $this->pdfAvailable());
+    }
+
+    /** A114: pdftotext for the text layer – the app-owned one, else a system one (poppler-utils), else none. */
+    public function pdfTextTool(): ?string
+    {
+        if ($this->pdfAvailable()) {
+            return $this->pdfTool('pdftotext');
+        }
+
+        return $this->systemAvailable() ? (new ExecutableFinder)->find('pdftotext') : null;
+    }
+
+    /** Full path of an app-owned Xpdf tool (pdftopng, pdftotext). */
+    public function pdfTool(string $name): string
+    {
+        return $this->dir().'/xpdf/'.$name;
+    }
+
     /** system | app | browser | none – cached, it is read on every page. */
     public function mode(): string
     {
@@ -95,7 +151,7 @@ final class LocalOcr
     }
 
     /**
-     * @return array{state?: string, reason?: string, started?: int}
+     * @return array{state?: string, reason?: string, started?: int, pdf?: string, pdf_reason?: string}
      */
     public function status(): array
     {
@@ -175,7 +231,8 @@ final class LocalOcr
      * settings page. The browser fallback ships with the app and needs nothing here.
      *
      * @param  Closure(string, string, string): void  $fetch  downloads url → target and checks the SHA-256 (lives in a net job, D-020)
-     * @return array{state?: string, reason?: string, started?: int}
+     *                                                        A113: the PDF converter comes along; when it fails the Tesseract set-up still counts, PDFs stay with the browser.
+     * @return array{state?: string, reason?: string, started?: int, pdf?: string, pdf_reason?: string}
      */
     public function setUp(Closure $fetch): array
     {
@@ -187,9 +244,20 @@ final class LocalOcr
         try {
             $status = ['state' => 'ok', 'reason' => ''];
             try {
-                $this->installApp($fetch);
+                // A Tesseract that already works is kept; only the converter is added.
+                if (! $this->appAvailable()) {
+                    $this->installApp($fetch);
+                }
             } catch (Throwable $e) {
                 $status = ['state' => 'failed', 'reason' => mb_substr($e->getMessage(), 0, 200)];
+            }
+            if ($status['state'] === 'ok') {
+                try {
+                    $this->installPdf($fetch);
+                    $status += ['pdf' => 'ok'];
+                } catch (Throwable $e) {
+                    $status += ['pdf' => 'failed', 'pdf_reason' => mb_substr($e->getMessage(), 0, 200)];
+                }
             }
             Cache::forever(self::STATUS_KEY, $status);
             Cache::forget(self::MODE_KEY);
@@ -245,6 +313,42 @@ final class LocalOcr
         $langs->run();
         if (! str_contains($langs->getOutput().$langs->getErrorOutput(), 'deu')) {
             throw new RuntimeException('Sprachdaten nicht gefunden');
+        }
+    }
+
+    /**
+     * A113: unpacks pdftopng and pdftotext from the pinned Xpdf tarball into storage/app/ocr/xpdf and test-runs them.
+     *
+     * @param  Closure(string, string, string): void  $fetch
+     */
+    public function installPdf(Closure $fetch): void
+    {
+        if (PHP_OS_FAMILY !== 'Linux' || php_uname('m') !== 'x86_64') {
+            throw new RuntimeException('Nur für Linux x86_64');
+        }
+        $target = $this->dir().'/xpdf';
+        File::ensureDirectoryExists($target);
+        $archive = $this->dir().'/xpdf-tools.tar.gz';
+        $fetch(self::XPDF[0], self::XPDF[1], $archive);
+        try {
+            foreach (['pdftopng', 'pdftotext'] as $tool) {
+                $unpack = new Process(['tar', '-xzf', $archive, '-O', self::XPDF[2].$tool], null, null, null, 120);
+                $unpack->run();
+                if (! $unpack->isSuccessful() || $unpack->getOutput() === '') {
+                    throw new RuntimeException('Entpacken fehlgeschlagen: '.trim($unpack->getErrorOutput()));
+                }
+                if (file_put_contents($this->pdfTool($tool), $unpack->getOutput()) === false || ! @chmod($this->pdfTool($tool), 0755)) {
+                    throw new RuntimeException('Schreiben fehlgeschlagen: '.$tool);
+                }
+                // Xpdf prints its version on stderr; a missing library shows up here.
+                $test = new Process([$this->pdfTool($tool), '-v'], null, null, null, 60);
+                $test->run();
+                if (! str_contains(strtolower($test->getOutput().$test->getErrorOutput()), $tool)) {
+                    throw new RuntimeException('Testlauf '.$tool.' fehlgeschlagen: '.mb_substr(trim($test->getErrorOutput() ?: $test->getOutput()), 0, 150));
+                }
+            }
+        } finally {
+            @unlink($archive);
         }
     }
 

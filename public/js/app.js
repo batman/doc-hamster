@@ -2840,18 +2840,23 @@
     };
     // Point 34: PDFs page by page with pdf.js (document viewer block). A page that already carries text
     // gives that text; a scanned page is drawn at the pass's scale and read by tesseract. Pages joined by a blank line.
-    const readPdf = async (lane, url, maxScale, run) => {
+    // Point 69: gives the page count and how many pages came from the text layer (A106/A114) for the OCR log.
+    const readPdf = async (lane, url, maxScale, run, info) => {
         if (!DocHamster.openPdf) throw new Error('pdf.js not available');
         const doc = await DocHamster.openPdf(url);
         try {
             const texts = [];
-            for (let n = 1; n <= Math.min(doc.numPages, 50); n++) {
+            const last = Math.min(doc.numPages, 50);
+            info.pages = doc.numPages;
+            info.layer = 0;
+            for (let n = 1; n <= last; n++) {
                 check(run);
                 const page = await doc.getPage(n);
                 const layer = await page.getTextContent();
                 const own = layer.items.map(item => (item.str ?? '') + (item.hasEOL ? '\n' : ' ')).join('').trim();
                 if (own.replace(/\s/g, '').length >= 20) {
                     texts.push(own);
+                    info.layer++;
                 } else {
                     const one = page.getViewport({ scale: 1 });
                     const scale = Math.min(maxScale, Math.sqrt(MAX_PIXELS / (one.width * one.height)));
@@ -2900,9 +2905,10 @@
         const body = new FormData();
         body.append('pass', String(pass));
         const began = performance.now();
+        const info = { pages: null, layer: null };
         try {
             const read = job.type === 'application/pdf'
-                ? readPdf(lane, job.file, PASSES[pass].scale, run)
+                ? readPdf(lane, job.file, PASSES[pass].scale, run, info)
                 : readImage(lane, job.file, PASSES[pass].side, run);
             read.catch(() => {});
             body.append('text', await within(read, PASSES[pass].limit, 'timeout'));
@@ -2916,6 +2922,8 @@
             body.append('reason', String(e?.message || e || 'unknown').slice(0, 290));
         }
         body.append('duration', String(Math.round(performance.now() - began)));
+        if (info.pages !== null) body.append('pages', String(info.pages));
+        if (info.layer !== null) body.append('layer', String(info.layer));
         lane.running = null;
         if (run.aborted) {
             // Paused: nothing saved, the document comes again after "Fortsetzen".
