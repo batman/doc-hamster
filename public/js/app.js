@@ -3811,7 +3811,7 @@
 // Without JavaScript, and whenever something fails before the run starts, the browser goes the old way
 // (form post, then install.php's own pages). The bar follows install.php's progress file, not
 // install.php itself (that request holds the installer's session for the whole run).
-(() => {
+(() => { const setupUpdateProgress = () => {
     const box = document.querySelector('[data-update-progress]');
     if (!box || !window.fetch) {
         return;
@@ -3963,6 +3963,7 @@
                 button.classList.remove('is-busy');
             });
     }));
+}; if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupUpdateProgress); else setupUpdateProgress();
 })();
 
 // -------------------------------------------------------------------------------------------------
