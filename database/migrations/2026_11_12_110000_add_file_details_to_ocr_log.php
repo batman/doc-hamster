@@ -22,6 +22,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        // MySQL/MariaDB use the composite index for the document_id foreign key, so it needs its own index first.
+        Schema::table('ocr_log', static function (Blueprint $table): void {
+            $table->index('document_id');
+        });
         Schema::table('ocr_log', static function (Blueprint $table): void {
             $table->dropIndex(['document_id', 'event']);
             $table->dropColumn(['file_type', 'size', 'pages', 'agent']);
