@@ -28,8 +28,8 @@ final class LocalOcr
     /** v2: the browser files ship with the app now, an older cached "none" must not stay (A64). */
     public const string MODE_KEY = 'ocr.mode.v2';
 
-    /** Why the browser engine could not start (A61), reported by the browser. */
-    private const string BROWSER_ERROR_KEY = 'ocr.browser.error';
+    /** Why the browser engine could not start (A61), reported by the browser; one per organisation (prefix). */
+    private const string BROWSER_ERROR_KEY = 'ocr.browser.error.';
 
     /** A set-up still "running" after this long died with its request or worker (A66). */
     private const int RUNNING_MAX_SECONDS = 600;
@@ -175,22 +175,25 @@ final class LocalOcr
         Cache::forget(self::MODE_KEY);
     }
 
-    /** A61: the browser engine did not start (timeout, wasm blocked …); shown on the settings page and in the menu. */
-    public function reportBrowserError(string $reason): void
+    /**
+     * A61: the browser engine did not start (timeout, wasm blocked …); shown on the settings page and in the menu.
+     * The text comes from a person's browser, so it stays inside that person's organisation.
+     */
+    public function reportBrowserError(string $orgId, string $reason): void
     {
-        Cache::put(self::BROWSER_ERROR_KEY, mb_substr(trim($reason), 0, 200), now()->addDay());
+        Cache::put(self::BROWSER_ERROR_KEY.$orgId, mb_substr(trim($reason), 0, 200), now()->addDay());
     }
 
-    public function browserError(): ?string
+    public function browserError(string $orgId): ?string
     {
-        $error = Cache::get(self::BROWSER_ERROR_KEY);
+        $error = Cache::get(self::BROWSER_ERROR_KEY.$orgId);
 
         return is_string($error) && $error !== '' ? $error : null;
     }
 
-    public function clearBrowserError(): void
+    public function clearBrowserError(string $orgId): void
     {
-        Cache::forget(self::BROWSER_ERROR_KEY);
+        Cache::forget(self::BROWSER_ERROR_KEY.$orgId);
     }
 
     /**

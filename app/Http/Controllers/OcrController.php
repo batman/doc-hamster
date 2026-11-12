@@ -80,7 +80,7 @@ final class OcrController extends Controller
             'status' => $ocr->status(),
             'counts' => OcrProgress::counts($org->id()),
             'current' => OcrProgress::current($org->id()),
-            'engineError' => $ocr->browserError(),
+            'engineError' => $ocr->browserError($org->id()),
             'cronLast' => CronClock::lastRun(),
             'cronRunning' => CronClock::running(),
             'cronLine' => '* * * * * '.CronLine::command(PHP_BINARY, base_path('artisan')),
@@ -132,8 +132,9 @@ final class OcrController extends Controller
     public function engineError(Request $request, LocalOcr $ocr): Response
     {
         $data = $request->validate(['reason' => ['required', 'string', 'max:500']]);
-        $ocr->reportBrowserError((string) $data['reason']);
-        OcrLog::record(app(CurrentOrg::class)->id(), 'browser', 'engine_failed', ['message' => (string) $data['reason'], 'user_id' => self::userId($request), 'agent' => OcrLog::agent($request->userAgent())]);
+        $orgId = app(CurrentOrg::class)->id();
+        $ocr->reportBrowserError($orgId, (string) $data['reason']);
+        OcrLog::record($orgId, 'browser', 'engine_failed', ['message' => (string) $data['reason'], 'user_id' => self::userId($request), 'agent' => OcrLog::agent($request->userAgent())]);
 
         return response()->noContent();
     }
@@ -186,7 +187,7 @@ final class OcrController extends Controller
         $open = OcrProgress::open($org->id());
         $nav = ['waiting' => $open['waiting'], 'open' => $open['open'], 'total' => $open['total'], 'passes' => $open['passes']];
         // A61: why the browser engine does not start (menu tooltip); absent when it works.
-        $engineError = $ocr->browserLoop() ? $ocr->browserError() : null;
+        $engineError = $ocr->browserLoop() ? $ocr->browserError($org->id()) : null;
         if ($engineError !== null) {
             $nav['engine_error'] = $engineError;
         }
@@ -315,7 +316,7 @@ final class OcrController extends Controller
             // Each pass replaces the text of the one before (point 56).
             $text = trim((string) ($data['text'] ?? ''));
             $document->forceFill(['ocr_text' => $text, 'ocr_status' => 'done', 'ocr_pass' => $pass, 'ocr_failures' => 0])->save();
-            $ocr->clearBrowserError();
+            $ocr->clearBrowserError($document->org_id);
             // A114: every page came from the PDF's own text layer.
             $layer = isset($data['layer']) ? (int) $data['layer'] : 0;
             $event = $pages !== null && $pages > 0 && $layer >= $pages ? 'text_layer' : 'recognized';
