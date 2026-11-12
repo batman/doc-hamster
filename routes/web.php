@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\BankImportController;
+use App\Http\Controllers\DocumentBulkController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\FolderController;
@@ -48,6 +49,12 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('notes/{id}/delete', [HomeController::class, 'destroy'])->name('notes.destroy');
     Route::get('documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::get('documents/trash', [DocumentController::class, 'trash'])->middleware('can:documents.trash')->name('documents.trash');
+    // Drag and drop of documents (points 75-77): before documents/{id}/…, so "bulk" is no id.
+    Route::post('documents/bulk/move', [DocumentBulkController::class, 'move'])->middleware('can:documents.edit')->name('documents.bulk.move');
+    Route::post('documents/bulk/trash', [DocumentBulkController::class, 'trash'])->middleware('can:documents.trash')->name('documents.bulk.trash');
+    Route::post('documents/bulk/restore', [DocumentBulkController::class, 'restore'])->middleware('can:documents.trash')->name('documents.bulk.restore');
+    Route::post('documents/bulk/purge', [DocumentBulkController::class, 'purge'])->middleware('can:documents.trash')->name('documents.bulk.purge');
+    Route::post('documents/trash/empty', [DocumentBulkController::class, 'empty'])->middleware('can:documents.trash')->name('documents.trash.empty');
     Route::post('documents/{id}/restore', [DocumentController::class, 'restore'])->middleware('can:documents.trash')->name('documents.restore');
     Route::post('documents/{id}/share-link', [ShareController::class, 'store'])->middleware('can:exports.create')->name('documents.share');
     Route::post('documents', [DocumentController::class, 'store'])->middleware('can:documents.upload')->name('documents.store');
@@ -139,6 +146,9 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::get('folders', [FolderController::class, 'index'])->name('folders.index');
         Route::post('folders', [FolderController::class, 'store'])->name('folders.store');
         Route::post('folders/order', [FolderController::class, 'order'])->name('folders.order');
+        Route::post('folders/trash', [FolderController::class, 'trash'])->middleware('can:documents.trash')->name('folders.trash');
+        Route::post('folders/{id}/move', [FolderController::class, 'move'])->name('folders.move');
+        Route::post('folders/{id}/step', [FolderController::class, 'step'])->name('folders.step');
         Route::post('folders/import', [FolderImportController::class, 'start'])->middleware('can:documents.upload')->name('folders.import');
         Route::post('folders/import/{id}/file', [FolderImportController::class, 'file'])->middleware('can:documents.upload')->name('folders.import.file');
         Route::post('folders/{id}', [FolderController::class, 'update'])->name('folders.update');

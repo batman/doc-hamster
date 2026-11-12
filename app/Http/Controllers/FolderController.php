@@ -35,6 +35,16 @@ final class FolderController
     {
         $rows = Folder::flat();
         $wanted = $request->query('folder');
+        // The Papierkorb's properties (A165): name, colour and "Papierkorb leeren"; nothing else.
+        if ($wanted === 'trash') {
+            abort_unless(Gate::allows(Permission::TrashDocuments->value), 403);
+
+            return view('folders.trash', [
+                'name' => Folder::trashName($org->organization()),
+                'color' => Folder::trashColor($org->organization()),
+                'count' => Document::query()->withPrintTray()->onlyTrashed()->visibleTo($org->membership()->user_id, Gate::allows(Permission::ViewAllDocuments->value))->count(),
+            ]);
+        }
         $current = collect($rows)->first(static fn (array $row): bool => $row['folder']->id === $wanted);
         if ($current === null && ! $request->filled('new') && ! $request->filled('parent')) {
             return redirect()->route('documents.index');
@@ -60,7 +70,7 @@ final class FolderController
         return redirect()->route('documents.index', array_filter(['folder' => $folder->parent_id]))->with('status', __('folders.saved'));
     }
 
-    public function update(Request $request, string $id, CurrentOrg $org, AuditLog $audit): RedirectResponse
+    public function update(Request $request, string $id, CurrentOrg $org, AuditLog $audit): RedirectResponse|JsonResponse
     {
         $folder = Folder::query()->whereKey($id)->firstOrFail();
         $data = $this->validated($request, $folder);
@@ -75,7 +85,82 @@ final class FolderController
         ]);
         $this->log($audit, $request, $org, 'folder.changed', $folder);
 
+        // Renamed in its row (pencil, A161): the row keeps its place, the answer says the new name.
+        if ($request->wantsJson()) {
+            return response()->json(['message' => __('folders.saved'), 'name' => $folder->name]);
+        }
+
         // Back to the window it was changed in (a row of the Dokumente window or its properties window).
+        return back()->with('status', __('folders.saved'));
+    }
+
+    /**
+     * Drag and drop (point 78): a folder dropped onto another folder row goes into it, with everything below it.
+     * Not into itself or below itself, not deeper than MAX_DEPTH; "Dokumente allgemein" never moves (A168).
+     */
+    public function move(Request $request, string $id, CurrentOrg $org, AuditLog $audit): JsonResponse
+    {
+        $folder = Folder::query()->whereKey($id)->firstOrFail();
+        if ($folder->is_default) {
+            return response()->json(['message' => __('folders.default_fixed')], 422);
+        }
+        $parent = $request->filled('parent_id') ? $request->input('parent_id') : null;
+        $request->merge(['parent_id' => $parent, 'name' => $folder->name]);
+        $validator = validator(['parent_id' => $parent, 'name' => $folder->name], [
+            'parent_id' => ['nullable', 'string', $this->parentAllowed($folder)],
+            'name' => [$this->nameFree($request, $folder)],
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['message' => $validator->errors()->first()], 422);
+        }
+        $folder->update(['parent_id' => is_string($parent) ? $parent : null, 'position' => null]);
+        $this->log($audit, $request, $org, 'folder.moved', $folder);
+        $target = is_string($parent) ? (string) Folder::query()->whereKey($parent)->value('name') : __('folders.top');
+
+        return response()->json(['message' => __('folders.moved', ['name' => $folder->name, 'target' => $target])]);
+    }
+
+    /** "Nach oben" / "Nach unten" in the folder's properties (A163): one step among its siblings, the Papierkorb counted. */
+    public function step(Request $request, string $id, CurrentOrg $org): RedirectResponse
+    {
+        $folder = Folder::query()->whereKey($id)->firstOrFail();
+        $order = $this->levelOrder($folder->parent_id, $org);
+        $at = array_search($folder->id, $order, true);
+        $to = is_int($at) ? $at + ($request->input('direction') === 'up' ? -1 : 1) : -1;
+        if (is_int($at) && $to >= 0 && $to < count($order)) {
+            [$order[$at], $order[$to]] = [$order[$to], $order[$at]];
+            $this->saveOrder(array_values($order), $folder->parent_id, $org);
+        }
+
+        return back()->with('status', __('folders.order_saved'));
+    }
+
+    /** Name and colour of the Papierkorb (A165), kept in the organisation's settings; the route stays documents.trash. */
+    public function trash(Request $request, CurrentOrg $org, AuditLog $audit): RedirectResponse|JsonResponse
+    {
+        $color = $request->filled('color_hex') ? $request->input('color_hex') : $request->input('color');
+        $request->merge([
+            'name' => trim((string) $request->input('name')),
+            'color' => is_string($color) && $color !== '' && $color !== 'none' ? mb_strtolower(trim($color)) : null,
+        ]);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'color' => ['nullable', 'string', 'regex:/^#[0-9a-f]{6}$/'],
+        ]);
+
+        $organization = $org->organization();
+        $settings = $organization->settings_json ?? [];
+        data_set($settings, Folder::TRASH_NAME, $data['name']);
+        if ($request->has('look')) {
+            data_set($settings, Folder::TRASH_COLOR, $data['color'] ?? null);
+        }
+        $organization->update(['settings_json' => $settings]);
+        $audit->record('folder.trash_changed', orgId: $org->id(), userId: $org->membership()->user_id, meta: ['name' => $data['name']], ip: $request->ip());
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => __('folders.saved'), 'name' => $data['name']]);
+        }
+
         return back()->with('status', __('folders.saved'));
     }
 
@@ -96,6 +181,37 @@ final class FolderController
             return response()->json(['message' => __('folders.order_invalid')], 422);
         }
 
+        $this->saveOrder($order, is_string($parent) ? $parent : null, $org);
+
+        return response()->json(['message' => __('folders.order_saved')]);
+    }
+
+    /**
+     * The ids of one level as shown; "trash" for the Papierkorb on the top level.
+     *
+     * @return list<string>
+     */
+    private function levelOrder(?string $parent, CurrentOrg $org): array
+    {
+        $rows = $parent === null ? Folder::menu($org->organization()) : Folder::flat();
+        $out = [];
+        foreach ($rows as $row) {
+            if ($row['folder'] === null) {
+                $out[] = 'trash';
+            } elseif ($row['folder']->parent_id === $parent) {
+                $out[] = $row['folder']->id;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param  list<string>  $order  folder ids of one level; "trash" = the Papierkorb (top level only)
+     */
+    private function saveOrder(array $order, ?string $parent, CurrentOrg $org): void
+    {
+        $ids = array_values(array_filter($order, static fn (string $id): bool => $id !== 'trash'));
         DB::transaction(static function () use ($ids): void {
             foreach ($ids as $position => $id) {
                 Folder::query()->whereKey($id)->update(['position' => $position]);
@@ -109,16 +225,16 @@ final class FolderController
             data_set($settings, Folder::TRASH_SLOT, $slot);
             $organization->update(['settings_json' => $settings]);
         }
-
-        return response()->json(['message' => __('folders.order_saved')]);
     }
 
-    public function destroy(Request $request, string $id, CurrentOrg $org, AuditLog $audit): RedirectResponse
+    public function destroy(Request $request, string $id, CurrentOrg $org, AuditLog $audit): RedirectResponse|JsonResponse
     {
         $folder = Folder::query()->whereKey($id)->firstOrFail();
 
         if ($folder->is_default) {
-            return back()->withErrors(['folder' => __('folders.default_locked')]);
+            return $request->wantsJson()
+                ? response()->json(['message' => __('folders.default_locked')], 422)
+                : back()->withErrors(['folder' => __('folders.default_locked')]);
         }
 
         // Receipts move up; from a top folder they go to "Belege", so none is ever left without a folder.
@@ -144,7 +260,7 @@ final class FolderController
      * lost for good: a receipt brought back from the Papierkorb, and any receipt
      * this person may not see, lands one level above the deleted folder.
      */
-    private function destroyWithContent(Request $request, Folder $folder, string $target, CurrentOrg $org, AuditLog $audit): RedirectResponse
+    private function destroyWithContent(Request $request, Folder $folder, string $target, CurrentOrg $org, AuditLog $audit): RedirectResponse|JsonResponse
     {
         if (! Gate::allows(Permission::TrashDocuments->value)) {
             abort(403);
@@ -170,7 +286,13 @@ final class FolderController
         }
         $audit->record('folder.deleted', orgId: $org->id(), userId: $userId, subject: $folder, meta: ['name' => $folder->name, 'with_content' => true, 'folders' => count($branch), 'receipts' => $trashed->count()], ip: $request->ip());
 
-        return redirect()->route('documents.index', array_filter(['folder' => $folder->parent_id]))->with('status', trans_choice('folders.deleted_with_content', $trashed->count(), ['count' => $trashed->count()]));
+        $message = trans_choice('folders.deleted_with_content', $trashed->count(), ['count' => $trashed->count()]);
+        // Dropped onto the Papierkorb row (A134): the page stays, a toast says what happened.
+        if ($request->wantsJson()) {
+            return response()->json(['message' => $message]);
+        }
+
+        return redirect()->route('documents.index', array_filter(['folder' => $folder->parent_id]))->with('status', $message);
     }
 
     /**

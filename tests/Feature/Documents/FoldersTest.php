@@ -277,7 +277,9 @@ it('gives a folder a colour and a symbol from the fixed set, and serves the colo
     expect($auto->color)->toBe('#3fb68f')
         ->and($auto->icon)->toBe('car')
         ->and(folderNamed('Eigen')->color)->toBe('#12ab34');
-    $this->get('/tags.css')->assertOk()->assertSee('.fc-'.$auto->id.'{--folder:#3fb68f}', false);
+    // The colour fills the whole row now (point 83): a framework class c-rrggbb with the row colours worked out by contrast.
+    $this->get('/tags.css')->assertOk()->assertSee('.c-3fb68f{--swatch:#3fb68f;--tag:#3fb68f;--note:#3fb68f;--row-bg:#3fb68f;--row-ink:#1f1e1d;', false)->assertSee('.c-12ab34{', false);
+    $this->get('/documents')->assertOk()->assertSee('row-color c-3fb68f', false);
 
     $this->post('/folders', ['name' => 'Böse', 'look' => '1', 'icon' => 'skull'])->assertSessionHasErrors('icon');
     $this->post('/folders', ['name' => 'Böse', 'look' => '1', 'color_hex' => 'red;}body{x'])->assertSessionHasErrors('color');
@@ -295,7 +297,7 @@ it('shows the folders as sortable rows in the Dokumente window, not in the main 
 
     $this->get('/documents')->assertOk()
         ->assertDontSee('nav-folders', false)
-        ->assertSee('data-sortable', false)
+        ->assertSee('data-folder-order', false)->assertDontSee('pick-handle', false)->assertDontSee('icon-tile', false)
         ->assertSee('data-id="trash"', false)
         ->assertSeeInOrder(['Dokumente allgemein', 'Rechnungen', 'Kein Dokument', 'Papierkorb']);
     $this->get('/documents?folder='.$invoices->id)->assertOk()

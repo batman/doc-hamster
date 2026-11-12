@@ -5,7 +5,7 @@
             <h2>{{ $group->first()->created_at->locale(app()->getLocale())->translatedFormat('F Y') }}</h2>
             <ul>
                 @foreach ($group as $document)
-                    <li data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" @if ($open?->id === $document->id) class="is-open" @endif>
+                    <li data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" data-doc="{{ $document->id }}" data-folder="{{ $document->folder_id }}" @if ($open?->id === $document->id) class="is-open" @endif>
                         <span class="when muted">{{ $document->created_at->format('d.m. H:i') }}</span>
                         @include('documents._thumb')
                         <a href="{{ route('documents.show', [$document->id, ...request()->query()]) }}" data-window>{{ $document->title }}</a>

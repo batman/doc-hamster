@@ -11,7 +11,7 @@
          and the Papierkorb as rows, a folder opens as a window on the right with its subfolders and receipts. --}}
     <x-window :title="$openFolder?->name ?? __('documents.title')" kind="folder" :icon="$openFolder?->iconName() ?? 'file-text'"
               :url="route('documents.index', request()->except('page'))" :close="$openFolder ? route('documents.index') : null"
-              :upload="$openFolder ? 'folder='.$openFolder->id : null" :class="$openFolder?->colorClass()"
+              :upload="$openFolder ? 'folder='.$openFolder->id : null"
               :search="__('documents.search')">
         <x-slot:actions>
             <div class="toolbar">
@@ -125,119 +125,57 @@
         @endcan
 
         @if ($folderRows !== [])
-            {{-- Sortable rows (FRAMEWORK.md "Sortable list"); app.js saves the order on list:sorted. The Papierkorb only on top. --}}
-            @php $sortable = Gate::allows('documents.edit') && count($folderRows) > 1; @endphp
-            <ul class="pick-list folder-rows" @if ($sortable) data-sortable data-folder-order="{{ route('folders.order') }}" data-parent="{{ $openFolder?->id }}" data-order-failed="{{ __('folders.order_invalid') }}" @endif>
+            {{-- Folder rows (points 75-86): the whole row drags (no grip, point 82) – onto another folder row = into it, between rows =
+                 new order (A153); documents dropped on a row move into it, on the Papierkorb into the trash. app.js does the dragging;
+                 data-path/-depth/-height let it refuse a drop into itself or too deep (A138, A139). Row actions instead of ⋯ (A161-A166). --}}
+            @php $canEdit = Gate::allows('documents.edit'); @endphp
+            <ul class="pick-list folder-rows" @if ($canEdit) data-folder-order="{{ route('folders.order') }}" data-parent="{{ $openFolder?->id }}" @endif>
                 @foreach ($folderRows as $row)
                     @if ($row['folder'] === null)
-                        <li class="pick-row is-static" data-id="trash">
-                            @if ($sortable)<button type="button" class="pick-handle" aria-label="{{ __('folders.drag', ['name' => __('folders.trash')]) }}"><x-icon name="grip-vertical" /></button>@endif
-                            <x-icon name="trash" />
-                            <span><strong><a href="{{ route('documents.trash') }}" data-window>{{ __('folders.trash') }}</a></strong><small>{{ trans_choice('folders.used', $trashed, ['count' => $trashed]) }}</small></span>
+                        <li class="pick-row is-static folder-row {{ \App\Domain\Documents\Folder::rowClassFor($trashColor) }}" data-id="trash" data-folder-row data-drop-trash data-name="{{ $trashName }}">
+                            <span class="row-icon"><x-icon name="trash" /></span>
+                            <span data-folder-name><strong><a href="{{ route('documents.trash') }}" data-window>{{ $trashName }}</a></strong><small>{{ trans_choice('folders.used', $trashed, ['count' => $trashed]) }}</small></span>
+                            @if ($canEdit)
+                                <form class="folder-rename" method="post" action="{{ route('folders.trash') }}" data-folder-rename-form hidden>
+                                    @csrf
+                                    <input class="input-small" name="name" value="{{ $trashName }}" maxlength="100" required aria-label="{{ __('folders.name') }}">
+                                    <button type="submit" class="control-button" aria-label="{{ __('folders.save') }}" data-tooltip="{{ __('folders.save') }}"><x-icon name="check" /></button>
+                                    <button type="button" class="control-button" data-folder-rename-cancel aria-label="{{ __('folders.cancel') }}" data-tooltip="{{ __('folders.cancel') }}"><x-icon name="x" /></button>
+                                </form>
+                                <span class="row-actions">
+                                    <button type="button" class="control-button" data-folder-rename aria-label="{{ __('folders.rename') }}: {{ $trashName }}" data-tooltip="{{ __('folders.rename') }}"><x-icon name="pencil" /></button>
+                                    <a class="control-button" href="{{ route('folders.index', ['folder' => 'trash']) }}" data-window aria-label="{{ __('folders.properties') }}: {{ $trashName }}" data-tooltip="{{ __('folders.properties') }}"><x-icon name="settings" /></a>
+                                </span>
+                            @endif
                         </li>
                     @else
-                        @php $f = $row['folder']; @endphp
-                        <li class="pick-row is-static {{ $f->colorClass() }}" data-id="{{ $f->id }}">
-                            @if ($sortable)<button type="button" class="pick-handle" aria-label="{{ __('folders.drag', ['name' => $f->name]) }}"><x-icon name="grip-vertical" /></button>@endif
-                            <span class="icon-tile"><x-icon :name="$f->iconName()" /></span>
+                        @php $f = $row['folder']; $place = $tree[$f->id] ?? ['depth' => 0, 'height' => 0, 'path' => [$f->id]]; @endphp
+                        <li class="pick-row is-static folder-row {{ $f->rowClass() }}" data-id="{{ $f->id }}" data-folder-row data-name="{{ $f->name }}"
+                            data-depth="{{ $place['depth'] }}" data-height="{{ $place['height'] }}" data-path="{{ implode(' ', $place['path']) }}" data-parent-id="{{ $f->parent_id }}"
+                            data-upload-label="{{ __('documents.bulk.drop_upload', ['name' => $f->name]) }}"
+                            @if ($canEdit && ! $f->is_default) data-drag-folder @endif>
+                            <span class="row-icon"><x-icon :name="$f->iconName()" /></span>
                             <span data-folder-name><strong><a href="{{ route('documents.index', ['folder' => $f->id]) }}" data-window>{{ $f->name }}</a></strong><small>{{ trans_choice('folders.used', $row['count'], ['count' => $row['count']]) }}</small></span>
-                            @can('documents.edit')
-                                {{-- Rename in place (app.js: "Umbenennen" in the row menu shows this form); also "Dokumente allgemein" (A18). --}}
-                                @if ($f->exists)
-                                    <form class="folder-rename" method="post" action="{{ route('folders.update', $f->id) }}" data-folder-rename-form hidden>
-                                        @csrf
-                                        <input type="hidden" name="parent_id" value="{{ $f->parent_id }}">
-                                        @if ($f->bank_matching)<input type="hidden" name="bank_matching" value="1">@endif
-                                        <input class="input-small" name="name" value="{{ $f->name }}" maxlength="100" required aria-label="{{ __('folders.name') }}">
-                                        <button type="submit" class="icon-button" aria-label="{{ __('folders.save') }}" data-tooltip="{{ __('folders.save') }}"><x-icon name="check" /></button>
-                                        <button type="button" class="icon-button" data-folder-rename-cancel aria-label="{{ __('folders.cancel') }}" data-tooltip="{{ __('folders.cancel') }}"><x-icon name="x" /></button>
-                                    </form>
-                                @endif
-                                <x-more-menu :label="__('folders.actions', ['name' => $f->name])">
-                                    <button type="button" class="menu-item" data-folder-rename><x-icon name="pencil" /><span>{{ __('folders.rename') }}</span></button>
-                                    @unless ($f->is_default)
-                                        <button type="button" class="menu-item" data-dialog-open="folder-move-{{ $f->id }}"><x-icon name="arrows-move" /><span>{{ __('folders.move') }}</span></button>
-                                    @endunless
-                                    <a class="menu-item" href="{{ route('folders.index', ['folder' => $f->id]) }}" data-window><x-icon name="settings" /><span>{{ __('folders.properties') }}</span></a>
-                                    @unless ($f->is_default)
-                                        <button type="button" class="menu-item" data-dialog-open="folder-delete-{{ $f->id }}"><x-icon name="trash" /><span>{{ __('folders.delete') }}</span></button>
-                                    @endunless
-                                </x-more-menu>
-                            @endcan
+                            @if ($canEdit)
+                                {{-- Rename in place (pencil, A161); also "Dokumente allgemein" (A18). --}}
+                                <form class="folder-rename" method="post" action="{{ route('folders.update', $f->id) }}" data-folder-rename-form hidden>
+                                    @csrf
+                                    <input type="hidden" name="parent_id" value="{{ $f->parent_id }}">
+                                    @if ($f->bank_matching)<input type="hidden" name="bank_matching" value="1">@endif
+                                    <input class="input-small" name="name" value="{{ $f->name }}" maxlength="100" required aria-label="{{ __('folders.name') }}">
+                                    <button type="submit" class="control-button" aria-label="{{ __('folders.save') }}" data-tooltip="{{ __('folders.save') }}"><x-icon name="check" /></button>
+                                    <button type="button" class="control-button" data-folder-rename-cancel aria-label="{{ __('folders.cancel') }}" data-tooltip="{{ __('folders.cancel') }}"><x-icon name="x" /></button>
+                                </form>
+                                <span class="row-actions">
+                                    <button type="button" class="control-button" data-folder-rename aria-label="{{ __('folders.rename') }}: {{ $f->name }}" data-tooltip="{{ __('folders.rename') }}"><x-icon name="pencil" /></button>
+                                    <a class="control-button" href="{{ route('folders.index', ['folder' => $f->id]) }}" data-window aria-label="{{ __('folders.properties') }}: {{ $f->name }}" data-tooltip="{{ __('folders.properties') }}"><x-icon name="settings" /></a>
+                                </span>
+                            @endif
                         </li>
                     @endif
                 @endforeach
             </ul>
-
-            @can('documents.edit')
-                {{-- Move and delete dialogs of the rows; outside the sortable list, so a click in them never drags a row. --}}
-                @foreach ($folderRows as $row)
-                    @continue($row['folder'] === null || $row['folder']->is_default)
-                    @php
-                        $f = $row['folder'];
-                        // The folder itself and what lies below it can't be the target (the server checks the depth too).
-                        $blocked = [];
-                        $depth = null;
-                        foreach ($folders as $other) {
-                            if ($depth !== null && $other['depth'] <= $depth) {
-                                break;
-                            }
-                            if ($depth !== null || $other['folder']->id === $f->id) {
-                                $depth ??= $other['depth'];
-                                $blocked[] = $other['folder']->id;
-                            }
-                        }
-                    @endphp
-                    <div class="dialog-backdrop" data-dialog="folder-move-{{ $f->id }}" hidden>
-                        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="folder-move-{{ $f->id }}-title">
-                            <h2 id="folder-move-{{ $f->id }}-title">{{ __('folders.move_title', ['name' => $f->name]) }}</h2>
-                            <form method="post" action="{{ route('folders.update', $f->id) }}">
-                                @csrf
-                                <input type="hidden" name="name" value="{{ $f->name }}">
-                                @if ($f->bank_matching)<input type="hidden" name="bank_matching" value="1">@endif
-                                <label for="folder-move-{{ $f->id }}-to">{{ __('folders.move_to') }}</label>
-                                <select id="folder-move-{{ $f->id }}-to" name="parent_id">
-                                    <option value="">{{ __('folders.top') }}</option>
-                                    @foreach ($folders as $other)
-                                        @unless (in_array($other['folder']->id, $blocked, true) || $other['depth'] >= \App\Domain\Documents\Folder::MAX_DEPTH)
-                                            <option value="{{ $other['folder']->id }}" @selected($f->parent_id === $other['folder']->id)>{{ str_repeat('– ', $other['depth']) }}{{ $other['folder']->name }}</option>
-                                        @endunless
-                                    @endforeach
-                                </select>
-                                <div class="dialog-actions">
-                                    <button type="button" class="button-quiet" data-dialog-close>{{ __('folders.cancel') }}</button>
-                                    <button type="submit">{{ __('folders.move') }}</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                    <div class="dialog-backdrop" data-dialog="folder-delete-{{ $f->id }}" hidden>
-                        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="folder-delete-{{ $f->id }}-title">
-                            <h2 id="folder-delete-{{ $f->id }}-title">{{ __('folders.delete_title') }}</h2>
-                            <p>{{ __('folders.delete_text', ['name' => $f->name]) }}</p>
-                            @can('documents.trash')
-                                <p>{{ __('folders.delete_content_text') }}</p>
-                            @endcan
-                            <div class="dialog-actions">
-                                <button type="button" class="button-quiet" data-dialog-close>{{ __('folders.cancel') }}</button>
-                                <form method="post" action="{{ route('folders.destroy', $f->id) }}">
-                                    @csrf
-                                    <button type="submit" class="button-quiet">{{ __('folders.delete_keep') }}</button>
-                                </form>
-                                @can('documents.trash')
-                                    <form method="post" action="{{ route('folders.destroy', $f->id) }}">
-                                        @csrf
-                                        <input type="hidden" name="with_content" value="1">
-                                        <button type="submit" class="button-danger">{{ __('folders.delete_content') }}</button>
-                                    </form>
-                                @endcan
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            @endcan
         @endif
-
         @if (session('status'))
             <p class="check-ok" role="status">{{ session('status') }}</p>
         @endif

@@ -55,6 +55,8 @@
                             </label>
                             <noscript><button type="submit">{{ __('documents.upload') }}</button></noscript>
                         </form>
+                        {{-- Drop field over the main menu while files are dragged (A169): they go into "Dokumente allgemein". --}}
+                        <div class="nav-drop" data-nav-drop hidden><x-icon name="upload" /><span class="nav-text">{{ __('documents.drop') }}</span></div>
                     @endcan
                     <ul class="nav-list">
                         {{-- Everything else (people, roles, tags, bank import, export, update, phone test) sits under Einstellungen. --}}
@@ -95,9 +97,23 @@
                 </nav>
             </aside>
             <div class="nav-backdrop"></div>
-            @can('documents.upload')
-                <div class="drop-overlay" hidden><p>{{ __('documents.drop') }}</p></div>
-            @endcan
+            @if ($currentOrg->isSet() && Gate::any(['documents.upload', 'documents.edit']))
+                {{-- Drag and drop of documents, folders and files (points 75-87): addresses and texts for app.js. No overlay any more:
+                     files land on a folder row, a folder window or the main menu's drop field (A169-A175). --}}
+                @php $defaultFolder = \App\Domain\Documents\Folder::defaultIdFor($currentOrg->id()); @endphp
+                <div hidden data-dnd
+                     @can('documents.upload') data-upload="{{ route('documents.store') }}" @endcan
+                     @can('documents.edit') data-move="{{ route('documents.bulk.move') }}" data-folder-move="{{ route('folders.move', '__ID__') }}" @endcan
+                     @can('documents.trash') data-trash="{{ route('documents.bulk.trash') }}" data-restore="{{ route('documents.bulk.restore') }}" data-folder-destroy="{{ route('folders.destroy', '__ID__') }}" @endcan
+                     data-default-folder="{{ $defaultFolder }}" data-default-name="{{ \App\Domain\Documents\Folder::query()->whereKey($defaultFolder)->value('name') }}"
+                     data-drop-upload="{{ __('documents.bulk.drop_upload', ['name' => ':name']) }}"
+                     data-max-depth="{{ \App\Domain\Documents\Folder::MAX_DEPTH }}"
+                     data-docs-one="{{ trans_choice('documents.bulk.count', 1, ['count' => ':count']) }}" data-docs-many="{{ trans_choice('documents.bulk.count', 2, ['count' => ':count']) }}"
+                     data-uploaded-one="{{ trans_choice('documents.bulk.uploaded', 1, ['count' => ':count', 'name' => ':name']) }}" data-uploaded-many="{{ trans_choice('documents.bulk.uploaded', 2, ['count' => ':count', 'name' => ':name']) }}"
+                     data-uploading="{{ __('documents.bulk.uploading') }}" data-undo="{{ __('documents.bulk.undo') }}" data-undone="{{ __('documents.bulk.undone') }}" data-failed="{{ __('documents.bulk.failed') }}"
+                     data-too-deep="{{ __('folders.too_deep', ['max' => \App\Domain\Documents\Folder::MAX_DEPTH + 1]) }}" data-cancel="{{ __('documents.bulk.cancel') }}"
+                     data-folder-trash-title="{{ __('folders.drop_trash_title') }}" data-folder-trash-text="{{ __('folders.drop_trash_text', ['name' => ':name']) }}" data-folder-trash-ok="{{ __('folders.drop_trash') }}"></div>
+            @endif
         @else
             <aside class="side side-plain">
                 <header class="site-header"><a class="brand" href="{{ url('/') }}"><img src="{{ asset('img/logo.png') }}" alt="{{ config('app.name') }}" width="476" height="186"></a></header>

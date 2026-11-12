@@ -13,6 +13,7 @@ use App\Domain\Documents\Folder;
 use App\Domain\Documents\Tag;
 use App\Domain\Documents\TextDocument;
 use App\Domain\Org\CurrentOrg;
+use App\Domain\Org\Organization;
 use App\Domain\Org\Permission;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
@@ -133,6 +134,9 @@ final class DocumentController
             'month' => $month,
             'complete' => $complete,
             'trashed' => Gate::allows(Permission::TrashDocuments->value) ? $this->visible($request)->withPrintTray()->onlyTrashed()->count() : 0,
+            'tree' => Folder::tree($folders),
+            'trashName' => Folder::trashName($this->organization()),
+            'trashColor' => Folder::trashColor($this->organization()),
         ];
     }
 
@@ -161,7 +165,7 @@ final class DocumentController
         return redirect()->to(explode('?', $back, 2)[0].'?'.http_build_query($query));
     }
 
-    public function store(Request $request, AuditLog $audit, CurrentOrg $org): RedirectResponse
+    public function store(Request $request, AuditLog $audit, CurrentOrg $org): RedirectResponse|JsonResponse
     {
         // One file ("file") or several from the menu ("files[]", picked or dropped).
         $data = $request->validate([
@@ -177,7 +181,9 @@ final class DocumentController
         foreach (is_array($many) ? $many : [$request->file('file')] as $upload) {
             $type = DocumentIntake::detect($upload);
             if (! $upload instanceof UploadedFile || $type === null) {
-                return back()->withErrors(['file' => __('documents.wrong_type')]);
+                return $request->wantsJson()
+                    ? response()->json(['message' => __('documents.wrong_type')], 422)
+                    : back()->withErrors(['file' => __('documents.wrong_type')]);
             }
             $checked[] = [$upload, ...$type];
         }
@@ -189,6 +195,14 @@ final class DocumentController
             $document = DocumentIntake::store($upload, $mime, $extension, $org->id(), $userId, $upload->getClientOriginalName(), $tagIds, folderId: $data['folder'] ?? null);
 
             $audit->record('document.uploaded', orgId: $org->id(), userId: $userId, subject: $document, ip: $request->ip());
+        }
+
+        // Files dropped onto a folder row, a folder window or the main menu (point 85): the page stays, a toast names the folder.
+        if ($request->wantsJson()) {
+            $folderId = $data['folder'] ?? Folder::defaultIdFor($org->id());
+            $name = (string) Folder::query()->whereKey($folderId)->value('name');
+
+            return response()->json(['message' => trans_choice('documents.bulk.uploaded', count($checked), ['count' => count($checked), 'name' => $name]), 'folder' => $folderId]);
         }
 
         return redirect()->route('documents.index')->with('status', trans_choice('documents.saved', count($checked)));
@@ -241,11 +255,19 @@ final class DocumentController
     public function updateField(Request $request, string $id, AuditLog $audit, CurrentOrg $org): JsonResponse
     {
         $data = $request->validate([
-            'field' => ['required', 'string', Rule::in(['note', 'ocr_text'])],
-            'value' => ['nullable', 'string', $request->input('field') === 'note' ? 'max:5000' : 'max:1000000'],
+            'field' => ['required', 'string', Rule::in(['note', 'ocr_text', 'title'])],
+            'value' => [...match ($request->input('field')) {
+                'note' => ['nullable', 'max:5000'],
+                // Renamed in its row (pencil, A174): a document always keeps a name.
+                'title' => ['required', 'max:250'],
+                default => ['nullable', 'max:1000000'],
+            }, 'string'],
         ]);
         $document = $this->visible($request)->whereKey($id)->firstOrFail();
         $value = trim((string) ($data['value'] ?? ''));
+        if ($data['field'] === 'title' && $value === '') {
+            return response()->json(['message' => __('validation.required', ['attribute' => __('documents.name')])], 422);
+        }
 
         $document->forceFill([$data['field'] => $value !== '' ? $value : null])->save();
         $audit->record('document.changed', orgId: $org->id(), userId: $this->userId($request), subject: $document, ip: $request->ip());
@@ -281,14 +303,28 @@ final class DocumentController
      */
     public function trash(Request $request): View
     {
-        return view('documents.trash', ['documents' => $this->visible($request)->withPrintTray()->onlyTrashed()->with('files')->latest('deleted_at')->limit(200)->get()]);
+        return view('documents.trash', [
+            'documents' => $this->visible($request)->withPrintTray()->onlyTrashed()->with('files')->latest('deleted_at')->limit(200)->get(),
+            'count' => $this->visible($request)->withPrintTray()->onlyTrashed()->count(),
+            'name' => Folder::trashName($this->organization()),
+        ]);
     }
 
-    public function restore(Request $request, string $id, AuditLog $audit, CurrentOrg $org): RedirectResponse
+    private function organization(): ?Organization
+    {
+        $org = app(CurrentOrg::class);
+
+        return $org->isSet() ? $org->organization() : null;
+    }
+
+    public function restore(Request $request, string $id, AuditLog $audit, CurrentOrg $org): RedirectResponse|JsonResponse
     {
         $document = $this->visible($request)->withPrintTray()->onlyTrashed()->whereKey($id)->firstOrFail();
         $document->restore();
         $audit->record('document.restored', orgId: $org->id(), userId: $this->userId($request), subject: $document, ip: $request->ip());
+        if ($request->wantsJson()) {
+            return response()->json(['message' => __('documents.restored')]);
+        }
 
         return redirect()->route('documents.trash')->with('status', __('documents.restored'));
     }

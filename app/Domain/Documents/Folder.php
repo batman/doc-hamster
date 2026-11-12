@@ -7,6 +7,7 @@ namespace App\Domain\Documents;
 use App\Domain\Org\BelongsToOrg;
 use App\Domain\Org\Organization;
 use App\Domain\Org\OrgScope;
+use App\Domain\Palette\PaletteColor;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -44,6 +45,11 @@ final class Folder extends Model
     /** Key in the organisation's settings_json: where the Papierkorb stands among the top folders. */
     public const TRASH_SLOT = 'folders.trash_slot';
 
+    /** Keys in settings_json: the Papierkorb's own name and colour (A165: it can be renamed and coloured like a folder). */
+    public const TRASH_NAME = 'folders.trash_name';
+
+    public const TRASH_COLOR = 'folders.trash_color';
+
     protected $fillable = ['org_id', 'parent_id', 'name', 'color', 'icon', 'position', 'is_default', 'bank_matching'];
 
     /**
@@ -60,10 +66,34 @@ final class Folder extends Model
         return is_string($this->icon) && in_array($this->icon, self::ICONS, true) ? $this->icon : ($this->is_default ? 'file-text' : 'folder');
     }
 
-    /** CSS class that gives the symbol its colour (rules come from tags.css; the CSP allows no inline styles). */
-    public function colorClass(): string
+    /** Framework classes of a coloured row (point 83, "farbige Zeile"): `row-color c-rrggbb`, rules from tags.css. */
+    public function rowClass(): string
     {
-        return $this->color !== null ? 'fc-'.$this->id : '';
+        return self::rowClassFor($this->color);
+    }
+
+    /** The classes of a coloured row for any hex; empty without a valid colour (the CSP allows no inline styles). */
+    public static function rowClassFor(?string $hex): string
+    {
+        $class = PaletteColor::cssClass($hex);
+
+        return $class !== '' ? 'row-color '.$class : '';
+    }
+
+    /** The Papierkorb's name: its own (A165) or the standard one. */
+    public static function trashName(?Organization $organization): string
+    {
+        $name = data_get($organization?->settings_json, self::TRASH_NAME);
+
+        return is_string($name) && trim($name) !== '' ? $name : __('folders.trash');
+    }
+
+    /** The Papierkorb's colour as #rrggbb, or null. */
+    public static function trashColor(?Organization $organization): ?string
+    {
+        $color = data_get($organization?->settings_json, self::TRASH_COLOR);
+
+        return is_string($color) && preg_match(PaletteColor::HEX, $color) === 1 ? $color : null;
     }
 
     /**
@@ -181,6 +211,35 @@ final class Folder extends Model
         }
 
         return $rows;
+    }
+
+    /**
+     * What drag and drop needs to know of every folder (A138, A139): its depth, how many levels lie below it,
+     * and its path from the top (itself last), so the page can refuse a drop into itself or too deep.
+     *
+     * @param  list<array{folder: Folder, depth: int}>  $flat
+     * @return array<string, array{depth: int, height: int, path: list<string>}>
+     */
+    public static function tree(array $flat): array
+    {
+        $paths = [];
+        $heights = [];
+        $stack = [];
+        foreach ($flat as $row) {
+            $stack = array_slice($stack, 0, $row['depth']);
+            $stack[] = $row['folder']->id;
+            $paths[$row['folder']->id] = [$row['depth'], $stack];
+            foreach ($stack as $level => $ancestor) {
+                $heights[$ancestor] = max($heights[$ancestor] ?? 0, $row['depth'] - $level);
+            }
+        }
+
+        $out = [];
+        foreach ($paths as $id => [$depth, $path]) {
+            $out[$id] = ['depth' => $depth, 'height' => $heights[$id] ?? 0, 'path' => $path];
+        }
+
+        return $out;
     }
 
     /** 0 for a top folder. */

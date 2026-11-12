@@ -48,15 +48,14 @@ final class TagController
     }
 
     /** One rule per tag and per coloured folder: the CSP allows no inline styles. */
-    public function css(Request $request): Response
+    public function css(Request $request, CurrentOrg $org): Response
     {
         $css = Tag::query()->get(['id', 'color'])
             ->map(static fn (Tag $tag): string => sprintf('.tag-%s{--tag:%s;--tag-text:%s}', $tag->id, $tag->color, $tag->textColor()))
-            ->merge(Folder::query()->whereNotNull('color')->get(['id', 'color'])
-                ->filter(static fn (Folder $folder): bool => preg_match('/^#[0-9a-f]{6}$/', (string) $folder->color) === 1)
-                ->map(static fn (Folder $folder): string => sprintf('.fc-%s{--folder:%s}', $folder->id, $folder->color)))
-            // Palette and note colours as framework classes c-rrggbb (points 14-15).
+            // Palette, note, folder and Papierkorb colours as framework classes c-rrggbb (points 14-15, 83).
             ->merge(collect(PaletteColor::hexes())->merge(Note::query()->whereNotNull('color')->distinct()->pluck('color'))->push(Note::DEFAULT_COLOR)
+                ->merge(Folder::query()->whereNotNull('color')->distinct()->pluck('color'))
+                ->push(Folder::trashColor($org->isSet() ? $org->organization() : null))
                 ->merge(NoteColumn::query()->get(['color', 'note_color'])->flatMap(static fn (NoteColumn $column): array => [$column->color, $column->note_color]))
                 ->filter(static fn (mixed $hex): bool => is_string($hex) && preg_match(PaletteColor::HEX, $hex) === 1)
                 ->unique()->map(static fn (string $hex): string => PaletteColor::cssRule($hex)))

@@ -9,7 +9,7 @@
 @section('content')
     <div class="windows" data-windows>
     @if ($folder)
-        <x-window :title="$folder->name" :icon="$folder->iconName()" :url="route('folders.index', ['folder' => $folder->id])" :close="route('documents.index', ['folder' => $folder->id])" :class="$folder->colorClass()">
+        <x-window :title="$folder->name" :icon="$folder->iconName()" :url="route('folders.index', ['folder' => $folder->id])" :close="route('documents.index', ['folder' => $folder->id])">
             @if (session('status'))
                 <p class="check-ok" role="status">{{ session('status') }}</p>
             @endif
@@ -29,6 +29,20 @@
             </form>
 
             @unless ($folder->is_default)
+                {{-- One step up or down among its siblings (A163), the keyboard way of dragging the row. --}}
+                <fieldset class="folder-step">
+                    <legend>{{ __('folders.order') }}</legend>
+                    <div class="actions">
+                        @foreach (['up' => 'arrow-up', 'down' => 'arrow-down'] as $direction => $arrow)
+                            <form method="post" action="{{ route('folders.step', $folder->id) }}">
+                                @csrf
+                                <input type="hidden" name="direction" value="{{ $direction }}">
+                                <button type="submit" class="button-quiet"><x-icon :name="$arrow" />{{ __('folders.'.$direction) }}</button>
+                            </form>
+                        @endforeach
+                    </div>
+                </fieldset>
+
                 <div class="dialog-backdrop" data-dialog="delete-folder-{{ $folder->id }}" hidden>
                     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="delete-folder-{{ $folder->id }}-title">
                         <h2 id="delete-folder-{{ $folder->id }}-title">{{ __('folders.delete_title') }}</h2>

@@ -138,7 +138,6 @@
             return;
         }
         const input = form.querySelector('input[type="file"]');
-        const overlay = document.querySelector('.drop-overlay');
         // The active window says where an upload belongs (data-window-upload="folder=…", A79).
         const target = () => {
             form.querySelectorAll('[data-upload-target]').forEach(field => field.remove());
@@ -159,18 +158,13 @@
             target();
             form.querySelector('.nav-text').textContent = form.dataset.busy;
             form.classList.add('is-busy');
-            overlay.querySelector('p').textContent = form.dataset.busy;
-            overlay.hidden = false;
             form.submit();
         };
         input.addEventListener('change', send);
 
-        const carriesFiles = event => event.dataTransfer !== null && [...event.dataTransfer.types].includes('Files');
-        const carriesAppPreview = event => event.dataTransfer !== null
-            && [...event.dataTransfer.types].includes('application/x-dochamster-preview');
-        let depth = 0; // dragenter/dragleave fire for every child element
-        // Never turn a dragged document preview into a fresh upload, even if a browser
-        // still starts a native drag despite the non-draggable image and CSS rules.
+        // Files dragged from the computer are handled by the documents module below (point 85: folder rows, folder
+        // windows, the menu's drop field). Never turn a dragged document preview into a fresh upload, even if a
+        // browser still starts a native drag despite the non-draggable image and CSS rules.
         document.addEventListener('dragstart', event => {
             if (!(event.target instanceof Element) || !event.target.closest('.thumb-frame img') || !event.dataTransfer) {
                 return;
@@ -178,38 +172,6 @@
             event.dataTransfer.setData('application/x-dochamster-preview', '1');
             event.preventDefault();
         }, true);
-        document.addEventListener('dragenter', event => {
-            if (carriesFiles(event)) {
-                depth++;
-                overlay.hidden = false;
-            }
-        });
-        document.addEventListener('dragleave', event => {
-            if (carriesFiles(event) && --depth <= 0) {
-                depth = 0;
-                overlay.hidden = true;
-            }
-        });
-        document.addEventListener('dragover', event => {
-            if (carriesFiles(event)) {
-                event.preventDefault();
-            }
-        });
-        document.addEventListener('drop', event => {
-            if (carriesAppPreview(event)) {
-                event.preventDefault();
-                depth = 0;
-                overlay.hidden = true;
-                return;
-            }
-            if (!carriesFiles(event)) {
-                return;
-            }
-            event.preventDefault();
-            depth = 0;
-            input.files = event.dataTransfer.files;
-            send();
-        });
     };
 
     // Dropdowns (filter, view, "⋯"): one listener for the whole page, so they work in every window, also in
@@ -2254,38 +2216,6 @@
     });
     DocHamster.on('window:open', setupColorField);
 
-    // Folder order (PO, 2026-11-07): the folder rows in a Belege window are a sortable list of the framework;
-    // after a move the new order of that level is saved right away. "trash" stands for the Papierkorb.
-    DocHamster.on('list:sorted', ({ list, ids }) => {
-        const url = list.dataset.folderOrder;
-        if (!url) {
-            return;
-        }
-        const body = new FormData();
-        ids.forEach(id => body.append('order[]', id));
-        if (list.dataset.parent) {
-            body.append('parent_id', list.dataset.parent);
-        }
-        const token = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
-        fetch(url, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token, Accept: 'application/json' }, credentials: 'same-origin' })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(String(response.status));
-                }
-            })
-            .catch(() => {
-                // The framework's error line above the list (no JS toast yet).
-                if (!list.previousElementSibling?.matches('[data-order-error]')) {
-                    const error = document.createElement('p');
-                    error.className = 'error';
-                    error.setAttribute('role', 'alert');
-                    error.dataset.orderError = '';
-                    error.textContent = list.dataset.orderFailed;
-                    list.before(error);
-                }
-            });
-    });
-
     // The import form sits in a window of the Ordner page, which may be loaded later (window system).
     const setupFolderImport = root => root.querySelectorAll('[data-folder-import]:not([data-ready])').forEach(form => {
         form.dataset.ready = '';
@@ -3084,10 +3014,185 @@
   else startOcr();
 })();
 
-/* Folders explorer (points 10-12) */
-// Rename in place: "Umbenennen" in a folder row's menu swaps the name for a small form; Escape or X puts it back.
+/* Documents and folders: rows, drag and drop, uploads by drop (points 75-87, A131-A180) */
+// One module for every Dokumente, folder and Papierkorb window, also for windows loaded later and several side by side:
+// - row icons as tall as the two text lines (A144-A146): a tight viewBox from the symbol's own box;
+// - row actions (A161, A174): pencil renames in place, the gear opens the properties / details as a window (plain link);
+// - Ctrl/Shift picks several document rows (A132); a drag carries all picked ones;
+// - documents dropped on a folder row (also in another window) or the free space of a folder window move there (point 75),
+//   on the Papierkorb row they go into the trash (76), from the Papierkorb onto a folder they come back there (A135);
+//   a toast says what happened and offers "Rückgängig" (A133);
+// - folders dropped on the middle of a folder row go into it, between rows they take the new place (78, A153); never into
+//   themselves (A138), never too deep (A139, a hint on drop), "Dokumente allgemein" and the Papierkorb stay (79, A168);
+//   a folder on the Papierkorb row goes there with its content after a confirm (A134);
+// - files from the computer: onto a folder row, a folder window or the menu's drop field (85, A169-A175).
+// A drag starts only after a few pixels (A155), with a finger after a short hold; Escape cancels.
 (() => {
-    const show = (row, on) => {
+    const DocHamster = window.DocHamster;
+    if (!DocHamster) {
+        return;
+    }
+    const html = document.documentElement;
+    const config = () => document.querySelector('[data-dnd]')?.dataset ?? {};
+    const token = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const fill = (template, values) => Object.entries(values).reduce((out, [key, value]) => out.replaceAll(`:${key}`, String(value)), template ?? '');
+    const docsLabel = count => fill(count === 1 ? config().docsOne : config().docsMany, { count });
+    const still = matchMedia('(prefers-reduced-motion: reduce)');
+
+    // --- Toast with an optional "Rückgängig" (A133) -------------------------------------------------------------
+    const toast = (message, { error = false, undo = null } = {}) => {
+        const el = document.createElement('div');
+        el.className = error ? 'toast toast-error' : 'toast';
+        el.setAttribute('role', error ? 'alert' : 'status');
+        const textEl = document.createElement('span');
+        textEl.textContent = message;
+        el.append(textEl);
+        const leave = () => {
+            el.classList.add('is-leaving');
+            setTimeout(() => el.remove(), 300);
+        };
+        if (undo) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'button-quiet button-small toast-action';
+            button.textContent = config().undo ?? 'Undo';
+            button.addEventListener('click', event => {
+                event.stopPropagation();
+                leave();
+                undo();
+            }, { once: true });
+            el.append(button);
+        }
+        el.addEventListener('click', leave);
+        document.body.append(el);
+        setTimeout(leave, undo ? 8000 : 4000);
+    };
+    DocHamster.toast = toast;
+
+    const post = (url, data) => {
+        const body = data instanceof FormData ? data : new FormData();
+        if (!(data instanceof FormData)) {
+            Object.entries(data ?? {}).forEach(([key, value]) => {
+                if (Array.isArray(value)) {
+                    value.forEach(item => body.append(`${key}[]`, item));
+                } else if (value !== null && value !== undefined) {
+                    body.append(key, value);
+                }
+            });
+        }
+        return fetch(url, { method: 'POST', body, credentials: 'same-origin', headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' } })
+            .then(async response => {
+                const json = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(json.message || config().failed || String(response.status));
+                }
+                return json;
+            });
+    };
+    const fail = error => toast(error?.message || config().failed, { error: true });
+
+    // Every Dokumente, folder and Papierkorb window loads its body again: counts, rows and names follow.
+    const refresh = () => document.querySelectorAll('[data-windows] > section[data-window]').forEach(win => {
+        if (['folder', 'trash'].includes(win.dataset.windowKind) && win.querySelector('.win-body')) {
+            DocHamster.reloadWindow(win, new URL(win.dataset.windowUrl ?? location.href, location.href), '.win-body').catch(() => {});
+        }
+    });
+
+    // Our own confirm (framework dialog, built here because the question depends on what was dropped).
+    const confirmDialog = ({ title, text, ok }) => new Promise(resolve => {
+        const backdrop = document.createElement('div');
+        backdrop.className = 'dialog-backdrop';
+        backdrop.hidden = true;
+        const box = document.createElement('div');
+        box.className = 'dialog';
+        box.setAttribute('role', 'alertdialog');
+        box.setAttribute('aria-modal', 'true');
+        const h = document.createElement('h2');
+        h.textContent = title;
+        const p = document.createElement('p');
+        p.textContent = text;
+        const actions = document.createElement('div');
+        actions.className = 'dialog-actions';
+        const no = document.createElement('button');
+        no.type = 'button';
+        no.className = 'button-quiet';
+        no.textContent = config().cancel ?? 'Cancel';
+        const yes = document.createElement('button');
+        yes.type = 'button';
+        yes.className = 'button-danger';
+        yes.textContent = ok;
+        actions.append(no, yes);
+        box.append(h, p, actions);
+        backdrop.append(box);
+        document.body.append(backdrop);
+        const before = document.activeElement;
+        const close = answer => {
+            document.removeEventListener('keydown', key, true);
+            backdrop.remove();
+            before?.focus?.();
+            resolve(answer);
+        };
+        const key = event => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
+                close(false);
+            }
+        };
+        no.addEventListener('click', () => close(false));
+        yes.addEventListener('click', () => close(true));
+        backdrop.addEventListener('click', event => {
+            if (event.target === backdrop) {
+                close(false);
+            }
+        });
+        document.addEventListener('keydown', key, true);
+        backdrop.hidden = false;
+        no.focus();
+    });
+
+    // --- Row icons as tall as the two text lines (A144-A146) ---------------------------------------------------
+    // The symbol's own box (getBBox, measured once per symbol in a hidden probe) becomes its viewBox, so every symbol
+    // fills the 38 px slot; the stroke stays as thin as elsewhere (vector-effect: non-scaling-stroke in app.css).
+    const SLOT = 38;
+    const boxes = new Map();
+    const measure = svg => {
+        const key = svg.innerHTML;
+        if (!boxes.has(key)) {
+            const probe = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            probe.setAttribute('class', 'fit-probe');
+            probe.setAttribute('viewBox', '0 0 24 24');
+            probe.innerHTML = key;
+            probe.querySelectorAll('[stroke="none"]').forEach(node => node.remove());
+            document.body.append(probe);
+            const box = probe.getBBox();
+            probe.remove();
+            boxes.set(key, box.width > 0 && box.height > 0 ? { x: box.x - 1, y: box.y - 1, w: box.width + 2, h: box.height + 2 } : null);
+        }
+        return boxes.get(key);
+    };
+    const fitIcons = root => root.querySelectorAll?.('.row-icon > svg.icon:not(.is-fit)').forEach(svg => {
+        const box = measure(svg);
+        if (!box) {
+            return;
+        }
+        const scale = Math.min(SLOT / box.w, SLOT / box.h);
+        svg.setAttribute('viewBox', `${box.x} ${box.y} ${box.w} ${box.h}`);
+        svg.style.width = `${box.w * scale}px`;
+        svg.style.height = `${box.h * scale}px`;
+        svg.classList.add('is-fit');
+    });
+    DocHamster.fitRowIcons = fitIcons;
+    DocHamster.on('window:open', root => fitIcons(root ?? document));
+    const fitAll = () => fitIcons(document);
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fitAll);
+    } else {
+        fitAll();
+    }
+
+    // --- Rename in place: folder rows (pencil, A161) ------------------------------------------------------------
+    const showRename = (row, on) => {
         const form = row?.querySelector('[data-folder-rename-form]');
         const name = row?.querySelector('[data-folder-name]');
         if (!form || !name) {
@@ -3095,6 +3200,7 @@
         }
         form.hidden = !on;
         name.hidden = on;
+        row.classList.toggle('is-renaming', on);
         if (on) {
             const input = form.querySelector('input[name="name"]');
             input.focus();
@@ -3106,19 +3212,584 @@
     document.addEventListener('click', event => {
         const start = event.target.closest('[data-folder-rename]');
         if (start) {
-            show(start.closest('li'), true);
+            showRename(start.closest('li'), true);
             return;
         }
         const cancel = event.target.closest('[data-folder-rename-cancel]');
         if (cancel) {
-            show(cancel.closest('li'), false);
+            showRename(cancel.closest('li'), false);
         }
     });
     document.addEventListener('keydown', event => {
         if (event.key === 'Escape' && event.target.closest?.('[data-folder-rename-form]')) {
-            show(event.target.closest('li'), false);
+            showRename(event.target.closest('li'), false);
         }
     });
+    document.addEventListener('submit', event => {
+        const form = event.target.closest('[data-folder-rename-form]');
+        if (!form) {
+            return;
+        }
+        event.preventDefault();
+        const row = form.closest('li');
+        post(form.action, new FormData(form)).then(json => {
+            const link = row.querySelector('[data-folder-name] a');
+            if (link && json.name) {
+                link.textContent = json.name;
+                row.dataset.name = json.name;
+                form.querySelector('input[name="name"]').defaultValue = json.name;
+            }
+            showRename(row, false);
+            toast(json.message);
+            refresh();
+        }).catch(fail);
+    });
+
+    // --- Rename in place: document rows (pencil, A174) ----------------------------------------------------------
+    document.addEventListener('click', event => {
+        const button = event.target.closest('[data-doc-rename]');
+        if (!button) {
+            return;
+        }
+        const row = button.closest('[data-doc]');
+        const title = row?.querySelector('[data-doc-title]');
+        if (!title || row.querySelector('.doc-rename')) {
+            return;
+        }
+        const field = document.createElement('input');
+        field.className = 'input-small doc-rename';
+        field.value = title.textContent.trim();
+        field.maxLength = 250;
+        field.setAttribute('aria-label', button.getAttribute('aria-label') ?? '');
+        const link = title.closest('a') ?? title;
+        link.hidden = true;
+        link.after(field);
+        field.focus();
+        field.select();
+        let done = false;
+        const finish = save => {
+            if (done) {
+                return;
+            }
+            done = true;
+            const value = field.value.trim();
+            field.remove();
+            link.hidden = false;
+            if (!save || value === '' || value === title.textContent.trim()) {
+                return;
+            }
+            const before = title.textContent;
+            title.textContent = value;
+            post(button.dataset.docRename, { field: 'title', value }).then(json => {
+                toast(json.message);
+                refresh();
+            }).catch(error => {
+                title.textContent = before;
+                fail(error);
+            });
+        };
+        field.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                finish(true);
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                finish(false);
+            }
+        });
+        field.addEventListener('blur', () => finish(true));
+    });
+
+    // --- Forms of the Papierkorb (restore, delete for good, "Papierkorb leeren"): asked first, sent in the background ----
+    document.addEventListener('submit', event => {
+        const form = event.target.closest('form[data-bulk-form]');
+        if (!form) {
+            return;
+        }
+        event.preventDefault();
+        const send = () => post(form.action, new FormData(form)).then(json => {
+            form.closest('[data-dialog]')?.querySelector('[data-dialog-close]')?.click();
+            toast(json.message);
+            refresh();
+        }).catch(fail);
+        if (form.dataset.confirm) {
+            confirmDialog({ title: form.dataset.confirmTitle ?? '', text: form.dataset.confirm, ok: form.dataset.confirmOk ?? '' }).then(yes => yes && send());
+        } else {
+            send();
+        }
+    });
+
+    // --- Picking several document rows (A132) ------------------------------------------------------------------
+    const scopeOf = el => el.closest('section[data-window]') ?? document;
+    const docsIn = scope => [...scope.querySelectorAll('[data-doc]')].filter(row => !row.hidden);
+    const anchors = new WeakMap();
+    const clear = scope => scope.querySelectorAll('[data-doc].is-selected').forEach(row => {
+        row.classList.remove('is-selected');
+        row.removeAttribute('aria-selected');
+    });
+    const pick = (row, on = true) => {
+        row.classList.toggle('is-selected', on);
+        if (on) {
+            row.setAttribute('aria-selected', 'true');
+        } else {
+            row.removeAttribute('aria-selected');
+        }
+    };
+    let swallowClick = false;
+    document.addEventListener('click', event => {
+        if (swallowClick) {
+            event.preventDefault();
+            event.stopPropagation();
+            swallowClick = false;
+            return;
+        }
+        const row = event.target.closest?.('[data-doc]');
+        if (!row || event.target.closest('.row-actions, input, button, form, .dropdown')) {
+            if (!event.target.closest?.('.row-actions, .toast, .dialog')) {
+                document.querySelectorAll('[data-doc].is-selected').forEach(other => pick(other, false));
+            }
+            return;
+        }
+        const scope = scopeOf(row);
+        if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            event.stopPropagation();
+            pick(row, !row.classList.contains('is-selected'));
+            anchors.set(scope, row);
+        } else if (event.shiftKey) {
+            event.preventDefault();
+            event.stopPropagation();
+            const rows = docsIn(scope);
+            const to = rows.indexOf(row);
+            const from = rows.includes(anchors.get(scope)) ? rows.indexOf(anchors.get(scope)) : to;
+            clear(scope);
+            rows.slice(Math.min(from, to), Math.max(from, to) + 1).forEach(r => pick(r));
+        } else {
+            clear(scope);
+            anchors.set(scope, row);
+        }
+    }, true);
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && !event.defaultPrevented && !html.classList.contains('is-carrying')) {
+            document.querySelectorAll('[data-doc].is-selected').forEach(row => pick(row, false));
+        }
+    });
+
+    // --- Dragging documents and folders --------------------------------------------------------------------------
+    const winOf = el => el?.closest?.('[data-windows] > section[data-window], section[data-window]') ?? null;
+    const folderOfWindow = win => new URLSearchParams(win?.dataset.windowUpload ?? '').get('folder');
+    // The one row or window body a drop would land on: orange (is-drop-target); for files also is-upload-target, which
+    // turns a folder row into the field "Loslassen zum Hochladen in „X“" (A170, A175).
+    const setTarget = (() => {
+        let current = null;
+        return (el, upload = false) => {
+            if (current === el && current?.classList.contains('is-upload-target') === upload) {
+                return;
+            }
+            current?.classList.remove('is-drop-target', 'is-upload-target');
+            current = el;
+            current?.classList.add('is-drop-target');
+            current?.classList.toggle('is-upload-target', upload);
+        };
+    })();
+
+    // What lies under the pointer, and whether the carried rows may land there.
+    const aim = (carry, x, y) => {
+        const el = document.elementFromPoint(x, y);
+        if (!el || el.closest('.drag-ghost')) {
+            return null;
+        }
+        const cfg = config();
+        const row = el.closest('[data-folder-row]');
+        const list = el.closest('.folder-rows');
+        if (carry.kind === 'folder') {
+            const source = carry.items[0];
+            // Same list: the upper and lower quarter of a row (and the gaps) are a new place, the middle goes into it (A153).
+            if (list && list === source.parentElement && list.dataset.folderOrder) {
+                const rows = [...list.querySelectorAll(':scope > [data-folder-row]')];
+                const hit = row && rows.includes(row) ? row : null;
+                const box = hit?.getBoundingClientRect();
+                const into = hit && box && y > box.top + box.height / 4 && y < box.bottom - box.height / 4;
+                if (!into) {
+                    const before = rows.find(r => y < r.getBoundingClientRect().top + r.offsetHeight / 2) ?? null;
+                    const next = source.nextElementSibling?.matches('[data-folder-row]') ? source.nextElementSibling : null;
+                    if (before === source || before === next) {
+                        return null; // stays where it is
+                    }
+                    return { type: 'order', list, before };
+                }
+            }
+            if (!row || row === source) {
+                return null;
+            }
+            if (row.hasAttribute('data-drop-trash')) {
+                return cfg.folderDestroy ? { type: 'folder-trash', el: row } : null;
+            }
+            if (!cfg.folderMove || (row.dataset.path ?? '').split(' ').includes(source.dataset.id) || row.dataset.id === source.dataset.parentId) {
+                return null; // into itself, below itself (A138) or where it is already
+            }
+            if (Number(row.dataset.depth) + 1 + Number(source.dataset.height) > Number(cfg.maxDepth)) {
+                return { type: 'too-deep' }; // no highlight, a hint on drop (A139)
+            }
+            return { type: 'folder-into', el: row, folder: row.dataset.id };
+        }
+        // Documents.
+        if (row) {
+            if (row.hasAttribute('data-drop-trash')) {
+                return cfg.trash && !carry.trashed ? { type: 'trash', el: row } : null;
+            }
+            return cfg.move && !carry.items.every(item => item.dataset.folder === row.dataset.id && !item.hasAttribute('data-trashed'))
+                ? { type: 'move', el: row, folder: row.dataset.id } : null;
+        }
+        const win = winOf(el);
+        const body = el.closest('.win-body');
+        if (!win || !body || win.classList.contains('is-min')) {
+            return null;
+        }
+        if (win.dataset.windowKind === 'trash') {
+            return cfg.trash && !carry.trashed ? { type: 'trash', el: body } : null;
+        }
+        const folder = folderOfWindow(win);
+        if (win.dataset.windowKind === 'folder' && folder && cfg.move && !carry.items.every(item => item.dataset.folder === folder && !item.hasAttribute('data-trashed'))) {
+            return { type: 'move', el: body, folder };
+        }
+        return null;
+    };
+
+    const undoMoves = moves => {
+        const cfg = config();
+        const groups = new Map();
+        moves.filter(m => m.folder).forEach(m => groups.set(m.folder, [...(groups.get(m.folder) ?? []), m.id]));
+        const back = [...groups].reduce((chain, [folder, ids]) => chain.then(() => post(cfg.move, { ids, folder })), Promise.resolve());
+        const trashed = moves.filter(m => m.trashed).map(m => m.id);
+        back.then(() => (trashed.length && cfg.trash ? post(cfg.trash, { ids: trashed }) : null))
+            .then(() => {
+                toast(cfg.undone);
+                refresh();
+            })
+            .catch(fail);
+    };
+
+    const land = (carry, target) => {
+        const cfg = config();
+        const ids = carry.items.map(item => item.dataset.doc ?? item.dataset.id);
+        if (target.type === 'move') {
+            post(cfg.move, { ids, folder: target.folder }).then(json => {
+                toast(json.message, { undo: () => undoMoves(json.moves ?? []) });
+                refresh();
+            }).catch(fail);
+        } else if (target.type === 'trash') {
+            post(cfg.trash, { ids }).then(json => {
+                toast(json.message, { undo: () => post(cfg.restore, { ids: json.ids ?? ids }).then(() => { toast(cfg.undone); refresh(); }).catch(fail) });
+                refresh();
+            }).catch(fail);
+        } else if (target.type === 'folder-into') {
+            const source = carry.items[0];
+            const url = cfg.folderMove.replace('__ID__', source.dataset.id);
+            const from = source.dataset.parentId ?? '';
+            post(url, { parent_id: target.folder }).then(json => {
+                toast(json.message, { undo: () => post(url, { parent_id: from }).then(() => { toast(cfg.undone); refresh(); }).catch(fail) });
+                refresh();
+            }).catch(fail);
+        } else if (target.type === 'folder-trash') {
+            const source = carry.items[0];
+            confirmDialog({ title: cfg.folderTrashTitle, text: fill(cfg.folderTrashText, { name: source.dataset.name }), ok: cfg.folderTrashOk }).then(yes => {
+                if (yes) {
+                    post(cfg.folderDestroy.replace('__ID__', source.dataset.id), { with_content: 1 }).then(json => {
+                        toast(json.message);
+                        refresh();
+                    }).catch(fail);
+                }
+            });
+        } else if (target.type === 'order') {
+            const source = carry.items[0];
+            const list = target.list;
+            const from = source.getBoundingClientRect();
+            list.insertBefore(source, target.before);
+            if (!still.matches) {
+                const to = source.getBoundingClientRect();
+                source.animate([{ transform: `translate(${from.left - to.left}px, ${from.top - to.top}px)` }, { transform: 'none' }], { duration: 180, easing: 'ease-out' });
+            }
+            const order = [...list.querySelectorAll(':scope > [data-folder-row]')].map(r => r.dataset.id);
+            post(list.dataset.folderOrder, { order, parent_id: list.dataset.parent || null }).catch(fail);
+        } else if (target.type === 'too-deep') {
+            toast(cfg.tooDeep, { error: true });
+        }
+    };
+
+    const carryOut = (source, start) => {
+        let items;
+        let kind;
+        if (source.matches('[data-doc]')) {
+            const scope = scopeOf(source);
+            if (!source.classList.contains('is-selected')) {
+                document.querySelectorAll('[data-doc].is-selected').forEach(row => pick(row, false));
+                pick(source);
+            }
+            items = docsIn(scope).filter(row => row.classList.contains('is-selected'));
+            kind = 'docs';
+        } else {
+            items = [source];
+            kind = 'folder';
+        }
+        const carry = { kind, items, trashed: items.some(item => item.hasAttribute('data-trashed')) };
+        items.forEach(item => item.classList.add('is-carried'));
+
+        const ghost = document.createElement('div');
+        ghost.className = 'drag-ghost';
+        ghost.setAttribute('aria-hidden', 'true');
+        ghost.textContent = kind === 'folder' ? source.dataset.name : (items.length === 1 ? (items[0].querySelector('[data-doc-title]')?.textContent.trim() ?? docsLabel(1)) : docsLabel(items.length));
+        document.body.append(ghost);
+        html.classList.add('is-carrying');
+
+        let bar = null;
+        let target = null;
+        let pointer = { x: start.clientX, y: start.clientY };
+        let frame = 0;
+        const place = () => {
+            ghost.style.transform = `translate(${pointer.x + 14}px, ${pointer.y + 10}px)`;
+            target = aim(carry, pointer.x, pointer.y);
+            setTarget(target?.el ?? null);
+            if (target?.type === 'order') {
+                if (!bar || bar.parentElement !== target.list) {
+                    bar?.remove();
+                    bar = document.createElement('div');
+                    bar.className = 'pick-drop';
+                    target.list.append(bar);
+                }
+                const rows = [...target.list.querySelectorAll(':scope > [data-folder-row]')];
+                const top = target.list.getBoundingClientRect().top;
+                const gap = parseFloat(getComputedStyle(target.list).rowGap) || 0;
+                const y = target.before ? target.before.getBoundingClientRect().top - gap / 2 : rows.at(-1).getBoundingClientRect().bottom + gap / 2;
+                bar.style.top = `${y - top}px`;
+            } else {
+                bar?.remove();
+                bar = null;
+            }
+        };
+        // Near the top or bottom edge of a window body the body scrolls along.
+        const edge = () => {
+            const body = document.elementFromPoint(pointer.x, pointer.y)?.closest('.win-body');
+            if (body) {
+                const rect = body.getBoundingClientRect();
+                const zone = 40;
+                const speed = pointer.y < rect.top + zone ? pointer.y - (rect.top + zone) : pointer.y > rect.bottom - zone ? pointer.y - (rect.bottom - zone) : 0;
+                if (speed) {
+                    body.scrollTop += speed / 3;
+                    place();
+                }
+            }
+            frame = requestAnimationFrame(edge);
+        };
+        const move = event => {
+            pointer = { x: event.clientX, y: event.clientY };
+            place();
+        };
+        const finish = drop => {
+            cancelAnimationFrame(frame);
+            window.removeEventListener('pointermove', move);
+            window.removeEventListener('pointerup', up);
+            window.removeEventListener('pointercancel', cancel);
+            window.removeEventListener('keydown', key, true);
+            dragging = false;
+            html.classList.remove('is-carrying');
+            ghost.remove();
+            bar?.remove();
+            setTarget(null);
+            items.forEach(item => item.classList.remove('is-carried'));
+            // The release must not also open the row's link.
+            swallowClick = true;
+            setTimeout(() => { swallowClick = false; }, 0);
+            if (drop && target) {
+                land(carry, target);
+            }
+        };
+        const up = () => finish(true);
+        const cancel = () => finish(false);
+        const key = event => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
+                finish(false);
+            }
+        };
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', up);
+        window.addEventListener('pointercancel', cancel);
+        window.addEventListener('keydown', key, true);
+        dragging = true;
+        place();
+        frame = requestAnimationFrame(edge);
+    };
+
+    let dragging = false;
+    document.addEventListener('touchmove', event => {
+        if (dragging) {
+            event.preventDefault();
+        }
+    }, { passive: false });
+    document.addEventListener('dragstart', event => {
+        if (event.target.closest?.('[data-doc], [data-drag-folder]')) {
+            event.preventDefault();
+        }
+    });
+    document.addEventListener('pointerdown', event => {
+        const cfg = config();
+        const source = event.target.closest?.('[data-doc], [data-drag-folder]');
+        if (!source || event.button !== 0 || event.target.closest('input, select, textarea, button, form, .row-actions, .dropdown, .doc-rename')) {
+            return;
+        }
+        if (source.matches('[data-doc]') && !cfg.move && !cfg.trash) {
+            return;
+        }
+        if (source.matches('[data-doc][data-trashed]') && !cfg.move) {
+            return;
+        }
+        const touch = event.pointerType === 'touch';
+        const start = { clientX: event.clientX, clientY: event.clientY };
+        if (!touch) {
+            event.preventDefault(); // no text selection while dragging
+        }
+        let timer = 0;
+        const stop = () => {
+            clearTimeout(timer);
+            window.removeEventListener('pointermove', watch);
+            window.removeEventListener('pointerup', stop);
+            window.removeEventListener('pointercancel', stop);
+        };
+        const begin = () => {
+            stop();
+            carryOut(source, start);
+        };
+        const watch = e => {
+            const far = Math.hypot(e.clientX - start.clientX, e.clientY - start.clientY);
+            if (touch) {
+                if (far > 8) {
+                    stop(); // the finger scrolls
+                }
+            } else if (far > 5) {
+                begin(); // a few pixels first (A155): a click stays a click
+            }
+        };
+        window.addEventListener('pointermove', watch);
+        window.addEventListener('pointerup', stop);
+        window.addEventListener('pointercancel', stop);
+        if (touch) {
+            timer = setTimeout(begin, 350);
+        }
+    });
+
+    // --- Files from the computer (point 85, A169-A175) -------------------------------------------------------------
+    const carriesFiles = event => event.dataTransfer !== null && [...(event.dataTransfer?.types ?? [])].includes('Files');
+    const navDrop = () => document.querySelector('[data-nav-drop]');
+    const fileTarget = el => {
+        const cfg = config();
+        if (!cfg.upload || !(el instanceof Element)) {
+            return null;
+        }
+        if (el.closest('.side')) {
+            const field = navDrop();
+            return field ? { el: field, folder: cfg.defaultFolder, name: cfg.defaultName } : null;
+        }
+        const row = el.closest('[data-folder-row]');
+        if (row) {
+            return row.hasAttribute('data-drop-trash') ? null : { el: row, folder: row.dataset.id, name: row.dataset.name };
+        }
+        const win = winOf(el);
+        const body = el.closest('.win-body');
+        if (win && body && win.dataset.windowKind === 'folder' && !win.classList.contains('is-min')) {
+            const folder = folderOfWindow(win);
+            const name = folder ? win.dataset.windowTitle : cfg.defaultName;
+            return { el: body, folder: folder ?? cfg.defaultFolder, name };
+        }
+        return null;
+    };
+    // A folder window's body shows the same words as a folder row: "Loslassen zum Hochladen in „X“" (A170, A175).
+    const uploadLabel = target => {
+        if (target.el.matches('.win-body')) {
+            target.el.dataset.uploadLabel = fill(config().dropUpload, { name: target.name });
+        }
+    };
+    let fileDepth = 0;
+    const fileEnd = () => {
+        fileDepth = 0;
+        html.classList.remove('is-file-drag');
+        const field = navDrop();
+        if (field) {
+            field.hidden = true;
+        }
+        setTarget(null);
+    };
+    document.addEventListener('dragenter', event => {
+        if (!carriesFiles(event) || !config().upload) {
+            return;
+        }
+        fileDepth++;
+        html.classList.add('is-file-drag');
+        const field = navDrop();
+        if (field) {
+            field.hidden = false;
+        }
+    });
+    document.addEventListener('dragleave', event => {
+        if (carriesFiles(event) && --fileDepth <= 0) {
+            fileEnd();
+        }
+    });
+    document.addEventListener('dragover', event => {
+        if (!carriesFiles(event)) {
+            return;
+        }
+        event.preventDefault(); // never let the browser open the file itself
+        const target = fileTarget(event.target);
+        event.dataTransfer.dropEffect = target ? 'copy' : 'none';
+        if (target) {
+            uploadLabel(target);
+        }
+        setTarget(target?.el ?? null, true);
+    });
+    document.addEventListener('drop', event => {
+        if (!carriesFiles(event) && [...(event.dataTransfer?.types ?? [])].includes('application/x-dochamster-preview')) {
+            event.preventDefault();
+            return;
+        }
+        if (!carriesFiles(event)) {
+            return;
+        }
+        event.preventDefault();
+        const target = fileTarget(event.target);
+        const files = [...event.dataTransfer.files];
+        fileEnd();
+        if (!target || files.length === 0) {
+            return;
+        }
+        upload(files, target);
+    });
+    const upload = (files, target) => {
+        const cfg = config();
+        const chunks = [];
+        for (let i = 0; i < files.length; i += 20) {
+            chunks.push(files.slice(i, i + 20));
+        }
+        const busy = document.querySelector('.nav-upload');
+        busy?.classList.add('is-busy');
+        let saved = 0;
+        chunks.reduce((chain, chunk) => chain.then(() => {
+            const body = new FormData();
+            chunk.forEach(file => body.append('files[]', file));
+            body.append('folder', target.folder);
+            return post(cfg.upload, body).then(() => { saved += chunk.length; });
+        }), Promise.resolve())
+            .then(() => {
+                toast(fill(saved === 1 ? cfg.uploadedOne : cfg.uploadedMany, { count: saved, name: target.name }));
+            })
+            .catch(fail)
+            .finally(() => {
+                busy?.classList.remove('is-busy');
+                refresh();
+            });
+    };
 })();
 
 // Update page: the install runs in a pop-up with a progress bar instead of on install.php's own page.
