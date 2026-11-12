@@ -759,7 +759,17 @@ a.col-item { text-decoration: none; }
     .shell::after { right: var(--sbw, 0px); background: linear-gradient(to left, rgb(0 0 0 / .18), transparent); }
     html.more-left .shell::before, html.more-right .shell::after { opacity: 1; }
 }
-/* All fold/unfold arrows look the same: just the chevron, no button frame (point 3). */
+/* All fold/unfold arrows look the same: just the chevron, no button frame (point 3). The building block is the
+   control button (points 70, 72): .control-button, frameless icon in text colour, orange on hover; the settings
+   arrows (.col-fold) and the menu arrow are the 48 px flavour of it, window heads use 36 px. */
+.control-button {
+    display: inline-flex; align-items: center; justify-content: center; flex: none;
+    width: 36px; min-width: 36px; height: 36px; min-height: 36px; margin: 0; padding: 0;
+    border: 0; border-radius: 8px; background: none; box-shadow: none; color: var(--text); text-decoration: none; cursor: pointer;
+}
+.control-button:hover { background: none; box-shadow: none; color: var(--primary-ink); }
+.control-button:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.control-button .icon { width: 1.25rem; height: 1.25rem; }
 .col-fold, .nav-collapse {
     display: inline-flex; align-items: center; justify-content: center; flex: none;
     width: 48px; min-height: 48px; margin: 0; padding: 0;
@@ -911,15 +921,15 @@ ul.pick-list { margin: .75rem 0; }
    keep their own look and are left out here. */
 :root { --button-shadow: 0 1px 0 rgb(0 0 0 / .12), 0 2px 6px rgb(0 0 0 / .14); --primary-hover: #ee6410; --danger: #d92d20; --danger-hover: #b9251a; }
 @media (prefers-color-scheme: dark) { :root { --button-shadow: 0 1px 0 rgb(0 0 0 / .4), 0 2px 8px rgb(0 0 0 / .45); } }
-:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .col-item, .col-strip, .col-fold, .win-fold, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)) {
+:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .col-item, .col-strip, .col-fold, .control-button, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)) {
     display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
     min-height: 48px; padding: 0 1.25rem; border: 2px solid transparent; border-radius: 10px;
     background: var(--primary); color: var(--primary-text); box-shadow: var(--button-shadow);
     font: inherit; font-size: 1rem; font-weight: 600; letter-spacing: 0; line-height: 1.2; text-decoration: none;
     cursor: pointer; transition: background-color .12s, box-shadow .12s, translate .06s;
 }
-:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .col-item, .col-strip, .col-fold, .win-fold, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)):hover { background: var(--primary-hover); box-shadow: var(--button-shadow); }
-:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .col-item, .col-strip, .col-fold, .win-fold, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)):active:not(:disabled) { translate: 0 1px; box-shadow: none; }
+:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .col-item, .col-strip, .col-fold, .control-button, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)):hover { background: var(--primary-hover); box-shadow: var(--button-shadow); }
+:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .col-item, .col-strip, .col-fold, .control-button, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)):active:not(:disabled) { translate: 0 1px; box-shadow: none; }
 :is(button, .button):focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; box-shadow: none; }
 :is(button, .button):disabled { opacity: .45; box-shadow: none; cursor: not-allowed; translate: none; }
 button .icon, .button .icon { width: 1.25rem; height: 1.25rem; }
@@ -1210,22 +1220,21 @@ html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
     .content > .page-split > .cols > button.col-strip { padding-top: calc(4.75rem + 24px - .625rem); }
 }
 
-/* A100: a window strip looks like a column strip – arrow on top (on the head line), then icon and title, pin mark */
+/* A100: a window strip looks like a column strip – arrow on top (on the head line) (›, opens it again), then icon and title */
 .win.is-min .win-strip { justify-content: flex-start; gap: 1rem; padding-top: calc(4.75rem + 24px - .625rem); }
 .win.is-min .win-strip > .icon { width: 1.25rem; height: 1.25rem; rotate: none; color: var(--text); }
 .win.is-min .win-strip:hover > .icon { color: var(--primary-ink); }
 .win.is-min .win-strip .strip-label > span { writing-mode: vertical-rl; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-height: 60vh; }
-.win-strip-pin { display: none; }
-.win.is-min.is-pinned .win-strip-pin { display: inline-flex; }
-.win.is-min .win-strip-pin .icon { width: 1rem; height: 1rem; rotate: none; color: var(--primary); }
 @media (max-width: 63.99rem) { .win.is-min .win-strip { padding-top: 1rem; } }
 
-/* A99: the pin needle in the head – outlined grey, pinned filled orange */
-.win-pin .icon:last-child { display: none; }
-.win.is-pinned .win-pin .icon:first-child { display: none; }
-.win.is-pinned .win-pin .icon:last-child { display: block; color: var(--primary); }
-.win.is-pinned .win-pin { border-color: var(--primary); }
-@media (max-width: 63.99rem) { .win-pin, .win-minimise { display: none; } }
+/* Points 70, 72, 74, A116-A124: the window controls minimise (‹), maximise / restore, X – frameless control buttons,
+   always this order on the right of the head; on phones (< 64rem) only X (and the back arrow on the left). */
+.win-head > .control-button + .control-button { margin-left: -.35rem; }
+.win-maximise .icon + .icon { display: none; }
+.win[data-maxed] .win-maximise .icon:first-child { display: none; }
+.win[data-maxed] .win-maximise .icon + .icon { display: block; }
+@media (max-width: 63.99rem) { .win-minimise, .win-maximise { display: none; } }
+@media (min-width: 64rem) { .win-title { user-select: none; -webkit-user-select: none; } }
 
 /* A101: head buttons small and quiet, on the title line, a fixed gap to the content */
 .win-head { padding-bottom: 1rem; }
@@ -1453,7 +1462,7 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
 .ocr-head form { margin: 0 0 0 auto; }
 .detail-section .ocr-head button, .win-detail .ocr-head form > button[type="submit"] { margin-top: 0; }
 
-/* Framework round 12 (points 40-42): window head like Windows – title, pin, minimise, X; search and the module's
+/* Framework round 12 (points 40-42): window head like Windows – title, then the window controls; search and the module's
    buttons in a toolbar row below. The toolbar follows the width of its own window (container "win" on .win-frame),
    not the screen: wide = one row; medium = the search on its own row; narrow = .win-wide-only parts hide and
    .win-narrow-only parts show (a button group becomes one dropdown, extra buttons become ⋯ entries). It wraps
@@ -1464,7 +1473,7 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
 .win-tools > .win-search:only-child { flex-basis: 24rem; }
 @container win (width < 44rem) {
     .win-tools > .win-search { flex: 1 0 100%; }
-    .win-tools > .win-actions { margin-left: 0; }
+    .win-tools > .win-search + .win-actions { margin-left: 0; }
 }
 @container win (width >= 28rem) { .win-narrow-only { display: none; } }
 @container win (width < 28rem) { .win-wide-only { display: none; } }
@@ -1500,6 +1509,8 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
     .windows.is-laid > .win:not(.is-min) { flex: 0 1 var(--win-w); min-width: 0; }
     .windows.is-laid > .win.is-fill { flex-grow: 1; }
     .windows.can-size > .win:last-child > .win-edge { display: none; }
+    /* Maximised (point 72): one window fills the row, the rest are strips; no drag edges until it is restored. */
+    .windows.can-size.is-maxed > .win > .win-edge { display: none; }
 }
 @media (max-width: 63.99rem) {
     .windows.can-size > .win > .win-edge { display: none; }
@@ -1514,3 +1525,15 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
 
 /* Layout measurement (point 63 / A90): the small panel of ?debug=layout, bottom right, above everything. */
 .layout-probe { position: fixed; right: 1rem; bottom: 1rem; z-index: 1000; display: flex; align-items: center; gap: .5rem; padding: .5rem .75rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); font-size: .875rem; }
+
+/* Framework round 13 (points 70-74, A116-A124) */
+/* The module's ⋯ menu always has the framework's entries on top; a separator with nothing visible below it (the
+   narrow-only entries of a wide window) hides. */
+@container win (width >= 28rem) {
+    .menu-separator:not(:has(~ :not(.win-narrow-only, .menu-separator))) { display: none; }
+}
+/* The notes board as a module (points 71, 73): its columns scroll inside the window, below head and toolbar. */
+.win-notes .kanban { margin-top: .5rem; }
+@media (min-width: 64rem) { .win-notes .kanban-col { max-height: calc(100dvh - 15rem); } }
+/* The notes module alone on Home is the root of the row: no X (nothing to fall back to). */
+.windows > .win-notes:only-child .win-close { display: none; }

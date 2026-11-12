@@ -23,32 +23,31 @@
         $canEdit = Gate::allows('documents.edit');
         $canTrash = Gate::allows('documents.trash');
     @endphp
-    <div class="detail-actions">
-        @if ($file)
+    @if ($file)
+        <x-slot:actions>
             <a class="icon-button" href="{{ route('documents.download', $file->id) }}" aria-label="{{ __('documents.download') }}" data-tooltip="{{ __('documents.download') }}"><x-icon name="download" /></a>
+        </x-slot:actions>
+    @endif
+    {{-- Everything else is in the module's ⋯ menu (point 26). --}}
+    <x-slot:menu>
+        @if ($isText)
+            {{-- Text documents open in their own editor window (point 21); without documents.edit it only reads. --}}
+            <a class="menu-item" href="{{ route('documents.text', $document->id) }}" data-window><x-icon name="pencil" /><span>{{ $canEdit ? __('documents.edit') : __('documents.text.open') }}</span></a>
+        @elseif ($canEdit)
+            <a class="menu-item" href="#title-{{ $document->id }}" data-focus="title-{{ $document->id }}"><x-icon name="pencil" /><span>{{ __('documents.edit') }}</span></a>
         @endif
-        @if ($isText || $canEdit || $file || $canTrash)
-            <x-more-menu>
-                @if ($isText)
-                    {{-- Text documents open in their own editor window (point 21); without documents.edit it only reads. --}}
-                    <a class="menu-item" href="{{ route('documents.text', $document->id) }}" data-window><x-icon name="pencil" /><span>{{ $canEdit ? __('documents.edit') : __('documents.text.open') }}</span></a>
-                @elseif ($canEdit)
-                    <a class="menu-item" href="#title-{{ $document->id }}" data-focus="title-{{ $document->id }}"><x-icon name="pencil" /><span>{{ __('documents.edit') }}</span></a>
-                @endif
-                @if ($file)
-                    {{-- The device's share menu with the file itself (A2); where there is none, our dialog with mail and link (A3). --}}
-                    <button type="button" class="menu-item" data-share="{{ route('documents.download', $file->id) }}" data-share-name="{{ $document->title }}" data-share-type="{{ $file->mime }}" data-dialog-open="share-document-{{ $document->id }}"><x-icon name="send" /><span>{{ __('documents.send') }}</span></button>
-                @endif
-                @if ($canEdit)
-                    <button type="button" class="menu-item" data-dialog-open="move-document-{{ $document->id }}"><x-icon name="arrows-move" /><span>{{ __('documents.move') }}</span></button>
-                @endif
-                @if ($canTrash)
-                    <hr class="menu-separator">
-                    <button type="button" class="menu-item menu-danger" data-dialog-open="delete-document-{{ $document->id }}"><x-icon name="trash" /><span>{{ __('documents.delete') }}</span></button>
-                @endif
-            </x-more-menu>
+        @if ($file)
+            {{-- The device's share menu with the file itself (A2); where there is none, our dialog with mail and link (A3). --}}
+            <button type="button" class="menu-item" data-share="{{ route('documents.download', $file->id) }}" data-share-name="{{ $document->title }}" data-share-type="{{ $file->mime }}" data-dialog-open="share-document-{{ $document->id }}"><x-icon name="send" /><span>{{ __('documents.send') }}</span></button>
         @endif
-    </div>
+        @if ($canEdit)
+            <button type="button" class="menu-item" data-dialog-open="move-document-{{ $document->id }}"><x-icon name="arrows-move" /><span>{{ __('documents.move') }}</span></button>
+        @endif
+        @if ($canTrash)
+            <hr class="menu-separator">
+            <button type="button" class="menu-item menu-danger" data-dialog-open="delete-document-{{ $document->id }}"><x-icon name="trash" /><span>{{ __('documents.delete') }}</span></button>
+        @endif
+    </x-slot:menu>
 
     @if ($file?->isImage())
         <span class="thumb-frame detail-doc"><img class="thumb" src="{{ route('documents.file', $file->id) }}" alt="" draggable="false"></span>

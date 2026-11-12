@@ -6,7 +6,7 @@
 @section('pane')
     <div class="col-head">
         <h2>{{ __('tags.title') }}</h2>
-        <button type="button" class="col-fold" data-fold="1" aria-label="{{ __('settings.fold') }}" data-tooltip="{{ __('settings.fold') }}"><x-icon name="chevron-left" /></button>
+        <button type="button" class="col-fold control-button" data-fold="1" aria-label="{{ __('settings.fold') }}" data-tooltip="{{ __('settings.fold') }}"><x-icon name="chevron-left" /></button>
     </div>
     <label for="tag-search" class="visually-hidden">{{ __('tags.search') }}</label>
     <input id="tag-search" class="col-search" type="search" placeholder="{{ __('tags.search') }}" data-tag-search>

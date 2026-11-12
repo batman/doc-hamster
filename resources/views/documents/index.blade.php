@@ -80,25 +80,23 @@
                     {{-- Folders are managed where they are shown, like an explorer (points 10-12). --}}
                     <a class="icon-button win-wide-only" href="{{ $addUrl }}" data-window aria-label="{{ $addLabel }}" data-tooltip="{{ $addLabel }}"><x-icon name="folder-plus" /></a>
                 @endif
-                @if ($canEditFolder || $canUpload || $canFolder)
-                    {{-- In a narrow window the extra buttons become entries of the ⋯ menu (point 41). --}}
-                    <x-more-menu class="{{ $canEditFolder ? '' : 'win-narrow-only' }}">
-                        @if ($canUpload)
-                            <button type="button" class="menu-item win-narrow-only" data-dialog-open="new-text-{{ $openFolder?->id ?? 'top' }}"><x-icon name="file-plus" /><span>{{ __('documents.text.new') }}</span></button>
-                        @endif
-                        @if ($canFolder)
-                            <a class="menu-item win-narrow-only" href="{{ $addUrl }}" data-window><x-icon name="folder-plus" /><span>{{ $addLabel }}</span></a>
-                        @endif
-                        @if ($canEditFolder)
-                            @if ($canUpload || $canFolder)
-                                <hr class="menu-separator win-narrow-only">
-                            @endif
-                            <a class="menu-item" href="{{ route('folders.index', ['folder' => $openFolder->id]) }}" data-window><x-icon name="pencil" /><span>{{ __('folders.edit') }}</span></a>
-                        @endif
-                    </x-more-menu>
-                @endif
             </div>
         </x-slot:actions>
+        {{-- In a narrow window the extra buttons become entries of the module's ⋯ menu (point 41). --}}
+        <x-slot:menu>
+                    @if ($canUpload)
+                        <button type="button" class="menu-item win-narrow-only" data-dialog-open="new-text-{{ $openFolder?->id ?? 'top' }}"><x-icon name="file-plus" /><span>{{ __('documents.text.new') }}</span></button>
+                    @endif
+                    @if ($canFolder)
+                        <a class="menu-item win-narrow-only" href="{{ $addUrl }}" data-window><x-icon name="folder-plus" /><span>{{ $addLabel }}</span></a>
+                    @endif
+                    @if ($canEditFolder)
+                        @if ($canUpload || $canFolder)
+                            <hr class="menu-separator win-narrow-only">
+                        @endif
+                        <a class="menu-item" href="{{ route('folders.index', ['folder' => $openFolder->id]) }}" data-window><x-icon name="pencil" /><span>{{ __('folders.edit') }}</span></a>
+                    @endif
+        </x-slot:menu>
 
         @can('documents.upload')
             @php $newText = 'new-text-'.($openFolder?->id ?? 'top'); @endphp

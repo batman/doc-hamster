@@ -622,7 +622,7 @@
                 hide();
             }
         });
-        // A label that changes while shown (the pin) updates the tooltip.
+        // A label that changes while shown (maximise / restore) updates the tooltip.
         new MutationObserver(() => {
             if (owner && !tip.hidden) {
                 tip.textContent = owner.dataset.tooltip;
@@ -802,33 +802,39 @@
             }
         };
         const active = () => box.querySelector(':scope > .is-active');
-        // Pinned windows stay wide when something opens from them (A97, A99).
-        const pin = (win, on) => {
-            win.classList.toggle('is-pinned', on);
-            const button = win.querySelector('[data-window-pin]');
+        // Maximise (points 72, 74, A119, A124): this window fills the row, all others become strips; a second click
+        // (or a double-click on the title) brings the layout from before back. The maximised window is data-maxed;
+        // `before` holds every window's strip state and width from the moment it was maximised.
+        let before = null;
+        const maxed = () => box.querySelector(':scope > section[data-maxed]');
+        const showMax = (win, on) => {
+            win.toggleAttribute('data-maxed', on);
+            const button = win.querySelector('[data-window-maximise]');
             if (button) {
-                const label = on ? button.dataset.labelUnpin : button.dataset.labelPin;
+                const label = on ? button.dataset.labelRestore : button.dataset.labelMax;
                 button.setAttribute('aria-pressed', String(on));
                 button.setAttribute('aria-label', label);
                 button.dataset.tooltip = label;
             }
+            box.classList.toggle('is-maxed', maxed() !== null);
         };
         const reveal = win => requestAnimationFrame(() => win.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' }));
 
         // Widths like Apple's split view (NSSplitView; points 54, 55, 64, A91–A94). The row never scrolls sideways:
         // the windows always share exactly the room there is. Every window declares min, optimal and max width and a
-        // priority (data-window-min/-opt/-max/-priority from <x-window>; a pinned window has the highest). A width
+        // priority (data-window-min/-opt/-max/-priority from <x-window>). A width
         // dragged by hand (A97: data-window-hand, only this one window, kept in the tab's window history) is its
         // preferred width; a new window starts at its kind's optimal width. A window keeps its width from one layout
         // to the next; only the difference to the room is shared out:
         //  - too little room → windows shrink towards their min, lowest priority first (among equals from the left),
         //    the newest and the one just opened again last; still too little → the lowest-priority window becomes a
-        //    strip (never the newest, a pinned one or the one just opened again);
+        //    strip (never the newest or the one just opened again);
         //  - more room → a strip the layout made opens again as soon as the wide windows at their min leave room for
         //    its min + 4rem (A96: hysteresis, almost where it collapsed), then windows grow back to their preferred
         //    width, then up to their max; the rest goes to the last wide window.
         // While an edge is dragged (sizer below) nothing else lays out until the pointer is let go.
-        // Manual minimise (data-folded) stays a strip until it is opened again.
+        // Manual minimise (data-folded) stays a strip until it is opened again. A maximised window (data-maxed) takes the
+        // whole row, all others are strips.
         let keep = null;
         let dragging = false;
         const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
@@ -844,12 +850,11 @@
             const own = parseFloat(win.dataset.windowHand);
             const min = px(win.dataset.windowMin, 24);
             const pref = own > 0 ? own : Math.max(min, px(win.dataset.windowOpt, 32));
-            const pinned = win.classList.contains('is-pinned');
             return {
-                win, at, pref, pinned, hand: own > 0,
+                win, at, pref, hand: own > 0,
                 min: Math.min(min, pref),
                 max: Math.max(pref, px(win.dataset.windowMax, 48)),
-                prio: pinned ? Infinity : (Number(win.dataset.windowPriority) || 1),
+                prio: Number(win.dataset.windowPriority) || 1,
                 folded: win.dataset.folded !== undefined,
             };
         };
@@ -884,6 +889,12 @@
             }
             fresh ||= !box.classList.contains('is-laid');
             const avail = box.clientWidth;
+            const big = maxed();
+            if (big) {
+                paint(all.map((win, at) => ({ win, at, strip: win !== big, w: avail - (all.length - 1) * STRIP })));
+                fill(big).catch(() => { /* stays as it is */ });
+                return;
+            }
             const newest = all.at(-1);
             const info = all.map((win, at) => {
                 const item = measure(win, at);
@@ -915,7 +926,7 @@
             let need = shrink();
             let collapsed = false;
             while (need > 0) {
-                const victim = open().filter(item => !item.protect && !item.pinned).sort(byPrio)[0];
+                const victim = open().filter(item => !item.protect).sort(byPrio)[0];
                 if (!victim) {
                     break;
                 }
@@ -976,7 +987,7 @@
         // Dragging a window's edge (Package L, A91, A92, A94). Every step is computed from the state at drag start
         // plus the whole distance, so the edge stays under the pointer. Wider: the windows right of it give way,
         // lowest priority first (among equals from the left), each down to its min; then the edge stops, and 3rem
-        // further the lowest-priority one (never the newest or a pinned one) snaps to a strip. It opens again at its
+        // further the lowest-priority one (never the newest) snaps to a strip. It opens again at its
         // min as soon as the edge leaves room for it – a 3rem band in between, so it never flips back and forth. Narrower: the
         // neighbour on the right takes the room. Windows left of the edge never move. Nothing else lays out until
         // end() (pointerup); the last window has no edge.
@@ -985,7 +996,7 @@
         DocHamster.windowSizer = win => {
             const all = wins();
             const at = all.indexOf(win);
-            if (phone.matches || at < 0 || at === all.length - 1 || win.classList.contains('is-min')) {
+            if (phone.matches || at < 0 || at === all.length - 1 || win.classList.contains('is-min') || maxed()) {
                 return null;
             }
             dragging = true;
@@ -1010,7 +1021,7 @@
             });
             const wide = right.filter(item => !item.was);
             const order = [...wide].sort(byPrio);
-            const snaps = order.filter(item => !item.pinned && item.win !== all.at(-1));
+            const snaps = order.filter(item => item.win !== all.at(-1));
             const to = target => {
                 const wanted = Math.max(FLOOR, target);
                 let open = wide;
@@ -1072,7 +1083,7 @@
         const remember = () => {
             try {
                 sessionStorage.setItem(KEY, JSON.stringify({
-                    list: wins().map(win => ({ id: win.dataset.windowId, url: win.dataset.windowUrl, title: win.dataset.windowTitle, icon: win.querySelector('.win-strip .strip-label > .icon')?.outerHTML ?? '', folded: win.dataset.folded !== undefined, pinned: win.classList.contains('is-pinned'), closable: win.querySelector('[data-window-close]') !== null, kind: win.dataset.windowKind, wmin: win.dataset.windowMin, wopt: win.dataset.windowOpt, wmax: win.dataset.windowMax, prio: win.dataset.windowPriority, hand: win.dataset.windowHand })),
+                    list: wins().map(win => ({ id: win.dataset.windowId, url: win.dataset.windowUrl, title: win.dataset.windowTitle, icon: win.querySelector('.win-strip .strip-label > .icon')?.outerHTML ?? '', folded: win.dataset.folded !== undefined, maxed: win.dataset.maxed !== undefined, closable: win.querySelector('[data-window-close]') !== null, kind: win.dataset.windowKind, wmin: win.dataset.windowMin, wopt: win.dataset.windowOpt, wmax: win.dataset.windowMax, prio: win.dataset.windowPriority, hand: win.dataset.windowHand })),
                     active: active()?.dataset.windowId ?? null,
                 }));
             } catch { /* not remembered */ }
@@ -1113,8 +1124,8 @@
             // The width values come along, so the layout treats the strip like the loaded window (point 54).
             [['windowKind', item.kind], ['windowMin', item.wmin], ['windowOpt', item.wopt], ['windowMax', item.wmax], ['windowPriority', item.prio], ['windowHand', item.hand]]
                 .forEach(([key, value]) => { if (value) win.dataset[key] = value; });
-            win.classList.toggle('is-pinned', !!item.pinned);
-            // The same strip as a server window has: arrow, icon and title, pin mark.
+            win.toggleAttribute('data-maxed', !!item.maxed);
+            // The same strip as a server window has: arrow, icon and title.
             const strip = document.querySelector('.win-strip')?.cloneNode(true) ?? document.createElement('button');
             const label = strip.querySelector('.strip-label');
             if (label) {
@@ -1151,7 +1162,7 @@
                         full.dataset.windowHand = win.dataset.windowHand;
                     }
                     full.classList.toggle('is-fill', win.classList.contains('is-fill'));
-                    pin(full, win.classList.contains('is-pinned'));
+                    full.toggleAttribute('data-maxed', win.dataset.maxed !== undefined);
                     if (keep === win) {
                         keep = full;
                     }
@@ -1165,6 +1176,7 @@
 
         // A strip becomes wide again (point 54.4): it stays wide, the others make room by the same rules.
         const restore = (win, push = true) => fill(win).then(full => smooth(() => {
+            unmax(false);
             delete full.dataset.folded;
             keep = full;
             focus(full, push);
@@ -1187,6 +1199,7 @@
                         gone.remove();
                     }
                 }
+                unmax(false);
                 box.append(win);
                 keep = null;
                 focus(win);
@@ -1197,13 +1210,49 @@
             });
         }).catch(() => { location.href = url; });
 
-        // Minimise (point 42): the window becomes a strip and loses its pin; it stays one until it is opened again.
+        // Maximise / back (points 72, 74). unmax(true) puts every window back as it was before; unmax(false) only
+        // ends the state (something else lays out next: a window opens, a strip is clicked, a window goes).
+        const unmax = (back = true) => {
+            const big = maxed();
+            if (!big) {
+                return;
+            }
+            showMax(big, false);
+            if (back && before) {
+                wins().forEach(other => {
+                    const was = before.get(other);
+                    if (was) {
+                        other.classList.toggle('is-min', was.strip);
+                        if (was.w) {
+                            other.style.setProperty('--win-w', was.w);
+                        }
+                    }
+                });
+            }
+            before = null;
+        };
+        const maximise = win => smooth(() => {
+            if (win.dataset.maxed !== undefined) {
+                unmax(true);
+            } else {
+                unmax(false);
+                before = new Map(wins().map(other => [other, { strip: other.classList.contains('is-min'), w: other.style.getPropertyValue('--win-w') }]));
+                delete win.dataset.folded;
+                showMax(win, true);
+                keep = win;
+                focus(win);
+            }
+            layout();
+            remember();
+        });
+
+        // Minimise (point 42): the window becomes a strip; it stays one until it is opened again.
         const fold = win => smooth(() => {
+            unmax(win.dataset.maxed !== undefined);
             win.dataset.folded = '';
             if (keep === win) {
                 keep = null;
             }
-            pin(win, false);
             layout();
             if (win.classList.contains('is-active')) {
                 const all = wins();
@@ -1233,6 +1282,7 @@
                 keep = null;
             }
             return smooth(() => {
+                unmax(win.dataset.maxed !== undefined);
                 win.remove();
                 layout();
                 const rest = wins();
@@ -1274,7 +1324,7 @@
                     win.dataset.windowHand = item.hand;
                 }
                 win.toggleAttribute('data-folded', !!item.folded && win !== current);
-                pin(win, !!item.pinned);
+                showMax(win, !!item.maxed && !item.folded);
                 return win;
             });
             wins().filter(win => !order.includes(win)).forEach(win => order.push(win));
@@ -1293,10 +1343,8 @@
 
         box.addEventListener('click', event => {
             const win = event.target.closest('section[data-window]');
-            if (event.target.closest('[data-window-pin]')) {
-                pin(win, !win.classList.contains('is-pinned'));
-                smooth(() => layout());
-                remember();
+            if (event.target.closest('[data-window-maximise]')) {
+                maximise(win);
             } else if (event.target.closest('[data-window-close]')) {
                 event.preventDefault();
                 close(win);
@@ -1315,6 +1363,13 @@
                     event.preventDefault();
                     open(link.href, win);
                 }
+            }
+        });
+        // A double-click on a window's title maximises it or brings the layout back (Windows-like, A124).
+        box.addEventListener('dblclick', event => {
+            const win = event.target.closest('section[data-window]');
+            if (win && !phone.matches && event.target.closest('.win-title')) {
+                maximise(win);
             }
         });
         // A click into a wide window that isn't the active one makes it the active one (address, title).
@@ -1715,12 +1770,11 @@
     };
 
     // Notes board (Home, Go of 2026-11-08): columns like Trello. A note is dragged by its head between and within
-    // the columns, a column by its head; the order is saved. A column folds to a strip (remembered in this browser).
-    const setupNotes = () => {
-        const board = document.querySelector('[data-notes]');
-        if (!board) {
-            return;
-        }
+    // the columns, a column by its head; the order is saved. The whole board is one module (points 71, 73): it can be
+    // open several times side by side, so everything here works per board and looks only inside its own window.
+    const setupBoard = board => {
+        board.dataset.ready = '';
+        const scope = board.closest('section[data-window]') ?? document;
         const notes = [...board.querySelectorAll('.note')];
         notes.forEach(note => {
             if (note.dataset.opacity) {
@@ -1731,7 +1785,7 @@
             }
         });
         // Edit dialog of a locked note: unticking "Gesperrt" frees the fields right away.
-        document.querySelectorAll('[data-note-lock]').forEach(box => {
+        scope.querySelectorAll('[data-note-lock]').forEach(box => {
             const fields = box.form.querySelectorAll('[data-note-fields]');
             const locked = fields[0]?.disabled ?? false;
             box.addEventListener('change', () => fields.forEach(set => { set.disabled = locked && box.checked; }));
@@ -1746,14 +1800,6 @@
             return fetch(url, { method: 'POST', body, credentials: 'same-origin', headers: { Accept: 'application/json' } });
         };
         const failed = () => location.reload();
-
-        // "+ Notiz" in a column puts the new note into that column (A33).
-        document.querySelectorAll('[data-note-column]').forEach(button => button.addEventListener('click', () => {
-            const field = document.querySelector('[data-note-new-column]');
-            if (field) {
-                field.value = button.dataset.noteColumn;
-            }
-        }));
 
         // Height: dragged at the bottom-right corner (the width is the column's, A34); saved a moment after the last change.
         const timers = new Map();
@@ -1862,14 +1908,14 @@
             dragged = null;
         });
         document.addEventListener('pointerup', () => {
-            if (!dragged) {
+            if (!dragged && board.isConnected) {
                 board.querySelectorAll('[draggable="true"]').forEach(el => { el.draggable = false; });
             }
         });
 
 
         // Edit dialog: colour and opacity show on the note right away; closing without saving puts the old look back (A9).
-        document.querySelectorAll('[data-note-preview]').forEach(dialog => {
+        scope.querySelectorAll('[data-note-preview]').forEach(dialog => {
             const note = board.querySelector(`[data-note-id="${dialog.dataset.notePreview}"]`);
             const form = dialog.querySelector('form');
             if (!note || !form) {
@@ -2049,10 +2095,26 @@
                 board.querySelector(`.note-box[data-at="${box.dataset.at}"]`)?.focus();
             }
         });
-        addEventListener('resize', () => board.querySelectorAll('.note-area').forEach(grow));
         new ResizeObserver(() => board.querySelectorAll('.note-area').forEach(grow)).observe(board);
-
     };
+    DocHamster.on('window:open', root => root.querySelectorAll?.('[data-notes]:not([data-ready])').forEach(setupBoard));
+    // "+ Notiz" in a column (or the toolbar) puts the new note into that column (A33) – of its own board.
+    document.addEventListener('click', event => {
+        const button = event.target.closest('[data-note-column]');
+        const field = (button?.closest('section[data-window]') ?? document).querySelector('[data-note-new-column]');
+        if (button && field) {
+            field.value = button.dataset.noteColumn;
+        }
+    });
+    // The tag filter of a board reloads only its own window (window state lives in its address, point 52).
+    document.addEventListener('click', event => {
+        const link = event.target.closest('.note-filter a[href]');
+        const win = link?.closest('[data-windows] > section[data-window]');
+        if (win && event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+            event.preventDefault();
+            DocHamster.reloadWindow(win, new URL(link.href), '.win-body').catch(() => { location.href = link.href; });
+        }
+    });
 
     // Toasts close themselves after a few seconds; a click closes them at once.
     const setupToasts = () => {
@@ -2264,7 +2326,6 @@
         setupScrollHint();
         setupBadges();
         setupTagSearch();
-        setupNotes();
         setupToasts();
         setupAjaxForms();
         setupPreviewPick();
@@ -2643,8 +2704,9 @@
     // Note edit dialog: the picked palette colour (class c-rrggbb from tags.css) shows on the note right away;
     // closing without saving puts the old colour back.
     const colorClass = note => [...note.classList].find(name => /^c-[0-9a-f]{6}$/.test(name));
-    const setupNotePreview = () => document.querySelectorAll('[data-note-preview]').forEach(dialog => {
-        const note = document.querySelector(`[data-note-id="${dialog.dataset.notePreview}"]`);
+    const setupNotePreview = root => root.querySelectorAll?.('[data-note-preview]:not([data-palette-ready])').forEach(dialog => {
+        dialog.dataset.paletteReady = '';
+        const note = (dialog.closest('section[data-window]') ?? document).querySelector(`[data-note-id="${dialog.dataset.notePreview}"]`);
         const form = dialog.querySelector('form');
         if (!note || !form) {
             return;
@@ -2676,11 +2738,7 @@
             }
         }).observe(dialog, { attributes: true, attributeFilter: ['hidden'] });
     });
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', setupNotePreview);
-    } else {
-        setupNotePreview();
-    }
+    DocHamster.on('window:open', setupNotePreview);
 })();
 
 /* OCR fallback (point 18) */
@@ -3913,20 +3971,22 @@
 
 /* Package J */
 // "Weitere Optionen" in the note dialogs (point 47, A38): collapsed by default, this browser remembers open or closed.
+// Per window (the notes board can be open several times, point 73): new folds take the remembered state.
 (() => {
     const KEY = 'notes.more';
-    const folds = [...document.querySelectorAll('[data-note-more]')];
     let open = false;
     try { open = localStorage.getItem(KEY) === '1'; } catch { /* not remembered */ }
-    folds.forEach(fold => { fold.open = open; });
-    folds.forEach(fold => fold.addEventListener('toggle', () => {
-        if (fold.open === open) {
+    window.DocHamster.on('window:open', root => root.querySelectorAll?.('[data-note-more]').forEach(fold => { fold.open = open; }));
+    // "toggle" does not bubble: caught on the way down.
+    document.addEventListener('toggle', event => {
+        const fold = event.target;
+        if (!(fold instanceof HTMLDetailsElement) || !fold.matches('[data-note-more]') || fold.open === open) {
             return;
         }
         open = fold.open;
         try { localStorage.setItem(KEY, open ? '1' : '0'); } catch { /* not remembered */ }
-        folds.forEach(other => { if (other !== fold) other.open = open; });
-    }));
+        document.querySelectorAll('[data-note-more]').forEach(other => { if (other !== fold) other.open = open; });
+    }, true);
 })();
 
 /* Package L */

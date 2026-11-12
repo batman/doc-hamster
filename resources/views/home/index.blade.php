@@ -2,12 +2,19 @@
 
 @section('title', __('home.title'))
 
+@section('main_class', 'page-windows')
+
 @section('content')
-    <div class="page-head">
-        <h1>{{ __('home.title') }}</h1>
-        <a class="icon-button" href="{{ route('notes.archive') }}" aria-label="{{ __('home.archive') }}" data-tooltip="{{ __('home.archive') }}"><x-icon name="archive" /></a>
-        <button type="button" class="icon-button" data-dialog-open="note-new" data-note-column="{{ $columns->first()?->id }}" aria-label="{{ __('home.new') }}" data-tooltip="{{ __('home.new') }}"><x-icon name="plus" /></button>
-    </div>
+    <div class="windows" data-windows>
+    {{-- The whole board is one module (points 71, 73): one window "Notizen"; its columns are plain content and never
+         fold. It can be opened beside any module ("Notizen daneben öffnen" in every ⋯ menu) and several times. --}}
+    <x-window :title="__('home.notes')" icon="note" kind="notes" :url="route('home', request()->only('tag'))" :close="route('home')" class="win-notes">
+        <x-slot:actions>
+            <div class="toolbar">
+                <a class="icon-button" href="{{ route('notes.archive') }}" aria-label="{{ __('home.archive') }}" data-tooltip="{{ __('home.archive') }}"><x-icon name="archive" /></a>
+                <button type="button" class="icon-button" data-dialog-open="note-new" data-note-column="{{ $columns->first()?->id }}" aria-label="{{ __('home.new') }}" data-tooltip="{{ __('home.new') }}"><x-icon name="plus" /></button>
+            </div>
+        </x-slot:actions>
 
     {{-- Tag filter (A40): only notes with the chosen tag. --}}
     @if ($tags->isNotEmpty())
@@ -145,4 +152,6 @@
             @endunless
         @endif
     @endforeach
+    </x-window>
+    </div>
 @endsection

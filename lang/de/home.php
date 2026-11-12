@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 return [
     'title' => 'Home',
+    'notes' => 'Notizen',
     'new' => 'Neue Notiz',
     'body' => 'Text',
     'text_hint' => 'Den Text schreibst du direkt auf der Notiz. Listen setzt sie beim Verlassen untereinander.',

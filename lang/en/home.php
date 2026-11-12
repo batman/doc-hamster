@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 return [
     'title' => 'Home',
+    'notes' => 'Notes',
     'new' => 'New note',
     'body' => 'Text',
     'text_hint' => 'Write the text right on the note. Lists are set one entry per line when you leave it.',

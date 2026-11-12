@@ -26,7 +26,7 @@
             <div class="col-head">
                 <h2>{{ __('settings.title') }}</h2>
                 @if ($current)
-                    <button type="button" class="col-fold" data-fold="0" aria-label="{{ __('settings.fold') }}" data-tooltip="{{ __('settings.fold') }}"><x-icon name="chevron-left" /></button>
+                    <button type="button" class="col-fold control-button" data-fold="0" aria-label="{{ __('settings.fold') }}" data-tooltip="{{ __('settings.fold') }}"><x-icon name="chevron-left" /></button>
                 @endif
             </div>
             <ul class="col-list">
@@ -49,7 +49,7 @@
                     <div class="col-head">
                         <h2>{{ __('settings.groups.'.$group) }}</h2>
                         @if ($hasPage)
-                            <button type="button" class="col-fold" data-fold="1" aria-label="{{ __('settings.fold') }}" data-tooltip="{{ __('settings.fold') }}"><x-icon name="chevron-left" /></button>
+                            <button type="button" class="col-fold control-button" data-fold="1" aria-label="{{ __('settings.fold') }}" data-tooltip="{{ __('settings.fold') }}"><x-icon name="chevron-left" /></button>
                         @endif
                     </div>
                     <ul class="col-list">
