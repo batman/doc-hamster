@@ -3699,7 +3699,7 @@
             return cfg.trash && !carry.trashed ? { type: 'trash', el: body } : null;
         }
         const folder = folderOfWindow(win);
-        if (win.dataset.windowKind === 'folder' && folder && cfg.move && !carry.items.every(item => item.dataset.folder === folder && !item.hasAttribute('data-trashed'))) {
+        if (win.dataset.windowKind === 'folder' && folder && cfg.move && !body.querySelector('[data-no-drop]') && !carry.items.every(item => item.dataset.folder === folder && !item.hasAttribute('data-trashed'))) {
             return { type: 'move', el: body, folder };
         }
         return null;
@@ -3949,7 +3949,7 @@
         }
         const win = winOf(el);
         const body = el.closest('.win-body');
-        if (win && body && win.dataset.windowKind === 'folder' && !win.classList.contains('is-min')) {
+        if (win && body && win.dataset.windowKind === 'folder' && !win.classList.contains('is-min') && !body.querySelector('[data-no-drop]')) {
             const folder = folderOfWindow(win);
             const name = folder ? win.dataset.windowTitle : cfg.defaultName;
             return { el: body, folder: folder ?? cfg.defaultFolder, name };
@@ -5079,22 +5079,24 @@
         });
     };
 
-    // The view switcher (point 52): the window loads itself again with ?view=…; the POST keeps it as the default.
+    // The view switcher (point 52): the window loads itself again with ?view=… (or ?date=…, point 108, the
+    // submit button's name); the POST keeps it as the default.
     const setupViews = () => {
         document.addEventListener('submit', event => {
             const form = event.target.closest('form[data-view-switch]');
             const win = form?.closest('section[data-window]');
-            const view = event.submitter?.value;
-            if (!form || !win || !view || !DocHamster.reloadWindow) {
+            const value = event.submitter?.value;
+            const key = event.submitter?.name || 'view';
+            if (!form || !win || !value || !DocHamster.reloadWindow) {
                 return;
             }
             event.preventDefault();
             const body = new FormData(form);
-            body.set('view', view);
+            body.set(key, value);
             fetch(form.action, { method: 'POST', body, credentials: 'same-origin', redirect: 'manual', headers: { Accept: 'text/html' } })
                 .catch(() => { /* only the default for new windows */ });
             const url = new URL(win.dataset.windowUrl ?? location.href, location.href);
-            url.searchParams.set('view', view);
+            url.searchParams.set(key, value);
             url.searchParams.delete('page');
             DocHamster.reloadWindow(win, url, '.win-frame').catch(() => { location.href = url.href; });
         });

@@ -24,6 +24,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property string $locale
  * @property string|null $password_hash
  * @property string|null $receipt_view How the receipt list is shown (DocumentController::VIEWS).
+ * @property string|null $folder_view The last display mode of the folder view (DocumentController::FOLDER_VIEWS).
+ * @property string|null $receipt_dates The date timeline and calendar go by: doc (receipt date) or upload.
  */
 #[UseFactory(UserFactory::class)]
 final class User extends Authenticatable

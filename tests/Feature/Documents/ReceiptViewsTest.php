@@ -48,7 +48,8 @@ it('refuses unknown views and moves the calendar by month', function (): void {
     $this->actingAs($this->admin->user)->post('/documents/view', ['view' => 'gross'])->assertSessionHasErrors('view');
     $this->post('/documents/view', ['view' => 'calendar']);
 
-    $this->get('/documents?month=2020-01')->assertOk()->assertSee('Januar 2020')->assertDontSee('bon.jpg');
+    // Point 107: no month before the first document.
+    $this->get('/documents?month=2020-01')->assertOk()->assertDontSee('Januar 2020')->assertSee('bon.jpg');
     $this->get('/documents')->assertSee('bon.jpg');
 });
 

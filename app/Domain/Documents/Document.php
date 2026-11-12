@@ -125,6 +125,25 @@ final class Document extends Model
     }
 
     /**
+     * The date timeline and calendar go by (point 108): "doc" = the receipt date, the upload date when it has none;
+     * "upload" = the upload date.
+     */
+    public function dateBy(string $basis): Carbon
+    {
+        return $basis === 'doc' && $this->doc_date !== null ? $this->doc_date : $this->created_at;
+    }
+
+    /**
+     * The same date as SQL, as Y-m-d (for sorting, month bounds and the calendar range).
+     *
+     * @return literal-string
+     */
+    public static function dateSql(string $basis): string
+    {
+        return $basis === 'doc' ? 'DATE(COALESCE(doc_date, created_at))' : 'DATE(created_at)';
+    }
+
+    /**
      * Everything for those who may see all documents, otherwise only the user's own.
      *
      * @param  Builder<Document>  $query

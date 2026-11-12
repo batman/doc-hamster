@@ -64,6 +64,16 @@ return [
         'timeline' => 'Timeline',
         'calendar' => 'Calendar',
     ],
+    'main_views' => [
+        'folder' => 'Folder view',
+        'timeline' => 'Timeline',
+        'calendar' => 'Calendar',
+    ],
+    'dates' => [
+        'label' => 'Date',
+        'doc' => 'Receipt date',
+        'upload' => 'Upload date',
+    ],
     'name' => 'Name',
     'date' => 'Date',
     'tags' => 'Tags',

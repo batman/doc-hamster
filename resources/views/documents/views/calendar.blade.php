@@ -1,9 +1,15 @@
-{{-- One month, the week starts on Monday; every receipt of a day is listed. --}}
-@php($byDay = $documents->groupBy(fn ($document) => $document->created_at->day))
+{{-- One month, the week starts on Monday; every document of a day is listed, by the chosen date (points 101, 108, A205).
+     Paging only between the months of the earliest and the latest document (point 107). --}}
+@php($byDay = $documents->groupBy(fn ($document) => $document->dateBy($dates)->day))
 <div class="calendar-head">
     <h2>{{ $month->locale(app()->getLocale())->translatedFormat('F Y') }}</h2>
     @foreach ([[-1, 'chevron-left', 'previous_month'], [1, 'chevron-right', 'next_month']] as [$step, $icon, $label])
-        <a class="icon-button" href="{{ request()->fullUrlWithQuery(['month' => $month->addMonths($step)->format('Y-m')]) }}" aria-label="{{ __('documents.'.$label) }}" data-tooltip="{{ __('documents.'.$label) }}"><x-icon :name="$icon" /></a>
+        @php($target = $month->addMonths($step))
+        @if ($range !== null && $target->betweenIncluded($range['first'], $range['last']))
+            <a class="icon-button" href="{{ request()->fullUrlWithQuery(['month' => $target->format('Y-m')]) }}" aria-label="{{ __('documents.'.$label) }}" data-tooltip="{{ __('documents.'.$label) }}"><x-icon :name="$icon" /></a>
+        @else
+            <button type="button" class="icon-button" disabled aria-label="{{ __('documents.'.$label) }}"><x-icon :name="$icon" /></button>
+        @endif
     @endforeach
 </div>
 <div class="calendar">

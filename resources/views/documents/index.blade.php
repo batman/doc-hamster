@@ -46,29 +46,42 @@
                         </div>
                     </form>
                 @endif
-                {{-- The views as a button group (point 16); in a narrow window one dropdown button (point 41). The view belongs to
-                     this window (?view=…, point 52); app.js reloads only this window and saves the choice as the default. --}}
-                <form class="button-group win-wide-only" data-view-switch role="group" aria-label="{{ __('documents.view') }}" method="post" action="{{ route('documents.view') }}">
-                    @csrf
-                    <input type="hidden" name="back" value="{{ route('documents.index', request()->except('page')) }}">
-                    @foreach ($views as $name => $icon)
-                        <button type="submit" name="view" value="{{ $name }}" class="icon-button button-small" aria-pressed="{{ $name === $view ? 'true' : 'false' }}" aria-label="{{ __('documents.views.'.$name) }}" data-tooltip="{{ __('documents.views.'.$name) }}"><x-icon :name="$icon" /></button>
-                    @endforeach
-                </form>
-                <form class="dropdown win-narrow-only" data-view-switch method="post" action="{{ route('documents.view') }}">
-                    @csrf
-                    <input type="hidden" name="back" value="{{ route('documents.index', request()->except('page')) }}">
-                    <button type="button" class="icon-button" aria-label="{{ __('documents.view') }}: {{ __('documents.views.'.$view) }}" data-tooltip="{{ __('documents.view') }}" aria-haspopup="true" aria-expanded="false"><x-icon :name="$views[$view] ?? 'list'" /></button>
-                    <div class="dropdown-panel" role="menu" hidden>
-                        @foreach ($views as $name => $icon)
-                            <button type="submit" name="view" value="{{ $name }}" class="menu-item" role="menuitemradio" aria-checked="{{ $name === $view ? 'true' : 'false' }}"><x-icon :name="$icon" /><span>{{ __('documents.views.'.$name) }}</span></button>
+                @php $back = route('documents.index', request()->except('page')); @endphp
+                @if ($wide)
+                    {{-- Timeline and calendar go by the receipt date or the upload date (point 108, A209); remembered and in ?date=. --}}
+                    <form class="button-group" data-view-switch role="group" aria-label="{{ __('documents.dates.label') }}" method="post" action="{{ route('documents.view') }}">
+                        @csrf
+                        <input type="hidden" name="back" value="{{ $back }}">
+                        @foreach (['doc', 'upload'] as $basis)
+                            <button type="submit" name="date" value="{{ $basis }}" class="button-quiet button-small" aria-pressed="{{ $basis === $dates ? 'true' : 'false' }}">{{ __('documents.dates.'.$basis) }}</button>
                         @endforeach
-                    </div>
-                </form>
+                    </form>
+                @else
+                    {{-- The display modes of the folder view as a button group (points 16, 98); in a narrow window one dropdown button
+                         (point 41). The view belongs to this window (?view=…, point 52); app.js reloads only this window and saves the choice. --}}
+                    <form class="button-group win-wide-only" data-view-switch role="group" aria-label="{{ __('documents.view') }}" method="post" action="{{ route('documents.view') }}">
+                        @csrf
+                        <input type="hidden" name="back" value="{{ $back }}">
+                        @foreach ($folderViews as $name)
+                            <button type="submit" name="view" value="{{ $name }}" class="icon-button button-small" aria-pressed="{{ $name === $view ? 'true' : 'false' }}" aria-label="{{ __('documents.views.'.$name) }}" data-tooltip="{{ __('documents.views.'.$name) }}"><x-icon :name="$views[$name]" /></button>
+                        @endforeach
+                    </form>
+                    <form class="dropdown win-narrow-only" data-view-switch method="post" action="{{ route('documents.view') }}">
+                        @csrf
+                        <input type="hidden" name="back" value="{{ $back }}">
+                        <button type="button" class="icon-button" aria-label="{{ __('documents.view') }}: {{ __('documents.views.'.$view) }}" data-tooltip="{{ __('documents.view') }}" aria-haspopup="true" aria-expanded="false"><x-icon :name="$views[$view] ?? 'list'" /></button>
+                        <div class="dropdown-panel" role="menu" hidden>
+                            @foreach ($folderViews as $name)
+                                <button type="submit" name="view" value="{{ $name }}" class="menu-item" role="menuitemradio" aria-checked="{{ $name === $view ? 'true' : 'false' }}"><x-icon :name="$views[$name]" /><span>{{ __('documents.views.'.$name) }}</span></button>
+                            @endforeach
+                        </div>
+                    </form>
+                @endif
                 @php
-                    $canUpload = Gate::allows('documents.upload');
-                    $canFolder = Gate::allows('documents.edit') && (! $openFolder || $openFolder->depth() < \App\Domain\Documents\Folder::MAX_DEPTH);
-                    $canEditFolder = $openFolder && Gate::allows('documents.edit');
+                    // Timeline and calendar have no new document, no new folder and no folder actions (points 100, 101).
+                    $canUpload = ! $wide && Gate::allows('documents.upload');
+                    $canFolder = ! $wide && Gate::allows('documents.edit') && (! $openFolder || $openFolder->depth() < \App\Domain\Documents\Folder::MAX_DEPTH);
+                    $canEditFolder = ! $wide && $openFolder && Gate::allows('documents.edit');
                     $addLabel = $openFolder ? __('folders.add_sub_short') : __('folders.add');
                     $addUrl = route('folders.index', $openFolder ? ['parent' => $openFolder->id] : ['new' => 1]);
                 @endphp
@@ -84,6 +97,19 @@
         </x-slot:actions>
         {{-- In a narrow window the extra buttons become entries of the module's ⋯ menu (point 41). --}}
         <x-slot:menu>
+                    {{-- The three main views (point 98): the folder view in its last display mode, timeline, calendar. --}}
+                    <form method="post" action="{{ route('documents.view') }}" data-view-switch>
+                        @csrf
+                        <input type="hidden" name="back" value="{{ $back }}">
+                        @foreach ([[$folderMode, 'folder', 'folder'], ['timeline', 'timeline', 'timeline'], ['calendar', 'calendar', 'calendar']] as [$value, $icon, $label])
+                            <button type="submit" name="view" value="{{ $value }}" class="menu-item" role="menuitemradio" aria-checked="{{ ($label === 'folder' ? ! $wide : $view === $value) ? 'true' : 'false' }}"><x-icon :name="$icon" /><span>{{ __('documents.main_views.'.$label) }}</span></button>
+                        @endforeach
+                    </form>
+                    @if ($canEditFolder)
+                        <hr class="menu-separator">
+                    @elseif ($canUpload || $canFolder)
+                        <hr class="menu-separator win-narrow-only">
+                    @endif
                     @if ($canUpload)
                         <button type="button" class="menu-item win-narrow-only" data-dialog-open="new-text-{{ $openFolder?->id ?? 'top' }}"><x-icon name="file-plus" /><span>{{ __('documents.text.new') }}</span></button>
                     @endif
@@ -98,7 +124,7 @@
                     @endif
         </x-slot:menu>
 
-        @can('documents.upload')
+        @if ($canUpload)
             @php $newText = 'new-text-'.($openFolder?->id ?? 'top'); @endphp
             <div class="dialog-backdrop" data-dialog="{{ $newText }}" hidden>
                 <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="{{ $newText }}-title">
@@ -122,7 +148,11 @@
                     </form>
                 </div>
             </div>
-        @endcan
+        @endif
+        @if ($wide)
+            {{-- Timeline and calendar take no dropped documents or files (points 100, 101); app.js looks for this mark. --}}
+            <span data-no-drop hidden></span>
+        @endif
 
         @if ($folderRows !== [])
             {{-- Folder rows (points 75-86): the whole row drags (no grip, point 82) – onto another folder row = into it, between rows =

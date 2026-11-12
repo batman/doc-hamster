@@ -43,6 +43,12 @@ final class DocumentController
         'calendar' => 'calendar',
     ];
 
+    /** The display modes of the folder view (point 98); timeline and calendar are main views of their own. */
+    public const FOLDER_VIEWS = ['details', 'list', 'small', 'large'];
+
+    /** The date timeline and calendar go by (point 108): receipt date (falls back to the upload) or upload date. */
+    public const DATE_BASES = ['doc', 'upload'];
+
     private const LIMIT = 200;
 
     public function index(Request $request): View
@@ -93,28 +99,54 @@ final class DocumentController
         $folder = is_string($wantedFolder) && collect($folders)->contains(static fn (array $row): bool => $row['folder']->id === $wantedFolder) ? $wantedFolder : null;
         // The view belongs to the window (point 52): ?view=… in its address; a window without one starts with the
         // view the person chose last (receipt_view).
+        $user = $this->user($request);
         $wantedView = $request->query('view');
-        $saved = $this->user($request)->receipt_view;
+        $saved = $user->receipt_view;
         $view = is_string($wantedView) && isset(self::VIEWS[$wantedView]) ? $wantedView
             : ($saved !== null && isset(self::VIEWS[$saved]) ? $saved : 'details');
+        // Point 98: three main views – the folder view (in its last display mode), timeline and calendar.
+        $folderMode = in_array($view, self::FOLDER_VIEWS, true) ? $view
+            : (in_array($user->folder_view, self::FOLDER_VIEWS, true) ? $user->folder_view : 'details');
+        $wide = ! in_array($view, self::FOLDER_VIEWS, true);
+        $wantedDates = $request->query('date');
+        $dates = is_string($wantedDates) && in_array($wantedDates, self::DATE_BASES, true) ? $wantedDates
+            : (in_array($user->receipt_dates, self::DATE_BASES, true) ? $user->receipt_dates : 'doc');
 
-        // Calendar, timeline and the tag filter look, like a search, through everything below the current folder.
-        if ($q !== '' || $selected !== [] || in_array($view, ['calendar', 'timeline'], true)) {
+        // Timeline and calendar show every document of every folder (points 100, 101; the trash never, A201).
+        // A search and the tag filter look through everything below the current folder.
+        if (! $wide && ($q !== '' || $selected !== [])) {
             if ($folder !== null) {
                 $query->whereIn('folder_id', Folder::branchIds($folder));
             }
-        } elseif ($folder !== null) {
+        } elseif (! $wide && $folder !== null) {
             $query->where('folder_id', $folder);
-        } else {
+        } elseif (! $wide) {
             $query->whereNull('folder_id');
         }
 
         $month = null;
+        $range = null;
+        $dateSql = Document::dateSql($dates);
         if ($view === 'calendar') {
+            // Point 107: only the months from the earliest to the latest document; by default the latest one,
+            // or this month when it lies inside.
+            $bounds = $query->clone()->toBase()->selectRaw("MIN($dateSql) as lo, MAX($dateSql) as hi")->first();
+            $lo = is_object($bounds) && is_string($bounds->lo ?? null) ? CarbonImmutable::parse($bounds->lo)->startOfMonth() : null;
+            $hi = is_object($bounds) && is_string($bounds->hi ?? null) ? CarbonImmutable::parse($bounds->hi)->startOfMonth() : null;
+            $now = CarbonImmutable::now()->startOfMonth();
             $wanted = $request->query('month');
             $parsed = is_string($wanted) && preg_match('/^\d{4}-\d{2}$/', $wanted) === 1 ? CarbonImmutable::createFromFormat('!Y-m', $wanted) : null;
-            $month = $parsed instanceof CarbonImmutable ? $parsed : CarbonImmutable::now()->startOfMonth();
-            $documents = $query->whereBetween('created_at', [$month, $month->endOfMonth()])->oldest()->get();
+            if ($lo !== null && $hi !== null) {
+                $range = ['first' => $lo, 'last' => $hi];
+                $month = $parsed instanceof CarbonImmutable ? $parsed : ($now->between($lo, $hi) ? $now : $hi);
+                $month = $month->lessThan($lo) ? $lo : ($month->greaterThan($hi) ? $hi : $month);
+            } else {
+                $month = $now;
+            }
+            $documents = $query->whereRaw("$dateSql between ? and ?", [$month->toDateString(), $month->endOfMonth()->toDateString()])
+                ->orderByRaw("$dateSql asc")->oldest()->get();
+        } elseif ($view === 'timeline') {
+            $documents = $query->orderByRaw("$dateSql desc")->latest()->limit(self::LIMIT + 1)->get();
         } else {
             $documents = $query->latest()->limit(self::LIMIT + 1)->get();
         }
@@ -128,9 +160,14 @@ final class DocumentController
             'selected' => $selected,
             'folders' => $folders,
             'folder' => $folder,
-            'folderRows' => $this->folderRows($request, $folders, $folder),
+            'folderRows' => $wide ? [] : $this->folderRows($request, $folders, $folder),
             'view' => $view,
             'views' => self::VIEWS,
+            'folderViews' => self::FOLDER_VIEWS,
+            'folderMode' => $folderMode,
+            'wide' => $wide,
+            'dates' => $dates,
+            'range' => $range,
             'month' => $month,
             'complete' => $complete,
             'trashed' => Gate::allows(Permission::TrashDocuments->value) ? $this->visible($request)->withPrintTray()->onlyTrashed()->count() : 0,
@@ -147,11 +184,20 @@ final class DocumentController
     public function setView(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'view' => ['required', Rule::in(array_keys(self::VIEWS))],
+            'view' => ['required_without:date', Rule::in(array_keys(self::VIEWS))],
+            'date' => ['required_without:view', Rule::in(self::DATE_BASES)],
             'back' => ['nullable', 'string', 'max:2000'],
         ]);
+        $key = isset($data['view']) ? 'view' : 'date';
+        $value = (string) $data[$key];
 
-        $this->user($request)->forceFill(['receipt_view' => $data['view']])->save();
+        // A display mode of the folder view is also remembered for "Ordneransicht" (point 98); the date basis of
+        // timeline and calendar likewise (point 108).
+        $this->user($request)->forceFill(match (true) {
+            $key === 'date' => ['receipt_dates' => $value],
+            in_array($value, self::FOLDER_VIEWS, true) => ['receipt_view' => $value, 'folder_view' => $value],
+            default => ['receipt_view' => $value],
+        })->save();
 
         $root = url('/');
         $back = is_string($data['back'] ?? null) && str_starts_with($data['back'].'/', $root.'/') ? $data['back'] : url()->previous(route('documents.index'));
@@ -160,7 +206,7 @@ final class DocumentController
         }
         parse_str((string) parse_url($back, PHP_URL_QUERY), $query);
         unset($query['page']);
-        $query['view'] = $data['view'];
+        $query[$key] = $value;
 
         return redirect()->to(explode('?', $back, 2)[0].'?'.http_build_query($query));
     }
