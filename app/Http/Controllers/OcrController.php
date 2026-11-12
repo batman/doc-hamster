@@ -21,6 +21,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -36,26 +37,46 @@ final class OcrController extends Controller
 {
     private const array SKIP_MIMES = LocalOcr::BROWSER_SKIP_MIMES;
 
-    /** Einstellungen → Texterkennung (point 35): tabs "Übersicht" (mode, counts, progress) and "Protokoll" (point 61). */
+    /** Einstellungen → Texterkennung (point 35): tabs "Übersicht" (mode, counts, progress) and "Protokoll" (points 61/69). */
     public function show(Request $request, LocalOcr $ocr, CurrentOrg $org): View
     {
-        self::watchCron($org->id());
+        self::watch($org->id(), $ocr);
         $tab = $request->query('tab') === 'log' ? 'log' : 'overview';
-        $onlyErrors = $request->boolean('errors');
+        // A110: filters by result, engine, document and a text search over document name and message.
+        $filters = [
+            'result' => in_array($request->query('result'), array_keys(OcrLog::RESULTS), true) ? (string) $request->query('result') : '',
+            'engine' => in_array($request->query('engine'), OcrLog::SOURCES, true) ? (string) $request->query('engine') : '',
+            'doc' => is_string($request->query('doc')) ? mb_substr((string) $request->query('doc'), 0, 26) : '',
+            'q' => is_string($request->query('q')) ? mb_substr(trim((string) $request->query('q')), 0, 100) : '',
+        ];
         $log = null;
+        $summary = [];
+        $filterDocument = null;
         if ($tab === 'log') {
+            $like = '%'.addcslashes($filters['q'], '\\%_').'%';
             $log = OcrLog::query()
-                ->with(['document' => static fn ($d) => $d->withTrashed()->select(['id', 'title'])])
-                ->when($onlyErrors, static fn ($q) => $q->whereIn('event', OcrLog::ERRORS))
+                ->with(['document' => static fn ($d) => $d->withTrashed()->select(['id', 'title']), 'user:id,display_name'])
+                ->when($filters['result'] !== '', static fn ($q) => $q->whereIn('event', OcrLog::RESULTS[$filters['result']] ?? []))
+                ->when($filters['engine'] !== '', static fn ($q) => $q->where('source', $filters['engine']))
+                ->when($filters['doc'] !== '', static fn ($q) => $q->where('document_id', $filters['doc']))
+                ->when($filters['q'] !== '', static fn ($q) => $q->where(static fn ($w) => $w->where('message', 'like', $like)
+                    ->orWhereHas('document', static fn ($d) => $d->withTrashed()->where('title', 'like', $like))))
                 ->orderByDesc('created_at')->orderByDesc('id')
                 ->paginate(OcrLog::PER_PAGE)->withQueryString();
+            $summary = OcrLog::unavailableSummary($org->id());
+            if ($filters['doc'] !== '') {
+                $filterDocument = Document::query()->withTrashed()->whereKey($filters['doc'])->value('title');
+            }
         }
 
         return view('settings.ocr', [
             'tab' => $tab,
             'log' => $log,
-            'onlyErrors' => $onlyErrors,
+            'filters' => $filters,
+            'filterDocument' => is_string($filterDocument) ? $filterDocument : null,
+            'summary' => $summary,
             'mode' => $ocr->mode(),
+            'pdfReady' => $ocr->serverReadsPdf(),
             'status' => $ocr->status(),
             'counts' => OcrProgress::counts($org->id()),
             'current' => OcrProgress::current($org->id()),
@@ -67,6 +88,9 @@ final class OcrController extends Controller
     }
 
     private const string PDF = 'application/pdf';
+
+    /** Browser time limit per pass in seconds (public/js/app.js PASSES), for the log message. */
+    private const array BROWSER_LIMITS = [1 => 120, 2 => 300, 3 => 600];
 
     /** Point 58/A63: browser reads that fail this often mark the document failed. */
     private const int MAX_FAILURES = 3;
@@ -87,10 +111,18 @@ final class OcrController extends Controller
         SetUpOcr::dispatchSync();
         $status = $ocr->status();
         $ok = ($status['state'] ?? null) === 'ok';
+        // A111: the outcome with its reason, including the PDF converter (A113).
+        $pdf = match ($status['pdf'] ?? null) {
+            'ok' => OcrLog::text('ocr.log.pdf_ok'),
+            'failed' => OcrLog::text('ocr.log.pdf_failed', ['reason' => (string) ($status['pdf_reason'] ?? '?')]),
+            default => null,
+        };
         OcrLog::record($orgId, 'server-setup', $ok ? 'setup_ok' : 'setup_failed', [
             'user_id' => $userId,
             'duration_ms' => intdiv(hrtime(true) - $started, 1_000_000),
-            'message' => $ok ? $ocr->mode() : (is_string($status['reason'] ?? null) ? $status['reason'] : null),
+            'message' => $ok
+                ? implode(' · ', array_filter([OcrLog::text('ocr.mode.'.$ocr->mode()), $pdf]))
+                : (is_string($status['reason'] ?? null) ? $status['reason'] : null),
         ]);
 
         return $request->expectsJson() ? response()->json(['state' => $status['state'] ?? null, 'mode' => $ocr->mode()]) : back();
@@ -101,7 +133,7 @@ final class OcrController extends Controller
     {
         $data = $request->validate(['reason' => ['required', 'string', 'max:500']]);
         $ocr->reportBrowserError((string) $data['reason']);
-        OcrLog::record(app(CurrentOrg::class)->id(), 'browser', 'engine_failed', ['message' => (string) $data['reason'], 'user_id' => self::userId($request)]);
+        OcrLog::record(app(CurrentOrg::class)->id(), 'browser', 'engine_failed', ['message' => (string) $data['reason'], 'user_id' => self::userId($request), 'agent' => OcrLog::agent($request->userAgent())]);
 
         return response()->noContent();
     }
@@ -116,15 +148,18 @@ final class OcrController extends Controller
         OcrLog::record($org->id(), 'browser', (string) $data['event'], [
             'duration_ms' => isset($data['duration']) ? (int) $data['duration'] : null,
             'user_id' => self::userId($request),
+            'agent' => OcrLog::agent($request->userAgent()),
         ]);
 
         return response()->noContent();
     }
 
     /** "Alle neu erkennen": every document of the organisation waits again; the server or the browser reads them one by one. */
-    public function rerun(CurrentOrg $org): RedirectResponse
+    public function rerun(Request $request, CurrentOrg $org): RedirectResponse
     {
-        Document::query()->toBase()->update(['ocr_status' => 'pending', 'ocr_pass' => null, 'ocr_failures' => 0]);
+        $count = Document::query()->toBase()->update(['ocr_status' => 'pending', 'ocr_pass' => null, 'ocr_failures' => 0]);
+        // A111: who started it and for how many documents.
+        OcrLog::record($org->id(), 'system', 'rerun', ['message' => (string) $count, 'user_id' => self::userId($request)]);
         Document::query()->select('id')->eachById(static fn (Document $d) => RecognizeText::dispatch($d->id));
         OcrProgress::forgetWaiting($org->id());
 
@@ -147,11 +182,11 @@ final class OcrController extends Controller
      */
     public function status(LocalOcr $ocr, CurrentOrg $org): JsonResponse
     {
-        self::watchCron($org->id());
+        self::watch($org->id(), $ocr);
         $open = OcrProgress::open($org->id());
         $nav = ['waiting' => $open['waiting'], 'open' => $open['open'], 'total' => $open['total'], 'passes' => $open['passes']];
         // A61: why the browser engine does not start (menu tooltip); absent when it works.
-        $engineError = $ocr->mode() === 'browser' ? $ocr->browserError() : null;
+        $engineError = $ocr->browserLoop() ? $ocr->browserError() : null;
         if ($engineError !== null) {
             $nav['engine_error'] = $engineError;
         }
@@ -181,9 +216,12 @@ final class OcrController extends Controller
 
     public function next(Request $request, LocalOcr $ocr): JsonResponse|Response
     {
-        if ($ocr->mode() !== 'browser') {
+        if (! $ocr->browserLoop()) {
             return response()->noContent();
         }
+        // Point 69: in mode app the server reads images; the browser only gets the PDFs the server cannot read.
+        $onlyPdf = $ocr->mode() !== 'browser';
+        $readable = $onlyPdf ? self::pdfs(...) : self::readable(...);
         $skip = array_slice(array_filter((array) $request->query('skip', []), 'is_string'), 0, 100);
 
         // Point 56: three passes, the lowest first: every unread document fast, then all again slower, then in full.
@@ -194,7 +232,7 @@ final class OcrController extends Controller
             ->where(static fn ($w) => $w->whereNull('ocr_status')->orWhereIn('ocr_status', ['pending', 'unavailable'])
                 ->orWhere(static fn ($d) => $d->where('ocr_status', 'done')->whereIn('ocr_pass', [1, 2])))
             ->whereNotIn('id', $skip)
-            ->whereHas('files', self::readable(...));
+            ->whereHas('files', $readable);
         // A document that failed lately goes behind the others of its pass, so one bad file does not block the rest.
         $lowest = $open()->selectRaw($level.' as lvl, ocr_failures')
             ->orderByRaw($level)->orderBy('ocr_failures')->toBase()->first();
@@ -208,7 +246,7 @@ final class OcrController extends Controller
             return response()->noContent();
         }
         $pass = $document->ocr_status === 'done' ? (int) $document->ocr_pass + 1 : 1;
-        $file = self::readable(DocumentFile::query()->where('document_id', $document->id))->orderBy('page_no')->firstOrFail();
+        $file = ($onlyPdf ? self::pdfs(DocumentFile::query()->where('document_id', $document->id)) : self::readable(DocumentFile::query()->where('document_id', $document->id)))->orderBy('page_no')->firstOrFail();
         OcrProgress::start($document);
 
         return response()->json([
@@ -238,6 +276,8 @@ final class OcrController extends Controller
             'pass' => ['nullable', 'integer', 'min:1', 'max:'.OcrProgress::PASSES],
             'duration' => ['nullable', 'integer', 'min:0', 'max:3600000'],
             'reason' => ['nullable', 'string', 'max:300'],
+            'pages' => ['nullable', 'integer', 'min:0', 'max:65535'],
+            'layer' => ['nullable', 'integer', 'min:0', 'max:65535'],
         ]);
         $document = $this->editable($request)->whereKey($id)->firstOrFail();
         $pass = (int) ($data['pass'] ?? OcrProgress::PASSES);
@@ -249,7 +289,14 @@ final class OcrController extends Controller
         }
         $read = $document->ocr_status === 'done' && $document->ocr_text !== null;
         $duration = isset($data['duration']) ? (int) $data['duration'] : null;
-        $log = ['document_id' => $document->id, 'pass' => $pass, 'duration_ms' => $duration, 'user_id' => self::userId($request)];
+        // A106/A109: file details, who read it and in which browser.
+        $file = DocumentFile::query()->where('document_id', $document->id)->orderBy('page_no')->first();
+        $pages = isset($data['pages']) ? (int) $data['pages'] : null;
+        $log = [
+            ...OcrLog::file($file, $pages),
+            'document_id' => $document->id, 'pass' => $pass, 'duration_ms' => $duration,
+            'user_id' => self::userId($request), 'agent' => OcrLog::agent($request->userAgent()),
+        ];
         if ($data['failed'] ?? false) {
             // Point 58/A63: time limit or error. It comes again; after three failures it stops – a later pass
             // keeps the text of the earlier one, a document without text is marked failed.
@@ -260,32 +307,67 @@ final class OcrController extends Controller
             }
             $document->forceFill($values)->save();
             $reason = is_string($data['reason'] ?? null) ? $data['reason'] : null;
-            OcrLog::record($document->org_id, 'browser', $reason === 'timeout' ? 'timeout' : 'failed', [...$log, 'message' => $reason === 'timeout' ? null : $reason]);
+            $message = $reason === 'timeout'
+                ? OcrLog::text('ocr.reason.timeout', ['seconds' => self::BROWSER_LIMITS[$pass] ?? 0])
+                : ($reason !== null ? mb_substr($reason, 0, 160) : null);
+            OcrLog::record($document->org_id, 'browser', $reason === 'timeout' ? 'timeout' : 'failed', [...$log, 'message' => $message]);
         } else {
             // Each pass replaces the text of the one before (point 56).
             $text = trim((string) ($data['text'] ?? ''));
             $document->forceFill(['ocr_text' => $text, 'ocr_status' => 'done', 'ocr_pass' => $pass, 'ocr_failures' => 0])->save();
             $ocr->clearBrowserError();
-            OcrLog::record($document->org_id, 'browser', 'recognized', [...$log, 'chars' => mb_strlen($text)]);
+            // A114: every page came from the PDF's own text layer.
+            $layer = isset($data['layer']) ? (int) $data['layer'] : 0;
+            $event = $pages !== null && $pages > 0 && $layer >= $pages ? 'text_layer' : 'recognized';
+            OcrLog::record($document->org_id, 'browser', $event, [...$log, 'chars' => mb_strlen($text)]);
         }
         OcrProgress::finish($document->id, $document->org_id);
 
         return response()->noContent();
     }
 
-    /** Point 61: cron going missing or coming back is logged once per change (checked on the status poll and the page). */
-    private static function watchCron(string $orgId): void
+    /**
+     * Point 61/A111: cron going missing or coming back (with its last run) and a switch of the engine are logged
+     * once per change (checked on the status poll and the page).
+     */
+    private static function watch(string $orgId, LocalOcr $ocr): void
     {
         $running = CronClock::running();
         $key = 'ocr.cron.'.$orgId;
         $before = Cache::get($key);
-        if ($before === $running) {
-            return;
+        if ($before !== $running) {
+            Cache::forever($key, $running);
+            if ($before !== null || ! $running) {
+                $last = CronClock::lastRun();
+                OcrLog::record($orgId, 'system', $running ? 'cron_back' : 'cron_missing', [
+                    'message' => $last !== null
+                        ? OcrLog::text('ocr.log.cron_last', ['time' => Carbon::createFromTimestamp($last, (string) config('app.timezone'))->format('d.m.Y H:i')])
+                        : OcrLog::text('ocr.log.cron_never'),
+                ]);
+            }
         }
-        Cache::forever($key, $running);
-        if ($before !== null || ! $running) {
-            OcrLog::record($orgId, 'system', $running ? 'cron_back' : 'cron_missing');
+
+        // The engine as people see it: system, app (+ PDF converter), browser, none.
+        $mode = $ocr->mode();
+        if ($mode === 'app' && $ocr->pdfAvailable()) {
+            $mode .= '+pdf';
         }
+        $modeKey = 'ocr.mode.seen.'.$orgId;
+        $seen = Cache::get($modeKey);
+        if ($seen !== $mode) {
+            Cache::forever($modeKey, $mode);
+            if (is_string($seen)) {
+                OcrLog::record($orgId, 'system', 'mode_changed', ['message' => self::modeName($seen).' → '.self::modeName($mode)]);
+            }
+        }
+    }
+
+    private static function modeName(string $mode): string
+    {
+        $pdf = str_ends_with($mode, '+pdf');
+        $name = OcrLog::text('ocr.mode.'.($pdf ? substr($mode, 0, -4) : $mode));
+
+        return $pdf ? OcrLog::text('ocr.log.with_pdf', ['mode' => $name]) : $name;
     }
 
     private static function userId(Request $request): ?string
@@ -293,6 +375,19 @@ final class OcrController extends Controller
         $id = $request->user()?->getAuthIdentifier();
 
         return is_string($id) ? $id : null;
+    }
+
+    /**
+     * Point 69: in mode app the server reads the images; the browser gets only the PDFs.
+     *
+     * @template TQuery of Builder<DocumentFile>
+     *
+     * @param  TQuery  $query
+     * @return TQuery
+     */
+    private static function pdfs(Builder $query): Builder
+    {
+        return $query->where('mime', self::PDF);
     }
 
     /**

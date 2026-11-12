@@ -56,8 +56,28 @@
                                 <small class="error">{{ __('ocr.engine_error', ['reason' => $engineError]) }}</small>
                             @endif
                         @endif
+                        @if ($mode === 'app' && ! $pdfReady)
+                            <small>{{ __('ocr.pdf_hint') }}</small>
+                            @if (($status['pdf'] ?? null) === 'failed')
+                                <small class="error">{{ __('ocr.log.pdf_failed', ['reason' => $status['pdf_reason'] ?? '?']) }}</small>
+                            @endif
+                        @endif
                     </span>
                 </li>
+                @if ($mode === 'app' && ! $pdfReady && $state !== 'running')
+                    {{-- Point 69/A113: adds the PDF converter to a working app-owned Tesseract. --}}
+                    <li class="pick-row is-static">
+                        <x-icon name="download" />
+                        <span>
+                            <strong>{{ __('ocr.set_up_pdf') }}</strong>
+                            <small>{{ __('ocr.set_up_pdf_hint') }}</small>
+                        </span>
+                        <form method="post" action="{{ route('ocr.setup') }}" data-ocr-setup>
+                            @csrf
+                            <button type="submit" class="button-small">{{ __('ocr.set_up_pdf') }}</button>
+                        </form>
+                    </li>
+                @endif
                 @if (! in_array($mode, ['system', 'app'], true) && $state !== 'running')
                     {{-- A65/A68: runs in the request; JS shows the progress dialog, without JS the page just waits. --}}
                     <li class="pick-row is-static">

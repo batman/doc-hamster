@@ -22,9 +22,9 @@
     <script src="{{ asset('js/app.js') }}?v={{ config('dochamster.version') }}"></script>
     @stack('head')
 </head>
-{{-- Browser OCR fallback (point 18): only when the server can't read text itself. Without cron the open app works off the queue (A69/A74). --}}
+{{-- Browser OCR fallback (point 18): only when the server can't read text itself (in mode app: the PDFs, point 69). Without cron the open app works off the queue (A69/A74). --}}
 @php
-    $ocrBrowser = auth()->check() && app(\App\Infrastructure\Environment\LocalOcr::class)->mode() === 'browser';
+    $ocrBrowser = auth()->check() && app(\App\Infrastructure\Environment\LocalOcr::class)->browserLoop();
     $ocrEngineError = $ocrBrowser ? app(\App\Infrastructure\Environment\LocalOcr::class)->browserError() : null;
     $queueTick = auth()->check() && ! \App\Queue\CronClock::running();
 @endphp
