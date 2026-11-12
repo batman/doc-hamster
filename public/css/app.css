@@ -1492,13 +1492,14 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
 .win-edge:hover::after, .win-edge:focus-visible::after, .win-edge.is-active::after { opacity: 1; }
 .win-edge:focus-visible { outline: none; box-shadow: none; }
 .windows.is-sizing { cursor: col-resize; user-select: none; }
-/* Points 54, 55: app.js lays the row out like Finder's column view (is-laid): every wide window gets its width
-   (--win-w), what is left stays background; a pinned window sticks in view when the row scrolls (is-stuck). */
+/* Points 54, 55, 64, A91-A94: app.js lays the row out like Apple's split view (is-laid): the windows share exactly
+   the width there is (--win-w each, the last wide one takes rounding leftovers: is-fill); the row never scrolls
+   sideways. The last window has no drag edge (nothing on its right gives way). */
 @media (min-width: 64rem) {
-    .windows.is-laid { width: max-content; min-width: 100%; background: var(--surface); }
-    .windows.is-laid > .win:not(.is-min) { flex: 0 0 var(--win-w); min-width: 0; }
-    .windows.is-laid > .win:last-child { border-right: 1px solid var(--border); }
-    .windows.is-laid > .win.is-stuck { position: sticky; left: var(--win-stick, 0); z-index: 3; }
+    .windows.is-laid { width: 100%; overflow-x: clip; background: var(--surface); }
+    .windows.is-laid > .win:not(.is-min) { flex: 0 1 var(--win-w); min-width: 0; }
+    .windows.is-laid > .win.is-fill { flex-grow: 1; }
+    .windows.can-size > .win:last-child > .win-edge { display: none; }
 }
 @media (max-width: 63.99rem) {
     .windows.can-size > .win > .win-edge { display: none; }
@@ -1510,3 +1511,6 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
     inset: auto; width: auto; height: auto; margin: 0; padding: 0; border: 0; overflow: visible; color: inherit; background: none;
 }
 .dropdown-panel:popover-open { position: fixed; overflow: auto; overscroll-behavior: contain; }
+
+/* Layout measurement (point 63 / A90): the small panel of ?debug=layout, bottom right, above everything. */
+.layout-probe { position: fixed; right: 1rem; bottom: 1rem; z-index: 1000; display: flex; align-items: center; gap: .5rem; padding: .5rem .75rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); font-size: .875rem; }

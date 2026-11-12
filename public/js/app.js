@@ -815,19 +815,27 @@
         };
         const reveal = win => requestAnimationFrame(() => win.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' }));
 
-        // Widths like Finder's column view (points 54, 55). Every window declares min, optimal and max width and
-        // a priority (data-window-min/-opt/-max/-priority from <x-window>). Fits at optimal → all optimal, the
-        // newest takes what is left up to its max, the rest stays background. Too little room → strips, lowest
-        // priority first, from the left; never the newest, a pinned one, or the one just opened again from its
-        // strip. A width dragged by hand (stored per kind, Package L) is that window's optimal and ignores min/max.
+        // Widths like Apple's split view (NSSplitView; points 54, 55, 64, A91–A94). The row never scrolls sideways:
+        // the windows always share exactly the room there is. Every window declares min, optimal and max width and a
+        // priority (data-window-min/-opt/-max/-priority from <x-window>; a pinned window has the highest). A width
+        // dragged by hand (stored per kind, Package L) is that kind's preferred width. A window keeps its width from
+        // one layout to the next; only the difference to the room is shared out:
+        //  - too little room → windows shrink towards their min, lowest priority first (among equals from the left),
+        //    the newest and the one just opened again last; still too little → the lowest-priority window becomes a
+        //    strip (never the newest, a pinned one or the one just opened again);
+        //  - more room → a strip the layout made opens again only with room for its min + 4rem (hysteresis), then
+        //    windows grow back to their preferred width, then up to their max; the rest goes to the last wide window.
+        // While an edge is dragged (sizer below) nothing else lays out until the pointer is let go.
         // Manual minimise (data-folded) stays a strip until it is opened again.
         let keep = null;
+        let dragging = false;
         const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
         const px = (value, fallback) => {
             const n = parseFloat(value);
             return Number.isFinite(n) ? (String(value).trim().endsWith('px') ? n : n * rem) : fallback * rem;
         };
         const STRIP = 3.5 * rem;
+        const SPARE = 4 * rem;
         const handWidths = () => {
             try {
                 const stored = JSON.parse(localStorage.getItem('dh-win-widths'));
@@ -836,73 +844,229 @@
                 return {};
             }
         };
-        const layout = () => {
+        const measure = (win, at, hand) => {
+            const own = hand[win.dataset.windowKind || 'page'];
+            const min = px(win.dataset.windowMin, 24);
+            const pref = typeof own === 'number' ? own : Math.max(min, px(win.dataset.windowOpt, 32));
+            const pinned = win.classList.contains('is-pinned');
+            return {
+                win, at, pref, pinned,
+                min: Math.min(min, pref),
+                max: Math.max(pref, px(win.dataset.windowMax, 48)),
+                prio: pinned ? Infinity : (Number(win.dataset.windowPriority) || 1),
+                folded: win.dataset.folded !== undefined,
+            };
+        };
+        const byPrio = (a, b) => a.prio - b.prio || a.at - b.at;
+        // Writes widths and strips; the last wide window takes rounding leftovers (is-fill).
+        const paint = info => {
+            box.classList.add('is-laid');
+            const last = info.findLast(item => !item.strip);
+            info.forEach(item => {
+                item.win.classList.toggle('is-min', item.strip);
+                item.win.classList.toggle('is-fill', item === last);
+                if (!item.strip) {
+                    item.win.style.setProperty('--win-w', `${item.w.toFixed(2)}px`);
+                }
+            });
+        };
+        const layout = (fresh = false) => {
+            if (dragging) {
+                return;
+            }
             const all = wins();
             if (phone.matches || all.length === 0) {
                 box.classList.remove('is-laid');
                 all.forEach(win => {
                     win.style.removeProperty('--win-w');
-                    win.style.removeProperty('--win-stick');
-                    win.classList.remove('is-stuck');
+                    win.classList.remove('is-fill');
                 });
                 return;
             }
+            fresh ||= !box.classList.contains('is-laid');
             const hand = handWidths();
-            const avail = (box.parentElement ?? box).clientWidth;
+            const avail = box.clientWidth;
+            const newest = all.at(-1);
             const info = all.map((win, at) => {
-                const own = hand[win.dataset.windowKind || 'page'];
-                const min = px(win.dataset.windowMin, 24);
-                const set = typeof own === 'number';
-                const opt = set ? own : Math.max(min, px(win.dataset.windowOpt, 32));
-                const folded = win.dataset.folded !== undefined;
-                return {
-                    win, at, set, opt, folded,
-                    min: Math.min(min, opt),
-                    w: opt,
-                    max: px(win.dataset.windowMax, 48),
-                    prio: Number(win.dataset.windowPriority) || 1,
-                    strip: folded,
-                    keep: win === all.at(-1) || win === keep || win.classList.contains('is-pinned'),
-                };
+                const item = measure(win, at, hand);
+                const wasStrip = win.classList.contains('is-min');
+                const cur = parseFloat(win.style.getPropertyValue('--win-w'));
+                item.protect = win === keep || win === newest;
+                // The window just opened (no width yet) or opened again keeps its width while others make room.
+                item.hold = win === keep || (win === newest && (fresh || !(cur > 0)));
+                item.strip = item.folded || (!fresh && wasStrip && win !== keep);
+                item.w = !fresh && !wasStrip && cur > 0 ? cur : item.pref;
+                return item;
             });
+            const open = () => info.filter(item => !item.strip);
             const used = () => info.reduce((sum, item) => sum + (item.strip ? STRIP : item.w), 0);
-            // Strips: lowest priority first, then from the left.
-            info.filter(item => !item.folded && !item.keep)
-                .sort((a, b) => a.prio - b.prio || a.at - b.at)
-                .forEach(item => {
-                    if (used() > avail) {
-                        item.strip = true;
+            const shrink = (all = false) => {
+                let need = used() - avail;
+                open().filter(item => all || !item.hold).sort((a, b) => a.protect - b.protect || byPrio(a, b)).forEach(item => {
+                    const give = Math.min(item.w - item.min, need);
+                    if (give > 0) {
+                        item.w -= give;
+                        need -= give;
                     }
                 });
-            // Still too wide (only kept windows left): the kept ones except the newest give way down to their min;
-            // what remains scrolls sideways.
-            let over = used() - avail;
-            const give = info.filter(item => !item.strip && item.at !== all.length - 1 && item.w > item.min);
-            const slack = give.reduce((sum, item) => sum + item.w - item.min, 0);
-            if (over > 0 && slack > 0) {
-                give.forEach(item => { item.w -= (item.w - item.min) * Math.min(1, over / slack); });
+                return need;
+            };
+            // Too little room: shrink by priority, then strips by priority.
+            let need = shrink();
+            let collapsed = false;
+            while (need > 0) {
+                const victim = open().filter(item => !item.protect && !item.pinned).sort(byPrio)[0];
+                if (!victim) {
+                    break;
+                }
+                victim.strip = true;
+                collapsed = true;
+                need = shrink();
             }
-            // Room left: the newest grows up to its max (not a hand-set width).
-            const last = info.at(-1);
-            over = used() - avail;
-            if (over < 0 && !last.strip && !last.set) {
-                last.w = Math.max(last.w, Math.min(last.max, last.w - over));
+            if (need > 0) {
+                need = shrink(true);
             }
-            box.classList.add('is-laid');
-            let stick = 0;
-            info.forEach(item => {
-                item.win.classList.toggle('is-min', item.strip);
-                item.win.style.setProperty('--win-w', `${Math.round(item.w)}px`);
-                // A pinned window stays in view when the row scrolls sideways (point 55).
-                const stuck = !item.strip && item.win.classList.contains('is-pinned');
-                item.win.classList.toggle('is-stuck', stuck);
-                item.win.style.setProperty('--win-stick', `${Math.round(stick)}px`);
-                if (stuck) {
-                    stick += item.w;
+            // Only kept windows left and still too wide: they squeeze below their min (never below 8rem).
+            if (need > 0) {
+                const soft = open().reduce((sum, item) => sum + Math.max(0, item.w - 8 * rem), 0);
+                open().forEach(item => { item.w -= soft > 0 ? Math.max(0, item.w - 8 * rem) * Math.min(1, need / soft) : 0; });
+            }
+            // More room: strips the layout made open again (with room to spare), then the windows grow.
+            // A strip opens again when the wide windows, each at most at its preferred width (more was only
+            // leftover), leave room for its min + 4rem. A width set by hand is preferred, so a drag that snapped a
+            // window to a strip is not undone by the next layout.
+            const back = info.filter(item => item.strip && !item.folded).sort((a, b) => byPrio(b, a));
+            if (back.length && !collapsed && !fresh) {
+                let spare = avail - info.reduce((sum, item) => sum + (item.strip ? STRIP : Math.min(item.w, item.pref)), 0);
+                const opened = back.filter(item => {
+                    if (spare < item.min - STRIP + SPARE) {
+                        return false;
+                    }
+                    item.strip = false;
+                    item.w = item.min;
+                    spare -= item.min - STRIP;
+                    return true;
+                });
+                if (opened.length) {
+                    open().forEach(item => { item.w = Math.min(item.w, item.pref); });
+                }
+            }
+            let room = avail - used();
+            const wide = open().sort((a, b) => b.protect - a.protect || byPrio(b, a));
+            const grow = cap => wide.forEach(item => {
+                const add = Math.min(cap(item) - item.w, room);
+                if (add > 0) {
+                    item.w += add;
+                    room -= add;
                 }
             });
+            grow(item => item.pref);
+            grow(item => item.max);
+            const last = open().at(-1);
+            if (room > 0 && last) {
+                last.w += room;
+            }
+            paint(info);
             // Windows that became wide and were only a stored strip get their content.
-            all.filter(win => win.dataset.lazy !== undefined && !win.classList.contains('is-min')).forEach(win => fill(win).then(layout).catch(() => { /* stays a strip until clicked */ }));
+            all.filter(win => win.dataset.lazy !== undefined && !win.classList.contains('is-min')).forEach(win => fill(win).then(() => layout()).catch(() => { /* stays a strip until clicked */ }));
+        };
+
+        // Dragging a window's edge (Package L, A91, A92, A94). Every step is computed from the state at drag start
+        // plus the whole distance, so the edge stays under the pointer. Wider: the windows right of it give way,
+        // lowest priority first (among equals from the left), each down to its min; then the edge stops, and 3rem
+        // further the lowest-priority one (never the newest or a pinned one) snaps to a strip. It opens again at its
+        // min as soon as the edge leaves room for it – a 3rem band in between, so it never flips back and forth. Narrower: the
+        // neighbour on the right takes the room. Windows left of the edge never move. Nothing else lays out until
+        // end() (pointerup); the last window has no edge.
+        const SNAP = 3 * rem;
+        const FLOOR = 12 * rem;
+        DocHamster.windowSizer = win => {
+            const all = wins();
+            const at = all.indexOf(win);
+            if (phone.matches || at < 0 || at === all.length - 1 || win.classList.contains('is-min')) {
+                return null;
+            }
+            dragging = true;
+            const hand = handWidths();
+            const info = all.map((other, i) => {
+                const item = measure(other, i, hand);
+                item.was = other.classList.contains('is-min');
+                item.strip = item.was;
+                item.w0 = other.getBoundingClientRect().width;
+                item.w = item.w0;
+                return item;
+            });
+            const self = info[at];
+            const right = info.slice(at + 1);
+            const total = self.w0 + right.reduce((sum, item) => sum + (item.was ? STRIP : item.w0), 0);
+            // Strips the layout made (not minimised by hand) right of the edge count as snapped shut: dragging back
+            // opens them at their min, highest priority first.
+            right.filter(item => !item.was).forEach(item => { item.min = Math.min(item.min, item.w0); });
+            const shut = right.filter(item => item.was && !item.folded).sort((a, b) => a.prio - b.prio || b.at - a.at);
+            shut.forEach(item => {
+                item.was = false;
+                item.w0 = item.min;
+            });
+            const wide = right.filter(item => !item.was);
+            const order = [...wide].sort(byPrio);
+            const snaps = order.filter(item => !item.pinned && item.win !== all.at(-1));
+            const to = target => {
+                const wanted = Math.max(FLOOR, target);
+                let open = wide;
+                let room = 0;
+                let deficit = 0;
+                for (let guard = 0; guard <= wide.length * 2; guard++) {
+                    open = wide.filter(item => !shut.includes(item));
+                    room = total - wanted - (right.length - open.length) * STRIP;
+                    deficit = open.reduce((sum, item) => sum + item.min, 0) - room;
+                    const next = snaps.find(item => !shut.includes(item));
+                    const back = shut.at(-1);
+                    if (deficit > SNAP && next) {
+                        shut.push(next);
+                    } else if (back && deficit + back.min - STRIP <= 0) {
+                        shut.pop();
+                    } else {
+                        break;
+                    }
+                }
+                let w = wanted;
+                if (open.length === 0) {
+                    w = total - right.length * STRIP;
+                    room = 0;
+                } else if (deficit > 0) {
+                    w -= deficit;
+                    room += deficit;
+                }
+                let need = open.reduce((sum, item) => sum + item.w0, 0) - room;
+                right.forEach(item => {
+                    item.w = item.w0;
+                    item.strip = item.was || shut.includes(item);
+                });
+                if (need > 0) {
+                    order.filter(item => open.includes(item)).forEach(item => {
+                        const give = Math.min(item.w - item.min, need);
+                        if (give > 0) {
+                            item.w -= give;
+                            need -= give;
+                        }
+                    });
+                } else if (open.length) {
+                    open[0].w -= need;
+                }
+                self.w = w;
+                paint(info);
+                return w;
+            };
+            return {
+                pref: self.pref,
+                to,
+                by: dx => to(self.w0 + dx),
+                end: () => {
+                    dragging = false;
+                    layout();
+                    remember();
+                },
+            };
         };
         const remember = () => {
             try {
@@ -980,8 +1144,8 @@
                     full.classList.toggle('is-min', win.classList.contains('is-min'));
                     full.classList.toggle('is-active', win.classList.contains('is-active'));
                     full.toggleAttribute('data-folded', win.dataset.folded !== undefined);
-                    ['--win-w', '--win-stick'].forEach(prop => full.style.setProperty(prop, win.style.getPropertyValue(prop)));
-                    full.classList.toggle('is-stuck', win.classList.contains('is-stuck'));
+                    full.style.setProperty('--win-w', win.style.getPropertyValue('--win-w'));
+                    full.classList.toggle('is-fill', win.classList.contains('is-fill'));
                     pin(full, win.classList.contains('is-pinned'));
                     if (keep === win) {
                         keep = full;
@@ -1123,7 +1287,7 @@
             const win = event.target.closest('section[data-window]');
             if (event.target.closest('[data-window-pin]')) {
                 pin(win, !win.classList.contains('is-pinned'));
-                smooth(layout);
+                smooth(() => layout());
                 remember();
             } else if (event.target.closest('[data-window-close]')) {
                 event.preventDefault();
@@ -1168,7 +1332,7 @@
         let frame = 0;
         new ResizeObserver(() => {
             cancelAnimationFrame(frame);
-            frame = requestAnimationFrame(layout);
+            frame = requestAnimationFrame(() => layout());
         }).observe(box.parentElement ?? box);
         document.addEventListener('dh:win-layout', () => {
             layout();
@@ -3759,8 +3923,9 @@
 
 /* Package L */
 // Point 44 / A37: the drag edge right of a window changes that window's width (drag, arrow keys, double-click =
-// back to the module's optimal width). The browser remembers the width per module kind (data-window-kind); for
-// the layout (point 54.5) it is that kind's optimal width and may go below its min or above its max.
+// back to the module's optimal width) through the window system's sizer (A91–A94: the windows on the right give
+// way). The browser remembers the width per module kind (data-window-kind); for the layout it is that kind's
+// preferred width.
 // Point 52 / A39: the view switcher of a list belongs to its window – it reloads only that window with ?view=…
 // and saves the choice as the default for new windows.
 (() => {
@@ -3784,18 +3949,16 @@
         try { localStorage.setItem(WIDTHS, JSON.stringify(all)); } catch { /* not remembered */ }
     };
     const kindOf = win => win.dataset.windowKind || 'page';
-    const relayout = () => document.dispatchEvent(new Event('dh:win-layout'));
-    // By hand any width between 12rem and the room there is (point 54.5); while dragging only this window moves.
-    const resize = (win, width, save) => {
-        const box = win.closest('[data-windows]');
-        const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-        const most = Math.max(12 * rem, (box?.parentElement?.clientWidth ?? innerWidth) - 56);
-        const w = Math.max(12 * rem, Math.min(width, most));
-        win.style.setProperty('--win-w', `${Math.round(w)}px`);
-        if (save) {
-            write(kindOf(win), w);
-            relayout();
+    // One sizing step through the window system's sizer (A91–A94): it shares the width out with the windows on the
+    // right; the width that came out is remembered for the kind (null = back to the module's optimal width).
+    const size = (win, step) => {
+        const sizer = DocHamster.windowSizer?.(win);
+        if (!sizer) {
+            return;
         }
+        const width = step(sizer);
+        write(kindOf(win), width);
+        sizer.end();
     };
 
     const setup = () => {
@@ -3805,31 +3968,62 @@
         }
         box.classList.add('can-size');
 
+        // Drag: widths come from the start state plus the whole distance (no step-by-step drift); moves are
+        // bundled per frame; the sizer lays nothing else out until the pointer is let go.
         box.addEventListener('pointerdown', event => {
             const edge = event.target.closest('[data-window-edge]');
+            const win = edge?.closest('section[data-window]');
             if (!edge || event.button !== 0) {
                 return;
             }
+            const sizer = DocHamster.windowSizer?.(win);
+            if (!sizer) {
+                return;
+            }
             event.preventDefault();
-            const win = edge.closest('section[data-window]');
-            const left = win.getBoundingClientRect().left;
+            const x0 = event.clientX;
+            let x = x0;
+            let frame = 0;
+            let width = null;
+            const step = () => {
+                frame = 0;
+                width = sizer.by(x - x0);
+            };
             edge.setPointerCapture(event.pointerId);
             edge.classList.add('is-active');
             box.classList.add('is-sizing');
-            const move = e => resize(win, e.clientX - left, false);
-            edge.addEventListener('pointermove', move);
-            edge.addEventListener('pointerup', e => {
+            box.dispatchEvent(new CustomEvent('dh:win-drag', { detail: { phase: 'start', win } }));
+            const move = e => {
+                x = e.clientX;
+                frame ||= requestAnimationFrame(step);
+            };
+            const done = () => {
                 edge.removeEventListener('pointermove', move);
+                edge.removeEventListener('pointerup', done);
+                edge.removeEventListener('pointercancel', done);
+                cancelAnimationFrame(frame);
+                if (x !== x0) {
+                    step();
+                }
                 edge.classList.remove('is-active');
                 box.classList.remove('is-sizing');
-                resize(win, e.clientX - left, true);
-            }, { once: true });
+                if (width !== null) {
+                    write(kindOf(win), width);
+                }
+                sizer.end();
+                box.dispatchEvent(new CustomEvent('dh:win-drag', { detail: { phase: 'end', win } }));
+            };
+            edge.addEventListener('pointermove', move);
+            edge.addEventListener('pointerup', done);
+            edge.addEventListener('pointercancel', done);
         });
         box.addEventListener('dblclick', event => {
-            const edge = event.target.closest('[data-window-edge]');
-            if (edge) {
-                write(kindOf(edge.closest('section[data-window]')), null);
-                relayout();
+            const win = event.target.closest('[data-window-edge]')?.closest('section[data-window]');
+            if (win) {
+                write(kindOf(win), null);
+                const sizer = DocHamster.windowSizer?.(win);
+                sizer?.to(sizer.pref);
+                sizer?.end();
             }
         });
         box.addEventListener('keydown', event => {
@@ -3838,9 +4032,8 @@
                 return;
             }
             event.preventDefault();
-            const win = edge.closest('section[data-window]');
             const step = (event.shiftKey ? 64 : 16) * (event.key === 'ArrowLeft' ? -1 : 1);
-            resize(win, win.getBoundingClientRect().width + step, true);
+            size(edge.closest('section[data-window]'), sizer => sizer.by(step));
         });
     };
 
@@ -3970,4 +4163,207 @@
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
     else start();
+})();
+
+/* Layout measurement (point 63 / A90) */
+// ?debug=layout switches a measurement of jumps and flicker on for this tab (sessionStorage, so it survives window
+// loads); ?debug=off ends it. It logs the last user action (pointerdown, click, drag start/end), every window size
+// change (id, kind, old→new width, strip/open), layout shifts (PerformanceObserver 'layout-shift', with the moved
+// elements and their rect deltas) and elements that were removed/hidden and came back within 300 ms. A small panel
+// bottom right shows the count, copies a plain-text log ("Messung kopieren") and empties it ("Leeren"). Only a
+// developer tool: its few German strings stay in this file.
+(() => {
+    const KEY = 'dh-debug-layout';
+    try {
+        const flag = new URLSearchParams(location.search).get('debug');
+        if (flag === 'layout') {
+            sessionStorage.setItem(KEY, '1');
+        } else if (flag === 'off') {
+            sessionStorage.removeItem(KEY);
+        }
+        if (sessionStorage.getItem(KEY) !== '1') {
+            return;
+        }
+    } catch {
+        return;
+    }
+    const t0 = performance.now();
+    const log = [];
+    let panel = null;
+    let count = null;
+    let last = '–';
+    const stamp = () => `${((performance.now() - t0) / 1000).toFixed(3)}s`;
+    const describe = el => {
+        if (!(el instanceof Element)) {
+            return el?.nodeName ?? '?';
+        }
+        const win = el.closest('section[data-window]');
+        const own = `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ''}${[...el.classList].slice(0, 3).map(name => `.${name}`).join('')}`;
+        const where = win ? ` ${win === el ? '=' : 'in'} ${win.dataset.windowId ?? '?'}/${win.dataset.windowKind ?? '?'}` : '';
+        return own + where;
+    };
+    const add = (type, text) => {
+        log.push(`${stamp()} ${type.padEnd(7)} ${text}${type === 'action' ? '' : ` | nach: ${last}`}`);
+        if (count) {
+            count.textContent = `Layout-Messung: ${log.length}`;
+        }
+    };
+    const mine = el => el instanceof Element && panel?.contains(el);
+
+    // User actions
+    document.addEventListener('pointerdown', event => {
+        if (mine(event.target)) {
+            return;
+        }
+        last = `pointerdown ${describe(event.target)} @${Math.round(event.clientX)},${Math.round(event.clientY)}`;
+        add('action', last);
+    }, true);
+    document.addEventListener('click', event => {
+        if (mine(event.target)) {
+            return;
+        }
+        last = `click ${describe(event.target)}`;
+        add('action', last);
+    }, true);
+    document.addEventListener('dh:win-drag', event => {
+        const win = event.detail?.win;
+        last = `drag ${event.detail?.phase} ${win?.dataset.windowId ?? '?'}/${win?.dataset.windowKind ?? '?'}`;
+        add('action', last);
+    }, true);
+
+    // Layout shifts
+    try {
+        new PerformanceObserver(list => list.getEntries().forEach(entry => {
+            const parts = (entry.sources ?? []).filter(source => !mine(source.node)).map(source => {
+                const a = source.previousRect;
+                const b = source.currentRect;
+                return `${describe(source.node)} dx=${Math.round(b.x - a.x)} dy=${Math.round(b.y - a.y)} dw=${Math.round(b.width - a.width)} dh=${Math.round(b.height - a.height)}`;
+            });
+            add('shift', `${entry.value.toFixed(4)}${entry.hadRecentInput ? ' (nach Eingabe)' : ''} ${parts.join('; ') || '-'}`);
+        })).observe({ type: 'layout-shift', buffered: true });
+    } catch { /* browser without layout-shift entries */ }
+
+    // Window sizes and strips
+    const widths = new WeakMap();
+    const strips = new WeakMap();
+    const sizes = new ResizeObserver(entries => entries.forEach(entry => {
+        const win = entry.target;
+        const now = Math.round(entry.borderBoxSize?.[0]?.inlineSize ?? entry.contentRect.width);
+        const before = widths.get(win);
+        widths.set(win, now);
+        if (before !== undefined && before !== now) {
+            add('size', `${win.dataset.windowId ?? '?'}/${win.dataset.windowKind ?? '?'} ${before}→${now}px`);
+        }
+    }));
+    const watch = win => {
+        if (!widths.has(win)) {
+            sizes.observe(win);
+            strips.set(win, win.classList.contains('is-min'));
+        }
+    };
+
+    // Removed or hidden and back within 300 ms
+    const gone = new Map();
+    const visible = el => (el.checkVisibility ? el.checkVisibility() : el.getClientRects().length > 0);
+    const hidden = new WeakMap();
+    const back = (el, how) => {
+        const at = gone.get(el);
+        if (at !== undefined && performance.now() - at <= 300) {
+            add('flicker', `${describe(el)} ${how} und nach ${Math.round(performance.now() - at)} ms zurück`);
+        }
+        gone.delete(el);
+    };
+    const start = () => {
+        document.querySelectorAll('section[data-window]').forEach(watch);
+        new MutationObserver(records => records.forEach(record => {
+            if (mine(record.target)) {
+                return;
+            }
+            if (record.type === 'childList') {
+                record.removedNodes.forEach(node => {
+                    if (node instanceof Element) {
+                        gone.set(node, performance.now());
+                        if (node.matches('section[data-window]')) {
+                            add('window', `${node.dataset.windowId ?? '?'}/${node.dataset.windowKind ?? '?'} entfernt`);
+                        }
+                    }
+                });
+                record.addedNodes.forEach(node => {
+                    if (node instanceof Element) {
+                        back(node, 'entfernt');
+                        node.matches('section[data-window]') && watch(node);
+                        node.querySelectorAll?.('section[data-window]').forEach(watch);
+                    }
+                });
+                return;
+            }
+            const el = record.target;
+            if (!(el instanceof Element) || !el.closest('[data-windows]')) {
+                return;
+            }
+            if (el.matches('section[data-window]') && record.attributeName === 'class') {
+                const was = strips.get(el);
+                const now = el.classList.contains('is-min');
+                if (was !== undefined && was !== now) {
+                    add('window', `${el.dataset.windowId ?? '?'}/${el.dataset.windowKind ?? '?'} ${now ? 'zu Streifen' : 'geöffnet'}`);
+                }
+                strips.set(el, now);
+            }
+            const shown = visible(el);
+            if (!shown && hidden.get(el) !== false) {
+                gone.set(el, performance.now());
+            } else if (shown && hidden.get(el) === false) {
+                back(el, 'versteckt');
+            }
+            hidden.set(el, shown);
+        })).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden'] });
+
+        // Panel (framework look: card surface, small buttons)
+        panel = document.createElement('div');
+        panel.className = 'layout-probe';
+        count = document.createElement('strong');
+        count.textContent = `Layout-Messung: ${log.length}`;
+        const copy = document.createElement('button');
+        copy.type = 'button';
+        copy.className = 'button-quiet button-small';
+        copy.textContent = 'Messung kopieren';
+        copy.addEventListener('click', () => {
+            const text = [`DocHamster Layout-Messung ${new Date().toISOString()} ${innerWidth}x${innerHeight} ${navigator.userAgent}`, ...log].join('\n');
+            const done = label => {
+                copy.textContent = label;
+                setTimeout(() => { copy.textContent = 'Messung kopieren'; }, 1500);
+            };
+            // Without clipboard rights: the old copy command, else the console.
+            const fallback = () => {
+                const area = document.createElement('textarea');
+                area.value = text;
+                panel.append(area);
+                area.select();
+                const ok = document.execCommand('copy');
+                area.remove();
+                if (!ok) {
+                    console.log(text);
+                }
+                done(ok ? 'Kopiert' : 'In Konsole');
+            };
+            (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject(new Error('no clipboard'))).then(() => done('Kopiert')).catch(fallback);
+        });
+        const clear = document.createElement('button');
+        clear.type = 'button';
+        clear.className = 'button-quiet button-small';
+        clear.textContent = 'Leeren';
+        clear.addEventListener('click', () => {
+            log.length = 0;
+            count.textContent = 'Layout-Messung: 0';
+        });
+        panel.append(count, copy, clear);
+        document.body.append(panel);
+        // Exposed for the console and tests.
+        window.DocHamster.layoutLog = log;
+    };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', start);
+    } else {
+        start();
+    }
 })();
