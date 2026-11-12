@@ -25,7 +25,8 @@
 {{-- Browser OCR fallback (point 18): only when the server can't read text itself (in mode app: the PDFs, point 69). Without cron the open app works off the queue (A69/A74). --}}
 @php
     $ocrBrowser = auth()->check() && app(\App\Infrastructure\Environment\LocalOcr::class)->browserLoop();
-    $ocrEngineError = $ocrBrowser ? app(\App\Infrastructure\Environment\LocalOcr::class)->browserError() : null;
+    $ocrOrg = app(\App\Domain\Org\CurrentOrg::class);
+    $ocrEngineError = $ocrBrowser && $ocrOrg->isSet() ? app(\App\Infrastructure\Environment\LocalOcr::class)->browserError($ocrOrg->id()) : null;
     $queueTick = auth()->check() && ! \App\Queue\CronClock::running();
 @endphp
 <body data-pdfjs="{{ asset('vendor/pdfjs') }}" @if ($ocrBrowser) data-ocr-browser="{{ asset('vendor/tesseract') }}" data-ocr-next="{{ route('ocr.next') }}" data-ocr-engine="{{ route('ocr.engine') }}" data-ocr-log="{{ route('ocr.log') }}" @endif @if ($queueTick) data-queue-tick="{{ route('queue.tick') }}" @endif>
