@@ -89,11 +89,56 @@ final class PaletteColor extends Model
         return 0.2126 * $r + 0.7152 * $g + 0.0722 * $b <= 0.5;
     }
 
-    /** The CSS rule of one colour class: swatch, tag pill and note colour. */
+    /** The orange of the app (--primary): a coloured row keeps it for its icon while it stands out enough. */
+    public const PRIMARY = '#ff7622';
+
+    /** Text on a coloured row: dark or light, whichever reads better (point 83, A158). */
+    public const INK_DARK = '#1f1e1d';
+
+    public const INK_LIGHT = '#ffffff';
+
+    /** WCAG relative luminance of #rrggbb (0 = black, 1 = white). */
+    public static function luminance(string $hex): float
+    {
+        $channel = static function (string $part): float {
+            $value = hexdec($part) / 255;
+
+            return $value <= 0.03928 ? $value / 12.92 : (($value + 0.055) / 1.055) ** 2.4;
+        };
+        [$r, $g, $b] = array_map($channel, str_split(substr($hex, 1), 2));
+
+        return 0.2126 * $r + 0.7152 * $g + 0.0722 * $b;
+    }
+
+    /** WCAG contrast ratio of two colours (1 to 21). */
+    public static function contrast(string $one, string $two): float
+    {
+        $a = self::luminance($one);
+        $b = self::luminance($two);
+
+        return (max($a, $b) + 0.05) / (min($a, $b) + 0.05);
+    }
+
+    /**
+     * The colours of a row with this background ("farbige Zeile", A156-A160): text dark or light by WCAG contrast,
+     * the icon orange while it reaches 3:1 against the row, else the text colour; the second line the text colour, faded.
+     *
+     * @return array{ink: string, sub: string, icon: string}
+     */
+    public static function rowColors(string $hex): array
+    {
+        $ink = self::contrast($hex, self::INK_DARK) >= self::contrast($hex, self::INK_LIGHT) ? self::INK_DARK : self::INK_LIGHT;
+        $sub = $ink === self::INK_DARK ? 'rgb(31 30 29 / .72)' : 'rgb(255 255 255 / .8)';
+
+        return ['ink' => $ink, 'sub' => $sub, 'icon' => self::contrast($hex, self::PRIMARY) >= 3 ? self::PRIMARY : $ink];
+    }
+
+    /** The CSS rule of one colour class: swatch, tag pill, note colour and coloured row. */
     public static function cssRule(string $hex): string
     {
         $class = self::cssClass($hex);
-        $rule = sprintf('.%s{--swatch:%s;--tag:%s;--note:%s}', $class, $hex, $hex, $hex);
+        $row = self::rowColors($hex);
+        $rule = sprintf('.%s{--swatch:%s;--tag:%s;--note:%s;--row-bg:%s;--row-ink:%s;--row-sub:%s;--row-icon:%s}', $class, $hex, $hex, $hex, $hex, $row['ink'], $row['sub'], $row['icon']);
 
         return self::isDark($hex)
             ? $rule.sprintf('.note.%1$s{--note-ink:#fff}.note.%1$s a{color:inherit;text-decoration:underline}.note.%1$s .note-tool:hover{background:rgb(255 255 255 / .15)}', $class)

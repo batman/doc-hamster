@@ -306,3 +306,25 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderSwat
 
 // Sample links with href="#" must not jump to the top of the sheet.
 document.addEventListener('click', e => { if (e.target.closest('a[href="#"]')) e.preventDefault(); });
+
+/* Row symbols as in app.js (A144-A146): the symbol's own box becomes its viewBox and it fills the 38 px slot. */
+(() => {
+  const fit = () => document.querySelectorAll('.row-icon > svg.icon:not(.is-fit)').forEach(svg => {
+    const probe = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    probe.setAttribute('class', 'fit-probe');
+    probe.setAttribute('viewBox', '0 0 24 24');
+    probe.innerHTML = svg.innerHTML;
+    probe.querySelectorAll('[stroke="none"]').forEach(node => node.remove());
+    document.body.append(probe);
+    const b = probe.getBBox();
+    probe.remove();
+    if (!b.width || !b.height) return;
+    const box = { x: b.x - 1, y: b.y - 1, w: b.width + 2, h: b.height + 2 };
+    const scale = Math.min(38 / box.w, 38 / box.h);
+    svg.setAttribute('viewBox', `${box.x} ${box.y} ${box.w} ${box.h}`);
+    svg.style.width = `${box.w * scale}px`;
+    svg.style.height = `${box.h * scale}px`;
+    svg.classList.add('is-fit');
+  });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fit); else fit();
+})();

@@ -155,14 +155,6 @@ a { color: var(--primary-ink); }
 .folder-import progress { width: 100%; }
 .folder-import label.button { display: inline-flex; gap: .5rem; color: var(--primary-text); }
 .folder-import label.button:has(+ input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
-/* Files dragged over the page: drop anywhere to upload */
-.drop-overlay {
-    position: fixed; inset: .75rem; z-index: 50; display: grid; place-content: center;
-    border: 3px dashed var(--primary); border-radius: var(--radius);
-    background: color-mix(in srgb, var(--bg) 88%, transparent); pointer-events: none;
-}
-.drop-overlay[hidden] { display: none; }
-.drop-overlay p { margin: 0; font-size: 1.5rem; font-weight: 700; color: var(--primary); text-align: center; }
 
 .empty-state { text-align: center; padding-block: 2rem; }
 
@@ -876,6 +868,7 @@ button.col-strip:hover > .icon { color: var(--primary-ink); }
 .toast .icon { flex: none; color: var(--ok); }
 .toast.is-leaving { opacity: 0; translate: 0 -.5rem; transition: opacity .3s, translate .3s; }
 @keyframes toast-in { from { opacity: 0; translate: 0 -.5rem; } }
+.toast .toast-action { flex: none; margin: 0 0 0 .25rem; }
 @media (prefers-reduced-motion: reduce) { .toast { animation: none; } .toast.is-leaving { transition: none; } }
 @media (max-width: 63.99rem) { .toast { top: auto; bottom: 1rem; left: 1rem; right: 1rem; max-width: none; } }
 
@@ -1156,7 +1149,7 @@ a { text-decoration: none; }
 .pick-row.is-static:has(> span a):hover { background: color-mix(in srgb, var(--surface) 88%, var(--text)); }
 .pick-row.is-static > span a:focus-visible { outline: none; }
 .pick-row.is-static:has(> span a:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
-.pick-row.is-static > :is(button, form, .dropdown, .tag-outline) { position: relative; z-index: 1; }
+.pick-row.is-static > :is(button, form, .dropdown, .tag-outline, .row-actions) { position: relative; z-index: 1; }
 /* Point 32: an open menu lies above every row and button below it (framework rule for all menus) */
 .dropdown:has(> .dropdown-panel:not([hidden])), .pick-row.is-static > .dropdown:has(> .dropdown-panel:not([hidden])) { position: relative; z-index: 40; }
 li:has(> .dropdown > .dropdown-panel:not([hidden])), tr:has(.dropdown-panel:not([hidden])) { position: relative; z-index: 40; }
@@ -1238,6 +1231,17 @@ html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
    always this order on the right of the head; on phones (< 64rem) only X (and the back arrow on the left). */
 .win-head > .control-button + .control-button { margin-left: -.35rem; }
 .win-maximise .icon + .icon { display: none; }
+/* A179, A180: maximise / restore are four small chevrons (window-maximise / window-restore, Tabler style, same stroke as the
+   minimise chevron); on hover they pulse outward (maximise) or inward (restore); with "reduce motion" only the colour changes. */
+.win-maximise .chev { --s: 1; }
+.win-maximise .chev-in { --s: -1; }
+.win-maximise .chev-tl { --x: -1; --y: -1; }
+.win-maximise .chev-tr { --x: 1; --y: -1; }
+.win-maximise .chev-br { --x: 1; --y: 1; }
+.win-maximise .chev-bl { --x: -1; --y: 1; }
+.win-maximise:is(:hover, :focus-visible) .chev { animation: chev-pulse 1s ease-in-out infinite; }
+@keyframes chev-pulse { 50% { translate: calc(var(--x) * var(--s) * 1.5px) calc(var(--y) * var(--s) * 1.5px); } }
+@media (prefers-reduced-motion: reduce) { .win-maximise:is(:hover, :focus-visible) .chev { animation: none; } }
 .win[data-maxed] .win-maximise .icon:first-child { display: none; }
 .win[data-maxed] .win-maximise .icon + .icon { display: block; }
 @media (max-width: 63.99rem) { .win-minimise, .win-maximise { display: none; } }
@@ -1310,12 +1314,8 @@ html.has-tips [data-tooltip]::before, html.has-tips [data-tooltip]::after { visi
 .palette-add button { flex: none; }
 
 /* Folders explorer (points 10-12) */
-/* Icon tile: a light tint square with the symbol in the darker tone; the folder's colour when it has one, else orange. */
-.icon-tile { flex: none; display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 8px; background: color-mix(in srgb, var(--folder, var(--primary)) 16%, var(--surface)); color: var(--folder, color-mix(in srgb, var(--primary) 80%, #000)); }
-.icon-tile > .icon { width: 22px; height: 22px; }
 .folder-rows .pick-row > [data-folder-name] { flex: 1; min-width: 0; }
-.folder-rows .pick-row > .more-menu { margin-left: auto; }
-.folder-rows .pick-row .more-menu button, .folder-rows .pick-row .folder-rename button { margin: 0; }
+.folder-rows .pick-row .folder-rename button { margin: 0; }
 .folder-rename:not([hidden]) { display: flex; flex: 1; min-width: 0; align-items: center; gap: .4rem; margin: 0; }
 .folder-rename input[name="name"] { flex: 1; min-width: 0; margin: 0; }
 
@@ -1553,3 +1553,63 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
 @media (min-width: 64rem) { .win-notes .kanban-col { max-height: calc(100dvh - 15rem); } }
 /* The notes module alone on Home is the root of the row: no X (nothing to fall back to). */
 .windows > .win-notes:only-child .win-close { display: none; }
+
+/* Lists and rows (points 75-87, A131-A177) ------------------------------------------------------------------------- */
+/* Row symbol (A144-A146): a fixed 38 px slot, so the names line up; app.js crops the symbol to its own box and makes it as
+   tall as the two text lines; the stroke stays 2 px. Without JavaScript the symbol keeps its normal size. Always orange. */
+.row-icon { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; color: var(--primary); }
+.row-icon > .icon { width: 24px; height: 24px; }
+.row-icon > .icon.is-fit { overflow: visible; }
+.row-icon > .icon.is-fit * { vector-effect: non-scaling-stroke; }
+.fit-probe { position: absolute; left: -9999px; top: 0; width: 24px; height: 24px; visibility: hidden; pointer-events: none; }
+/* Coloured row ("farbige Zeile", point 83, A156-A160): the record's colour fills the row; text dark or light by WCAG
+   contrast, the symbol orange while it reaches 3:1, else the text colour; the second line faded. Classes from tags.css
+   (row-color + c-rrggbb, like the palette classes; the CSP allows no inline styles) – folders now, tags later. */
+.pick-row.row-color { background: var(--row-bg); color: var(--row-ink); }
+.pick-row.row-color small { color: var(--row-sub); }
+.pick-row.row-color > .row-icon { color: var(--row-icon); }
+.pick-row.row-color.is-static:has(> span a):hover { background: color-mix(in srgb, var(--row-bg) 90%, var(--row-ink)); }
+/* Row actions ("Zeilen-Aktionen", A161-A166, A174, A177): frameless control buttons at the right end of a row (pencil,
+   gear …); shown while the row is hovered or has focus, always on touch screens; orange on hover; tooltips. */
+.row-actions { flex: none; display: inline-flex; align-items: center; gap: .1rem; margin-left: auto; opacity: 0; transition: opacity .12s; }
+:is(li, tr):is(:hover, :focus-within) .row-actions, .row-actions:focus-within { opacity: 1; }
+@media (hover: none) { .row-actions { opacity: 1; } }
+.row-actions form { display: contents; }
+.row-actions .control-button, .pick-row.is-static .row-actions .control-button { width: 2.25rem; height: 2.25rem; min-height: 0; margin: 0; padding: 0; border-radius: 8px; }
+.row-actions .control-button .icon, .view-list .row-actions .icon { width: 1.2rem; height: 1.2rem; color: inherit; }
+.row-color .row-actions .control-button { color: inherit; }
+.row-color .row-actions .control-button:hover { color: inherit; background: rgb(127 127 127 / .22); }
+.control-button.control-danger:hover { color: var(--error); }
+.view-details td.row-actions-cell { width: 1%; padding-block: 0; white-space: nowrap; }
+.view-list li .row-actions { margin-left: .25rem; }
+.trash-list li { flex-wrap: wrap; row-gap: .1rem; }
+.trash-title { flex: 1 1 10rem; min-width: 0; overflow-wrap: anywhere; }
+.doc-rename { flex: 1; min-width: 8rem; margin: 0; }
+.pick-row.is-renaming .row-actions { display: none; }
+.folder-rows { position: relative; }
+.folder-rows > .folder-row { position: relative; }
+/* Drag and drop: the row or window a drop lands on is orange (A131, A175); picked document rows (A132) are tinted. */
+.is-drop-target, .pick-row.is-drop-target, .pick-row.row-color.is-drop-target { background: color-mix(in srgb, var(--primary) 20%, var(--bg)); box-shadow: inset 0 0 0 2px var(--primary); color: var(--text); }
+.pick-row.is-drop-target small { color: var(--muted); }
+.pick-row.is-drop-target > .row-icon { color: var(--primary); }
+.win-body.is-drop-target { box-shadow: inset 0 0 0 2px var(--primary); background: color-mix(in srgb, var(--primary) 8%, var(--bg)); border-radius: var(--row-radius); }
+/* Files over a folder row: the row itself becomes the drop field "Loslassen zum Hochladen in „X“" (A170). */
+.folder-row.is-upload-target > * { visibility: hidden; }
+.folder-row.is-upload-target::after { content: attr(data-upload-label); position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0 1rem;
+    font-weight: 600; color: var(--primary-ink); text-align: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.win-body.is-upload-target::before { content: attr(data-upload-label); position: sticky; top: 0; z-index: 2; display: block; margin-bottom: .5rem; padding: .6rem 1rem;
+    border-radius: var(--row-radius); background: var(--primary); color: var(--primary-text); font-weight: 600; text-align: center; }
+[data-doc].is-selected, .view-details tr[data-doc].is-selected { background: color-mix(in srgb, var(--primary) 14%, var(--bg)); }
+[data-doc].is-carried, [data-drag-folder].is-carried { opacity: .45; }
+[data-doc], [data-drag-folder] { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.drag-ghost { position: fixed; left: 0; top: 0; z-index: 70; max-width: 18rem; padding: .4rem .8rem; border-radius: var(--row-radius); background: var(--primary); color: var(--primary-text);
+    font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: var(--shadow); pointer-events: none; }
+html.is-carrying, html.is-carrying * { cursor: grabbing !important; }
+/* The main menu's drop field while files are dragged (A169): uploads into "Dokumente allgemein". */
+.nav-drop { display: flex; align-items: center; gap: .75rem; min-height: 4rem; margin: 0 0 .5rem; padding: .75rem; border: 2px dashed var(--primary); border-radius: var(--row-radius);
+    color: var(--primary-ink); font-weight: 600; }
+.nav-drop[hidden] { display: none; }
+.nav-drop.is-drop-target { border-style: solid; }
+.folder-step .actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.folder-step form { margin: 0; }
+.folder-step button .icon { width: 1.1rem; height: 1.1rem; margin-right: .35rem; }
