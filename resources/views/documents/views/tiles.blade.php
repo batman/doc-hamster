@@ -11,6 +11,9 @@
                 <span class="name">{{ $document->title }}</span>
                 <span class="muted">{{ $document->created_at->format('d.m.Y') }}</span>
             </a>
+            @if ($searching)
+                @include('documents._folder-link')
+            @endif
         </li>
     @endforeach
 </ul>

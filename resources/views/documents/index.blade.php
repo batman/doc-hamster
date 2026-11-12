@@ -12,7 +12,15 @@
     <x-window :title="$openFolder?->name ?? __('documents.title')" kind="folder" :icon="$openFolder?->iconName() ?? 'file-text'"
               :url="route('documents.index', request()->except('page'))" :close="$openFolder ? route('documents.index') : null"
               :upload="$openFolder ? 'folder='.$openFolder->id : null"
-              :search="__('documents.search')">
+              :search="__('documents.search')" search-params="ocr all">
+        {{-- Search details (points 102, 103): all folders (never the Papierkorb, A207) and the recognised text (A202). --}}
+        <x-slot name="searchOptions">
+            <label class="check"><input type="checkbox" name="all" value="1" @checked($all)> {{ __('documents.search_all') }}</label>
+            <div class="field">
+                <label for="search-ocr">{{ __('documents.search_ocr') }}</label>
+                <input id="search-ocr" class="input-small" name="ocr" value="{{ $ocr }}" maxlength="200" autocomplete="off" enterkeyhint="search">
+            </div>
+        </x-slot>
         <x-slot:actions>
             <div class="toolbar">
                 @if ($tags->isNotEmpty())
@@ -211,10 +219,17 @@
             <p class="error" role="alert">{{ $errors->first() }}</p>
         @endif
 
+        @if ($searching)
+            {{-- The result list (point 105): documents only, each with its folder; X closes it (point 106). --}}
+            <div class="search-head">
+                <h2>{{ trans_choice('documents.search_found', $documents->count(), ['count' => $documents->count()]) }}</h2>
+                <a class="control-button" href="{{ route('documents.index', request()->except(['q', 'ocr', 'all', 'page'])) }}" data-window-search-clear aria-label="{{ __('app.window.search_clear') }}" data-tooltip="{{ __('app.window.search_clear') }}"><x-icon name="x" /></a>
+            </div>
+        @endif
         @if ($documents->isEmpty() && $selected === [] && $view !== 'calendar')
             {{-- A folder that only holds subfolders isn't "empty" (explorer, point 12). --}}
-            @if ($folderRows === [] || request()->filled('q'))
-                <div class="empty-state"><p class="muted">{{ __('documents.empty') }}</p></div>
+            @if ($folderRows === [] || $searching)
+                <div class="empty-state"><p class="muted">{{ $searching ? __('documents.search_none') : __('documents.empty') }}</p></div>
             @endif
         @else
             @include('documents.views.'.(in_array($view, ['small', 'large'], true) ? 'tiles' : $view))

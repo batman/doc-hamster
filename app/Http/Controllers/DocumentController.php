@@ -82,14 +82,24 @@ final class DocumentController
             $query->whereHas('tags', static fn ($tag) => $tag->whereKey($tagId));
         }
 
-        // Search in the window head: title, note or tag name (A104).
+        // Search in the window head: title, note or tag name (A104, A202); the search panel's text field looks in
+        // the recognised text (point 103), its checkbox through all folders (point 102, never the trash, A207).
         $q = trim((string) $request->query('q', ''));
         if ($q !== '') {
             $like = '%'.addcslashes($q, '%_\\').'%';
             $query->where(static fn ($w) => $w->where('title', 'like', $like)
                 ->orWhere('note', 'like', $like)
-                ->orWhere('ocr_text', 'like', $like)
                 ->orWhereHas('tags', static fn ($tag) => $tag->where('name', 'like', $like)));
+        }
+        $ocr = trim((string) $request->query('ocr', ''));
+        if ($ocr !== '') {
+            $query->where('ocr_text', 'like', '%'.addcslashes($ocr, '%_\\').'%');
+        }
+        $all = $request->query('all') === '1';
+        // Point 105: a search shows a result list of documents only (no folders), each with its folder (A204).
+        $searching = $q !== '' || $ocr !== '';
+        if ($searching) {
+            $query->with('folder');
         }
 
         // Like an explorer (points 10-12): a folder shows only its own receipts, the top level only those
@@ -107,6 +117,11 @@ final class DocumentController
         // Point 98: three main views – the folder view (in its last display mode), timeline and calendar.
         $folderMode = in_array($view, self::FOLDER_VIEWS, true) ? $view
             : (in_array($user->folder_view, self::FOLDER_VIEWS, true) ? $user->folder_view : 'details');
+        // The results of a search show in the folder view's display mode, also in a timeline or calendar window;
+        // closing the search brings the window's own view back (?view= stays).
+        if ($searching) {
+            $view = $folderMode;
+        }
         $wide = ! in_array($view, self::FOLDER_VIEWS, true);
         $wantedDates = $request->query('date');
         $dates = is_string($wantedDates) && in_array($wantedDates, self::DATE_BASES, true) ? $wantedDates
@@ -114,8 +129,8 @@ final class DocumentController
 
         // Timeline and calendar show every document of every folder (points 100, 101; the trash never, A201).
         // A search and the tag filter look through everything below the current folder.
-        if (! $wide && ($q !== '' || $selected !== [])) {
-            if ($folder !== null) {
+        if (! $wide && ($searching || $selected !== [])) {
+            if ($folder !== null && ! ($searching && $all)) {
                 $query->whereIn('folder_id', Folder::branchIds($folder));
             }
         } elseif (! $wide && $folder !== null) {
@@ -151,7 +166,7 @@ final class DocumentController
             $documents = $query->latest()->limit(self::LIMIT + 1)->get();
         }
         // Filtering in the browser works only when the page holds every receipt (point 7).
-        $complete = $selected === [] && $q === '' && ($view === 'calendar' || $documents->count() <= self::LIMIT);
+        $complete = $selected === [] && ! $searching && ($view === 'calendar' || $documents->count() <= self::LIMIT);
 
         return [
             'open' => null,
@@ -160,7 +175,10 @@ final class DocumentController
             'selected' => $selected,
             'folders' => $folders,
             'folder' => $folder,
-            'folderRows' => $wide ? [] : $this->folderRows($request, $folders, $folder),
+            'folderRows' => $wide || $searching ? [] : $this->folderRows($request, $folders, $folder),
+            'searching' => $searching,
+            'ocr' => $ocr,
+            'all' => $all,
             'view' => $view,
             'views' => self::VIEWS,
             'folderViews' => self::FOLDER_VIEWS,

@@ -6,7 +6,11 @@
     upload (where an upload belongs while this window is active, e.g. "folder=01H…"; sent as extra form fields),
     min, optimal, max, priority (point 54: the widths the automatic layout uses, e.g. min="36rem"; the higher the
     priority the later the window becomes a strip; defaults per kind below),
-    search (placeholder of a search field in the toolbar, A104: typing reloads the window body with ?q=…; the module reads q).
+    search (placeholder of a search field in the toolbar, A104: Enter or the magnifier reloads the window body with ?q=…; the module reads q),
+    searchLive (true = typing already searches, after a short pause; default false, points 104/105),
+    slot "searchOptions" (fields of a search panel behind a chevron beside the field, e.g. a checkbox "all" or a text field "ocr";
+    they are sent with q) and searchParams (the names of those fields, space-separated: kept out of the hidden fields and dropped,
+    like q, when the search is closed).
     Head like Windows (points 70, 72): title (ellipsis), then the three window controls minimise (‹), maximise, X.
     Search, actions and the module's ⋯ menu (slot "menu"; no ⋯ button without entries) stand in
     a toolbar row below the head that follows the window's own width (container queries, point 41).
@@ -14,7 +18,7 @@
     a window loaded later get a per-window suffix in app.js – write plain ids, dialog names and labels as usual.
     kind (the module type, e.g. "folder", "detail"; default the route name): picks the default widths; a dragged width belongs only to that one window (A97).
 --}}
-@props(['title', 'icon' => 'file-text', 'url' => null, 'close' => null, 'upload' => null, 'min' => null, 'optimal' => null, 'max' => null, 'priority' => null, 'search' => null, 'kind' => null])
+@props(['title', 'icon' => 'file-text', 'url' => null, 'close' => null, 'upload' => null, 'min' => null, 'optimal' => null, 'max' => null, 'priority' => null, 'search' => null, 'searchLive' => false, 'searchParams' => '', 'kind' => null])
 @php
     $url ??= request()->fullUrl();
     $kind ??= request()->route()?->getName() ?? 'page';
@@ -34,6 +38,8 @@
     // The search sends q; the window's other query fields go along, so a search without JavaScript keeps them (A104).
     $searchKeep = [];
     $searchTerm = '';
+    $searchOwned = array_values(array_filter(explode(' ', (string) $searchParams)));
+    $searchSet = false;
     if ($search) {
         foreach (array_filter(explode('&', (string) parse_url($url, PHP_URL_QUERY))) as $pair) {
             [$key, $value] = array_pad(explode('=', $pair, 2), 2, '');
@@ -41,6 +47,8 @@
             $value = urldecode($value);
             if ($key === 'q') {
                 $searchTerm = $value;
+            } elseif (in_array($key, $searchOwned, true)) {
+                $searchSet = $searchSet || $value !== '';
             } else {
                 $searchKeep[] = [$key, $value];
             }
@@ -69,12 +77,30 @@
         </header>
         <div class="win-tools">
             @if ($search)
-                <form class="win-search" role="search" method="get" action="{{ strtok($url, '?') }}" data-window-search>
+                <form class="win-search" role="search" method="get" action="{{ strtok($url, '?') }}" data-window-search data-search-params="{{ implode(' ', $searchOwned) }}" @if ($searchLive) data-search-live @endif>
                     @foreach ($searchKeep as [$key, $value])
                         <input type="hidden" name="{{ $key }}" value="{{ $value }}">
                     @endforeach
-                    <input type="search" class="input-small" name="q" value="{{ $searchTerm }}" placeholder="{{ $search }}" aria-label="{{ $search }}" autocomplete="off" enterkeyhint="search">
-                    <button type="button" class="win-search-clear" data-window-search-clear aria-label="{{ __('app.window.search_clear') }}" data-tooltip="{{ __('app.window.search_clear') }}" @if ($searchTerm === '') hidden @endif><x-icon name="x" /></button>
+                    {{-- X clears and closes the search, the magnifier searches (points 104, 106; Field with symbol). --}}
+                    <div class="field-addon">
+                        <input type="search" class="input-small" name="q" value="{{ $searchTerm }}" placeholder="{{ $search }}" aria-label="{{ $search }}" autocomplete="off" enterkeyhint="search">
+                        <span class="addon-end">
+                            <button type="button" class="control-button addon-button" data-window-search-clear aria-label="{{ __('app.window.search_clear') }}" data-tooltip="{{ __('app.window.search_clear') }}" @if ($searchTerm === '' && ! $searchSet) hidden @endif><x-icon name="x" /></button>
+                            <button type="submit" class="control-button addon-button" aria-label="{{ __('app.window.search_run') }}" data-tooltip="{{ __('app.window.search_run') }}"><x-icon name="search" /></button>
+                        </span>
+                    </div>
+                    @if (isset($searchOptions) && $searchOptions->hasActualContent())
+                        {{-- The search details (point 102): a panel of the same form, so its fields go with q. --}}
+                        <div class="dropdown win-search-more">
+                            <button type="button" class="icon-button @if ($searchSet) is-active @endif" aria-label="{{ __('app.window.search_options') }}" data-tooltip="{{ __('app.window.search_options') }}" aria-haspopup="true" aria-expanded="false"><x-icon name="chevron-down" /></button>
+                            <div class="dropdown-panel win-search-panel" hidden>
+                                {{ $searchOptions }}
+                                <div class="dialog-actions">
+                                    <button type="submit">{{ __('app.window.search_run') }}</button>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 </form>
             @endif
             <div class="win-actions">

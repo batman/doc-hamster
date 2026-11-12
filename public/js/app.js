@@ -1397,25 +1397,39 @@
             return next;
         });
 
+    // Points 102-106: Enter, the magnifier or the panel's "Suchen" search (typing only with data-search-live); the
+    // fields of the search panel (data-search-params names them) go along with q; X closes the search (drops them all).
     const setupWindowSearch = () => {
         const runs = new WeakMap();
         const fieldOf = form => form.querySelector('input[name="q"]');
+        const ownedOf = form => ['q', ...(form.dataset.searchParams ?? '').split(' ').filter(Boolean)];
         const search = form => {
             const win = form.closest('section[data-window]');
             const field = fieldOf(form);
-            const term = field.value.trim();
             const run = runs.get(form) ?? {};
             clearTimeout(run.timer);
             run.abort?.abort();
-            form.querySelector('[data-window-search-clear]')?.toggleAttribute('hidden', field.value === '');
             const url = new URL(win?.dataset.windowUrl ?? location.href, location.href);
-            if ((url.searchParams.get('q') ?? '') === term) {
-                return;
+            const before = url.search;
+            const data = new FormData(form);
+            ownedOf(form).forEach(name => {
+                const value = String(data.get(name) ?? '').trim();
+                if (value === '') {
+                    url.searchParams.delete(name);
+                } else {
+                    url.searchParams.set(name, value);
+                }
+            });
+            const active = ownedOf(form).some(name => url.searchParams.has(name));
+            form.querySelector('[data-window-search-clear]')?.toggleAttribute('hidden', !active && field.value === '');
+            form.querySelector('.win-search-more > .icon-button')?.classList.toggle('is-active', ownedOf(form).slice(1).some(name => url.searchParams.has(name)));
+            const panel = form.querySelector('.win-search-more > .dropdown-panel');
+            if (panel && !panel.hidden) {
+                panel.hidden = true;
+                panel.previousElementSibling?.setAttribute('aria-expanded', 'false');
             }
-            if (term === '') {
-                url.searchParams.delete('q');
-            } else {
-                url.searchParams.set('q', term);
+            if (url.search === before) {
+                return;
             }
             url.searchParams.delete('page'); // a new search starts on its first page
             if (!win) {
@@ -1438,14 +1452,25 @@
         };
         const clear = form => {
             fieldOf(form).value = '';
+            form.querySelectorAll('.win-search-more input').forEach(input => {
+                if (input.type === 'checkbox' || input.type === 'radio') {
+                    input.checked = false;
+                } else {
+                    input.value = '';
+                }
+            });
             search(form);
             fieldOf(form).focus();
         };
         document.addEventListener('input', event => {
             const form = event.target.closest('[data-window-search]');
             if (form && event.target === fieldOf(form)) {
-                form.querySelector('[data-window-search-clear]')?.toggleAttribute('hidden', event.target.value === '');
-                later(form);
+                if (event.target.value !== '') {
+                    form.querySelector('[data-window-search-clear]')?.removeAttribute('hidden');
+                }
+                if (form.hasAttribute('data-search-live')) {
+                    later(form);
+                }
             }
         });
         document.addEventListener('submit', event => {
@@ -1456,15 +1481,18 @@
             }
         });
         document.addEventListener('click', event => {
+            // Also an X elsewhere in the window, e.g. in the head of a result list (point 106).
             const button = event.target.closest('[data-window-search-clear]');
-            if (button) {
-                clear(button.closest('[data-window-search]'));
+            const form = button?.closest('[data-window-search]') ?? button?.closest('section[data-window]')?.querySelector('[data-window-search]');
+            if (form) {
+                event.preventDefault();
+                clear(form);
             }
         });
         // Escape in a filled field clears the search; nothing else reacts to that key then.
         document.addEventListener('keydown', event => {
             const form = event.target.closest?.('[data-window-search]');
-            if (event.key === 'Escape' && form && fieldOf(form).value !== '') {
+            if (event.key === 'Escape' && form && event.target === fieldOf(form) && fieldOf(form).value !== '') {
                 event.preventDefault();
                 event.stopImmediatePropagation();
                 clear(form);

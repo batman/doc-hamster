@@ -5,6 +5,11 @@ declare(strict_types=1);
 return [
     'title' => 'Dokumente',
     'search' => 'Dokumente durchsuchen',
+    'search_all' => 'In allen Ordnern suchen',
+    'search_ocr' => 'Erkannter Text enthält',
+    'search_found' => '{0} Keine Treffer|{1} 1 Treffer|[2,*] :count Treffer',
+    'search_none' => 'Nichts gefunden.',
+    'folder' => 'Ordner',
     'choose' => 'Foto oder PDF auswählen',
     'upload' => 'Dokument hochladen',
     'saved' => '{1} Dokument gespeichert.|[2,*] :count Dokumente gespeichert.',

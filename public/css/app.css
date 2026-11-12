@@ -1276,17 +1276,23 @@ html.has-tips [data-tooltip]::before, html.has-tips [data-tooltip]::after { visi
 
 
 /* A104: search field in the window toolbar (<x-window search="…">) */
-.win-search { position: relative; flex: 0 1 18rem; min-width: 8rem; margin: 0; }
-.win-search input[type="search"] { width: 100%; padding-right: 2.25rem; }
+/* Points 102-106: X and magnifier inside the field (Field with symbol), the chevron of the search panel beside it. */
+.win-search { position: relative; display: flex; align-items: center; gap: .25rem; flex: 0 1 20rem; min-width: 10rem; margin: 0; }
+.win-search > .field-addon { flex: 1 1 auto; min-width: 0; }
+.win-search input[type="search"] { width: 100%; }
 .win-search input[type="search"]::-webkit-search-cancel-button { appearance: none; display: none; }
-.win-search-clear {
-    position: absolute; top: 50%; right: .25rem; translate: 0 -50%; display: inline-flex; align-items: center; justify-content: center;
-    width: 2rem; min-width: 2rem; height: 2rem; min-height: 2rem; margin: 0; padding: 0;
-    border: 0; border-radius: 6px; background: none; box-shadow: none; color: var(--muted);
-}
-.win-search-clear[hidden] { display: none; }
-.win-search-clear:hover { background: rgb(127 127 127 / .14); color: var(--text); }
-.win-search-clear .icon { width: 1rem; height: 1rem; }
+.win-search .field-addon:has(> .addon-end > :not([hidden]) ~ :not([hidden])) > input { padding-right: 4.6rem; }
+.win-search-more { flex: none; }
+.win-search-panel { min-width: 16rem; padding: .75rem; }
+.win-search-panel .field { margin: .5rem 0 0; }
+/* Search results (points 105, 106, A204): a head with the count and X, each result with its folder as a quiet link. */
+.search-head { display: flex; align-items: center; gap: .5rem; margin: .5rem 0 0; }
+.search-head h2 { margin: 0 auto 0 0; font-size: 1rem; }
+.win-body a.doc-folder { display: inline-flex; align-items: center; gap: .3rem; min-width: 0; max-width: 100%; color: var(--muted); font-size: .85rem; text-decoration: none; }
+.doc-folder span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.doc-folder .icon { flex: none; width: 1rem; height: 1rem; }
+.win-body a.doc-folder:hover { color: var(--primary-ink); text-decoration: underline; }
+.win-body .view-tiles a.doc-folder { display: flex; margin-top: .15rem; }
 
 /* Document viewer in the detail window (app.js "Document viewer"): zoom, pan, box selection */
 .detail-doc:has(+ .doc-zoom) { position: relative; cursor: grab; user-select: none; }
