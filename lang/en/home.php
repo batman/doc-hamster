@@ -9,7 +9,7 @@ return [
     'body' => 'Text',
     'text_hint' => 'Write the text right on the note. Lists are set one entry per line when you leave it.',
     'list_hint' => 'List: [entry 1, entry 2, #done entry] – anywhere in the text, also several. A click on the box ticks it.',
-    'link' => 'Link a receipt',
+    'link' => 'Link a document',
     'link_hint' => 'Type its name',
     'unlink' => 'Unlink ":title"',
     'share' => 'Show to everyone',

@@ -8,12 +8,12 @@ return [
     'views' => [
         'open' => 'Transactions without a document',
         'matched' => 'Matched transactions',
-        'receipts' => 'Documents without a transaction',
+        'documents' => 'Documents without a transaction',
     ],
     'empty' => [
         'open' => 'No open transactions.',
         'matched' => 'No transaction matched yet.',
-        'receipts' => 'All documents are matched.',
+        'documents' => 'All documents are matched.',
     ],
     'receipts_count' => '{1} 1 document|[2,*] :count documents',
 

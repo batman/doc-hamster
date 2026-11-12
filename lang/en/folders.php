@@ -78,8 +78,8 @@ return [
     // Names of the folder symbols (Folder::ICONS), for screen readers and tooltips.
     'icons' => [
         'folder' => 'Folder',
-        'receipt' => 'Document',
-        'receipt-2' => 'Till receipt',
+        'document' => 'Document',
+        'document-2' => 'Till document',
         'file-invoice' => 'Invoice',
         'file-text' => 'Document',
         'briefcase' => 'Work',
