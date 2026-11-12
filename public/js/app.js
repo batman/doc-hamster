@@ -818,13 +818,15 @@
         // Widths like Apple's split view (NSSplitView; points 54, 55, 64, A91–A94). The row never scrolls sideways:
         // the windows always share exactly the room there is. Every window declares min, optimal and max width and a
         // priority (data-window-min/-opt/-max/-priority from <x-window>; a pinned window has the highest). A width
-        // dragged by hand (stored per kind, Package L) is that kind's preferred width. A window keeps its width from
-        // one layout to the next; only the difference to the room is shared out:
+        // dragged by hand (A97: data-window-hand, only this one window, kept in the tab's window history) is its
+        // preferred width; a new window starts at its kind's optimal width. A window keeps its width from one layout
+        // to the next; only the difference to the room is shared out:
         //  - too little room → windows shrink towards their min, lowest priority first (among equals from the left),
         //    the newest and the one just opened again last; still too little → the lowest-priority window becomes a
         //    strip (never the newest, a pinned one or the one just opened again);
-        //  - more room → a strip the layout made opens again only with room for its min + 4rem (hysteresis), then
-        //    windows grow back to their preferred width, then up to their max; the rest goes to the last wide window.
+        //  - more room → a strip the layout made opens again as soon as the wide windows at their min leave room for
+        //    its min + 4rem (A96: hysteresis, almost where it collapsed), then windows grow back to their preferred
+        //    width, then up to their max; the rest goes to the last wide window.
         // While an edge is dragged (sizer below) nothing else lays out until the pointer is let go.
         // Manual minimise (data-folded) stays a strip until it is opened again.
         let keep = null;
@@ -836,21 +838,15 @@
         };
         const STRIP = 3.5 * rem;
         const SPARE = 4 * rem;
-        const handWidths = () => {
-            try {
-                const stored = JSON.parse(localStorage.getItem('dh-win-widths'));
-                return stored && typeof stored === 'object' ? stored : {};
-            } catch {
-                return {};
-            }
-        };
-        const measure = (win, at, hand) => {
-            const own = hand[win.dataset.windowKind || 'page'];
+        // A97: widths were once stored per kind; that store is gone.
+        try { localStorage.removeItem('dh-win-widths'); } catch { /* nothing stored */ }
+        const measure = (win, at) => {
+            const own = parseFloat(win.dataset.windowHand);
             const min = px(win.dataset.windowMin, 24);
-            const pref = typeof own === 'number' ? own : Math.max(min, px(win.dataset.windowOpt, 32));
+            const pref = own > 0 ? own : Math.max(min, px(win.dataset.windowOpt, 32));
             const pinned = win.classList.contains('is-pinned');
             return {
-                win, at, pref, pinned,
+                win, at, pref, pinned, hand: own > 0,
                 min: Math.min(min, pref),
                 max: Math.max(pref, px(win.dataset.windowMax, 48)),
                 prio: pinned ? Infinity : (Number(win.dataset.windowPriority) || 1),
@@ -858,11 +854,14 @@
             };
         };
         const byPrio = (a, b) => a.prio - b.prio || a.at - b.at;
-        // Writes widths and strips; the last wide window takes rounding leftovers (is-fill).
+        // Writes widths and strips; the last wide window takes rounding leftovers (is-fill). A95: every window is its
+        // own stacking layer (view-transition-name), so each window lies above the next one – the right half of its
+        // drag edge reaches over the neighbour and must not be covered by it.
         const paint = info => {
             box.classList.add('is-laid');
             const last = info.findLast(item => !item.strip);
-            info.forEach(item => {
+            info.forEach((item, at) => {
+                item.win.style.zIndex = String(info.length - at);
                 item.win.classList.toggle('is-min', item.strip);
                 item.win.classList.toggle('is-fill', item === last);
                 if (!item.strip) {
@@ -884,11 +883,10 @@
                 return;
             }
             fresh ||= !box.classList.contains('is-laid');
-            const hand = handWidths();
             const avail = box.clientWidth;
             const newest = all.at(-1);
             const info = all.map((win, at) => {
-                const item = measure(win, at, hand);
+                const item = measure(win, at);
                 const wasStrip = win.classList.contains('is-min');
                 const cur = parseFloat(win.style.getPropertyValue('--win-w'));
                 item.protect = win === keep || win === newest;
@@ -900,10 +898,12 @@
             });
             const open = () => info.filter(item => !item.strip);
             const used = () => info.reduce((sum, item) => sum + (item.strip ? STRIP : item.w), 0);
+            // A window that keeps its width keeps at most its preferred one (more was only leftover), so collapsing
+            // and opening again (A96) measure the same.
             const shrink = (all = false) => {
                 let need = used() - avail;
-                open().filter(item => all || !item.hold).sort((a, b) => a.protect - b.protect || byPrio(a, b)).forEach(item => {
-                    const give = Math.min(item.w - item.min, need);
+                open().sort((a, b) => a.protect - b.protect || byPrio(a, b)).forEach(item => {
+                    const give = Math.min(item.w - (all || !item.hold ? item.min : Math.max(item.min, item.pref)), need);
                     if (give > 0) {
                         item.w -= give;
                         need -= give;
@@ -932,12 +932,14 @@
                 open().forEach(item => { item.w -= soft > 0 ? Math.max(0, item.w - 8 * rem) * Math.min(1, need / soft) : 0; });
             }
             // More room: strips the layout made open again (with room to spare), then the windows grow.
-            // A strip opens again when the wide windows, each at most at its preferred width (more was only
-            // leftover), leave room for its min + 4rem. A width set by hand is preferred, so a drag that snapped a
-            // window to a strip is not undone by the next layout.
+            // A96: a strip opens again as soon as the wide windows at their min leave room for its min + 4rem – the
+            // measure the collapse used, so it comes back about 4rem after the point where it went. A window that
+            // keeps its width (just opened / opened again) counts with that width, one sized by hand with its hand
+            // width (at most its current one), so a drag that snapped a window to a strip is not undone right away.
             const back = info.filter(item => item.strip && !item.folded).sort((a, b) => byPrio(b, a));
             if (back.length && !collapsed && !fresh) {
-                let spare = avail - info.reduce((sum, item) => sum + (item.strip ? STRIP : Math.min(item.w, item.pref)), 0);
+                const floor = item => (item.hold || item.hand ? Math.max(item.min, Math.min(item.w, item.pref)) : item.min);
+                let spare = avail - info.reduce((sum, item) => sum + (item.strip ? STRIP : floor(item)), 0);
                 const opened = back.filter(item => {
                     if (spare < item.min - STRIP + SPARE) {
                         return false;
@@ -947,8 +949,8 @@
                     spare -= item.min - STRIP;
                     return true;
                 });
-                if (opened.length) {
-                    open().forEach(item => { item.w = Math.min(item.w, item.pref); });
+                if (opened.length && shrink() > 0) {
+                    shrink(true);
                 }
             }
             let room = avail - used();
@@ -987,9 +989,8 @@
                 return null;
             }
             dragging = true;
-            const hand = handWidths();
             const info = all.map((other, i) => {
-                const item = measure(other, i, hand);
+                const item = measure(other, i);
                 item.was = other.classList.contains('is-min');
                 item.strip = item.was;
                 item.w0 = other.getBoundingClientRect().width;
@@ -1071,7 +1072,7 @@
         const remember = () => {
             try {
                 sessionStorage.setItem(KEY, JSON.stringify({
-                    list: wins().map(win => ({ id: win.dataset.windowId, url: win.dataset.windowUrl, title: win.dataset.windowTitle, icon: win.querySelector('.win-strip .strip-label > .icon')?.outerHTML ?? '', folded: win.dataset.folded !== undefined, pinned: win.classList.contains('is-pinned'), closable: win.querySelector('[data-window-close]') !== null, kind: win.dataset.windowKind, wmin: win.dataset.windowMin, wopt: win.dataset.windowOpt, wmax: win.dataset.windowMax, prio: win.dataset.windowPriority })),
+                    list: wins().map(win => ({ id: win.dataset.windowId, url: win.dataset.windowUrl, title: win.dataset.windowTitle, icon: win.querySelector('.win-strip .strip-label > .icon')?.outerHTML ?? '', folded: win.dataset.folded !== undefined, pinned: win.classList.contains('is-pinned'), closable: win.querySelector('[data-window-close]') !== null, kind: win.dataset.windowKind, wmin: win.dataset.windowMin, wopt: win.dataset.windowOpt, wmax: win.dataset.windowMax, prio: win.dataset.windowPriority, hand: win.dataset.windowHand })),
                     active: active()?.dataset.windowId ?? null,
                 }));
             } catch { /* not remembered */ }
@@ -1110,7 +1111,7 @@
             }
             win.dataset.lazy = '';
             // The width values come along, so the layout treats the strip like the loaded window (point 54).
-            [['windowKind', item.kind], ['windowMin', item.wmin], ['windowOpt', item.wopt], ['windowMax', item.wmax], ['windowPriority', item.prio]]
+            [['windowKind', item.kind], ['windowMin', item.wmin], ['windowOpt', item.wopt], ['windowMax', item.wmax], ['windowPriority', item.prio], ['windowHand', item.hand]]
                 .forEach(([key, value]) => { if (value) win.dataset[key] = value; });
             win.classList.toggle('is-pinned', !!item.pinned);
             // The same strip as a server window has: arrow, icon and title, pin mark.
@@ -1145,6 +1146,10 @@
                     full.classList.toggle('is-active', win.classList.contains('is-active'));
                     full.toggleAttribute('data-folded', win.dataset.folded !== undefined);
                     full.style.setProperty('--win-w', win.style.getPropertyValue('--win-w'));
+                    full.style.zIndex = win.style.zIndex;
+                    if (win.dataset.windowHand) {
+                        full.dataset.windowHand = win.dataset.windowHand;
+                    }
                     full.classList.toggle('is-fill', win.classList.contains('is-fill'));
                     pin(full, win.classList.contains('is-pinned'));
                     if (keep === win) {
@@ -1264,6 +1269,9 @@
                 const win = item === mine ? current : (at >= 0 ? pool.splice(at, 1)[0] : placeholder(item));
                 if (item.id) {
                     win.dataset.windowId = item.id;
+                }
+                if (item.hand) {
+                    win.dataset.windowHand = item.hand;
                 }
                 win.toggleAttribute('data-folded', !!item.folded && win !== current);
                 pin(win, !!item.pinned);
@@ -3924,40 +3932,29 @@
 /* Package L */
 // Point 44 / A37: the drag edge right of a window changes that window's width (drag, arrow keys, double-click =
 // back to the module's optimal width) through the window system's sizer (A91–A94: the windows on the right give
-// way). The browser remembers the width per module kind (data-window-kind); for the layout it is that kind's
-// preferred width.
+// way). A97: the width belongs to this one window (data-window-hand, kept in the tab's window history); for the
+// layout it is the window's preferred width. New windows start at their kind's optimal width.
 // Point 52 / A39: the view switcher of a list belongs to its window – it reloads only that window with ?view=…
 // and saves the choice as the default for new windows.
 (() => {
     const DocHamster = window.DocHamster;
-    const WIDTHS = 'dh-win-widths';
-    const read = () => {
-        try {
-            const stored = JSON.parse(localStorage.getItem(WIDTHS));
-            return stored && typeof stored === 'object' ? stored : {};
-        } catch {
-            return {};
-        }
-    };
-    const write = (kind, width) => {
-        const all = read();
+    // The window's own width (null = back to the module's optimal width); sizer.end() stores it in the history.
+    const write = (win, width) => {
         if (width === null) {
-            delete all[kind];
+            delete win.dataset.windowHand;
         } else {
-            all[kind] = Math.round(width);
+            win.dataset.windowHand = String(Math.round(width));
         }
-        try { localStorage.setItem(WIDTHS, JSON.stringify(all)); } catch { /* not remembered */ }
     };
-    const kindOf = win => win.dataset.windowKind || 'page';
     // One sizing step through the window system's sizer (A91–A94): it shares the width out with the windows on the
-    // right; the width that came out is remembered for the kind (null = back to the module's optimal width).
+    // right; the width that came out is remembered for this window.
     const size = (win, step) => {
         const sizer = DocHamster.windowSizer?.(win);
         if (!sizer) {
             return;
         }
         const width = step(sizer);
-        write(kindOf(win), width);
+        write(win, width);
         sizer.end();
     };
 
@@ -4008,7 +4005,7 @@
                 edge.classList.remove('is-active');
                 box.classList.remove('is-sizing');
                 if (width !== null) {
-                    write(kindOf(win), width);
+                    write(win, width);
                 }
                 sizer.end();
                 box.dispatchEvent(new CustomEvent('dh:win-drag', { detail: { phase: 'end', win } }));
@@ -4020,7 +4017,7 @@
         box.addEventListener('dblclick', event => {
             const win = event.target.closest('[data-window-edge]')?.closest('section[data-window]');
             if (win) {
-                write(kindOf(win), null);
+                write(win, null);
                 const sizer = DocHamster.windowSizer?.(win);
                 sizer?.to(sizer.pref);
                 sizer?.end();

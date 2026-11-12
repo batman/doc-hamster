@@ -11,7 +11,7 @@
     head that follows the window's own width (container queries, point 41): one row, search on its own row, narrow.
     One window = one instance of a module for one record; the same record can be open twice (point 40), so ids inside
     a window loaded later get a per-window suffix in app.js – write plain ids, dialog names and labels as usual.
-    kind (the module type, e.g. "folder", "detail"; default the route name): the browser remembers a dragged width per kind (point 44).
+    kind (the module type, e.g. "folder", "detail"; default the route name): picks the default widths; a dragged width belongs only to that one window (A97).
 --}}
 @props(['title', 'icon' => 'file-text', 'url' => null, 'close' => null, 'upload' => null, 'min' => null, 'optimal' => null, 'max' => null, 'priority' => null, 'search' => null, 'kind' => null])
 @php
