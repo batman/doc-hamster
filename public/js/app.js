@@ -3225,6 +3225,17 @@
             showRename(event.target.closest('li'), false);
         }
     });
+    // A184: a renamed folder or document gets its new title in every open window that shows it (head, strip, history).
+    const retitle = (matches, name) => document.querySelectorAll('section[data-window]').forEach(win => {
+        let url;
+        try { url = new URL(win.dataset.windowUrl, location.href); } catch { return; }
+        if (!matches(url)) return;
+        win.dataset.windowTitle = name;
+        win.setAttribute('aria-label', name);
+        win.querySelectorAll(':scope .win-title').forEach(h => { h.textContent = name; h.title = name; });
+        const label = win.querySelector(':scope > .win-strip .strip-label > span');
+        if (label) label.textContent = name;
+    });
     document.addEventListener('submit', event => {
         const form = event.target.closest('[data-folder-rename-form]');
         if (!form) {
@@ -3238,6 +3249,8 @@
                 link.textContent = json.name;
                 row.dataset.name = json.name;
                 form.querySelector('input[name="name"]').defaultValue = json.name;
+                const id = new URL(link.href, location.href).searchParams.get('folder');
+                if (id) retitle(url => url.searchParams.get('folder') === id && !url.searchParams.has('new'), json.name);
             }
             showRename(row, false);
             toast(json.message);
@@ -3281,6 +3294,8 @@
             const before = title.textContent;
             title.textContent = value;
             post(button.dataset.docRename, { field: 'title', value }).then(json => {
+                const doc = (link.getAttribute('href') ?? '').match(/\/documents\/([^/?#]+)/)?.[1];
+                if (doc) retitle(url => url.pathname.replace(/\/$/, '').endsWith('/documents/' + doc), value);
                 toast(json.message);
                 refresh();
             }).catch(error => {
