@@ -1,5 +1,9 @@
 # DocHamster 🐹
 
+<p align="center">
+  <img src="docs/assets/hamster-wave.gif" width="168" alt="DocHamster mascot waving hello">
+</p>
+
 Snap a receipt, send it, forget it. DocHamster takes the photo with time and (optional) location, matches it to your bank transactions (CSV/Excel import from any bank), and builds a clean receipt pack (PDF) for your tax advisor.
 
 > **Status: early version (v0.1).** Upload, receipt list, bank CSV import, tags, notes and export work; more is coming. The plan is in [`docs/PLAN.md`](docs/PLAN.md) (German).
@@ -49,6 +53,10 @@ Security note for operators: where PHP's Imagick extension is installed, DocHams
 
 ## Try it in 2 minutes (Docker)
 
+<p align="center">
+  <img src="docs/assets/hamster-eat.gif" width="140" alt="Hamster happily munching receipts">
+</p>
+
 The fastest way to see DocHamster running. You need only Docker — no PHP, no Composer, no database, no hosting.
 
 ```sh
@@ -74,11 +82,17 @@ This is only for trying out DocHamster — real installations use `install.php` 
 - Read-only access for your tax advisor
 - Passkey device pairing – no password every time
 
+<p align="center">
+  <img src="docs/assets/hamster-sleep.gif" width="140" alt="Hamster dreaming of what's next">
+</p>
+
 DocHamster is **not** a tax or bookkeeping app, and it uses **no cloud AI**: speech-to-text and everything else runs on your own server.
 
 ## Tech
 
 PHP 8.3+, Laravel, MariaDB 10.11+ or MySQL 8.4+, Blade + small vanilla JS PWA (no build step). No Docker needed: runs on any Linux server or web hosting that meets the minimum requirements; optional extras (OCR with Tesseract/ocrmypdf, local speech-to-text) only where the server has them. Final choices: [`docs/collaboration/DECISIONS.md`](docs/collaboration/DECISIONS.md).
+
+The mascot is drawn by [`public/js/hamster-mascot.js`](public/js/hamster-mascot.js); the GIFs above are rendered from that same engine — see [`scripts/hamster`](scripts/hamster).
 
 ## Contributing
 
