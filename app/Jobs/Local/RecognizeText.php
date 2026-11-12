@@ -147,6 +147,14 @@ final class RecognizeText implements ShouldQueue
             OcrLog::record($document->org_id, $source, $error[0] ?? 'failed', [...$log, 'message' => $error[1] ?? null]);
         }
 
+        if ($text === null && self::hasEarlierText($document->id)) {
+            // Point 58/A63, as in the browser: a failed read keeps the text found earlier or corrected by hand;
+            // only a document without text is marked failed. The failure itself is in the OCR log.
+            self::finish($document, ['ocr_status' => 'done', 'ocr_pass' => OcrProgress::PASSES]);
+
+            return;
+        }
+
         self::finish($document, [
             'ocr_text' => $text !== null ? trim($text) : null,
             'ocr_status' => $text !== null ? 'done' : 'failed',
@@ -184,6 +192,14 @@ final class RecognizeText implements ShouldQueue
         }
 
         return OcrLog::text('ocr.reason.type', ['type' => OcrLog::type($file->mime)]);
+    }
+
+    /** Asked again after the read: a text typed or stored while the read ran counts too. */
+    private static function hasEarlierText(string $documentId): bool
+    {
+        $earlier = Document::query()->withoutGlobalScopes()->whereKey($documentId)->value('ocr_text');
+
+        return is_string($earlier) && trim($earlier) !== '';
     }
 
     /** @param array<string, mixed> $values */
