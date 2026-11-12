@@ -8,6 +8,7 @@ use App\Domain\Audit\AuditLog;
 use App\Domain\Documents\Folder;
 use App\Domain\Documents\Tag;
 use App\Domain\Notes\Note;
+use App\Domain\Notes\NoteColumn;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Palette\PaletteColor;
 use Closure;
@@ -56,6 +57,7 @@ final class TagController
                 ->map(static fn (Folder $folder): string => sprintf('.fc-%s{--folder:%s}', $folder->id, $folder->color)))
             // Palette and note colours as framework classes c-rrggbb (points 14-15).
             ->merge(collect(PaletteColor::hexes())->merge(Note::query()->whereNotNull('color')->distinct()->pluck('color'))->push(Note::DEFAULT_COLOR)
+                ->merge(NoteColumn::query()->get(['color', 'note_color'])->flatMap(static fn (NoteColumn $column): array => [$column->color, $column->note_color]))
                 ->filter(static fn (mixed $hex): bool => is_string($hex) && preg_match(PaletteColor::HEX, $hex) === 1)
                 ->unique()->map(static fn (string $hex): string => PaletteColor::cssRule($hex)))
             ->implode('

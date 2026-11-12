@@ -190,3 +190,22 @@ it('puts notes on a board of columns, moves, archives and tags them', function (
     expect($a->fresh()->column_id)->toBe($first->id)->and($a->fresh()->archived_at)->toBeNull();
     $this->post('/notes/columns/'.$first->id.'/delete')->assertStatus(422);
 });
+
+it('sets a column look and sorting from its menu and archives all its notes', function (): void {
+    $this->actingAs($this->admin->user)->get('/')->assertOk();
+    $column = NoteColumn::query()->withoutGlobalScope(OrgScope::class)->firstOrFail();
+
+    $this->postJson('/notes/columns/'.$column->id.'/look', ['color' => '#2e7d32', 'note_color' => '#e53935', 'sort' => 'title'])->assertOk();
+    $this->postJson('/notes/columns/'.$column->id.'/look', ['sort' => 'nope'])->assertStatus(422);
+    expect($column->fresh()->only(['color', 'note_color', 'note_sort']))->toBe(['color' => '#2e7d32', 'note_color' => '#e53935', 'note_sort' => 'title']);
+
+    $this->post('/notes', ['title' => 'Zebra']);
+    $this->post('/notes', ['title' => 'Apfel']);
+    $this->get('/')->assertSeeInOrder(['>Apfel<', '>Zebra<'], false)->assertSee('has-color c-2e7d32', false);
+
+    $this->postJson('/notes/columns/'.$column->id.'/look', ['color' => 'none'])->assertOk();
+    expect($column->fresh()->color)->toBeNull();
+
+    $this->post('/notes/columns/'.$column->id.'/archive')->assertRedirect(route('home'));
+    expect(Note::query()->withoutGlobalScope(OrgScope::class)->whereNull('archived_at')->count())->toBe(0);
+});

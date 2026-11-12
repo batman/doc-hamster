@@ -34,6 +34,8 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('notes/columns', [NoteColumnController::class, 'store'])->name('notes.columns.store');
     Route::post('notes/columns/order', [NoteColumnController::class, 'order'])->name('notes.columns.order');
     Route::post('notes/columns/{id}', [NoteColumnController::class, 'update'])->name('notes.columns.update');
+    Route::post('notes/columns/{id}/look', [NoteColumnController::class, 'look'])->name('notes.columns.look');
+    Route::post('notes/columns/{id}/archive', [NoteColumnController::class, 'archive'])->name('notes.columns.archive');
     Route::post('notes/columns/{id}/delete', [NoteColumnController::class, 'destroy'])->name('notes.columns.destroy');
     Route::get('notes/archive', [HomeController::class, 'archive'])->name('notes.archive');
     Route::post('notes', [HomeController::class, 'store'])->name('notes.store');

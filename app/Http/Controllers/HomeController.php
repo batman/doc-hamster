@@ -43,6 +43,8 @@ final class HomeController
         // A note without a column (or whose column is gone) lies in the first one.
         $first = (string) $columns->first()?->id;
         $byColumn = $notes->groupBy(static fn (Note $note): string => $columns->contains('id', $note->column_id) ? (string) $note->column_id : $first);
+        // Each column in its own order (A103): dragged, newest first or by title.
+        $byColumn = $byColumn->map(static fn ($cards, $id) => $columns->firstWhere('id', $id)?->order($cards) ?? $cards);
 
         return view('home.index', [
             'columns' => $columns,

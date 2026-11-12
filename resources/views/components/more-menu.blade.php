@@ -7,10 +7,11 @@
         <button type="button" class="menu-item menu-danger" data-dialog-open="…"><x-icon name="trash" /><span>Löschen</span></button>
     </x-more-menu>
     Entries never wrap; the menu is as wide as its longest entry. <hr class="menu-separator"> draws a line
-    between groups, .menu-danger marks a destructive entry (red, last).
+    between groups, .menu-danger marks a destructive entry (red, last). icon="dots-vertical" gives the ⋮ look
+    (a column's menu, e.g. the notes columns).
 --}}
-@props(['label' => __('app.more')])
+@props(['label' => __('app.more'), 'icon' => 'dots'])
 <div {{ $attributes->class('dropdown more-menu') }}>
-    <button type="button" class="icon-button" aria-label="{{ $label }}" data-tooltip="{{ $label }}" aria-haspopup="true" aria-expanded="false"><x-icon name="dots" /></button>
+    <button type="button" class="icon-button" aria-label="{{ $label }}" data-tooltip="{{ $label }}" aria-haspopup="true" aria-expanded="false"><x-icon :name="$icon" /></button>
     <div class="dropdown-panel" role="menu" hidden>{{ $slot }}</div>
 </div>

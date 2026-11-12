@@ -601,7 +601,14 @@ a.col-item { text-decoration: none; }
 .kanban-cards { display: grid; align-content: start; gap: .75rem; flex: 1; min-height: 3rem; margin: 0; padding: .25rem .75rem .75rem; overflow-y: auto; list-style: none; }
 .kanban-gap { border: 2px dashed var(--border); border-radius: var(--radius); background: var(--bg); }
 .kanban-col-gap { flex: none; align-self: stretch; min-height: 10rem; border: 2px dashed var(--border); border-radius: var(--radius); }
-.kanban-add { display: flex; align-items: center; gap: .4rem; margin: 0 .75rem .75rem; justify-content: flex-start; }
+/* Column colour (point 66): a light tint of the palette colour (class c-rrggbb from tags.css), always shown. */
+.kanban-col.has-color, .kanban-col.has-color:hover {
+    border-color: color-mix(in srgb, var(--swatch) 45%, transparent); background: color-mix(in srgb, var(--swatch) 18%, var(--surface));
+}
+/* Column ⋮ menu (point 67): shown while the column is hovered or the menu has focus or is open; always on touch. */
+.kanban-menu { flex: none; opacity: 0; transition: opacity .15s; }
+.kanban-col:hover .kanban-menu, .kanban-menu:focus-within, .kanban-menu:has(> [aria-expanded="true"]) { opacity: 1; }
+@media (hover: none) { .kanban-menu { opacity: 1; } }
 .kanban-new { display: block; padding: .75rem; }
 .kanban-new label { margin-top: 0; }
 .kanban-new input { max-width: none; }
@@ -1376,6 +1383,7 @@ html.has-tips [data-tooltip]::before, html.has-tips [data-tooltip]::after { visi
 .more-menu .menu-item { white-space: nowrap; }
 .menu-separator { margin: .25rem .5rem; border: 0; border-top: 1px solid var(--border); }
 .menu-item.menu-danger, .menu-item.menu-danger .icon { color: var(--danger); }
+.menu-item:disabled { opacity: .45; cursor: default; background: none; }
 /* Click-to-edit (point 28): plain text with a light hover hint, a field of the same size while editing */
 .edit-in-place {
     min-height: 2.75rem; margin: 0 -.5rem; padding: .5rem; border: 1px solid transparent; border-radius: calc(var(--radius) / 2);

@@ -1867,6 +1867,17 @@
                 if (!list) {
                     return;
                 }
+                // A sorted column (A103) has no hand order: a note can join it (at the end) but not move inside it.
+                if (list.closest('.kanban-col').dataset.sort !== 'manual') {
+                    if (dragged.parentElement === list) {
+                        if (dragged.nextElementSibling !== noteGap) {
+                            dragged.after(noteGap);
+                        }
+                    } else if (list.lastElementChild !== noteGap) {
+                        list.append(noteGap);
+                    }
+                    return;
+                }
                 const before = [...list.querySelectorAll(':scope > .note:not(.is-dragging)')]
                     .find(card => { const r = card.getBoundingClientRect(); return event.clientY < r.top + r.height / 2; });
                 if (before ? noteGap.nextElementSibling !== before : list.lastElementChild !== noteGap) {
@@ -1886,7 +1897,11 @@
             event.preventDefault();
             if (dragged.matches('.note') && noteGap.parentElement) {
                 const list = noteGap.parentElement;
+                const stays = dragged.parentElement === list && list.closest('.kanban-col').dataset.sort !== 'manual';
                 list.insertBefore(dragged, noteGap);
+                if (stays) {
+                    return;
+                }
                 counts();
                 send(dragged.dataset.noteMove, {
                     column: list.dataset.kanbanCards,
@@ -1894,9 +1909,7 @@
                 }).then(response => { if (!response.ok) { failed(); } }).catch(failed);
             } else if (columnGap.parentElement) {
                 board.insertBefore(dragged, columnGap);
-                send(board.dataset.columnsOrder, {
-                    order: [...board.querySelectorAll(':scope > .kanban-col[data-column-id]')].map(column => column.dataset.columnId),
-                }).then(response => { if (!response.ok) { failed(); } }).catch(failed);
+                saveColumns();
             }
         });
         board.addEventListener('dragend', () => {
@@ -1911,6 +1924,40 @@
             if (!dragged && board.isConnected) {
                 board.querySelectorAll('[draggable="true"]').forEach(el => { el.draggable = false; });
             }
+        });
+
+        // Column ⋮ menu (A102): "Nach links" / "Nach rechts" move the column one place and save the order like a drag.
+        const columnsOf = () => [...board.querySelectorAll(':scope > .kanban-col[data-column-id]')];
+        function saveColumns() {
+            const columns = columnsOf();
+            columns.forEach((column, i) => {
+                column.querySelectorAll('[data-column-move]').forEach(button => {
+                    button.disabled = button.dataset.columnMove === '-1' ? i === 0 : i === columns.length - 1;
+                });
+            });
+            send(board.dataset.columnsOrder, { order: columns.map(column => column.dataset.columnId) })
+                .then(response => { if (!response.ok) { failed(); } }).catch(failed);
+        }
+        board.addEventListener('click', event => {
+            const button = event.target.closest('[data-column-move]');
+            const column = button?.closest('.kanban-col');
+            if (!column || button.disabled) {
+                return;
+            }
+            const columns = columnsOf();
+            const to = columns[columns.indexOf(column) + Number(button.dataset.columnMove)];
+            if (to) {
+                to.insertAdjacentElement(button.dataset.columnMove === '-1' ? 'beforebegin' : 'afterend', column);
+                saveColumns();
+            }
+        });
+        // A115: a double-click on free space in a column (not a note, not the head) opens the new-note dialog for it.
+        board.addEventListener('dblclick', event => {
+            const column = event.target.closest('.kanban-col[data-column-id]');
+            if (!column || event.target.closest('.note, .kanban-head, button, a, input, textarea, select, .kanban-gap')) {
+                return;
+            }
+            column.querySelector('[data-kanban-add]')?.click();
         });
 
 
@@ -2104,6 +2151,10 @@
         const field = (button?.closest('section[data-window]') ?? document).querySelector('[data-note-new-column]');
         if (button && field) {
             field.value = button.dataset.noteColumn;
+            const color = field.form?.querySelector(`input[name="color"][value="${button.dataset.noteColor ?? ''}"]`);
+            if (color) {
+                color.checked = true;
+            }
         }
     });
     // The tag filter of a board reloads only its own window (window state lives in its address, point 52).
@@ -3689,7 +3740,10 @@
         }
         const jump = event.target.closest('[data-focus]');
         const target = jump && document.getElementById(jump.dataset.focus);
-        if (target) {
+        if (target?.matches('[data-edit-in-place]')) {
+            event.preventDefault();
+            start(target);
+        } else if (target) {
             event.preventDefault();
             target.scrollIntoView({ block: 'center', behavior: 'smooth' });
             target.focus({ preventScroll: true });

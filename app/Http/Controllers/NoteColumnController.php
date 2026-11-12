@@ -6,11 +6,15 @@ namespace App\Http\Controllers;
 
 use App\Domain\Notes\Note;
 use App\Domain\Notes\NoteColumn;
+use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
+use App\Domain\Palette\PaletteColor;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 
 /**
  * The columns of the notes board (Go of 2026-11-08, like Trello): any
@@ -52,6 +56,51 @@ final class NoteColumnController
         }
 
         return $request->expectsJson() ? response()->json(['ok' => true]) : redirect()->route('home');
+    }
+
+    /**
+     * The look of a column from its ⋮ menu (points 66, A100, A101, A103): background colour, default colour of
+     * new notes ("none" = no own one) and the order of its notes. Only the fields sent change.
+     */
+    public function look(Request $request, string $id): JsonResponse|RedirectResponse
+    {
+        $this->authorize();
+        $column = NoteColumn::query()->findOrFail($id);
+        $colors = static fn (?string $current): array => array_values(array_filter([...PaletteColor::hexes(), 'none', $current]));
+        $data = $request->validate([
+            'color' => ['sometimes', 'string', Rule::in($colors($column->color))],
+            'note_color' => ['sometimes', 'string', Rule::in($colors($column->note_color))],
+            'sort' => ['sometimes', 'string', Rule::in(NoteColumn::SORTS)],
+        ]);
+        foreach (['color' => 'color', 'note_color' => 'note_color', 'sort' => 'note_sort'] as $field => $attribute) {
+            if (array_key_exists($field, $data)) {
+                $column->{$attribute} = $data[$field] === 'none' ? null : $data[$field];
+            }
+        }
+        $column->save();
+
+        return $request->expectsJson() ? response()->json(['ok' => true]) : redirect()->route('home');
+    }
+
+    /**
+     * "Alle Notizen archivieren" (A105): every note of the column the person may change and that isn't locked.
+     * The first column also holds the notes without a (still existing) column.
+     */
+    public function archive(string $id, CurrentOrg $org): RedirectResponse
+    {
+        $userId = $org->membership()->user_id;
+        $column = NoteColumn::query()->findOrFail($id);
+        $columns = NoteColumn::board();
+        $first = $columns->first()?->id === $column->id;
+
+        Note::query()->visibleTo($userId)->whereNull('archived_at')->where('locked', false)
+            ->where(static fn (Builder $query) => $query->where('column_id', $column->id)
+                ->when($first, static fn (Builder $q) => $q->orWhereNull('column_id')->orWhereNotIn('column_id', $columns->pluck('id')->all())))
+            ->get()
+            ->filter(static fn (Note $note): bool => $note->editableBy($userId))
+            ->each(static fn (Note $note) => $note->forceFill(['archived_at' => now()])->save());
+
+        return redirect()->route('home');
     }
 
     /** Its notes, archived ones too, go to the end of the first other column; the last column stays (A38). */
