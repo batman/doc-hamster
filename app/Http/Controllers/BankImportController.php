@@ -7,10 +7,13 @@ namespace App\Http\Controllers;
 use App\Domain\Audit\AuditLog;
 use App\Domain\Banking\BankAccount;
 use App\Domain\Banking\CsvStatement;
+use App\Domain\Banking\Matcher;
 use App\Domain\Banking\StatementImport;
+use App\Domain\Banking\XlsxSheet;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Properties\PropertyValues;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -19,20 +22,22 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 /**
- * Bank statements from any bank (D-021): upload, choose the columns with a
- * look at the first rows, import. The file stays only until the import ran;
- * nothing but the transactions is kept.
+ * Bank statements from any bank (D-021), CSV or Excel (F18): upload – from Einstellungen → Bank or dropped onto the
+ * Bank module (A267) –, choose the columns with a look at the first rows, import. The columns are remembered per
+ * account by their names; an account whose columns are known imports the next file without asking. A file dropped
+ * onto the Bank window finds its account by the account's IBAN in the file. The file stays only until the import
+ * ran; nothing but the transactions is kept. Every import ends with the matcher (A268).
  */
 final class BankImportController
 {
-    private const FIELDS = ['date', 'amount', 'counterparty', 'purpose'];
+    private const FIELDS = ['date', 'amount', 'counterparty', 'purpose', 'iban'];
 
     public function form(): View
     {
         return view('bank.import', ['accounts' => BankAccount::query()->withCount('transactions')->orderBy('name')->get()]);
     }
 
-    public function upload(Request $request, CurrentOrg $org): RedirectResponse
+    public function upload(Request $request, AuditLog $audit, CurrentOrg $org, Matcher $matcher): RedirectResponse|JsonResponse
     {
         $data = $request->validate([
             'file' => ['required', 'file', 'max:10240'],
@@ -50,28 +55,50 @@ final class BankImportController
         $upload = $request->file('file');
         $content = $upload instanceof UploadedFile ? (string) file_get_contents($upload->getRealPath()) : '';
 
-        // Excel files and other binaries contain NUL bytes, text never does.
-        $statement = str_contains($content, "\0") ? null : CsvStatement::parse($content);
-        if ($statement === null || $statement->header === [] || $statement->rows === []) {
+        $statement = CsvStatement::read($content);
+        if ($statement->header === [] || $statement->rows === []) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => __('bank.wrong_type')], 422);
+            }
+
             return back()->withInput()->withErrors(['file' => __('bank.wrong_type')]);
         }
+
+        $accountId = $data['account'] ?? $this->accountByIban($content);
 
         $this->forget($request);
         $this->clearOldFiles($org);
 
-        $path = 'bank-imports/'.$org->id().'/'.Str::lower((string) Str::ulid()).'.csv';
+        $path = 'bank-imports/'.$org->id().'/'.Str::lower((string) Str::ulid()).'.upload';
         Storage::disk('local')->put($path, $content);
 
-        $request->session()->put('bank_import', [
+        $pending = [
             'org' => $org->id(),
             'path' => $path,
-            'account' => $data['account'] ?? null,
+            'account' => $accountId,
             'name' => $data['name'] ?? null,
             'currency' => Str::upper($data['currency'] ?? 'EUR'),
             'iban' => is_string($data['iban'] ?? null) ? PropertyValues::parseIban($data['iban']) : null,
-        ]);
+        ];
+        $request->session()->put('bank_import', $pending);
 
-        return redirect()->route('bank.import.columns');
+        // A267: the second import of an account asks nothing.
+        $account = $accountId === null ? null : BankAccount::query()->whereKey($accountId)->first();
+        $known = $account === null ? null : $this->knownColumns($statement, $account);
+        if ($account !== null && $known !== null) {
+            $result = $this->import($request, $audit, $org, $matcher, $pending, $statement, $known, null);
+            if ($result !== null) {
+                [$account, $message] = $result;
+
+                return $request->expectsJson()
+                    ? response()->json(['message' => $message, 'account' => $account->id, 'url' => route('bank.account', $account->id)])
+                    : redirect()->route('bank.account', $account->id)->with('status', $message);
+            }
+        }
+
+        return $request->expectsJson()
+            ? response()->json(['columns' => route('bank.import.columns')])
+            : redirect()->route('bank.import.columns');
     }
 
     public function columns(Request $request, CurrentOrg $org): View|RedirectResponse
@@ -89,11 +116,12 @@ final class BankImportController
             'preview' => array_slice($statement->rows, 0, 5),
             'fields' => self::FIELDS,
             'columns' => $this->preselect($statement, $account),
+            'account' => $account,
             'accountName' => $account === null ? $pending['name'] : $account->name,
         ]);
     }
 
-    public function run(Request $request, AuditLog $audit, CurrentOrg $org): RedirectResponse
+    public function run(Request $request, AuditLog $audit, CurrentOrg $org, Matcher $matcher): RedirectResponse
     {
         $pending = $this->pending($request, $org);
         if ($pending === null) {
@@ -107,36 +135,21 @@ final class BankImportController
             'amount' => ['required', 'integer', 'between:0,'.$last],
             'counterparty' => ['nullable', 'integer', 'between:0,'.$last],
             'purpose' => ['nullable', 'integer', 'between:0,'.$last],
+            'iban' => ['nullable', 'integer', 'between:0,'.$last],
+            'name' => ['nullable', 'string', 'max:150'],
         ]);
-        $columns = [
-            'date' => (int) $data['date'],
-            'amount' => (int) $data['amount'],
-            'counterparty' => isset($data['counterparty']) ? (int) $data['counterparty'] : null,
-            'purpose' => isset($data['purpose']) ? (int) $data['purpose'] : null,
-        ];
-
-        $read = StatementImport::read($statement, $columns);
-        if ($read['lines'] === []) {
-            return back()->withErrors(['date' => __('bank.none_readable')]);
+        $columns = ['date' => (int) $data['date'], 'amount' => (int) $data['amount']];
+        foreach (['counterparty', 'purpose', 'iban'] as $field) {
+            $columns[$field] = isset($data[$field]) ? (int) $data[$field] : null;
         }
 
-        $account = $pending['account'] === null
-            ? BankAccount::query()->create(['name' => $pending['name'], 'currency' => $pending['currency']])
-            : BankAccount::query()->whereKey($pending['account'])->firstOrFail();
+        $result = $this->import($request, $audit, $org, $matcher, $pending, $statement, $columns, is_string($data['name'] ?? null) && trim($data['name']) !== '' ? trim($data['name']) : null);
+        if ($result === null) {
+            return back()->withErrors(['date' => __('bank.none_readable')]);
+        }
+        [$account, $message] = $result;
 
-        // By name, not by position: a changed layout then falls back to the guess.
-        $account->update(['import_profile' => array_map(
-            static fn (int $index): string => $statement->header[$index],
-            array_filter($columns, static fn (?int $index): bool => $index !== null),
-        ), ...(is_string($pending['iban'] ?? null) ? ['iban' => $pending['iban']] : [])]);
-
-        $new = StatementImport::store($account, $read['lines']);
-        $this->forget($request);
-
-        $summary = ['new' => $new, 'known' => count($read['lines']) - $new, 'unreadable' => $read['unreadable']];
-        $audit->record('bank.imported', orgId: $org->id(), userId: $org->membership()->user_id, subject: $account, meta: $summary, ip: $request->ip());
-
-        return redirect()->route('bank.index')->with('status', __('bank.imported', $summary));
+        return redirect()->route('bank.account', $account->id)->with('status', $message);
     }
 
     /**
@@ -158,6 +171,83 @@ final class BankImportController
     }
 
     /**
+     * Stores the readable rows, remembers the columns and lets the matcher run; null if no row was readable.
+     *
+     * @param  array{org: string, path: string, account: string|null, name: string|null, currency: string, iban?: string|null}  $pending
+     * @param  array{date: int, amount: int, counterparty: int|null, purpose: int|null, iban: int|null}  $columns
+     * @return array{BankAccount, string}|null
+     */
+    private function import(Request $request, AuditLog $audit, CurrentOrg $org, Matcher $matcher, array $pending, CsvStatement $statement, array $columns, ?string $name): ?array
+    {
+        $read = StatementImport::read($statement, $columns);
+        if ($read['lines'] === []) {
+            return null;
+        }
+
+        $account = $pending['account'] === null
+            ? BankAccount::query()->create(['name' => $name ?? $pending['name'], 'currency' => $pending['currency']])
+            : BankAccount::query()->whereKey($pending['account'])->firstOrFail();
+
+        // By name, not by position: a changed layout then falls back to the guess.
+        $account->update(['import_profile' => array_map(
+            static fn (int $index): string => $statement->header[$index],
+            array_filter($columns, static fn (?int $index): bool => $index !== null),
+        ), ...(is_string($pending['iban'] ?? null) ? ['iban' => $pending['iban']] : [])]);
+
+        $new = StatementImport::store($account, $read['lines']);
+        $this->forget($request);
+        $suggested = $matcher->afterImport($org->id(), $new);
+
+        $summary = ['new' => count($new), 'known' => count($read['lines']) - count($new), 'unreadable' => $read['unreadable']];
+        $audit->record('bank.imported', orgId: $org->id(), userId: $org->membership()->user_id, subject: $account, meta: [...$summary, 'suggested' => $suggested], ip: $request->ip());
+
+        $message = __('bank.imported', $summary);
+        if ($suggested > 0) {
+            $message .= ' '.trans_choice('bank.suggested_count', $suggested, ['count' => $suggested]);
+        }
+
+        return [$account, $message];
+    }
+
+    /**
+     * The remembered columns when date and amount are found again by their names; null means ask.
+     *
+     * @return array{date: int, amount: int, counterparty: int|null, purpose: int|null, iban: int|null}|null
+     */
+    private function knownColumns(CsvStatement $statement, BankAccount $account): ?array
+    {
+        $profile = $account->import_profile ?? [];
+        $columns = [];
+        foreach (self::FIELDS as $field) {
+            $index = isset($profile[$field]) ? array_search($profile[$field], $statement->header, true) : false;
+            $columns[$field] = $index === false ? null : (int) $index;
+        }
+        if ($columns['date'] === null || $columns['amount'] === null) {
+            return null;
+        }
+
+        /** @var array{date: int, amount: int, counterparty: int|null, purpose: int|null, iban: int|null} $columns */
+        return $columns;
+    }
+
+    /** A file dropped without an account: the account whose own IBAN stands in it (banks print it above the table). */
+    private function accountByIban(string $content): ?string
+    {
+        $text = str_starts_with($content, "PK\x03\x04")
+            ? implode(' ', array_map(static fn (array $row): string => implode(' ', $row), array_slice(XlsxSheet::rows($content) ?? [], 0, 30)))
+            : mb_substr($content, 0, 4000);
+        $compact = strtoupper((string) preg_replace('/\s+/', '', $text));
+
+        foreach (BankAccount::query()->whereNotNull('iban')->get(['id', 'iban']) as $account) {
+            if ($account->iban !== null && $account->iban !== '' && str_contains($compact, $account->iban)) {
+                return $account->id;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @return array<string, int|null>
      */
     private function preselect(CsvStatement $statement, ?BankAccount $account): array
@@ -176,7 +266,7 @@ final class BankImportController
 
     private function statement(string $path): CsvStatement
     {
-        return CsvStatement::parse((string) Storage::disk('local')->get($path));
+        return CsvStatement::read((string) Storage::disk('local')->get($path));
     }
 
     /**

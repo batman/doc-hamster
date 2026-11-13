@@ -666,7 +666,11 @@
             }
             return { type: 'folder-into', el: row, folder: row.dataset.id };
         }
-        // Documents.
+        // Documents. A booking row of a Bank account window links them (A269); the Bank module answers and reloads.
+        const booking = el.closest('[data-doc-drop]');
+        if (booking) {
+            return carry.trashed ? null : { type: 'link', el: booking, url: booking.dataset.docDrop };
+        }
         if (row) {
             if (row.hasAttribute('data-drop-trash')) {
                 return cfg.trash && !carry.trashed ? { type: 'trash', el: row } : null;
@@ -706,7 +710,12 @@
     const land = (carry, target) => {
         const cfg = config();
         const ids = carry.items.map(item => item.dataset.doc ?? item.dataset.id);
-        if (target.type === 'move') {
+        if (target.type === 'link') {
+            post(target.url, { ids }).then(json => {
+                toast(json.message);
+                DocHamster.emit('bank:changed', json);
+            }).catch(fail);
+        } else if (target.type === 'move') {
             post(cfg.move, { ids, folder: target.folder }).then(json => {
                 toast(json.message, { undo: () => undoMoves(json.moves ?? []) });
                 refresh();

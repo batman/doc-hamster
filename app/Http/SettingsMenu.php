@@ -20,7 +20,7 @@ final class SettingsMenu
             ['roles', 'roles.index', 'user-shield', 'members.manage', ['roles.*']],
         ], false],
         'bank' => ['building-bank', [
-            ['bank', 'bank.import', 'building-bank', 'banking.import', ['bank.import*', 'bank.accounts.*']],
+            ['bank', 'bank.import', 'building-bank', 'banking.import', ['bank.import', 'bank.accounts.*']],
         ], false],
         'tags' => ['tags', [
             ['tags', 'tags.index', 'tags', 'tags.manage', ['tags.*']],

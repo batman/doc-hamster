@@ -25,7 +25,7 @@
     <form method="post" action="{{ route('bank.import.upload') }}" enctype="multipart/form-data">
         @csrf
         <label for="file">{{ __('bank.file') }}</label>
-        <input id="file" type="file" name="file" accept=".csv,.txt,text/csv,text/plain" required>
+        <input id="file" type="file" name="file" accept=".csv,.txt,.xlsx,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
         @error('file')<p class="error" role="alert">{{ $message }}</p>@enderror
 
         @if ($accounts->isNotEmpty())

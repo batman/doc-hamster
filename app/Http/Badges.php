@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http;
 
+use App\Domain\Banking\Transaction;
 use App\Domain\Documents\Document;
 use App\Domain\Ocr\OcrLog;
 use App\Domain\Org\CurrentOrg;
@@ -23,6 +24,9 @@ final class Badges
     /** A234: new errors in Einstellungen → Log since the last visit. */
     public const LOG = 'log';
 
+    /** A274: open bookings without a document (main menu Bank → account row → the account's "offen" filter). */
+    public const BANK = 'bank';
+
     /**
      * @return array<string, int>
      */
@@ -38,6 +42,11 @@ final class Badges
                 ->visibleTo($org->membership()->user_id, Gate::allows(Permission::ViewAllDocuments->value))
                 ->when($seen !== null, fn ($query) => $query->where('created_at', '>', $seen))
                 ->count();
+        }
+
+        // A274: open bookings without a document – a plain count, not "new since the last visit": they stay until handled.
+        if (Gate::allows(Permission::ImportBanking->value)) {
+            $counts[self::BANK] = Transaction::query()->status(Transaction::OPEN)->count();
         }
 
         if (Gate::allows(Permission::ManageSettings->value)) {

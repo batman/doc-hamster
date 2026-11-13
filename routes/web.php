@@ -206,9 +206,15 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::get('import/columns', [BankImportController::class, 'columns'])->name('import.columns');
         Route::post('import/columns', [BankImportController::class, 'run'])->name('import.run');
         Route::post('accounts/{id}/delete', [BankImportController::class, 'destroyAccount'])->name('accounts.destroy');
+        Route::get('accounts/{id}', [BankController::class, 'account'])->name('account');
+        Route::get('receipts', [BankController::class, 'receipts'])->name('receipts');
         Route::get('transactions/{id}', [BankController::class, 'show'])->name('show');
         Route::post('transactions/{id}/match', [BankController::class, 'match'])->name('match');
+        Route::post('transactions/{id}/link', [BankController::class, 'link'])->name('link');
+        Route::post('transactions/{id}/confirm', [BankController::class, 'confirm'])->name('confirm');
+        Route::post('transactions/{id}/reject', [BankController::class, 'reject'])->name('reject');
         Route::post('transactions/{id}/unmatch', [BankController::class, 'unmatch'])->name('unmatch');
+        Route::post('transactions/{id}/no-receipt', [BankController::class, 'noReceipt'])->name('no-receipt');
     });
 
     Route::middleware('can:exports.create')->group(function (): void {

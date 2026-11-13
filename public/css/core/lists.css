@@ -101,9 +101,10 @@ html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
 .pick-row.is-drop-target > .row-icon { color: var(--primary); }
 .win-body.is-drop-target { box-shadow: inset 0 0 0 2px var(--primary); background: color-mix(in srgb, var(--primary) 8%, var(--bg)); border-radius: var(--row-radius); }
 
-/* Files over a folder row: the row itself becomes the drop field "Loslassen zum Hochladen in „X“" (A170). */
-.folder-row.is-upload-target > * { visibility: hidden; }
-.folder-row.is-upload-target::after { content: attr(data-upload-label); position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0 1rem;
+/* Files over a folder row (or any row with data-upload-label, e.g. a bank account, A267): the row itself becomes the
+   drop field "Loslassen zum Hochladen in „X“" (A170). */
+:is(.folder-row, .pick-row[data-upload-label]).is-upload-target > * { visibility: hidden; }
+:is(.folder-row, .pick-row[data-upload-label]).is-upload-target::after { content: attr(data-upload-label); position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0 1rem;
     font-weight: 600; color: var(--primary-ink); text-align: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .win-body.is-upload-target::before { content: attr(data-upload-label); position: sticky; top: 0; z-index: 2; display: block; margin-bottom: .5rem; padding: .6rem 1rem;
     border-radius: var(--row-radius); background: var(--primary); color: var(--primary-text); font-weight: 600; text-align: center; }
@@ -119,6 +120,11 @@ html.is-carrying, html.is-carrying * { cursor: grabbing !important; }
     color: var(--primary-ink); font-weight: 600; }
 .nav-drop[hidden] { display: none; }
 .nav-drop.is-drop-target { border-style: solid; }
+/* Row amount (A267): a sum of money at the right end of a row or as a property value – figures line up, never wraps;
+   money coming in (.is-income) is green, going out stays text colour. */
+.row-amount { flex: none; margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.row-amount.is-income { color: color-mix(in srgb, var(--ok) 70%, var(--text)); }
+.prop-value.row-amount { margin-left: 0; text-align: left; }
 .folder-step .actions { display: flex; flex-wrap: wrap; gap: .5rem; }
 .folder-step form { margin: 0; }
 .folder-step button .icon { width: 1.1rem; height: 1.1rem; margin-right: .35rem; }

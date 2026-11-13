@@ -23,6 +23,6 @@ return [
         'modules/updates-preview-pick', 'core/color-field', 'modules/folder-import', 'core/start',
         'modules/document-viewer', 'modules/ocr-text', 'modules/palette', 'modules/ocr-browser', 'modules/documents', 'modules/updates',
         'modules/text-editor', 'core/edit-in-place', 'modules/ocr-progress', 'modules/ocr-live', 'modules/note-options',
-        'modules/properties', 'modules/girocode', 'core/window-edge', 'core/top-layer', 'core/layout-debug',
+        'modules/properties', 'modules/girocode', 'modules/bank', 'core/window-edge', 'core/top-layer', 'core/layout-debug',
     ],
 ];

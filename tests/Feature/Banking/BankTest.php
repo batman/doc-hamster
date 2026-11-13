@@ -37,8 +37,11 @@ function statementFile(string $content = STATEMENT): UploadedFile
 
 function importStatement(object $test, array $upload = ['name' => 'Girokonto'], string $content = STATEMENT): void
 {
-    $test->post('/bank/import', ['file' => statementFile($content), ...$upload])->assertRedirect(route('bank.import.columns'));
-    $test->post('/bank/import/columns', ['date' => 0, 'amount' => 3, 'counterparty' => 1, 'purpose' => 2])->assertRedirect(route('bank.index'));
+    // A267: an account that knows its columns imports at once, otherwise the columns are asked.
+    $response = $test->post('/bank/import', ['file' => statementFile($content), ...$upload])->assertRedirect();
+    if ($response->headers->get('Location') === route('bank.import.columns')) {
+        $test->post('/bank/import/columns', ['date' => 0, 'amount' => 3, 'counterparty' => 1, 'purpose' => 2])->assertRedirectContains('/bank/accounts/');
+    }
 }
 
 function receipt(string $orgId, ?string $uploadedBy = null, string $title = 'bon.jpg'): Document
@@ -59,7 +62,7 @@ it('shows the guessed columns and the first rows, then imports and skips unreada
         ->assertSee('<option value="3" selected>Betrag</option>', false);
 
     $this->post('/bank/import/columns', ['date' => 0, 'amount' => 3, 'counterparty' => 1, 'purpose' => 2])
-        ->assertRedirect(route('bank.index'))
+        ->assertRedirectContains('/bank/accounts/')
         ->assertSessionHas('status', 'Neu: 3. Schon vorhanden: 0. Nicht lesbar: 1.');
 
     expect(transactions()->orderBy('amount_minor')->pluck('amount_minor')->all())->toBe([-1230, -350, -350])
@@ -86,7 +89,10 @@ it('remembers the columns per account, and accounts are not limited', function (
     $this->post('/bank/import/columns', ['date' => 1, 'amount' => 0, 'counterparty' => 2, 'purpose' => 3])->assertRedirect();
     $card = BankAccount::query()->firstOrFail();
 
-    $this->post('/bank/import', ['file' => statementFile($moved), 'account' => $card->id]);
+    // A267: the second import asks nothing; another layout asks with the known columns preselected by name.
+    $this->post('/bank/import', ['file' => statementFile($moved), 'account' => $card->id])->assertRedirect(route('bank.account', $card->id));
+    $this->post('/bank/import', ['file' => statementFile("Datum;Wann;Wer;Wofuer;Summe\nx;01.02.2026;Laden;Sachen;-5,00\n"), 'account' => $card->id])
+        ->assertRedirect(route('bank.import.columns'));
     $this->get('/bank/import/columns')->assertSee('<option value="1" selected>Wann</option>', false);
 
     $this->post('/bank/import', ['file' => statementFile($moved), 'name' => 'Zweites Konto']);
@@ -144,17 +150,19 @@ it('links a receipt, moves it between the views and can undo it', function (): v
     $transaction = transactions()->where('amount_minor', -1230)->firstOrFail();
     $document = receipt($this->orgId, $this->admin->user_id);
 
-    $this->get('/bank')->assertSee('Muster GmbH');
-    $this->get('/bank?view=receipts')->assertSee('bon.jpg');
+    $account = '/bank/accounts/'.$transaction->bank_account_id;
+    $this->get('/bank')->assertSee('Girokonto');
+    $this->get($account)->assertSee('Muster GmbH');
+    $this->get('/bank/receipts')->assertSee('bon.jpg');
     $this->get('/bank/transactions/'.$transaction->id)->assertOk()->assertSee('bon.jpg');
 
-    $this->post('/bank/transactions/'.$transaction->id.'/match', ['document_id' => $document->id])->assertRedirect(route('bank.index'));
+    $this->post('/bank/transactions/'.$transaction->id.'/match', ['document_id' => $document->id])->assertRedirect(route('bank.show', $transaction->id));
     $this->post('/bank/transactions/'.$transaction->id.'/match', ['document_id' => $document->id])->assertRedirect();
 
     expect(TransactionMatch::query()->count())->toBe(1);
-    $this->get('/bank')->assertDontSee('Muster GmbH');
-    $this->get('/bank?view=matched')->assertSee('Muster GmbH')->assertSee('1 Dokument');
-    $this->get('/bank?view=receipts')->assertDontSee('bon.jpg');
+    $this->get($account.'?status=open')->assertDontSee('Muster GmbH');
+    $this->get($account.'?status=linked')->assertSee('Muster GmbH');
+    $this->get('/bank/receipts')->assertDontSee('bon.jpg');
 
     $this->post('/bank/transactions/'.$transaction->id.'/unmatch', ['document_id' => $document->id])->assertRedirect();
 
@@ -199,12 +207,12 @@ it('needs the checkbox, and without "Alle Belege sehen" only own receipts can be
 
     $second = transactions()->whereKeyNot($transaction->id)->firstOrFail();
     $this->actingAs($clerk->user)->get('/bank/transactions/'.$second->id)->assertSee('meins.jpg')->assertDontSee('chef.jpg');
-    $this->get('/bank?view=receipts')->assertSee('meins.jpg');
+    $this->get('/bank/receipts')->assertSee('meins.jpg');
     $this->get('/bank/transactions/'.$transaction->id)->assertDontSee('chef.jpg')->assertSee('1 Dokument, das Sie nicht sehen');
 
     $this->post('/bank/transactions/'.$second->id.'/match', ['document_id' => $foreign->id])->assertSessionHasErrors('document_id');
     $this->post('/bank/transactions/'.$transaction->id.'/unmatch', ['document_id' => $foreign->id])->assertNotFound();
-    $this->post('/bank/transactions/'.$second->id.'/match', ['document_id' => $own->id])->assertRedirect(route('bank.index'));
+    $this->post('/bank/transactions/'.$second->id.'/match', ['document_id' => $own->id])->assertRedirect();
 
     expect(TransactionMatch::query()->count())->toBe(2);
 });
@@ -241,13 +249,13 @@ it('offers only receipts of folders with bank matching on (issue #77)', function
     $document = receipt($this->orgId, $this->admin->user_id, 'vertrag.jpg');
     $document->forceFill(['folder_id' => $contracts->id])->save();
 
-    $this->get('/bank?view=receipts')->assertDontSee('vertrag.jpg');
+    $this->get('/bank/receipts')->assertDontSee('vertrag.jpg');
     $this->post('/bank/transactions/'.$transaction->id.'/match', ['document_id' => $document->id])->assertSessionHasErrors('document_id');
     expect(TransactionMatch::query()->count())->toBe(0);
 
     $this->post('/folders/'.$contracts->id, ['name' => 'Verträge', 'bank_matching' => '1'])->assertRedirect();
 
-    $this->get('/bank?view=receipts')->assertSee('vertrag.jpg');
-    $this->post('/bank/transactions/'.$transaction->id.'/match', ['document_id' => $document->id])->assertRedirect(route('bank.index'));
+    $this->get('/bank/receipts')->assertSee('vertrag.jpg');
+    $this->post('/bank/transactions/'.$transaction->id.'/match', ['document_id' => $document->id])->assertRedirect();
     expect(TransactionMatch::query()->count())->toBe(1);
 });
