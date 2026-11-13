@@ -4,18 +4,20 @@ declare(strict_types=1);
 
 namespace App\Domain\Banking;
 
+use App\Domain\Properties\PropertyValues;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Turns the rows of a statement into transactions. The fingerprint (PLAN §9.1)
- * counts identical rows of a file, so two equal coffees on one day stay two
- * bookings and an overlapping re-import still adds nothing.
+ * Turns the rows of a statement into transactions. The fingerprint (PLAN §9.1, A273) is a hash of booking date,
+ * amount, counterparty and purpose plus a running number for identical rows of one file; together with the account
+ * (unique per account) it is stable, so two equal coffees on one day stay two bookings and a re-import of the same
+ * statement (CSV or Excel) adds nothing. The counterparty's IBAN is not part of it: older imports had none.
  */
 final class StatementImport
 {
     /**
-     * @param  array{date: int, amount: int, counterparty: int|null, purpose: int|null}  $columns
-     * @return array{lines: list<array{booking_date: string, amount_minor: int, counterparty: string|null, purpose: string|null, fingerprint: string}>, unreadable: int}
+     * @param  array{date: int, amount: int, counterparty: int|null, purpose: int|null, iban?: int|null}  $columns
+     * @return array{lines: list<array{booking_date: string, amount_minor: int, counterparty: string|null, purpose: string|null, counterparty_iban: string|null, fingerprint: string}>, unreadable: int}
      */
     public static function read(CsvStatement $statement, array $columns): array
     {
@@ -35,6 +37,7 @@ final class StatementImport
 
             $counterparty = self::text($row, $columns['counterparty'], 255);
             $purpose = self::text($row, $columns['purpose'], 1000);
+            $iban = self::text($row, $columns['iban'] ?? null, 60);
 
             $key = implode('|', [$date, $amount, mb_strtolower($counterparty ?? ''), mb_strtolower($purpose ?? '')]);
             $seen[$key] = ($seen[$key] ?? 0) + 1;
@@ -44,6 +47,7 @@ final class StatementImport
                 'amount_minor' => $amount,
                 'counterparty' => $counterparty,
                 'purpose' => $purpose,
+                'counterparty_iban' => $iban === null ? null : PropertyValues::parseIban($iban),
                 'fingerprint' => hash('sha256', $key.'|'.$seen[$key]),
             ];
         }
@@ -52,20 +56,21 @@ final class StatementImport
     }
 
     /**
-     * Stores what the account doesn't have yet and returns how many rows that were.
+     * Stores what the account doesn't have yet and returns the ids of the new rows (for the matcher, A268).
      *
-     * @param  list<array{booking_date: string, amount_minor: int, counterparty: string|null, purpose: string|null, fingerprint: string}>  $lines
+     * @param  list<array{booking_date: string, amount_minor: int, counterparty: string|null, purpose: string|null, counterparty_iban?: string|null, fingerprint: string}>  $lines
+     * @return list<string>
      */
-    public static function store(BankAccount $account, array $lines): int
+    public static function store(BankAccount $account, array $lines): array
     {
-        return DB::transaction(static function () use ($account, $lines): int {
+        return DB::transaction(static function () use ($account, $lines): array {
             $known = Transaction::query()->where('bank_account_id', $account->id)->pluck('fingerprint')->flip();
-            $new = 0;
+            $new = [];
 
             foreach ($lines as $line) {
                 if (! $known->has($line['fingerprint'])) {
-                    Transaction::query()->create([...$line, 'bank_account_id' => $account->id, 'currency' => $account->currency]);
-                    $new++;
+                    $new[] = Transaction::query()->create([...$line, 'bank_account_id' => $account->id, 'currency' => $account->currency])->id;
+                    $known->put($line['fingerprint'], true);
                 }
             }
 
@@ -78,7 +83,7 @@ final class StatementImport
      */
     private static function text(array $row, ?int $column, int $limit): ?string
     {
-        $text = $column === null ? '' : (string) preg_replace('/\s+/u', ' ', $row[$column]);
+        $text = $column === null ? '' : (string) preg_replace('/\s+/u', ' ', $row[$column] ?? '');
 
         return $text === '' ? null : mb_substr($text, 0, $limit);
     }

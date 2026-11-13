@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Domain\Auth\User;
+use App\Domain\Banking\MatchAfterRecognition;
 use App\Domain\Log\LogEntry;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Membership;
@@ -121,6 +122,8 @@ class AppServiceProvider extends ServiceProvider
 
         // Points 122.5, A253, A236: invoice values become suggestions after every recognition; confirmed ones teach per sender.
         Event::listen(TextRecognized::class, SuggestInvoiceProperties::class);
+        // A268: then the document is matched against the open bookings (after the suggestions, which it reads).
+        Event::listen(TextRecognized::class, MatchAfterRecognition::class);
         DocumentProperty::saved(static function (DocumentProperty $value): void {
             try {
                 app(InvoiceSuggestions::class)->learn($value);

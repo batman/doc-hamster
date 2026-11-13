@@ -21,6 +21,61 @@ final readonly class CsvStatement
      */
     private function __construct(public array $header, public array $rows) {}
 
+    /** F18: a CSV or an Excel workbook (xlsx, the first sheet); anything else gives an empty statement. */
+    public static function read(string $content): self
+    {
+        if (str_starts_with($content, "PK\x03\x04")) {
+            $rows = XlsxSheet::rows($content);
+
+            return $rows === null ? new self([], []) : self::fromRows($rows);
+        }
+
+        // Other binaries (old .xls, pictures) contain NUL bytes, text never does.
+        return str_contains($content, "\0") ? new self([], []) : self::parse($content);
+    }
+
+    /**
+     * A table read elsewhere (Excel): the header is the first row as wide as most rows and mostly filled.
+     *
+     * @param  list<list<string>>  $rows
+     */
+    public static function fromRows(array $rows): self
+    {
+        $rows = array_map(static function (array $cells): array {
+            $cells = array_map(static fn (string $cell): string => trim($cell), $cells);
+            while ($cells !== [] && end($cells) === '') {
+                array_pop($cells);
+            }
+
+            return $cells;
+        }, $rows);
+
+        $width = 0;
+        $best = 0;
+        foreach (array_count_values(array_map('count', $rows)) as $count => $times) {
+            if ($count > 1 && $count * $times > $best) {
+                [$width, $best] = [$count, $count * $times];
+            }
+        }
+        if ($width === 0) {
+            return new self([], []);
+        }
+
+        $header = [];
+        $body = [];
+        foreach ($rows as $cells) {
+            if ($header === []) {
+                if (count($cells) >= $width && count(array_filter($cells, static fn (string $c): bool => $c !== '')) * 2 > $width) {
+                    $header = array_slice($cells, 0, $width);
+                }
+            } elseif (count(array_filter($cells, static fn (string $c): bool => $c !== '')) > 1) {
+                $body[] = array_slice(array_pad($cells, $width, ''), 0, $width);
+            }
+        }
+
+        return new self($header, $body);
+    }
+
     public static function parse(string $content): self
     {
         $content = (string) preg_replace('/^\xEF\xBB\xBF/', '', $content);
@@ -89,15 +144,17 @@ final readonly class CsvStatement
     /**
      * Best guess of the columns from the header names; null if nothing fits.
      *
-     * @return array{date: int|null, amount: int|null, counterparty: int|null, purpose: int|null}
+     * @return array{date: int|null, amount: int|null, counterparty: int|null, purpose: int|null, iban: int|null}
      */
     public function guessColumns(): array
     {
         $patterns = [
             'date' => ['/buchungs?(tag|datum)/', '/^buchung$/', '/^(datum|date|valuta)/', '/datum|date/'],
             'amount' => ['/betrag|amount/', '/umsatz(?!art)/'],
-            'counterparty' => ['/empf(ä|ae)nger|auftraggeber|beg(ü|ue)nstigt|zahlungspflichtig|counterparty|payee/', '/name/'],
+            'counterparty' => ['/empf(ä|ae)nger|auftraggeber|beg(ü|ue)nstigt|zahlungspflichtig|zahlungsbeteiligt|counterparty|payee/', '/name/'],
             'purpose' => ['/verwendung|zweck|purpose|reference|beschreibung|description/'],
+            // The counterparty's IBAN, not the own account's ("IBAN Auftragskonto").
+            'iban' => ['/(empf|beg(ü|ue)nstigt|zahlungsbeteiligt|gegen|auftraggeber|counterparty|payee).*iban|iban.*(empf|beg(ü|ue)nstigt|zahlungsbeteiligt|gegen|auftraggeber|counterparty|payee)/', '/^(kontonummer\s*\/\s*)?iban$/'],
         ];
 
         $map = [];
@@ -105,7 +162,11 @@ final readonly class CsvStatement
             $map[$field] = null;
             foreach ($candidates as $pattern) {
                 foreach ($this->header as $index => $name) {
-                    if (preg_match($pattern, mb_strtolower($name)) === 1) {
+                    $name = mb_strtolower($name);
+                    if ($field !== 'iban' && preg_match('/iban|bic/', $name) === 1) {
+                        continue;
+                    }
+                    if (preg_match($pattern, $name) === 1) {
                         $map[$field] = $index;
                         break 2;
                     }
@@ -113,7 +174,7 @@ final readonly class CsvStatement
             }
         }
 
-        /** @var array{date: int|null, amount: int|null, counterparty: int|null, purpose: int|null} $map */
+        /** @var array{date: int|null, amount: int|null, counterparty: int|null, purpose: int|null, iban: int|null} $map */
         return $map;
     }
 
