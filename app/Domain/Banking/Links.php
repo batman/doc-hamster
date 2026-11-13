@@ -70,10 +70,57 @@ final class Links
         }
     }
 
-    /** "Kein Beleg nötig" with a reason (A270); null takes it back. */
-    public function noReceipt(Transaction $transaction, ?string $reason): void
+    /**
+     * "Kein Beleg nötig" (A270, A286): a reason from the list (remembered for the counterparty, A287) or an own text
+     * ("Anderer Grund"); neither takes it back – and drops a suggestion and the counterparty's rule.
+     */
+    public function noReceipt(Transaction $transaction, ?NoReceiptReason $reason, ?string $text = null): void
     {
-        $transaction->forceFill(['no_receipt' => $reason !== null, 'no_receipt_reason' => $reason])->save();
+        $key = NoReceiptRule::key($transaction->counterparty);
+        if ($reason === null && $text === null) {
+            if ($key !== '') {
+                NoReceiptRule::query()->where('counterparty_key', $key)->delete();
+            }
+            $transaction->forceFill(['no_receipt' => false, 'no_receipt_reason' => null, 'no_receipt_reason_id' => null, 'suggested_reason_id' => null])->save();
+
+            return;
+        }
+        $transaction->forceFill([
+            'no_receipt' => true,
+            'no_receipt_reason' => $reason->name ?? $text,
+            'no_receipt_reason_id' => $reason?->id,
+            'suggested_reason_id' => null,
+        ])->save();
+        if ($reason !== null && $key !== '') {
+            NoReceiptRule::query()->updateOrCreate(['counterparty_key' => $key], ['reason_id' => $reason->id]);
+        }
+    }
+
+    /**
+     * A287: new bookings from a counterparty that was marked "kein Beleg nötig" before get that reason suggested
+     * (one click confirms). Returns how many.
+     *
+     * @param  list<string>  $transactionIds
+     */
+    public static function suggestNoReceipt(array $transactionIds): int
+    {
+        if ($transactionIds === []) {
+            return 0;
+        }
+        $rules = NoReceiptRule::query()->pluck('reason_id', 'counterparty_key');
+        if ($rules->isEmpty()) {
+            return 0;
+        }
+        $count = 0;
+        foreach (Transaction::query()->whereIn('id', $transactionIds)->where('no_receipt', false)->whereNotNull('counterparty')->get() as $transaction) {
+            $reason = $rules->get(NoReceiptRule::key($transaction->counterparty));
+            if ($reason !== null) {
+                $transaction->forceFill(['suggested_reason_id' => $reason])->save();
+                $count++;
+            }
+        }
+
+        return $count;
     }
 
     private function markPaid(TransactionMatch $match): void

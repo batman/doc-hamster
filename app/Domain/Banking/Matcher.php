@@ -102,15 +102,21 @@ final class Matcher
     }
 
     /**
-     * @return array{date: string, amount: int, counterparty: ?string, purpose: ?string, iban: ?string}
+     * A291: purpose 2 and the reference count as purpose (invoice number, IBAN, sender), the original amount as a
+     * second amount.
+     *
+     * @return array{date: string, amount: int, orig_amount: ?int, counterparty: ?string, purpose: ?string, iban: ?string}
      */
     public static function transactionFacts(Transaction $transaction): array
     {
+        $purpose = trim(implode(' ', array_filter([$transaction->purpose, $transaction->purpose2, $transaction->reference])));
+
         return [
             'date' => $transaction->booking_date->format('Y-m-d'),
             'amount' => $transaction->amount_minor,
+            'orig_amount' => $transaction->orig_currency !== null && $transaction->orig_currency !== $transaction->currency ? $transaction->orig_amount_minor : null,
             'counterparty' => $transaction->counterparty,
-            'purpose' => $transaction->purpose,
+            'purpose' => $purpose === '' ? null : $purpose,
             'iban' => $transaction->counterparty_iban,
         ];
     }
@@ -252,8 +258,11 @@ final class Matcher
      */
     private function openTransactions(string $orgId): Builder
     {
+        // A293: pending or reverted bookings are never linked automatically; refunds hang on their original (A298).
         return Transaction::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $orgId)
-            ->where('no_receipt', false)->whereDoesntHave('matches', self::anyOrg(...));
+            ->where('no_receipt', false)->whereNull('parent_id')->whereNull('suggested_reason_id')
+            ->where(static fn (Builder $q) => $q->whereNull('bank_state')->orWhereNotIn('bank_state', Transaction::UNSETTLED))
+            ->whereDoesntHave('matches', self::anyOrg(...));
     }
 
     /**

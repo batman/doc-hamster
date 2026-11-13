@@ -31,14 +31,15 @@ final class MatchScore
     public const UNIQUE_GAP = 15;
 
     /**
-     * @param  array{date: string, amount: int, counterparty?: ?string, purpose?: ?string, iban?: ?string}  $tx
+     * @param  array{date: string, amount: int, orig_amount?: ?int, counterparty?: ?string, purpose?: ?string, iban?: ?string}  $tx
      * @param  array{amount?: ?int, amounts?: list<int>, invoice_date?: ?string, due_date?: ?string, uploaded?: ?string, iban?: ?string, sender?: ?string, invoice_number?: ?string}  $doc
      * @return array{score: int, reasons: array<string, int>}
      */
     public static function score(array $tx, array $doc): array
     {
         $reasons = array_filter([
-            'amount' => self::amount(abs($tx['amount']), $doc),
+            // A291: a payment in another currency matches its invoice by the original amount.
+            'amount' => max(self::amount(abs($tx['amount']), $doc), ($tx['orig_amount'] ?? null) === null ? 0 : self::amount(abs((int) $tx['orig_amount']), $doc)),
             'date' => self::date($tx['date'], $doc),
             'iban' => self::iban($tx, $doc['iban'] ?? null),
             'invoice_number' => self::invoiceNumber($tx['purpose'] ?? null, $doc['invoice_number'] ?? null),
@@ -52,14 +53,14 @@ final class MatchScore
      * Cheap pre-check before scoring many pairs: an amount within 1 %, the same IBAN, or – a document without
      * amount – a date within a week.
      *
-     * @param  array{date: string, amount: int, counterparty?: ?string, purpose?: ?string, iban?: ?string}  $tx
+     * @param  array{date: string, amount: int, orig_amount?: ?int, counterparty?: ?string, purpose?: ?string, iban?: ?string}  $tx
      * @param  array{amount?: ?int, amounts?: list<int>, invoice_date?: ?string, due_date?: ?string, uploaded?: ?string, iban?: ?string, sender?: ?string, invoice_number?: ?string}  $doc
      */
     public static function worthScoring(array $tx, array $doc): bool
     {
         $amounts = self::amounts($doc);
         foreach ($amounts as $amount) {
-            if (self::near(abs($tx['amount']), abs($amount))) {
+            if (self::near(abs($tx['amount']), abs($amount)) || (($tx['orig_amount'] ?? null) !== null && self::near(abs((int) $tx['orig_amount']), abs($amount)))) {
                 return true;
             }
         }

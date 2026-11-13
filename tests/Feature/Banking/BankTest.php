@@ -59,7 +59,7 @@ it('shows the guessed columns and the first rows, then imports and skips unreada
         ->assertRedirect(route('bank.import.columns'));
 
     $this->get('/bank/import/columns')->assertOk()->assertSee('Girokonto')->assertSee('Muster GmbH')
-        ->assertSee('<option value="3" selected>Betrag</option>', false);
+        ->assertSeeInOrder(['name="map[3]"', 'value="amount" selected'], false);
 
     $this->post('/bank/import/columns', ['date' => 0, 'amount' => 3, 'counterparty' => 1, 'purpose' => 2])
         ->assertRedirectContains('/bank/accounts/')
@@ -93,7 +93,7 @@ it('remembers the columns per account, and accounts are not limited', function (
     $this->post('/bank/import', ['file' => statementFile($moved), 'account' => $card->id])->assertRedirect(route('bank.account', $card->id));
     $this->post('/bank/import', ['file' => statementFile("Datum;Wann;Wer;Wofuer;Summe\nx;01.02.2026;Laden;Sachen;-5,00\n"), 'account' => $card->id])
         ->assertRedirect(route('bank.import.columns'));
-    $this->get('/bank/import/columns')->assertSee('<option value="1" selected>Wann</option>', false);
+    $this->get('/bank/import/columns')->assertSeeInOrder(['name="map[1]"', 'value="date" selected'], false);
 
     $this->post('/bank/import', ['file' => statementFile($moved), 'name' => 'Zweites Konto']);
     $this->post('/bank/import/columns', ['date' => 1, 'amount' => 0])->assertRedirect();
@@ -111,12 +111,11 @@ it('keeps the upload if no row is readable and creates no account', function ():
         ->and(Storage::disk('local')->allFiles())->toHaveCount(1);
 });
 
-it('refuses files that are no statement and needs an account name', function (): void {
+it('refuses files that are no statement', function (): void {
     $this->actingAs($this->admin->user);
 
     $this->post('/bank/import', ['file' => statementFile("PK\x03\x04\0\0binary;x\n1;2\n"), 'name' => 'Konto'])->assertSessionHasErrors('file');
     $this->post('/bank/import', ['file' => statementFile('nur Text'), 'name' => 'Konto'])->assertSessionHasErrors('file');
-    $this->post('/bank/import', ['file' => statementFile()])->assertSessionHasErrors('name');
 
     expect(Storage::disk('local')->allFiles())->toBe([]);
 });

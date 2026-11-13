@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\BankImportController;
+use App\Http\Controllers\BankSettingsController;
 use App\Http\Controllers\DocumentBulkController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DocumentFileController;
@@ -210,6 +211,18 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('import', [BankImportController::class, 'upload'])->name('import.upload');
         Route::get('import/columns', [BankImportController::class, 'columns'])->name('import.columns');
         Route::post('import/columns', [BankImportController::class, 'run'])->name('import.run');
+        Route::get('import/preview', [BankImportController::class, 'preview'])->name('import.preview');
+        Route::post('import/preview', [BankImportController::class, 'confirm'])->name('import.confirm');
+        Route::post('accounts/{id}/rename', [BankImportController::class, 'rename'])->name('accounts.rename');
+        // Einstellungen → Bank: reasons for "kein Beleg nötig" (A286) and MCC → tag (A300).
+        Route::get('reasons', [BankSettingsController::class, 'reasons'])->name('reasons');
+        Route::post('reasons', [BankSettingsController::class, 'storeReason'])->name('reasons.store');
+        Route::post('reasons/order', [BankSettingsController::class, 'orderReasons'])->name('reasons.order');
+        Route::post('reasons/{id}', [BankSettingsController::class, 'updateReason'])->name('reasons.update');
+        Route::post('reasons/{id}/delete', [BankSettingsController::class, 'destroyReason'])->name('reasons.destroy');
+        Route::get('mcc', [BankSettingsController::class, 'mcc'])->name('mcc');
+        Route::post('mcc', [BankSettingsController::class, 'storeMcc'])->name('mcc.store');
+        Route::post('mcc/{id}/delete', [BankSettingsController::class, 'destroyMcc'])->name('mcc.destroy');
         Route::post('accounts/{id}/delete', [BankImportController::class, 'destroyAccount'])->name('accounts.destroy');
         Route::get('accounts/{id}', [BankController::class, 'account'])->name('account');
         Route::get('receipts', [BankController::class, 'receipts'])->name('receipts');
@@ -220,6 +233,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('transactions/{id}/reject', [BankController::class, 'reject'])->name('reject');
         Route::post('transactions/{id}/unmatch', [BankController::class, 'unmatch'])->name('unmatch');
         Route::post('transactions/{id}/no-receipt', [BankController::class, 'noReceipt'])->name('no-receipt');
+        Route::post('transactions/{id}/tag', [BankController::class, 'tag'])->name('tag');
     });
 
     Route::middleware('can:exports.create')->group(function (): void {

@@ -12,7 +12,7 @@ it('finds delimiter and header below account details, in Windows-1252 too', func
 
     expect($statement->header)->toBe(['Buchungstag', 'Empfänger', 'Verwendungszweck', 'Betrag'])
         ->and($statement->rows)->toHaveCount(1)
-        ->and($statement->guessColumns())->toBe(['date' => 0, 'amount' => 3, 'counterparty' => 1, 'purpose' => 2, 'iban' => null]);
+        ->and($statement->guessColumns())->toMatchArray(['date' => 0, 'amount' => 3, 'counterparty' => 1, 'purpose' => 2, 'iban' => null]);
 });
 
 it('reads comma-separated files with quoted cells', function (): void {

@@ -62,7 +62,7 @@ function upload(object $test, string $content, array $fields = ['name' => 'Giro'
 function importPayments(object $test, string $content = PAYMENTS): BankAccount
 {
     upload($test, $content)->assertRedirect(route('bank.import.columns'));
-    $test->get('/bank/import/columns')->assertSee('<option value="2" selected>IBAN Empfaenger</option>', false);
+    $test->get('/bank/import/columns')->assertSeeInOrder(['IBAN Empfaenger', 'name="map[2]"', 'value="iban" selected'], false);
     $test->post('/bank/import/columns', ['date' => 0, 'amount' => 4, 'counterparty' => 1, 'purpose' => 3, 'iban' => 2])->assertRedirectContains('/bank/accounts/');
 
     return BankAccount::query()->firstOrFail();
@@ -108,7 +108,7 @@ function xlsx(): string
 
 it('imports an Excel statement, a second time adds nothing and asks nothing (F18, A267, A273)', function (): void {
     upload($this, xlsx(), ['name' => 'Giro'], 'auszug.xlsx')->assertRedirect(route('bank.import.columns'));
-    $this->get('/bank/import/columns')->assertSee('Muster GmbH')->assertSee('01.02.2026')->assertSee('<option value="3" selected>Betrag</option>', false);
+    $this->get('/bank/import/columns')->assertSee('Muster GmbH')->assertSee('01.02.2026')->assertSeeInOrder(['name="map[3]"', 'value="amount" selected'], false);
     $this->post('/bank/import/columns', ['date' => 0, 'amount' => 3, 'counterparty' => 1, 'purpose' => 2])
         ->assertSessionHas('status', 'Neu: 2. Schon vorhanden: 0. Nicht lesbar: 0.');
     $account = BankAccount::query()->firstOrFail();
