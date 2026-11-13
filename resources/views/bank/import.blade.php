@@ -46,6 +46,11 @@
         <input id="currency" name="currency" value="{{ old('currency', 'EUR') }}" maxlength="3">
         @error('currency')<p class="error" role="alert">{{ $message }}</p>@enderror
 
+        <label for="iban">{{ __('bank.iban') }}</label>
+        <input id="iban" name="iban" value="{{ old('iban') }}" maxlength="42" autocomplete="off" spellcheck="false">
+        <p class="field-hint">{{ __('bank.iban_hint') }}</p>
+        @error('iban')<p class="error" role="alert">{{ $message }}</p>@enderror
+
         <button type="submit">{{ __('bank.next') }}</button>
     </form>
 
@@ -55,7 +60,7 @@
             @foreach ($accounts as $account)
                 <li>
                     {{ $account->name }}
-                    <span class="muted">{{ $account->currency }} · {{ trans_choice('bank.transactions_count', $account->transactions_count, ['count' => $account->transactions_count]) }}</span>
+                    <span class="muted">{{ $account->currency }}@if ($account->iban) · {{ trim(chunk_split($account->iban, 4, ' ')) }}@endif · {{ trans_choice('bank.transactions_count', $account->transactions_count, ['count' => $account->transactions_count]) }}</span>
                     <form method="post" action="{{ route('bank.accounts.destroy', $account->id) }}">
                         @csrf
                         <button type="submit">{{ __('bank.delete_account') }}</button>

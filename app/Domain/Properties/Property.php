@@ -36,7 +36,11 @@ final class Property extends Model
 
     public const TYPES = ['text', 'amount', 'date', 'iban', 'number', 'choice'];
 
-    /** The properties every organisation starts with (key => type); names from lang properties.defaults. A249: paid_at. */
+    /**
+     * The properties every organisation starts with (key => type); names from lang properties.defaults. A249: paid_at.
+     * Points 120, A237: the GiroCode card reads bic, customer_number, payment_reference (an edited Verwendungszweck)
+     * and the Skonto (discount_percent, discount_until).
+     */
     public const DEFAULTS = [
         'invoice_date' => 'date',
         'invoice_amount' => 'amount',
@@ -46,6 +50,11 @@ final class Property extends Model
         'iban' => 'iban',
         'due_date' => 'date',
         'paid_at' => 'date',
+        'customer_number' => 'text',
+        'bic' => 'text',
+        'payment_reference' => 'text',
+        'discount_percent' => 'number',
+        'discount_until' => 'date',
     ];
 
     /** A symbol per type (rows in the settings, the popup "Markieren als"). */
@@ -123,7 +132,7 @@ final class Property extends Model
      */
     public static function forDocument(Document $document): Collection
     {
-        $tagIds = $document->tags()->pluck('tags.id')->all();
+        $tagIds = $document->tags()->withoutGlobalScope(OrgScope::class)->pluck('tags.id')->all();
 
         return self::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $document->org_id)->where('active', true)
             ->orderBy('sort')->orderBy('id')->get()

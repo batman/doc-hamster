@@ -14,6 +14,11 @@ return [
         'iban' => 'IBAN',
         'due_date' => 'Fällig am',
         'paid_at' => 'Bezahlt am',
+        'customer_number' => 'Kundennummer',
+        'bic' => 'BIC',
+        'payment_reference' => 'Verwendungszweck',
+        'discount_percent' => 'Skonto (%)',
+        'discount_until' => 'Skonto bis',
     ],
     'types' => [
         'text' => 'Text',

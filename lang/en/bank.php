@@ -23,6 +23,8 @@ return [
     'new_account' => 'New account',
     'account_name' => 'Name of the new account',
     'currency' => 'Currency of the new account',
+    'iban' => 'IBAN of the account (optional)',
+    'iban_hint' => 'Your own IBAN: docHamster never proposes it as the payee of an invoice.',
     'next' => 'Next',
     'wrong_type' => 'This file cannot be read as a bank statement. Please choose a CSV file.',
     'expired' => 'The uploaded file is gone. Please upload it again.',

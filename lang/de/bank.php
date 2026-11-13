@@ -23,6 +23,8 @@ return [
     'new_account' => 'Neues Konto',
     'account_name' => 'Name des neuen Kontos',
     'currency' => 'Währung des neuen Kontos',
+    'iban' => 'IBAN des Kontos (optional)',
+    'iban_hint' => 'Ihre eigene IBAN: docHamster schlägt sie bei Rechnungen nie als Empfänger vor.',
     'next' => 'Weiter',
     'wrong_type' => 'Diese Datei lässt sich nicht als Kontoauszug lesen. Bitte eine CSV-Datei wählen.',
     'expired' => 'Die hochgeladene Datei ist nicht mehr da. Bitte noch einmal hochladen.',

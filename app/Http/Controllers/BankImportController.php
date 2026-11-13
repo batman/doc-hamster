@@ -9,6 +9,7 @@ use App\Domain\Banking\BankAccount;
 use App\Domain\Banking\CsvStatement;
 use App\Domain\Banking\StatementImport;
 use App\Domain\Org\CurrentOrg;
+use App\Domain\Properties\PropertyValues;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,6 +39,12 @@ final class BankImportController
             'account' => ['nullable', Rule::in(BankAccount::query()->pluck('id')->all())],
             'name' => ['required_without:account', 'nullable', 'string', 'max:150'],
             'currency' => ['nullable', 'string', 'regex:/^[A-Za-z]{3}$/'],
+            // Point 120.1: the account's own IBAN, never proposed as the payee of an invoice.
+            'iban' => ['nullable', 'string', 'max:42', static function (string $attribute, mixed $value, \Closure $fail): void {
+                if (is_string($value) && trim($value) !== '' && PropertyValues::parseIban($value) === null) {
+                    $fail(__('properties.errors.iban'));
+                }
+            }],
         ]);
 
         $upload = $request->file('file');
@@ -61,6 +68,7 @@ final class BankImportController
             'account' => $data['account'] ?? null,
             'name' => $data['name'] ?? null,
             'currency' => Str::upper($data['currency'] ?? 'EUR'),
+            'iban' => is_string($data['iban'] ?? null) ? PropertyValues::parseIban($data['iban']) : null,
         ]);
 
         return redirect()->route('bank.import.columns');
@@ -120,7 +128,7 @@ final class BankImportController
         $account->update(['import_profile' => array_map(
             static fn (int $index): string => $statement->header[$index],
             array_filter($columns, static fn (?int $index): bool => $index !== null),
-        )]);
+        ), ...(is_string($pending['iban'] ?? null) ? ['iban' => $pending['iban']] : [])]);
 
         $new = StatementImport::store($account, $read['lines']);
         $this->forget($request);
@@ -174,11 +182,11 @@ final class BankImportController
     /**
      * The upload of this session, for the active organisation only.
      *
-     * @return array{org: string, path: string, account: string|null, name: string|null, currency: string}|null
+     * @return array{org: string, path: string, account: string|null, name: string|null, currency: string, iban?: string|null}|null
      */
     private function pending(Request $request, CurrentOrg $org): ?array
     {
-        /** @var array{org: string, path: string, account: string|null, name: string|null, currency: string}|null $pending */
+        /** @var array{org: string, path: string, account: string|null, name: string|null, currency: string, iban?: string|null}|null $pending */
         $pending = $request->session()->get('bank_import');
 
         return $pending !== null && $pending['org'] === $org->id() && Storage::disk('local')->exists($pending['path']) ? $pending : null;

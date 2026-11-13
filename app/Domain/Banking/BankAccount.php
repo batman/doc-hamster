@@ -15,13 +15,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $name
  * @property string $currency
  * @property array<string, string>|null $import_profile Column names of the last import, by field.
+ * @property string|null $iban The account's own IBAN: never proposed as the payee of an invoice (point 120.1).
  */
 final class BankAccount extends Model
 {
     use BelongsToOrg;
     use HasUlids;
 
-    protected $fillable = ['org_id', 'name', 'currency', 'import_profile'];
+    protected $fillable = ['org_id', 'name', 'currency', 'import_profile', 'iban'];
 
     /**
      * @return array<string, string>

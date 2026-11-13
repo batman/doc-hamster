@@ -14,6 +14,11 @@ return [
         'iban' => 'IBAN',
         'due_date' => 'Due on',
         'paid_at' => 'Paid on',
+        'customer_number' => 'Customer number',
+        'bic' => 'BIC',
+        'payment_reference' => 'Payment reference',
+        'discount_percent' => 'Discount (%)',
+        'discount_until' => 'Discount until',
     ],
     'types' => [
         'text' => 'Text',
