@@ -15,6 +15,8 @@ use App\Domain\Documents\TextDocument;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Organization;
 use App\Domain\Org\Permission;
+use App\Domain\Properties\Property;
+use App\Domain\Properties\PropertySearch;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -127,7 +129,14 @@ final class DocumentController
         if ($type !== '') {
             $query->whereHas('files', static fn ($file) => $type === 'pdf' ? $file->where('mime', 'application/pdf') : $file->where('mime', 'like', 'image/%'));
         }
+        // Point 122.6: a filter per property (range, contains, choice, has a value / missing).
+        $properties = Property::ordered(true);
+        $propFilters = PropertySearch::read($request, $properties);
+        PropertySearch::apply($query, $propFilters, $properties);
         $filters = array_filter(['tags' => $selected !== [], 'from' => isset($period['from']), 'to' => isset($period['to']), 'match' => $match !== '', 'read' => $read !== '', 'type' => $type !== '']);
+        foreach (array_keys($propFilters) as $propertyId) {
+            $filters['prop_'.$propertyId] = true;
+        }
 
         // Point 105: a search shows a result list of documents only (no folders), each with its folder (A204).
         $searching = $q !== '' || $filters !== [];
@@ -172,6 +181,15 @@ final class DocumentController
             $query->whereNull('folder_id');
         }
 
+        // A244: the details view sorts by a click on a column head (?sort=name|date|prop:<id>&dir=asc|desc) and shows the
+        // property columns this person chose (users.document_columns).
+        $wantedSort = $request->query('sort');
+        $sortProperty = is_string($wantedSort) && str_starts_with($wantedSort, 'prop:') ? $properties->firstWhere('id', substr($wantedSort, 5)) : null;
+        $sort = $sortProperty instanceof Property || in_array($wantedSort, ['name', 'date'], true) ? (string) $wantedSort : null;
+        $dir = $request->query('dir') === 'asc' ? 'asc' : 'desc';
+        $chosen = is_array($user->document_columns) ? $user->document_columns : [];
+        $columns = $view === 'details' ? $properties->filter(static fn (Property $p): bool => in_array($p->id, $chosen, true))->values() : collect();
+
         $month = null;
         $range = null;
         $dateSql = Document::dateSql($dates);
@@ -196,7 +214,11 @@ final class DocumentController
         } elseif ($view === 'timeline') {
             $documents = $query->orderByRaw("$dateSql desc")->latest()->limit(self::LIMIT + 1)->get();
         } else {
-            $documents = $query->latest()->limit(self::LIMIT + 1)->get();
+            $this->sortQuery($query, $sort, $dir, $sortProperty);
+            $documents = $query->limit(self::LIMIT + 1)->get();
+        }
+        if ($columns->isNotEmpty()) {
+            $documents->load('properties');
         }
         // Filtering in the browser works only when the page holds every receipt (point 7).
         $complete = ! $searching && ($view === 'calendar' || $documents->count() <= self::LIMIT);
@@ -219,6 +241,13 @@ final class DocumentController
             'read' => $read,
             'type' => $type,
             'filters' => $filters,
+            'properties' => $properties,
+            'propFilters' => $propFilters,
+            'propParams' => PropertySearch::params($properties),
+            'columns' => $columns,
+            'chosenColumns' => $chosen,
+            'sort' => $sort,
+            'dir' => $dir,
             'view' => $view,
             'views' => self::VIEWS,
             'folderViews' => self::FOLDER_VIEWS,
@@ -267,6 +296,39 @@ final class DocumentController
         $query[$key] = $value;
 
         return redirect()->to(explode('?', $back, 2)[0].'?'.http_build_query($query));
+    }
+
+    /** A244: switches one property column of the details view on or off for this person. */
+    public function setColumns(Request $request): RedirectResponse|JsonResponse
+    {
+        $data = $request->validate(['toggle' => ['required', 'string', Rule::in(Property::query()->pluck('id')->all())]]);
+        $user = $this->user($request);
+        $columns = is_array($user->document_columns) ? $user->document_columns : [];
+        $columns = in_array($data['toggle'], $columns, true)
+            ? array_values(array_diff($columns, [$data['toggle']]))
+            : [...$columns, $data['toggle']];
+        $user->forceFill(['document_columns' => $columns])->save();
+
+        return $request->wantsJson() ? response()->json(['columns' => $columns]) : back();
+    }
+
+    /**
+     * The order of the folder views: newest first, or by the clicked column head (A244).
+     *
+     * @param  Builder<Document>  $query
+     * @param  'asc'|'desc'  $dir
+     */
+    private function sortQuery(Builder $query, ?string $sort, string $dir, ?Property $property): void
+    {
+        match (true) {
+            $property !== null => PropertySearch::orderBy($query, $property, $dir),
+            $sort === 'name' => $query->orderBy('title', $dir),
+            $sort === 'date' => $query->orderBy('created_at', $dir),
+            default => $query->latest(),
+        };
+        if ($sort !== null) {
+            $query->orderBy('id');
+        }
     }
 
     public function store(Request $request, AuditLog $audit, CurrentOrg $org): RedirectResponse|JsonResponse

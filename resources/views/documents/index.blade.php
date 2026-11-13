@@ -12,7 +12,7 @@
     <x-window :title="$openFolder?->name ?? __('documents.title')" kind="folder" :icon="$openFolder?->iconName() ?? 'file-text'"
               :url="route('documents.index', request()->except('page'))" :close="$openFolder ? route('documents.index') : route('home')"
               :upload="$openFolder ? 'folder='.$openFolder->id : null"
-              :search="__('documents.search')" search-params="ocr all tags[] any by from to match read type" :search-count="count($filters)">
+              :search="__('documents.search')" :search-params="implode(' ', ['ocr', 'all', 'tags[]', 'any', 'by', 'from', 'to', 'match', 'read', 'type', ...$propParams])" :search-count="count($filters)">
         {{-- The advanced search (points 4-7): text where, tags, period, status, file type; all in the address (point 7). --}}
         <x-slot name="searchOptions">
             @php
@@ -78,6 +78,44 @@
                             <label class="check"><input type="radio" name="any" value="" data-default @checked(! $anyTag)> {{ __('documents.adv.all_tags') }}</label>
                             <label class="check"><input type="radio" name="any" value="1" @checked($anyTag)> {{ __('documents.adv.any_tag') }}</label>
                         </div>
+                    </fieldset>
+                @endif
+                @if ($properties->isNotEmpty())
+                    {{-- Point 122.6: a filter per property – a range for amounts, numbers and dates, "enthält" for text and IBAN,
+                         the values of a choice; each with "hat Wert / fehlt". --}}
+                    <fieldset class="search-group search-props">
+                        <legend>{{ __('properties.search.legend') }}</legend>
+                        @foreach ($properties as $property)
+                            @php
+                                $pf = $propFilters[$property->id] ?? [];
+                                $pn = fn (string $field): string => \App\Domain\Properties\PropertySearch::name($property, $field);
+                                $inputType = $property->type === 'date' ? 'date' : 'text';
+                            @endphp
+                            <div class="search-prop">
+                                <span>{{ $property->name }}</span>
+                                <div class="search-row">
+                                    @if (in_array($property->type, ['amount', 'number', 'date'], true))
+                                        <input type="{{ $inputType }}" class="input-small" name="{{ $pn('from') }}" value="{{ $pf['from'] ?? '' }}" @if ($inputType === 'text') inputmode="decimal" placeholder="{{ __('properties.search.from') }}" @endif aria-label="{{ $property->name }} {{ __('properties.search.from') }}">
+                                        <span class="muted">–</span>
+                                        <input type="{{ $inputType }}" class="input-small" name="{{ $pn('to') }}" value="{{ $pf['to'] ?? '' }}" @if ($inputType === 'text') inputmode="decimal" placeholder="{{ __('properties.search.to') }}" @endif aria-label="{{ $property->name }} {{ __('properties.search.to') }}">
+                                    @elseif ($property->type === 'choice')
+                                        <select class="input-small" name="{{ $pn('q') }}" aria-label="{{ $property->name }}">
+                                            <option value="">{{ __('properties.search.any') }}</option>
+                                            @foreach ($property->options ?? [] as $option)
+                                                <option value="{{ $option }}" @selected(($pf['q'] ?? null) === $option)>{{ $option }}</option>
+                                            @endforeach
+                                        </select>
+                                    @else
+                                        <input type="text" class="input-small" name="{{ $pn('q') }}" value="{{ $pf['q'] ?? '' }}" placeholder="{{ __('properties.search.contains') }}" aria-label="{{ $property->name }} {{ __('properties.search.contains') }}">
+                                    @endif
+                                </div>
+                                <select class="input-small" name="{{ $pn('has') }}" aria-label="{{ $property->name }}: {{ __('properties.search.has') }} / {{ __('properties.search.missing') }}">
+                                    <option value="">{{ __('properties.search.any') }}</option>
+                                    <option value="yes" @selected(($pf['has'] ?? null) === 'yes')>{{ __('properties.search.has') }}</option>
+                                    <option value="no" @selected(($pf['has'] ?? null) === 'no')>{{ __('properties.search.missing') }}</option>
+                                </select>
+                            </div>
+                        @endforeach
                     </fieldset>
                 @endif
             </div>
@@ -153,6 +191,17 @@
                     @endif
                     @if ($canFolder)
                         <a class="menu-item win-narrow-only" href="{{ $addUrl }}" data-window><x-icon name="folder-plus" /><span>{{ $addLabel }}</span></a>
+                    @endif
+                    @if ($view === 'details' && $properties->isNotEmpty())
+                        {{-- A244: property columns of the details view, remembered per person; this window reloads. --}}
+                        <hr class="menu-separator">
+                        <p class="dropdown-title">{{ __('properties.columns') }}</p>
+                        <form method="post" action="{{ route('documents.columns') }}" data-doc-columns>
+                            @csrf
+                            @foreach ($properties as $property)
+                                <button type="submit" name="toggle" value="{{ $property->id }}" class="menu-item" role="menuitemcheckbox" aria-checked="{{ in_array($property->id, $chosenColumns, true) ? 'true' : 'false' }}"><x-icon :name="$property->icon()" /><span>{{ $property->name }}</span></button>
+                            @endforeach
+                        </form>
                     @endif
                     @if ($canEditFolder)
                         @if ($canUpload || $canFolder)
@@ -253,7 +302,7 @@
             {{-- The result list (point 105): documents only, each with its folder; X closes it (point 106). --}}
             <div class="search-head" data-search-count="{{ count($filters) }}">
                 <h2>{{ trans_choice('documents.search_found', $documents->count(), ['count' => $documents->count()]) }}</h2>
-                <a class="control-button" href="{{ route('documents.index', request()->except(['q', 'ocr', 'all', 'tags', 'any', 'by', 'from', 'to', 'match', 'read', 'type', 'page'])) }}" data-window-search-clear aria-label="{{ __('app.window.search_reset') }}" data-tooltip="{{ __('app.window.search_reset') }}"><x-icon name="x" /></a>
+                <a class="control-button" href="{{ route('documents.index', request()->except(['q', 'ocr', 'all', 'tags', 'any', 'by', 'from', 'to', 'match', 'read', 'type', 'page', ...$propParams])) }}" data-window-search-clear aria-label="{{ __('app.window.search_reset') }}" data-tooltip="{{ __('app.window.search_reset') }}"><x-icon name="x" /></a>
             </div>
             {{-- Point 6: every active filter as a chip; its X removes just that one. --}}
             @php
@@ -265,6 +314,7 @@
                 if ($match !== '') { $chips[] = ['match', null, __('documents.adv.match').': '.__('documents.adv.'.$match)]; }
                 if ($read !== '') { $chips[] = ['read', null, __('documents.adv.read').': '.__('documents.adv.'.$read)]; }
                 if ($type !== '') { $chips[] = ['type', null, $type === 'pdf' ? 'PDF' : __('documents.adv.image')]; }
+                foreach (\App\Domain\Properties\PropertySearch::chips($propFilters, $properties) as [$chipName, $chipLabel]) { $chips[] = [$chipName, null, $chipLabel]; }
             @endphp
             @if ($chips !== [])
                 <div class="filter-chips">

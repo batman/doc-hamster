@@ -9,6 +9,7 @@ return [
     'expand' => 'Open :name',
     'open' => 'Open',
     'groups' => [
+        'properties' => 'Properties',
         'people' => 'People & roles',
         'bank' => 'Bank',
         'tags' => 'Tags',
@@ -19,6 +20,7 @@ return [
         'log' => 'Log',
     ],
     'links' => [
+        'properties' => ['title' => 'Properties', 'text' => 'Fields like invoice amount, date or IBAN'],
         'members' => ['title' => 'People', 'text' => 'Who has access'],
         'roles' => ['title' => 'Roles', 'text' => 'What a role may do'],
         'tags' => ['title' => 'Tags', 'text' => 'Manage labels for documents'],

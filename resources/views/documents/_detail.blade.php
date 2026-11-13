@@ -94,6 +94,9 @@
         </div>
     @endif
 
+    {{-- Eigenschaften (points 122.4, A252): the values of this document, editable in place. --}}
+    @include('documents._properties')
+
     @can('documents.edit')
         <form method="post" action="{{ route('documents.update', $document->id) }}">
             @csrf

@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Domain\Documents;
 
 use App\Domain\Banking\TransactionMatch;
+use App\Domain\Properties\DocumentProperty;
+use App\Domain\Properties\Property;
+use App\Domain\Properties\PropertyValues;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -14,15 +17,20 @@ use ZipArchive;
 /**
  * Writes receipts into a ZIP for the tax advisor (MVP of PLAN §10): the files
  * by month plus `index.csv` (`;`, UTF-8 with BOM, opens in Excel). Originals
- * are added as they are, so large exports don't need much memory.
+ * are added as they are, so large exports don't need much memory. The active
+ * properties (Rechnungsbetrag, IBAN …) follow as columns of their own (A245).
  */
 final class ReceiptArchive
 {
     /**
      * @param  Collection<int, Document>  $documents
+     * @param  iterable<Property>|null  $properties  the property columns; null = the active ones of the organisation
      */
-    public static function write(Collection $documents, string $target): void
+    public static function write(Collection $documents, string $target, ?iterable $properties = null): void
     {
+        $properties = collect($properties ?? Property::ordered(true))->values();
+        $format = new PropertyValues;
+
         $zip = new ZipArchive;
         if ($zip->open($target, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             throw new RuntimeException('Could not create the ZIP file.');
@@ -33,9 +41,15 @@ final class ReceiptArchive
             throw new RuntimeException('Could not create the index.');
         }
         fwrite($index, "\xEF\xBB\xBF");
-        fputcsv($index, ['Datum', 'Titel', 'Datei', 'Typ', 'Größe (Bytes)', 'SHA-256', 'Tags', 'Buchung'], ';', '"', '');
+        fputcsv($index, ['Datum', 'Titel', 'Datei', 'Typ', 'Größe (Bytes)', 'SHA-256', 'Tags', 'Buchung', ...$properties->map(static fn (Property $p): string => self::safeCell($p->name))->all()], ';', '"', '');
 
         foreach ($documents as $document) {
+            $values = $document->properties->keyBy('property_id');
+            $cells = $properties->map(static function (Property $property) use ($values, $format): string {
+                $value = $values->get($property->id);
+
+                return $value instanceof DocumentProperty ? self::safeCell($format->display($value->setRelation('property', $property))) : '';
+            })->all();
             foreach ($document->files as $file) {
                 $name = self::entryName($document, $file);
                 $path = Storage::disk('local')->path($file->path);
@@ -56,6 +70,7 @@ final class ReceiptArchive
                     $file->sha256,
                     self::safeCell($document->tags->pluck('name')->implode(', ')),
                     self::safeCell(self::bookings($document)),
+                    ...$cells,
                 ], ';', '"', '');
             }
         }

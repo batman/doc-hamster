@@ -122,6 +122,16 @@
                      data-too-deep="{{ __('folders.too_deep', ['max' => \App\Domain\Documents\Folder::MAX_DEPTH + 1]) }}" data-cancel="{{ __('documents.bulk.cancel') }}"
                      data-folder-trash-title="{{ __('folders.drop_trash_title') }}" data-folder-trash-text="{{ __('folders.drop_trash_text', ['name' => ':name']) }}" data-folder-trash-ok="{{ __('folders.drop_trash') }}"></div>
             @endif
+            @if ($currentOrg->isSet() && Gate::allows('documents.edit'))
+                {{-- The popup "Markieren als" (DocHamster.markAs, point 122.4): addresses and texts for properties.js. --}}
+                <div hidden data-properties-api
+                     data-card="{{ route('documents.properties', '__ID__') }}" data-set="{{ route('documents.properties.set', '__ID__') }}" data-preview="{{ route('documents.properties.preview', '__ID__') }}"
+                     data-types="{{ json_encode(__('properties.types')) }}"
+                     data-title="{{ __('properties.mark.title') }}" data-property="{{ __('properties.mark.property') }}" data-value="{{ __('properties.mark.value') }}"
+                     data-save="{{ __('properties.mark.save') }}" data-cancel="{{ __('properties.cancel') }}" data-none="{{ __('properties.mark.none') }}"
+                     data-pick="{{ __('properties.mark.pick') }}" data-preview-text="{{ __('properties.mark.preview', ['value' => ':value']) }}"
+                     data-replaces="{{ __('properties.mark.replaces', ['value' => ':value']) }}" data-failed="{{ __('app.edit_in_place.failed') }}"></div>
+            @endif
         @else
             <aside class="side side-plain">
                 <header class="site-header"><a class="brand" href="{{ url('/') }}"><img src="{{ asset('img/logo.png') }}" alt="{{ config('app.name') }}" width="476" height="186"></a></header>

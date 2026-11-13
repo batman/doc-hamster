@@ -8,6 +8,7 @@ use App\Http\Controllers\BankController;
 use App\Http\Controllers\BankImportController;
 use App\Http\Controllers\DocumentBulkController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\DocumentPropertyController;
 use App\Http\Controllers\DocumentWordsController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\FolderController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\OcrController;
 use App\Http\Controllers\PaletteController;
 use App\Http\Controllers\PhoneCheckController;
 use App\Http\Controllers\PrintTrayController;
+use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\QueueTickController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingsController;
@@ -61,6 +63,16 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::get('documents/{id}/text', [TextDocumentController::class, 'edit'])->name('documents.text');
     Route::post('documents/{id}/text', [TextDocumentController::class, 'update'])->middleware('can:documents.edit')->name('documents.text.update');
     Route::post('documents/view', [DocumentController::class, 'setView'])->name('documents.view');
+    // A244: property columns of the details view, remembered per person (before documents/{id}, so "columns" is no id).
+    Route::post('documents/columns', [DocumentController::class, 'setColumns'])->name('documents.columns');
+    // Property values of a document (points 122.1, 122.4): card, popup "Markieren als", click-to-edit.
+    Route::get('documents/{id}/properties', [DocumentPropertyController::class, 'card'])->name('documents.properties');
+    Route::middleware('can:documents.edit')->group(function (): void {
+        Route::post('documents/{id}/properties', [DocumentPropertyController::class, 'store'])->name('documents.properties.set');
+        Route::post('documents/{id}/properties/preview', [DocumentPropertyController::class, 'preview'])->name('documents.properties.preview');
+        Route::post('documents/{id}/properties/{property}/confirm', [DocumentPropertyController::class, 'confirm'])->name('documents.properties.confirm');
+        Route::post('documents/{id}/properties/{property}/delete', [DocumentPropertyController::class, 'destroy'])->name('documents.properties.delete');
+    });
     Route::get('documents/{id}', [DocumentController::class, 'show'])->name('documents.show');
     Route::get('documents/{id}/words', DocumentWordsController::class)->name('documents.words');
     Route::post('documents/{id}', [DocumentController::class, 'update'])->middleware('can:documents.edit')->name('documents.update');
@@ -94,6 +106,15 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('ocr-log', [OcrController::class, 'log'])->name('ocr.log');
     // A69/A74: without cron the open browser works off the queue, one job per call.
     Route::post('queue/tick', QueueTickController::class)->name('queue.tick');
+    // Einstellungen → Eigenschaften (point 122.2; before settings/{group}): org-wide, so only Admins (settings.manage).
+    Route::middleware('can:settings.manage')->prefix('settings/properties')->name('properties.')->group(function (): void {
+        Route::get('/', [PropertyController::class, 'index'])->name('index');
+        Route::post('/', [PropertyController::class, 'store'])->name('store');
+        Route::post('order', [PropertyController::class, 'order'])->name('order');
+        Route::post('{id}', [PropertyController::class, 'update'])->name('update');
+        Route::post('{id}/delete', [PropertyController::class, 'destroy'])->name('destroy');
+    });
+
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::get('settings/{group}', [SettingsController::class, 'group'])->name('settings.group');
     Route::post('documents/{id}/tags', [DocumentController::class, 'updateTags'])->middleware('can:documents.edit')->name('documents.tags');

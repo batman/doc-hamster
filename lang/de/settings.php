@@ -9,6 +9,7 @@ return [
     'expand' => ':name aufklappen',
     'open' => 'Aufklappen',
     'groups' => [
+        'properties' => 'Eigenschaften',
         'people' => 'Personen & Rollen',
         'bank' => 'Bank',
         'tags' => 'Tags',
@@ -19,6 +20,7 @@ return [
         'log' => 'Log',
     ],
     'links' => [
+        'properties' => ['title' => 'Eigenschaften', 'text' => 'Felder wie Rechnungsbetrag, Datum oder IBAN'],
         'members' => ['title' => 'Personen', 'text' => 'Wer Zugang hat'],
         'roles' => ['title' => 'Rollen', 'text' => 'Was eine Rolle darf'],
         'tags' => ['title' => 'Tags', 'text' => 'Etiketten für Dokumente verwalten'],

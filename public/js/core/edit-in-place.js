@@ -37,14 +37,19 @@
         body.append('field', box.dataset.field);
         body.append('value', value);
         fetch(box.dataset.editInPlace, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' }, credentials: 'same-origin' })
-            .then(response => (response.ok ? response.json() : Promise.reject(new Error(String(response.status)))))
+            .then(async response => {
+                const json = await response.json().catch(() => ({}));
+                // A refused value (422) names why, e.g. "Das ist kein Datum" (properties, point 122.4).
+                return response.ok ? json : Promise.reject(new Error(response.status === 422 && json.message ? json.message : ''));
+            })
             .then(data => {
                 box.textContent = typeof data.value === 'string' ? data.value : value.trim();
                 note(box.dataset.saved, false);
+                window.DocHamster?.emit('edit-in-place:saved', { box, json: data });
             })
-            .catch(() => {
+            .catch(error => {
                 box.textContent = old;
-                note(box.dataset.failed, true);
+                note(error?.message || box.dataset.failed, true);
             })
             .finally(() => box.classList.remove('is-saving'));
     };

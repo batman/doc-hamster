@@ -1,0 +1,50 @@
+/* Document properties ("Eigenschaften", points 122.1-122.6, A244-A252) ----------------------------------------------- */
+
+/* Eigenschaften-Karte in the detail window (A252): name left, value editable in place, a suggestion with pill and ✓ */
+.doc-properties-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .35rem; }
+.doc-properties-head h3 { margin: 0; }
+.doc-properties button, .detail-section.doc-properties button { margin-top: 0; }
+.doc-properties .list-empty { margin: 0; color: var(--muted); font-size: .9rem; }
+.prop-list { display: grid; gap: .1rem; margin: 0; padding: 0; list-style: none; }
+.prop-row { display: flex; align-items: center; gap: .5rem; min-height: 2.5rem; padding: 0 .25rem 0 .5rem; border-radius: var(--row-radius); }
+.prop-row:hover { background: var(--surface); }
+.prop-row form { display: contents; }
+.prop-name { flex: 0 0 9.5rem; min-width: 0; overflow: hidden; color: var(--muted); font-size: .85rem; text-overflow: ellipsis; white-space: nowrap; }
+.prop-value { display: flex; flex: 1 1 auto; align-items: center; gap: .5rem; min-width: 0; }
+.prop-value > span:first-child { overflow-wrap: anywhere; }
+.prop-value .edit-in-place { flex: 1 1 auto; min-width: 0; min-height: 2.25rem; margin: 0; padding: .35rem .5rem; }
+.prop-value .edit-in-place-field { flex: 1 1 auto; width: auto; min-width: 0; margin: 0; padding: .35rem .5rem; }
+.prop-row.is-suggested .prop-value .edit-in-place { color: var(--muted); font-style: italic; }
+.prop-row > form .control-button, .prop-row .row-actions .control-button { width: 2.25rem; height: 2.25rem; min-height: 0; margin: 0; padding: 0; }
+.prop-row.is-suggested > form .control-button { color: var(--primary-ink); }
+.prop-row[data-page] .prop-name { color: var(--primary-ink); }
+@container win (width < 28rem) {
+    .prop-row { flex-wrap: wrap; padding-block: .25rem; }
+    .prop-name { flex-basis: 100%; }
+}
+
+/* Popup "Markieren als …" (DocHamster.markAs, point 122.4): the clicked text, the properties to pick, the value with live check */
+.dialog.mark-as { width: min(30rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); overflow: auto; }
+.mark-as-text { margin: 0 0 .75rem; padding: .5rem .75rem; border-radius: 8px; background: var(--surface); box-shadow: inset 4px 0 0 var(--primary); overflow-wrap: anywhere; }
+.mark-as-list { max-height: 16rem; margin: .5rem 0 1rem; overflow: auto; }
+.pick-list.mark-as-list label.pick-row { align-items: center; padding: .5rem .75rem; }
+
+/* Einstellungen → Eigenschaften (point 122.2) */
+.property-row.is-off strong, .property-row.is-off .row-icon { color: var(--muted); }
+.property-switch { display: flex; align-items: center; }
+.property-switch .check { margin: 0; }
+.property-add { max-width: 40rem; margin-top: 2rem; }
+.property-add h2 { font-size: 1.1rem; }
+
+/* Advanced search (122.6): one row per property – name, its fields by type, "hat Wert / fehlt" */
+.search-group.search-props { grid-column: 1 / -1; }
+.search-prop { display: grid; grid-template-columns: minmax(7rem, 11rem) minmax(0, 1fr) 8.5rem; align-items: center; gap: .4rem .75rem; }
+.search-prop > .search-row > :is(input, select) { flex: 1 1 7rem; min-width: 0; }
+@container win (width < 44rem) { .search-prop { grid-template-columns: minmax(0, 1fr) 8.5rem; } .search-prop > .search-row { grid-column: 1 / -1; grid-row: 2; } }
+
+/* Details view (A244): property columns, sortable by their head */
+.view-details th a[data-doc-sort] { display: inline-flex; align-items: center; gap: .2rem; color: inherit; }
+.view-details th a[data-doc-sort] .icon { width: .95rem; height: .95rem; }
+.view-details .col-prop { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.view-details .col-prop-num { text-align: right; font-variant-numeric: tabular-nums; }
+@container win (width < 36rem) { .view-details .col-prop { display: none; } }

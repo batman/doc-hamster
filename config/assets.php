@@ -14,7 +14,7 @@ return [
         'core/base', 'core/layout', 'core/forms', 'core/components', 'core/buttons', 'core/menus', 'core/lists',
         'core/columns', 'core/windows',
         'modules/documents', 'modules/notes', 'modules/text-editor', 'modules/ocr', 'modules/log', 'modules/updates',
-        'modules/palette', 'modules/pages', 'core/layout-debug',
+        'modules/palette', 'modules/pages', 'modules/properties', 'core/layout-debug',
     ],
     'js' => [
         'core/bus', 'core/error-report', 'core/menu', 'core/dropdowns', 'modules/documents-filter', 'core/sortable', 'core/tabs',
@@ -23,6 +23,6 @@ return [
         'modules/updates-preview-pick', 'core/color-field', 'modules/folder-import', 'core/start',
         'modules/document-viewer', 'modules/palette', 'modules/ocr-browser', 'modules/documents', 'modules/updates',
         'modules/text-editor', 'core/edit-in-place', 'modules/ocr-progress', 'modules/note-options',
-        'core/window-edge', 'core/top-layer', 'core/layout-debug',
+        'modules/properties', 'core/window-edge', 'core/top-layer', 'core/layout-debug',
     ],
 ];

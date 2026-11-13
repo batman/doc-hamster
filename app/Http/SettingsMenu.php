@@ -25,6 +25,9 @@ final class SettingsMenu
         'tags' => ['tags', [
             ['tags', 'tags.index', 'tags', 'tags.manage', ['tags.*']],
         ], true],
+        'properties' => ['file-invoice', [
+            ['properties', 'properties.index', 'file-invoice', 'settings.manage', ['properties.*']],
+        ], true],
         'colors' => ['palette', [
             ['colors', 'palette.index', 'palette', 'settings.manage', ['palette.*']],
         ], true],
