@@ -123,7 +123,14 @@ input[type="color"]:focus-visible { outline: 2px solid var(--primary); outline-o
 .doc-zoom input[type="range"]:focus-visible { outline: 2px solid color-mix(in srgb, var(--primary) 45%, transparent); outline-offset: 3px; }
 .doc-box { position: absolute; z-index: 2; border: 2px dashed var(--primary); background: color-mix(in srgb, var(--primary) 12%, transparent); pointer-events: none; }
 .doc-box-actions { position: absolute; top: .35rem; left: .35rem; display: flex; gap: .35rem; pointer-events: auto; cursor: default; }
-
+/* Preview overlay (points 121.2, A240): a layer over the shown page that zooms and pans with it (DocHamster.viewer.layer);
+   marks sit in page percent. Hover/selection = semi-transparent orange box, is-pulse = brief pulse (document:highlight). */
+.doc-layer { position: absolute; z-index: 1; transform-origin: 0 0; pointer-events: none; }
+.doc-layer-page { position: absolute; }
+.doc-mark { position: absolute; box-sizing: border-box; border: calc(2px / var(--doc-scale, 1)) solid var(--primary); border-radius: calc(3px / var(--doc-scale, 1)); background: color-mix(in srgb, var(--primary) 28%, transparent); }
+.doc-mark.is-pulse { animation: doc-pulse .6s ease-out 3; }
+@keyframes doc-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 60%, transparent); } 100% { box-shadow: 0 0 0 calc(14px / var(--doc-scale, 1)) transparent; } }
+@media (prefers-reduced-motion: reduce) { .doc-mark.is-pulse { animation: none; } }
 /* Click-to-edit (point 28): plain text with a light hover hint, a field of the same size while editing */
 .edit-in-place {
     min-height: 2.75rem; margin: 0 -.5rem; padding: .5rem; border: 1px solid transparent; border-radius: calc(var(--radius) / 2);

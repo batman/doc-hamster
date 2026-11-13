@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="../css/modules/palette.css">
     <link rel="stylesheet" href="../css/modules/pages.css">
     <link rel="stylesheet" href="../css/modules/properties.css">
+    <link rel="stylesheet" href="../css/modules/ocr-text.css">
     <link rel="stylesheet" href="../css/core/layout-debug.css">
     <style>
         /* Sheet-only helpers, not part of the app CSS. */
@@ -729,6 +730,25 @@
                 <form onsubmit="return false"><div class="pick-list mark-as-list" role="radiogroup" aria-label="Eigenschaft"><label class="pick-row"><input type="radio" name="sg-mark" checked><span><strong>Rechnungsbetrag</strong><small>Betrag</small></span></label><label class="pick-row"><input type="radio" name="sg-mark"><span><strong>IBAN</strong><small>IBAN · DE89 3704 0044 0532 0130 00</small></span></label></div>
                 <div class="field"><label for="sg-mark-value">Wert</label><div class="field-addon is-ok"><input id="sg-mark-value" value="1.234,56 EUR"><span class="addon-end"><span class="addon-state" role="img" aria-label="OK"></span></span></div><p class="field-hint">Wird gespeichert als: 1.234,56 €</p></div>
                 <div class="dialog-actions"><button type="submit">Speichern</button></div></form>
+            </div>
+
+            <h3 class="sg-pad" id="ocr-read">Erkannter Text: Leseansicht mit Wort-Pillen</h3>
+            <p class="sg-note">Die Wörter stehen wie auf dem Blatt (Festbreitenschrift, Abstände als Leerzeichen), Seite für Seite. Überfahren: orange Pille am Wort und ein oranger Kasten an derselben Stelle in der Vorschau (und umgekehrt); Betrag und IBAN als Ganzes. Gestrichelt = unsicher erkannt, gepunktet = gelernte Korrektur angeboten, Punkt = korrigiert. Klick aufs Wort öffnet das Wort-Popup, Klick daneben bearbeitet den Text.</p>
+            <div style="max-width: 30rem;">
+                <div class="ocr-read"><div class="ocr-page"><div class="ocr-line"><span class="word-pill">Muster</span> <span class="word-pill">GmbH</span>                <span class="word-pill">Rechnung</span></div><div class="ocr-line">    <span class="word-pill is-hover">DE89</span> <span class="word-pill is-hover">3704</span> <span class="word-pill is-hover">0044</span> <span class="word-pill is-hover">0532</span> <span class="word-pill is-hover">0130</span> <span class="word-pill is-hover">00</span></div><div class="ocr-line"><span class="word-pill">Summe</span>            <span class="word-pill is-selected">1.234,56</span> <span class="word-pill is-selected">€</span></div><div class="ocr-line"><span class="word-pill is-unsure">Fällig</span> <span class="word-pill is-learned">0l.04.2026</span>   <span class="word-pill is-fixed">Danke</span></div></div></div>
+            </div>
+
+            <h3 class="sg-pad" id="doc-mark">Vorschau-Markierung</h3>
+            <p class="sg-note">Ein Kasten über der Vorschau, der mit Zoom und Verschieben mitgeht (<code>DocHamster.viewer.layer(frame)</code>): halbtransparent orange für Überfahren und Auswahl, <code>is-pulse</code> pulsiert kurz, wenn eine Eigenschaft ihre Fundstelle zeigt.</p>
+            <div class="sg-row sg-top"><span class="thumb-frame" style="position:relative;width:12rem;aspect-ratio:4/5"><span class="doc-layer" style="inset:0"><span class="doc-layer-page" style="inset:.75rem"><span class="doc-mark" style="left:10%;top:20%;width:45%;height:5%"></span><span class="doc-mark is-pulse" style="left:55%;top:60%;width:35%;height:6%"></span></span></span></span></div>
+
+            <h3 class="sg-pad" id="word-popup">Wort-Popup</h3>
+            <p class="sg-note">Klick auf ein Wort (Text oder Vorschau; Umschalt/Ziehen für mehrere): vergrößerter Ausschnitt der Stelle, das erkannte Wort im Feld mit Live-Hinweis (IBAN mit Prüfziffer grün/rot, Betrag, Datum), „Übernehmen“ speichert die Korrektur, „Markieren als …“ öffnet das Popup oben (mit geänderter Korrektur zuerst gespeichert). Korrigierte Wörter: „Original anzeigen“ nimmt die Korrektur zurück; gelernte Korrektur des Absenders als Vorschlag.</p>
+            <div class="dialog word-popup" role="dialog" aria-labelledby="sg-word-title"><button type="button" class="icon-button button-small dialog-x" aria-label="Schließen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></button><h2 id="sg-word-title">Wort</h2>
+                <div class="word-crop-box"><svg class="word-crop" viewBox="0 0 320 64" role="img" aria-label="Ausschnitt"><rect width="320" height="64" fill="#f4f1ea"/><text x="40" y="42" font-family="monospace" font-size="26" fill="#333">DE89 3704 0044</text><rect x="36" y="16" width="228" height="34" fill="none" stroke="#ff7622" stroke-width="2"/></svg></div>
+                <form onsubmit="return false"><div class="field"><label for="sg-word-value">Erkannt</label><div class="field-addon is-ok"><input id="sg-word-value" value="DE89370400440532013000"><span class="addon-end"><span class="addon-state" role="img" aria-label="IBAN – Prüfziffer stimmt"></span></span></div><p class="field-hint">IBAN – Prüfziffer stimmt</p></div>
+                <div class="word-popup-notes"><p class="word-popup-note"><span>Gelernt von diesem Absender: 01.04.2026</span><button type="button" class="button-quiet button-small">Vorschlag nehmen</button></p></div>
+                <div class="dialog-actions"><button type="button" class="button-quiet">Übernehmen</button><button type="submit">Markieren als …</button></div></form>
             </div>
 
             <h3 class="sg-pad">Dialog mit X</h3>
