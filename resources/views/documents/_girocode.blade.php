@@ -3,7 +3,7 @@
      made again from invoice and customer number). The QR code (EPC, SVG from documents.girocode.svg) follows the fields live
      while typing (girocode.js). Unsure amount: other amounts as chips; an IBAN with an OCR swap: the repaired one as chip.
      No code without payee, IBAN and an amount in euros – the card says what is missing. "Als bezahlt markieren" sets
-     paid_at; a paid document shows "Bezahlt am …" with Rückgängig instead of the code. Shown once there is an IBAN (or the
+     paid_at; a paid document shows "Bezahlt am …" with Rückgängig instead of the code. Shown once there is an invoice amount or an IBAN (A317; or the
      document is paid). No ids inside: the card reloads itself on properties:changed in every window with this document. --}}
 @php
     $giro = app(\App\Domain\Payments\GiroCodeCard::class)->build($document);

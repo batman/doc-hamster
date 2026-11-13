@@ -99,7 +99,9 @@ final class GiroCodeCard
         $paid = $get('paid_at')?->value_date?->format('d.m.Y');
 
         return [
-            'show' => $get('iban') !== null || $reading?->iban !== null || $swap !== null || $paid !== null || $get('payment_reference') !== null || $get('bic') !== null,
+            // A317: every document with an invoice amount (stored or read) shows the card, also without IBAN – it then says
+            // what is missing; documents without any amount (contracts, letters) keep it hidden.
+            'show' => $amount !== null || $reading?->amount !== null || $get('iban') !== null || $reading?->iban !== null || $swap !== null || $paid !== null || $get('payment_reference') !== null || $get('bic') !== null,
             'rows' => $rows,
             'chips' => $chips,
             'swap' => $swap,
