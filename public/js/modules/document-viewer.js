@@ -37,8 +37,43 @@
         const pct = Math.round(st.s * 100);
         st.bar.querySelector('[data-zoom-range]').value = pct;
         st.bar.querySelector('[data-zoom-value]').textContent = pct + ' %';
+        syncLayer(frame, st);
         const pdf = pdfs.get(frame);
         if (pdf && pdf.drawn !== Math.max(1, st.s)) redraw(frame, pdf, 150);
+    };
+    // The shown page inside the picture box (object-fit: contain), in unscaled picture pixels.
+    const content = st => {
+        const img = st.img, w = img.clientWidth, h = img.clientHeight;
+        const nw = img.naturalWidth || img.width, nh = img.naturalHeight || img.height;
+        if (!w || !h || !nw || !nh) return null;
+        const c = Math.min(w / nw, h / nh);
+        return { w, h, x: (w - nw * c) / 2, y: (h - nh * c) / 2, pw: nw * c, ph: nh * c };
+    };
+    // Points 121.2/A240: an overlay over the shown page (.doc-layer > .doc-layer-page) that zooms and pans with it;
+    // modules put marks into it in page-relative percent (left: x*100% …). Created on first use.
+    const syncLayer = (frame, st) => {
+        const layer = st.layer;
+        const c = layer && content(st);
+        if (!c) return;
+        Object.assign(layer.style, {
+            left: st.img.offsetLeft + 'px', top: st.img.offsetTop + 'px', width: c.w + 'px', height: c.h + 'px',
+            transform: st.img.style.transform,
+        });
+        layer.style.setProperty('--doc-scale', String(st.s));
+        Object.assign(layer.firstElementChild.style, { left: c.x + 'px', top: c.y + 'px', width: c.pw + 'px', height: c.ph + 'px' });
+    };
+    const layerOf = frame => {
+        const st = stateOf(frame);
+        if (!st.layer?.isConnected) {
+            st.layer = document.createElement('div');
+            st.layer.className = 'doc-layer';
+            st.layer.setAttribute('aria-hidden', 'true');
+            st.layer.append(document.createElement('div'));
+            st.layer.firstElementChild.className = 'doc-layer-page';
+            frame.append(st.layer);
+        }
+        syncLayer(frame, st);
+        return st.layer.firstElementChild;
     };
     // Zoom to scale s keeping the frame point p fixed.
     const zoomAt = (frame, st, s, p) => {
@@ -51,6 +86,17 @@
         apply(frame, st);
     };
     const center = frame => ({ x: frame.clientWidth / 2, y: frame.clientHeight / 2 });
+    // Frame point → page-relative point (0..1); null outside the page unless clamped.
+    const toPage = (frame, fx, fy, clampIt = false) => {
+        const st = stateOf(frame);
+        const c = content(st);
+        if (!c) return null;
+        let x = ((fx - st.img.offsetLeft - st.x) / st.s - c.x) / c.pw;
+        let y = ((fy - st.img.offsetTop - st.y) / st.s - c.y) / c.ph;
+        if (clampIt) { x = Math.min(1, Math.max(0, x)); y = Math.min(1, Math.max(0, y)); }
+        return x < 0 || y < 0 || x > 1 || y > 1 ? null : { x, y };
+    };
+    const pageOf = frame => pdfs.get(frame)?.page ?? 1;
     const reset = (frame, st) => { st.s = 1; st.x = 0; st.y = 0; apply(frame, st); };
     const clearBox = st => { st.box?.remove(); st.box = null; };
     const clearAll = () => document.querySelectorAll('.doc-box').forEach(box => {
@@ -115,6 +161,11 @@
         make(st.bar.dataset.labelZoom, () => zoomBox(frame, st, b));
         make(st.bar.dataset.labelCopy, () => copy(st, b));
         st.box.append(actions);
+        // Other modules may add their own action for the marked area (e.g. "Text auswählen", modules/ocr-text.js).
+        const a = toPage(frame, b.x, b.y), z = toPage(frame, b.x + b.w, b.y + b.h, true);
+        if (a && z) {
+            DocHamster.emit('viewer:box', { frame, page: pageOf(frame), box: { x: a.x, y: a.y, w: z.x - a.x, h: z.y - a.y }, add: (label, run) => make(label, run) });
+        }
     };
 
     document.addEventListener('wheel', e => {
@@ -276,6 +327,8 @@
         const now = stateOf(frame);
         now.img = canvas;
         apply(frame, now);
+        DocHamster.emit('viewer:page', { frame, page: pdf.page });
+        (pdf.waiters ?? []).splice(0).forEach(done => done(true));
     };
     const redraw = (frame, pdf, wait) => {
         clearTimeout(pdf.timer);
@@ -298,6 +351,9 @@
         const pdf = pdfs.get(frame);
         const to = pdf ? Math.min(pdf.pages, Math.max(1, pdf.page + step)) : 0;
         if (!pdf || to === pdf.page) return;
+        show(frame, pdf, to);
+    };
+    const show = (frame, pdf, to) => {
         pdf.page = to;
         const st = states.get(frame);
         if (st) { clearBox(st); st.s = 1; st.x = 0; st.y = 0; }
@@ -319,6 +375,45 @@
         if (resized) resized.observe(frame); else redraw(frame, pdf, 0);
     };
     DocHamster.on('window:open', root => root.querySelectorAll?.('.detail-doc[data-pdf]').forEach(initPdf));
+
+    // For modules that point at places on the document (modules/ocr-text.js, document:highlight). Pages count from 1;
+    // boxes are page-relative {x, y, w, h} (0..1) like the OCR words.
+    DocHamster.viewer = {
+        // The viewer frame of a window (null when the document has no picture).
+        frameIn: win => [...(win?.querySelectorAll?.('.detail-doc') ?? [])].find(frame => frameOf(frame) === frame) ?? null,
+        page: pageOf,
+        // Shows that page; resolves true when it is drawn (false when the document has no such page).
+        goTo: (frame, page) => {
+            const pdf = pdfs.get(frame);
+            if (!pdf) return Promise.resolve(page === 1);
+            if (page < 1 || page > pdf.pages) return Promise.resolve(false);
+            if (page === pdf.page && pdf.drawn !== null) return Promise.resolve(true);
+            return new Promise(done => {
+                (pdf.waiters ??= []).push(done);
+                if (page !== pdf.page) show(frame, pdf, page);
+            });
+        },
+        layer: layerOf,
+        // Page-relative point under a mouse event, null outside the page.
+        pointAt: (frame, e) => { const p = point(frame, e); return toPage(frame, p.x, p.y); },
+        // Pans a zoomed document so the box is in view.
+        reveal: (frame, box) => {
+            const st = stateOf(frame);
+            const c = content(st);
+            if (!c || st.s <= 1) return;
+            const fx = st.img.offsetLeft + st.x + st.s * (c.x + (box.x + box.w / 2) * c.pw);
+            const fy = st.img.offsetTop + st.y + st.s * (c.y + (box.y + box.h / 2) * c.ph);
+            if (fx < 0 || fx > frame.clientWidth) st.x += frame.clientWidth / 2 - fx;
+            if (fy < 0 || fy > frame.clientHeight) st.y += frame.clientHeight / 2 - fy;
+            apply(frame, st);
+        },
+        // The shown picture (img or pdf canvas) with its pixel size, for drawing a part of it.
+        source: frame => {
+            const img = stateOf(frame).img;
+            const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+            return w && h ? { img, w, h } : null;
+        },
+    };
     DocHamster.on('window:close', root => root.querySelectorAll?.('.detail-doc[data-pdf]').forEach(drop));
     document.addEventListener('click', e => {
         const btn = e.target.closest?.('[data-page-step]');

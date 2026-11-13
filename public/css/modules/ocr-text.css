@@ -1,0 +1,30 @@
+/* Recognised text: reading view, word pills, word popup (points 121, 122.3, 122.7, A240-A243; modules/ocr-text.js) */
+
+/* Reading view: the words laid out like on the page – monospace, one row per line, spaces for the x gaps */
+.ocr-read {
+    max-height: 24rem; overflow: auto; padding: .5rem .6rem; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg); font: .8125rem/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; cursor: text;
+}
+.ocr-line { white-space: pre; }
+.ocr-page-break { margin: .5rem 0; border: 0; border-top: 1px dashed var(--border); }
+
+/* Word pill: no layout shift (padding eaten by the margin); hover/selection orange, with the box in the preview */
+.word-pill { margin: 0 -.15em; padding: .05em .15em; border-radius: 4px; cursor: pointer; transition: background-color .1s; }
+.word-pill.is-hover { background: color-mix(in srgb, var(--primary) 22%, transparent); }
+.word-pill.is-selected { background: color-mix(in srgb, var(--primary) 40%, transparent); box-shadow: inset 0 -2px 0 var(--primary); }
+/* A241 unsure (confidence < 60): dashed underline; A243 learned correction offered: dotted; corrected: small dot */
+.word-pill.is-unsure { text-decoration: underline dashed color-mix(in srgb, var(--primary) 70%, transparent); text-underline-offset: .2em; }
+.word-pill.is-learned { text-decoration: underline dotted var(--primary); text-decoration-thickness: 2px; text-underline-offset: .2em; }
+.word-pill.is-fixed { position: relative; }
+.word-pill.is-fixed::after { content: ""; position: absolute; top: .05em; right: -.05em; width: .35em; height: .35em; border-radius: 50%; background: var(--primary); }
+
+.detail-doc.is-over-word:not(.is-selecting, .is-panning) { cursor: pointer; }
+
+/* Word popup: enlarged crop of the spot, the word in a field with type hint, notes, Übernehmen / Markieren als … */
+.dialog.word-popup { width: min(28rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); overflow: auto; }
+.word-crop-box { margin: 0 0 .75rem; padding: .5rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.word-crop { display: block; width: 100%; height: auto; max-height: 10rem; object-fit: contain; }
+.word-popup .field-addon input { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.word-popup-notes { display: grid; gap: .4rem; margin: -.25rem 0 .5rem; justify-items: start; }
+.word-popup-note { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 0; color: var(--muted); font-size: .875rem; }
+.word-popup-note button { margin: 0; }

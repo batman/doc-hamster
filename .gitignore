@@ -52,3 +52,6 @@ Thumbs.db
 
 # Claude Code agent worktrees
 .claude/worktrees/
+
+# Local mascot 3D work files (operator), never part of the app
+resources/hamster/3d/

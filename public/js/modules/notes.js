@@ -398,4 +398,48 @@
             field.select();
         }
     }));
+
+    // Points 8, 9, 118, A235: the columns have no scrollbar of their own; whatever scrolls (the window, on phones the
+    // page) moves the board. Every column is sticky: one that fits stays on top; a taller one scrolls along until its
+    // end reaches the bottom and stays there (top = visible height - column height). The heights are measured again
+    // whenever the page, a board or a column changes size; the observers live in this module (never collected).
+    const boards = new Set();
+    const scroller = board => {
+        for (let el = board.parentElement; el && el !== document.body; el = el.parentElement) {
+            const s = getComputedStyle(el);
+            if (/(auto|scroll)/.test(s.overflowY) && el.scrollHeight > el.clientHeight + 1) return el;
+        }
+        return null;
+    };
+    const place = () => boards.forEach(board => {
+        if (!board.isConnected) {
+            boards.delete(board);
+            return;
+        }
+        const box = scroller(board);
+        const room = box ? box.clientHeight : window.innerHeight;
+        board.querySelectorAll(':scope > .kanban-col').forEach(col => {
+            col.style.setProperty('--stick', `${Math.min(0, room - col.offsetHeight - 16)}px`);
+        });
+    });
+    let queued = 0;
+    const later = () => {
+        clearTimeout(queued);
+        queued = setTimeout(place, 30);
+    };
+    const sizes = new ResizeObserver(later);
+    const lists = new MutationObserver(later);
+    window.addEventListener('resize', later);
+    const stickColumns = board => {
+        if (boards.has(board)) {
+            return;
+        }
+        boards.add(board);
+        sizes.observe(board);
+        board.querySelectorAll(':scope > .kanban-col').forEach(col => sizes.observe(col));
+        lists.observe(board, { childList: true, subtree: true });
+        later();
+    };
+    DocHamster.on('window:open', root => root.querySelectorAll?.('[data-notes]').forEach(stickColumns));
+    document.addEventListener('DOMContentLoaded', () => document.querySelectorAll('[data-notes]').forEach(stickColumns));
 })();

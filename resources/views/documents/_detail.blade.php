@@ -7,6 +7,7 @@
     $when = fn ($date) => $date?->format('d.m.Y H:i') ?? __('documents.never');
     $booking = $document->matches->map(fn ($match) => $match->transaction->booking_date->format('d.m.Y').' · '.$match->transaction->formattedAmount())->implode(', ');
     $shareUrl = session('share_url');
+    $tagSummary = $document->tags->pluck('name')->implode(', ');
     $isText = \App\Domain\Documents\TextDocument::isText($file);
     // Text recognition state (A23): running wins over the stored status.
     $ocrRunning = (\App\Infrastructure\Environment\OcrProgress::current($document->org_id)['id'] ?? null) === $document->id;
@@ -94,6 +95,12 @@
         </div>
     @endif
 
+    {{-- Eigenschaften (points 122.4, A252): the values of this document, editable in place. --}}
+    @include('documents._properties')
+
+    {{-- GiroCode (point 120): payee, IBAN, amount and the QR code for the banking app. --}}
+    @include('documents._girocode')
+
     @can('documents.edit')
         <form method="post" action="{{ route('documents.update', $document->id) }}">
             @csrf
@@ -110,14 +117,14 @@
                 </select>
             </section>
             @if ($tags->isNotEmpty())
-                <section class="detail-section">
-                    <h3>{{ __('documents.tags') }}</h3>
+                {{-- Foldable card (point 132, A279: open at first); folded the head names the chosen tags. --}}
+                <x-fold-card fold="detail.tags" :title="__('documents.tags')" icon="tags" :summary="$tagSummary">
                     <div class="tags">
                         @foreach ($tags as $tag)
                             <label class="tag-choice"><input type="checkbox" name="tags[]" value="{{ $tag->id }}" @checked($document->tags->contains('id', $tag->id))><span class="tag tag-{{ $tag->id }}">{{ $tag->name }}</span></label>
                         @endforeach
                     </div>
-                </section>
+                </x-fold-card>
             @endif
             <button type="submit">{{ __('documents.save') }}</button>
         </form>
@@ -139,15 +146,20 @@
                         </form>
                     @endif
                 @endunless
+                @include('documents._ocr_copy')
             </div>
-            <x-edit-in-place name="ocr_text" :value="$document->ocr_text" :action="route('documents.field', $document->id)" multiline class="edit-in-place-small"
-                :placeholder="__('documents.ocr_placeholder')" aria-labelledby="ocr-{{ $document->id }}" />
+            @include('documents._ocr_read')
+            {{-- Point 134: the text is no longer edited as a block; words are corrected one by one in the word popup. --}}
+            @if ($document->ocr_text)
+                <p class="edit-in-place-small is-plain">{{ $document->ocr_text }}</p>
+            @else
+                <p class="muted">{{ __('documents.ocr_placeholder') }}</p>
+            @endif
         </section>
     @else
-        <section class="detail-section">
-            <h3>{{ __('documents.tags') }}</h3>
+        <x-fold-card fold="detail.tags" :title="__('documents.tags')" icon="tags" :summary="$tagSummary">
             @include('documents._tags')
-        </section>
+        </x-fold-card>
         @if ($document->note)
             <section class="detail-section"><h3>{{ __('documents.note') }}</h3><p>{{ $document->note }}</p></section>
         @endif
@@ -156,14 +168,17 @@
                 <div class="ocr-head">
                     <h3>{{ __('documents.ocr_text') }}</h3>
                     @unless ($isText)<span class="pill">{{ __('ocr.state.'.$ocrState) }}</span>@endunless
+                    @include('documents._ocr_copy')
                 </div>
+                @include('documents._ocr_read')
                 @if ($document->ocr_text)<p class="edit-in-place-small is-plain">{{ $document->ocr_text }}</p>@endif
             </section>
         @endif
     @endcan
 
-    <section class="detail-section">
-        <h3>{{ __('documents.history') }}</h3>
+    {{-- Foldable card (point 132, A279: folded at first). --}}
+    <x-fold-card fold="detail.history" :title="__('documents.history')" icon="clock" folded
+        :summary="__('documents.facts.uploaded').' '.$when($document->created_at)">
         <dl class="detail-facts">
             <dt>{{ __('documents.facts.uploaded') }}</dt><dd>{{ $when($document->created_at) }}</dd>
             <dt>{{ __('documents.facts.created') }}</dt><dd>{{ $document->doc_date?->format('d.m.Y') ?? '–' }}</dd>
@@ -172,7 +187,7 @@
             <dt>{{ __('documents.facts.type') }}</dt><dd>{{ $file?->mime ?? '–' }}</dd>
             <dt>{{ __('documents.facts.booking') }}</dt><dd>{{ $booking !== '' ? $booking : '–' }}</dd>
         </dl>
-    </section>
+    </x-fold-card>
 
 @if ($file)
     <div class="dialog-backdrop" data-dialog="share-document-{{ $document->id }}" @unless ($shareUrl) hidden @endunless>

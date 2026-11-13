@@ -6,19 +6,30 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\BankImportController;
+use App\Http\Controllers\BankSettingsController;
 use App\Http\Controllers\DocumentBulkController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\DocumentFileController;
+use App\Http\Controllers\DocumentPropertyController;
+use App\Http\Controllers\DocumentUploadController;
+use App\Http\Controllers\DocumentViewController;
+use App\Http\Controllers\DocumentWordsController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\FolderImportController;
+use App\Http\Controllers\GiroCodeController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\NoteColumnController;
+use App\Http\Controllers\OcrBrowserController;
 use App\Http\Controllers\OcrController;
+use App\Http\Controllers\OcrStatusController;
 use App\Http\Controllers\PaletteController;
 use App\Http\Controllers\PhoneCheckController;
+use App\Http\Controllers\PrinterSettingsController;
 use App\Http\Controllers\PrintTrayController;
+use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\QueueTickController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingsController;
@@ -54,19 +65,36 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('documents/trash/empty', [DocumentBulkController::class, 'empty'])->middleware('can:documents.trash')->name('documents.trash.empty');
     Route::post('documents/{id}/restore', [DocumentController::class, 'restore'])->middleware('can:documents.trash')->name('documents.restore');
     Route::post('documents/{id}/share-link', [ShareController::class, 'store'])->middleware('can:exports.create')->name('documents.share');
-    Route::post('documents', [DocumentController::class, 'store'])->middleware('can:documents.upload')->name('documents.store');
+    Route::post('documents', [DocumentUploadController::class, 'store'])->middleware('can:documents.upload')->name('documents.store');
     // Text documents written in the app (point 21), before documents/{id} so "text" is no id.
     Route::post('documents/text', [TextDocumentController::class, 'store'])->middleware('can:documents.upload')->name('documents.text.store');
     Route::get('documents/{id}/text', [TextDocumentController::class, 'edit'])->name('documents.text');
     Route::post('documents/{id}/text', [TextDocumentController::class, 'update'])->middleware('can:documents.edit')->name('documents.text.update');
-    Route::post('documents/view', [DocumentController::class, 'setView'])->name('documents.view');
+    Route::post('documents/view', [DocumentViewController::class, 'setView'])->name('documents.view');
+    // A244: property columns of the details view, remembered per person (before documents/{id}, so "columns" is no id).
+    Route::post('documents/columns', [DocumentViewController::class, 'setColumns'])->name('documents.columns');
+    // Property values of a document (points 122.1, 122.4): card, popup "Markieren als", click-to-edit.
+    Route::get('documents/{id}/properties', [DocumentPropertyController::class, 'card'])->name('documents.properties');
+    // GiroCode card (point 120): the card again and its QR code, same visibility as the document.
+    Route::get('documents/{id}/girocode', [GiroCodeController::class, 'card'])->name('documents.girocode');
+    Route::get('documents/{id}/girocode.svg', [GiroCodeController::class, 'svg'])->name('documents.girocode.svg');
+    Route::middleware('can:documents.edit')->group(function (): void {
+        Route::post('documents/{id}/properties', [DocumentPropertyController::class, 'store'])->name('documents.properties.set');
+        Route::post('documents/{id}/properties/preview', [DocumentPropertyController::class, 'preview'])->name('documents.properties.preview');
+        Route::post('documents/{id}/properties/{property}/confirm', [DocumentPropertyController::class, 'confirm'])->name('documents.properties.confirm');
+        Route::post('documents/{id}/properties/{property}/delete', [DocumentPropertyController::class, 'destroy'])->name('documents.properties.delete');
+    });
     Route::get('documents/{id}', [DocumentController::class, 'show'])->name('documents.show');
+    Route::get('documents/{id}/words', DocumentWordsController::class)->name('documents.words');
+    // OCR corrections of single words by position and their undo (point 122.7, A243).
+    Route::post('documents/{id}/words/fix', [DocumentWordsController::class, 'fix'])->middleware('can:documents.edit')->name('documents.words.fix');
+    Route::post('documents/{id}/words/unfix', [DocumentWordsController::class, 'unfix'])->middleware('can:documents.edit')->name('documents.words.unfix');
     Route::post('documents/{id}', [DocumentController::class, 'update'])->middleware('can:documents.edit')->name('documents.update');
     Route::post('documents/{id}/field', [DocumentController::class, 'updateField'])->middleware('can:documents.edit')->name('documents.field');
     Route::post('documents/{id}/move', [DocumentController::class, 'move'])->middleware('can:documents.edit')->name('documents.move');
     Route::post('documents/{id}/delete', [DocumentController::class, 'destroy'])->middleware('can:documents.trash')->name('documents.destroy');
-    Route::get('files/{id}/download', [DocumentController::class, 'download'])->name('documents.download');
-    Route::get('files/{id}/thumb', [DocumentController::class, 'thumb'])->name('documents.thumb');
+    Route::get('files/{id}/download', [DocumentFileController::class, 'download'])->name('documents.download');
+    Route::get('files/{id}/thumb', [DocumentFileController::class, 'thumb'])->name('documents.thumb');
     Route::get('tags.css', [TagController::class, 'css'])->name('tags.css');
     // Einstellungen → Log (point 115, A229-A234): all logbooks, one entry per logbook, export, reset; browser errors.
     Route::middleware('can:settings.manage')->group(function (): void {
@@ -83,19 +111,37 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('settings/ocr', [OcrController::class, 'setup'])->middleware('can:settings.manage')->name('ocr.setup');
     Route::post('settings/ocr/rerun', [OcrController::class, 'rerun'])->middleware('can:settings.manage')->name('ocr.rerun');
     Route::post('documents/{id}/ocr', [OcrController::class, 'redo'])->middleware('can:documents.edit')->name('ocr.redo');
-    Route::get('ocr/status', [OcrController::class, 'status'])->name('ocr.status');
-    Route::get('ocr/next', [OcrController::class, 'next'])->name('ocr.next');
-    Route::post('ocr/{id}/progress', [OcrController::class, 'progress'])->name('ocr.progress');
-    Route::get('ocr/image/{id}', [OcrController::class, 'image'])->name('ocr.image');
-    Route::post('ocr/{id}', [OcrController::class, 'store'])->name('ocr.store');
-    Route::post('ocr-engine', [OcrController::class, 'engineError'])->name('ocr.engine');
-    Route::post('ocr-log', [OcrController::class, 'log'])->name('ocr.log');
+    // Point 123: the same page as a module of its own (the OCR widget below Abmelden), without the settings columns.
+    Route::get('ocr', [OcrController::class, 'show'])->middleware('can:settings.manage')->name('ocr.live');
+    Route::get('ocr/status', [OcrStatusController::class, 'status'])->name('ocr.status');
+    Route::get('ocr/next', [OcrBrowserController::class, 'next'])->name('ocr.next');
+    Route::post('ocr/{id}/progress', [OcrBrowserController::class, 'progress'])->name('ocr.progress');
+    Route::get('ocr/image/{id}', [OcrBrowserController::class, 'image'])->name('ocr.image');
+    Route::post('ocr/{id}', [OcrBrowserController::class, 'store'])->name('ocr.store');
+    Route::post('ocr-engine', [OcrStatusController::class, 'engineError'])->name('ocr.engine');
+    Route::post('ocr-log', [OcrStatusController::class, 'log'])->name('ocr.log');
     // A69/A74: without cron the open browser works off the queue, one job per call.
     Route::post('queue/tick', QueueTickController::class)->name('queue.tick');
+    // Einstellungen → Eigenschaften (point 122.2; before settings/{group}): org-wide, so only Admins (settings.manage).
+    Route::middleware('can:settings.manage')->prefix('settings/properties')->name('properties.')->group(function (): void {
+        Route::get('/', [PropertyController::class, 'index'])->name('index');
+        Route::post('/', [PropertyController::class, 'store'])->name('store');
+        Route::post('order', [PropertyController::class, 'order'])->name('order');
+        Route::post('{id}', [PropertyController::class, 'update'])->name('update');
+        Route::post('{id}/delete', [PropertyController::class, 'destroy'])->name('destroy');
+    });
+
+    // Einstellungen → Drucker (point 127; before settings/{group}): each person's own computers with the printer "Hamster".
+    Route::middleware('can:documents.upload')->prefix('settings/printer')->name('printers.')->group(function (): void {
+        Route::get('/', [PrinterSettingsController::class, 'index'])->name('index');
+        Route::post('setup', [PrinterSettingsController::class, 'setup'])->name('setup');
+        Route::post('{id}/delete', [PrinterSettingsController::class, 'destroy'])->name('destroy');
+    });
+
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::get('settings/{group}', [SettingsController::class, 'group'])->name('settings.group');
     Route::post('documents/{id}/tags', [DocumentController::class, 'updateTags'])->middleware('can:documents.edit')->name('documents.tags');
-    Route::get('files/{id}', [DocumentController::class, 'file'])->name('documents.file');
+    Route::get('files/{id}', [DocumentFileController::class, 'file'])->name('documents.file');
     Route::get('phone-check/qr', [PhoneCheckController::class, 'qr'])->name('phone-check.qr');
 
     // Druckerablage: what was printed on "Hamster" (print tray).
@@ -103,8 +149,6 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::view('mail-tray', 'mail_tray.index')->middleware('can:documents.upload')->name('mail-tray.index');
     Route::middleware('can:documents.upload')->prefix('print-tray')->name('print-tray.')->group(function (): void {
         Route::get('/', [PrintTrayController::class, 'index'])->name('index');
-        Route::post('printers', [PrintTrayController::class, 'setup'])->name('setup');
-        Route::post('printers/{id}/revoke', [PrintTrayController::class, 'revoke'])->name('revoke');
         Route::post('{id}/accept', [PrintTrayController::class, 'accept'])->name('accept');
         Route::post('{id}/delete', [PrintTrayController::class, 'destroy'])->middleware('can:documents.trash')->name('destroy');
     });
@@ -167,10 +211,29 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('import', [BankImportController::class, 'upload'])->name('import.upload');
         Route::get('import/columns', [BankImportController::class, 'columns'])->name('import.columns');
         Route::post('import/columns', [BankImportController::class, 'run'])->name('import.run');
+        Route::get('import/preview', [BankImportController::class, 'preview'])->name('import.preview');
+        Route::post('import/preview', [BankImportController::class, 'confirm'])->name('import.confirm');
+        Route::post('accounts/{id}/rename', [BankImportController::class, 'rename'])->name('accounts.rename');
+        // Einstellungen → Bank: reasons for "kein Beleg nötig" (A286) and MCC → tag (A300).
+        Route::get('reasons', [BankSettingsController::class, 'reasons'])->name('reasons');
+        Route::post('reasons', [BankSettingsController::class, 'storeReason'])->name('reasons.store');
+        Route::post('reasons/order', [BankSettingsController::class, 'orderReasons'])->name('reasons.order');
+        Route::post('reasons/{id}', [BankSettingsController::class, 'updateReason'])->name('reasons.update');
+        Route::post('reasons/{id}/delete', [BankSettingsController::class, 'destroyReason'])->name('reasons.destroy');
+        Route::get('mcc', [BankSettingsController::class, 'mcc'])->name('mcc');
+        Route::post('mcc', [BankSettingsController::class, 'storeMcc'])->name('mcc.store');
+        Route::post('mcc/{id}/delete', [BankSettingsController::class, 'destroyMcc'])->name('mcc.destroy');
         Route::post('accounts/{id}/delete', [BankImportController::class, 'destroyAccount'])->name('accounts.destroy');
+        Route::get('accounts/{id}', [BankController::class, 'account'])->name('account');
+        Route::get('receipts', [BankController::class, 'receipts'])->name('receipts');
         Route::get('transactions/{id}', [BankController::class, 'show'])->name('show');
         Route::post('transactions/{id}/match', [BankController::class, 'match'])->name('match');
+        Route::post('transactions/{id}/link', [BankController::class, 'link'])->name('link');
+        Route::post('transactions/{id}/confirm', [BankController::class, 'confirm'])->name('confirm');
+        Route::post('transactions/{id}/reject', [BankController::class, 'reject'])->name('reject');
         Route::post('transactions/{id}/unmatch', [BankController::class, 'unmatch'])->name('unmatch');
+        Route::post('transactions/{id}/no-receipt', [BankController::class, 'noReceipt'])->name('no-receipt');
+        Route::post('transactions/{id}/tag', [BankController::class, 'tag'])->name('tag');
     });
 
     Route::middleware('can:exports.create')->group(function (): void {

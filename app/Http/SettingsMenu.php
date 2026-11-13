@@ -20,16 +20,24 @@ final class SettingsMenu
             ['roles', 'roles.index', 'user-shield', 'members.manage', ['roles.*']],
         ], false],
         'bank' => ['building-bank', [
-            ['bank', 'bank.import', 'building-bank', 'banking.import', ['bank.import*', 'bank.accounts.*']],
+            ['bank', 'bank.import', 'building-bank', 'banking.import', ['bank.import', 'bank.accounts.*']],
+            ['bank_reasons', 'bank.reasons', 'receipt-off', 'banking.import', ['bank.reasons*']],
+            ['bank_mcc', 'bank.mcc', 'tags', 'banking.import', ['bank.mcc*']],
         ], false],
         'tags' => ['tags', [
             ['tags', 'tags.index', 'tags', 'tags.manage', ['tags.*']],
+        ], true],
+        'properties' => ['file-invoice', [
+            ['properties', 'properties.index', 'file-invoice', 'settings.manage', ['properties.*']],
         ], true],
         'colors' => ['palette', [
             ['colors', 'palette.index', 'palette', 'settings.manage', ['palette.*']],
         ], true],
         'ocr' => ['text-scan-2', [
             ['ocr', 'ocr.show', 'text-scan-2', 'settings.manage', ['ocr.show']],
+        ], true],
+        'printer' => ['printer', [
+            ['printer', 'printers.index', 'printer', 'documents.upload', ['printers.*']],
         ], true],
         'log' => ['list-details', [
             ['log', 'log.index', 'list-details', 'settings.manage', ['log.index']],

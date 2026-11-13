@@ -18,6 +18,8 @@
 .col-item { --mark-bg: var(--surface); }
 .col-item[aria-current="true"] { font-weight: 700; }
 .col-item .icon { width: 1.5rem; height: 1.5rem; color: var(--primary); }
+.col-item > .badge { margin-left: auto; }
+.col-item > .badge:not([hidden]) + .go { margin-left: .5rem; } /* point 128: a hidden count keeps the arrow at the right edge */
 .col-item .go { margin-left: auto; width: 1.125rem; height: 1.125rem; color: var(--muted); }
 button.col-strip {
     display: flex; flex-direction: column; align-items: center; gap: 1rem; flex: none; box-sizing: border-box; width: 3.5rem; min-height: 0; margin: 0; padding: 1rem 0;

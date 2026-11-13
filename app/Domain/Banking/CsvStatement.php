@@ -18,8 +18,70 @@ final readonly class CsvStatement
     /**
      * @param  list<string>  $header
      * @param  list<list<string>>  $rows
+     * @param  string  $preamble  what stands above the table (account details: the own IBAN, A296/142)
      */
-    private function __construct(public array $header, public array $rows) {}
+    public function __construct(public array $header, public array $rows, public string $preamble = '') {}
+
+    /** F18: a CSV, an Excel workbook (xlsx, the first sheet) or a CAMT.053 XML (A297); anything else gives an empty statement. */
+    public static function read(string $content): self
+    {
+        if (CamtStatement::looksLike($content)) {
+            return CamtStatement::toStatement($content) ?? new self([], []);
+        }
+        if (str_starts_with($content, "PK\x03\x04")) {
+            $rows = XlsxSheet::rows($content);
+
+            return $rows === null ? new self([], []) : self::fromRows($rows);
+        }
+
+        // Other binaries (old .xls, pictures) contain NUL bytes, text never does.
+        return str_contains($content, "\0") ? new self([], []) : self::parse($content);
+    }
+
+    /**
+     * A table read elsewhere (Excel): the header is the first row as wide as most rows and mostly filled.
+     *
+     * @param  list<list<string>>  $rows
+     */
+    public static function fromRows(array $rows): self
+    {
+        $rows = array_map(static function (array $cells): array {
+            $cells = array_map(static fn (string $cell): string => trim($cell), $cells);
+            while ($cells !== [] && end($cells) === '') {
+                array_pop($cells);
+            }
+
+            return $cells;
+        }, $rows);
+
+        $width = 0;
+        $best = 0;
+        foreach (array_count_values(array_map('count', $rows)) as $count => $times) {
+            if ($count > 1 && $count * $times > $best) {
+                [$width, $best] = [$count, $count * $times];
+            }
+        }
+        if ($width === 0) {
+            return new self([], []);
+        }
+
+        $header = [];
+        $body = [];
+        $preamble = [];
+        foreach ($rows as $cells) {
+            if ($header === []) {
+                if (count($cells) >= $width && count(array_filter($cells, static fn (string $c): bool => $c !== '')) * 2 > $width) {
+                    $header = array_slice($cells, 0, $width);
+                } else {
+                    $preamble[] = implode(' ', array_filter($cells, static fn (string $c): bool => $c !== ''));
+                }
+            } elseif (count(array_filter($cells, static fn (string $c): bool => $c !== '')) > 1) {
+                $body[] = array_slice(array_pad($cells, $width, ''), 0, $width);
+            }
+        }
+
+        return new self($header, $body, mb_substr(implode("\n", $preamble), 0, 4000));
+    }
 
     public static function parse(string $content): self
     {
@@ -42,6 +104,7 @@ final readonly class CsvStatement
 
         $header = [];
         $rows = [];
+        $preamble = [];
         // fgetcsv, not line by line: a quoted purpose can span several lines.
         while (($cells = fgetcsv($stream, null, $delimiter, '"', '')) !== false) {
             $cells = array_map(static fn (?string $cell): string => trim((string) $cell), $cells);
@@ -50,6 +113,8 @@ final readonly class CsvStatement
                 // Account details above the table can be padded with empty cells.
                 if (count($cells) === $width && count(array_filter($cells)) * 2 > $width) {
                     $header = $cells;
+                } else {
+                    $preamble[] = implode(' ', array_filter($cells));
                 }
             } elseif (count($cells) > 1) {
                 $rows[] = array_slice(array_pad($cells, $width, ''), 0, $width);
@@ -57,7 +122,7 @@ final readonly class CsvStatement
         }
         fclose($stream);
 
-        return new self($header, $rows);
+        return new self($header, $rows, mb_substr(implode("\n", $preamble), 0, 4000));
     }
 
     /**
@@ -87,34 +152,13 @@ final readonly class CsvStatement
     }
 
     /**
-     * Best guess of the columns from the header names; null if nothing fits.
+     * Best guess of the columns (A301): by the header names, then by the content; null where nothing fits.
      *
-     * @return array{date: int|null, amount: int|null, counterparty: int|null, purpose: int|null}
+     * @return array<string, int|list<int>|null>
      */
     public function guessColumns(): array
     {
-        $patterns = [
-            'date' => ['/buchungs?(tag|datum)/', '/^buchung$/', '/^(datum|date|valuta)/', '/datum|date/'],
-            'amount' => ['/betrag|amount/', '/umsatz(?!art)/'],
-            'counterparty' => ['/empf(ä|ae)nger|auftraggeber|beg(ü|ue)nstigt|zahlungspflichtig|counterparty|payee/', '/name/'],
-            'purpose' => ['/verwendung|zweck|purpose|reference|beschreibung|description/'],
-        ];
-
-        $map = [];
-        foreach ($patterns as $field => $candidates) {
-            $map[$field] = null;
-            foreach ($candidates as $pattern) {
-                foreach ($this->header as $index => $name) {
-                    if (preg_match($pattern, mb_strtolower($name)) === 1) {
-                        $map[$field] = $index;
-                        break 2;
-                    }
-                }
-            }
-        }
-
-        /** @var array{date: int|null, amount: int|null, counterparty: int|null, purpose: int|null} $map */
-        return $map;
+        return StatementColumns::guess($this)['columns'];
     }
 
     /**

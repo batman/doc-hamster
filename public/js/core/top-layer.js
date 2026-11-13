@@ -7,7 +7,7 @@
     if (!HTMLElement.prototype.showPopover) {
         return;
     }
-    const LAYER = '[data-dialog], .dialog-backdrop, .dropdown-panel, .tip, .toast';
+    const LAYER = '[data-dialog], .dialog-backdrop, .dropdown-panel, .tip, .toast, .selection-bar';
     const GAP = 8;
     // A dropdown panel hangs fixed below its button, right edges flush; it turns rightwards when there is no
     // room on the left and opens upwards when there is more room above than below. Long panels scroll.

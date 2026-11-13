@@ -20,7 +20,7 @@ it('detects the semicolon and the header below the account line', function (): v
 });
 
 it('guesses all four columns', function (): void {
-    expect($this->statement->guessColumns())->toBe(['date' => 0, 'amount' => 3, 'counterparty' => 1, 'purpose' => 2]);
+    expect($this->statement->guessColumns())->toMatchArray(['date' => 0, 'amount' => 3, 'counterparty' => 1, 'purpose' => 2, 'iban' => null]);
 });
 
 it('reads seven lines and counts the footer as unreadable', function (): void {

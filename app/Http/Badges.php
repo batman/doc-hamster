@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http;
 
+use App\Domain\Banking\Transaction;
 use App\Domain\Documents\Document;
 use App\Domain\Ocr\OcrLog;
 use App\Domain\Org\CurrentOrg;
@@ -23,6 +24,9 @@ final class Badges
     /** A234: new errors in Einstellungen → Log since the last visit. */
     public const LOG = 'log';
 
+    /** A274: open bookings without a document (main menu Bank → account row → the account's "offen" filter). */
+    public const BANK = 'bank';
+
     /**
      * @return array<string, int>
      */
@@ -40,6 +44,11 @@ final class Badges
                 ->count();
         }
 
+        // A274: open bookings without a document – a plain count, not "new since the last visit": they stay until handled.
+        if (Gate::allows(Permission::ImportBanking->value)) {
+            $counts[self::BANK] = Transaction::query()->status(Transaction::OPEN)->count();
+        }
+
         if (Gate::allows(Permission::ManageSettings->value)) {
             $seen = self::seen($org, self::LOG) ?? now()->subDay();
             $counts[self::LOG] = DB::table('log_entries')->where('level', 'error')->where('created_at', '>', $seen)
@@ -50,6 +59,9 @@ final class Badges
         return $counts;
     }
 
+    /** Point 3: the badge of a settings group or entry, so the count leads down to its place (key => area). */
+    public const array SETTINGS = ['log' => self::LOG];
+
     /** The person opened the area: its badge starts again from zero. */
     public static function markSeen(CurrentOrg $org, string $area): void
     {
@@ -59,7 +71,8 @@ final class Badges
         $membership->forceFill(['seen_at' => $seen])->save();
     }
 
-    private static function seen(CurrentOrg $org, string $area): ?Carbon
+    /** When the person last opened the area (null: never). */
+    public static function seen(CurrentOrg $org, string $area): ?Carbon
     {
         $value = $org->membership()->seen_at[$area] ?? null;
 

@@ -13,6 +13,13 @@
         // Point 37: a group with a single entry and no own middle content gets no middle column.
         $single = $current !== null && count($current['items']) === 1 && ! $__env->hasSection('pane');
         $toGroup = $hasPage && $current && ! $current['leaf'] && ! $single;
+        // Point 3: the menu count shows again at the group and the entry it belongs to.
+        $badges = \App\Http\Badges::counts(app(\App\Domain\Org\CurrentOrg::class));
+        $badgeOf = static function (string $key) use ($badges): ?int {
+            $area = \App\Http\Badges::SETTINGS[$key] ?? null;
+
+            return $area !== null ? ($badges[$area] ?? 0) : null;
+        };
     @endphp
     <div class="cols" data-cols data-wall-label="{{ __('settings.wall') }}">
         @if ($current)
@@ -31,7 +38,7 @@
             </div>
             <ul class="col-list">
                 @foreach ($groups as $key => $entry)
-                    <li><a class="col-item tooltip-right" data-tooltip="{{ __('settings.groups.'.$key) }}" href="{{ route('settings.group', $key) }}" @if ($key === $group) aria-current="true" @endif><x-icon :name="$entry['icon']" /><span>{{ __('settings.groups.'.$key) }}</span><span class="go"><x-icon name="chevron-right" /></span></a></li>
+                    <li><a class="col-item tooltip-right" data-tooltip="{{ __('settings.groups.'.$key) }}" href="{{ route('settings.group', $key) }}" @if ($key === $group) aria-current="true" @endif><x-icon :name="$entry['icon']" /><span>{{ __('settings.groups.'.$key) }}</span>@php $count = $badgeOf($key); @endphp @if ($count !== null)<span class="badge badge-alert" data-badge="{{ \App\Http\Badges::SETTINGS[$key] }}" @if ($count === 0) hidden @endif>{{ $count > 9 ? '9+' : $count }}</span>@endif<span class="go"><x-icon name="chevron-right" /></span></a></li>
                 @endforeach
             </ul>
             @yield('nav_footer')
@@ -54,7 +61,7 @@
                     </div>
                     <ul class="col-list">
                         @foreach ($current['items'] as $entry)
-                            <li><a class="col-item tooltip-right" data-tooltip="{{ __('settings.links.'.$entry['key'].'.title') }}" href="{{ route($entry['route']) }}" @if ($entry['key'] === $item) aria-current="true" @endif><x-icon :name="$entry['icon']" /><span>{{ __('settings.links.'.$entry['key'].'.title') }}</span><span class="go"><x-icon name="chevron-right" /></span></a></li>
+                            <li><a class="col-item tooltip-right" data-tooltip="{{ __('settings.links.'.$entry['key'].'.title') }}" href="{{ route($entry['route']) }}" @if ($entry['key'] === $item) aria-current="true" @endif><x-icon :name="$entry['icon']" /><span>{{ __('settings.links.'.$entry['key'].'.title') }}</span>@php $count = $badgeOf($entry['key']); @endphp @if ($count !== null)<span class="badge badge-alert" data-badge="{{ \App\Http\Badges::SETTINGS[$entry['key']] }}" @if ($count === 0) hidden @endif>{{ $count > 9 ? '9+' : $count }}</span>@endif<span class="go"><x-icon name="chevron-right" /></span></a></li>
                         @endforeach
                     </ul>
                 @endif

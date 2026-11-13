@@ -20,8 +20,9 @@
 
     @if ($summary !== [])
         {{-- A112: what text recognition cannot read, grouped by reason (only with the logbook Texterkennung alone). --}}
-        <section class="card">
-            <h2 class="card-head"><x-icon name="alert-triangle" />{{ __('ocr.log.summary') }}</h2>
+        {{-- A263: foldable; folded it shows the total. --}}
+        <x-fold-card fold="log.ocr-summary" :title="__('ocr.log.summary')" icon="alert-triangle"
+            :summary="trans_choice('ocr.summary.documents', array_sum($summary), ['count' => array_sum($summary)])" summary-tone="warning">
             <ul class="ocr-summary">
                 @foreach ($summary as $reason => $count)
                     <li><strong>{{ $count }}</strong>
@@ -33,7 +34,7 @@
                     </li>
                 @endforeach
             </ul>
-        </section>
+        </x-fold-card>
     @endif
 
     <section class="card">
@@ -66,7 +67,8 @@
             <label class="log-date"><span>{{ __('log.from') }}</span><input type="date" class="input-small" name="from" value="{{ $filters['from'] }}"></label>
             <label class="log-date"><span>{{ __('log.to') }}</span><input type="date" class="input-small" name="to" value="{{ $filters['to'] }}"></label>
             <input type="search" class="input-small" name="q" value="{{ $filters['q'] }}" placeholder="{{ __('log.search') }}" aria-label="{{ __('log.search') }}">
-            <button type="submit" class="button-small" name="level" value="{{ $filters['level'] }}">{{ __('log.filter') }}</button>
+            {{-- A305: a search button is always the magnifier with the tooltip "Suchen". --}}
+            <button type="submit" class="icon-button button-small" name="level" value="{{ $filters['level'] }}" aria-label="{{ __('app.window.search_run') }}" data-tooltip="{{ __('app.window.search_run') }}"><x-icon name="search" /></button>
             @if ($query !== [])
                 <a class="button button-small button-quiet" href="{{ route('log.index') }}">{{ __('log.reset_filter') }}</a>
             @endif
@@ -92,8 +94,9 @@
                             $row['person'],
                             ...$row['details'],
                         ]);
+                        $new = $row['level'] === 'error' && $row['time']->greaterThan($since);
                     @endphp
-                    <li class="pick-row is-static log-row log-{{ $row['level'] }}">
+                    <li class="pick-row is-static log-row log-{{ $row['level'] }} @if ($new) is-marked @endif">
                         <span class="row-icon"><x-icon :name="$icon" /></span>
                         <span>
                             <strong>{{ $row['text'] }}</strong>
@@ -112,6 +115,9 @@
                             <small>{{ implode(' · ', $details) }}</small>
                         </span>
                         <span class="log-pills">
+                            @if ($new)
+                                <span class="pill pill-new">{{ __('log.new') }}</span>
+                            @endif
                             <span class="pill">{{ __('log.books.'.$row['book']) }}</span>
                             @if ($row['level'] !== 'event')
                                 <span class="pill pill-{{ $row['level'] }}">{{ __('log.levels.'.$row['level']) }}</span>

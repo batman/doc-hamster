@@ -38,12 +38,15 @@ final class LogController
             ->paginate(LogEntry::PER_PAGE)->withQueryString();
         $page->withPath(route('log.index'));
         $rows = $this->hydrate(collect($page->items()));
+        // A1: errors since the last visit stay marked on this visit.
+        $since = Badges::seen($org, Badges::LOG) ?? now()->subDay();
         Badges::markSeen($org, Badges::LOG);
 
         return view('settings.log', [
             'page' => $page,
             'rows' => $rows,
             'filters' => $filters,
+            'since' => $since,
             'books' => LogEntry::BOOKS,
             'document' => $filters['doc'] !== '' ? Document::query()->withTrashed()->whereKey($filters['doc'])->value('title') : null,
             'summary' => $filters['books'] === ['ocr'] ? OcrLog::unavailableSummary($org->id()) : [],
@@ -206,7 +209,6 @@ final class LogController
                 $rows[] = ['id' => $entry->id, 'kind' => 'ocr', 'book' => 'ocr', 'level' => (string) $item->level, 'time' => $entry->created_at,
                     'text' => $text, 'details' => array_values(array_filter([
                         (string) __('ocr.log.source.'.$entry->source),
-                        $entry->pass !== null ? (string) __('ocr.log.pass', ['pass' => $entry->pass]) : null,
                         $entry->duration_ms !== null ? (string) __('ocr.log.seconds', ['seconds' => number_format($entry->duration_ms / 1000, 1, ',', '.')]) : null,
                         $entry->file_type,
                         $entry->size !== null ? self::size($entry->size) : null,

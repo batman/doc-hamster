@@ -21,6 +21,19 @@
 }
 .pick-row.is-marked:has(> span a):hover { background: var(--mark-bg, var(--bg)); }
 
+/* Opener row (point 141, A306, A307): the row / tile / link in a window whose click opened the window on its right – the
+   marked-row look (orange bar left, the other surface: --opener-bg, --surface on a window, --bg in a card or a pick row;
+   the hover keeps it). Next to its window (is-linked, windows.js) a small orange notch ▸ at its right edge points there. */
+.is-opener, .is-opener:hover, .pick-row.is-static.is-opener:has(> span a):hover { background: var(--opener-bg, var(--surface)); box-shadow: inset 4px 0 0 var(--primary); }
+:is(.card, .pick-row) .is-opener, .pick-row.is-opener { --opener-bg: var(--bg); }
+tr.is-opener, tr.is-opener:hover { box-shadow: none; }
+tr.is-opener > :first-child { box-shadow: inset 4px 0 0 var(--primary); }
+.is-opener.is-linked:not(tr), tr.is-opener.is-linked > :last-child { position: relative; }
+.is-opener.is-linked:not(tr)::after, tr.is-opener.is-linked > :last-child::after {
+    content: ""; position: absolute; top: 50%; right: 0; width: .4rem; height: .8rem; translate: 0 -50%;
+    background: var(--primary); clip-path: polygon(0 0, 100% 50%, 0 100%); pointer-events: none;
+}
+
 /* Sortable list: a handle on the left, the carried row lifts (A78) */
 .pick-handle { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 2rem; min-height: 2rem; margin: 0; padding: 0;
     border: 0; border-radius: 8px; background: none; box-shadow: none; color: var(--muted); cursor: grab; touch-action: none; }
@@ -101,9 +114,10 @@ html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
 .pick-row.is-drop-target > .row-icon { color: var(--primary); }
 .win-body.is-drop-target { box-shadow: inset 0 0 0 2px var(--primary); background: color-mix(in srgb, var(--primary) 8%, var(--bg)); border-radius: var(--row-radius); }
 
-/* Files over a folder row: the row itself becomes the drop field "Loslassen zum Hochladen in „X“" (A170). */
-.folder-row.is-upload-target > * { visibility: hidden; }
-.folder-row.is-upload-target::after { content: attr(data-upload-label); position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0 1rem;
+/* Files over a folder row (or any row with data-upload-label, e.g. a bank account, A267): the row itself becomes the
+   drop field "Loslassen zum Hochladen in „X“" (A170). */
+:is(.folder-row, .pick-row[data-upload-label]).is-upload-target > * { visibility: hidden; }
+:is(.folder-row, .pick-row[data-upload-label]).is-upload-target::after { content: attr(data-upload-label); position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0 1rem;
     font-weight: 600; color: var(--primary-ink); text-align: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .win-body.is-upload-target::before { content: attr(data-upload-label); position: sticky; top: 0; z-index: 2; display: block; margin-bottom: .5rem; padding: .6rem 1rem;
     border-radius: var(--row-radius); background: var(--primary); color: var(--primary-text); font-weight: 600; text-align: center; }
@@ -119,6 +133,22 @@ html.is-carrying, html.is-carrying * { cursor: grabbing !important; }
     color: var(--primary-ink); font-weight: 600; }
 .nav-drop[hidden] { display: none; }
 .nav-drop.is-drop-target { border-style: solid; }
+/* Row amount (A267): a sum of money at the right end of a row or as a property value – figures line up, never wraps;
+   money coming in (.is-income) is green, going out stays text colour. */
+.row-amount { flex: none; margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.row-amount.is-income { color: color-mix(in srgb, var(--ok) 70%, var(--text)); }
+.prop-value.row-amount { margin-left: 0; text-align: left; }
+/* A309: every amount carries its sign – "+" coming in (green), "−" (U+2212) going out (text colour, never red). */
+/* Sum line (A310): "Eingänge +… · Ausgänge −… · Saldo …" above a list of bookings, for what the list shows. */
+.amount-summary { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; margin: 0 0 .5rem; color: var(--muted); font-size: .95rem; }
+.amount-summary .row-amount { margin-left: .35rem; color: var(--text); }
+.amount-summary .row-amount.is-income { color: color-mix(in srgb, var(--ok) 70%, var(--text)); }
+/* Choice stack (A286): menu entries one below the other in a dialog, each its own form (one click saves). */
+.menu-stack { display: grid; gap: .15rem; margin: 0 0 1rem; }
+.menu-stack > form { margin: 0; }
+.menu-stack .menu-item { width: 100%; }
+/* A field that fills a row (rename in place, A286). */
+.pick-row > .row-field { flex: 1; min-width: 0; margin: 0; }
 .folder-step .actions { display: flex; flex-wrap: wrap; gap: .5rem; }
 .folder-step form { margin: 0; }
 .folder-step button .icon { width: 1.1rem; height: 1.1rem; margin-right: .35rem; }

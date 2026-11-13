@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domain\Log\LogEntry;
+use App\Http\CardFolds;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\PrinterApiController;
 use App\Http\Middleware\RedirectToSetup;
@@ -34,6 +35,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(SecurityHeaders::class);
         $middleware->web(prepend: [RedirectToSetup::class], append: [SetLocale::class]);
+        // Point 125: the folded cards (CardFolds) are written by JavaScript and hold nothing secret.
+        $middleware->encryptCookies(except: [CardFolds::COOKIE]);
         $middleware->alias([
             'org' => ResolveCurrentOrg::class,
             'api.same-origin' => RequireSameOriginApi::class,

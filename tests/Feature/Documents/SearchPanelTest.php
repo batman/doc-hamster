@@ -35,11 +35,11 @@ it('searches the current folder, or all folders with the checkbox, and shows eac
         ->assertSee('hotel-rechnung.pdf')->assertSee('tank-rechnung.pdf')->assertSee('2 Treffer');
 });
 
-it('looks for recognised text only in the panel field, not in the top field', function (): void {
+it('looks for recognised text only when the panel asks for it', function (): void {
     $this->get('/documents?q=Diesel')->assertSee('Nichts gefunden.')->assertDontSee('tank-rechnung.pdf');
-    $this->get('/documents?ocr=Diesel')->assertSee('tank-rechnung.pdf')->assertDontSee('hotel-rechnung.pdf')
-        // the window keeps the panel's fields out of its hidden fields and marks the panel as in use
-        ->assertSee('name="ocr" value="Diesel"', false)->assertDontSee('type="hidden" name="ocr"', false);
+    $this->get('/documents?q=Diesel&ocr=1')->assertSee('tank-rechnung.pdf')->assertDontSee('hotel-rechnung.pdf')
+        // the panel's tick stays ticked and is not a hidden field of the window
+        ->assertSee('name="ocr" value="1" checked', false)->assertDontSee('type="hidden" name="ocr"', false);
 });
 
 it('shows the result list also in a timeline window and drops back to it without the search', function (): void {

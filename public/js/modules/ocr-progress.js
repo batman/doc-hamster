@@ -39,8 +39,8 @@
         }
         const bar = nav.querySelector('[data-ocr-nav-bar]');
         if (bar && data.total !== undefined) {
-            bar.max = Math.max(1, (data.total ?? 0) * Number(nav.dataset.passes ?? 3));
-            bar.value = data.passes ?? 0;
+            bar.max = Math.max(1, data.total ?? 0);
+            bar.value = data.done ?? 0;
         }
         nav.hidden = open === 0;
     };
@@ -120,11 +120,13 @@
         });
     };
 
-    const setupPage = () => {
-        const page = document.querySelector('[data-ocr-page]');
-        if (!page) {
+    // Per page instance (Einstellungen → Texterkennung or the module of its own, point 123); polls only while connected.
+    const pages = new WeakSet();
+    const setupPage = page => {
+        if (pages.has(page)) {
             return;
         }
+        pages.add(page);
         const box = page.querySelector('[data-ocr-progress]');
         const bar = page.querySelector('[data-ocr-bar]');
         const text = page.querySelector('[data-ocr-progress-text]');
@@ -152,11 +154,19 @@
                 now.textContent = (label ?? '').replace(':percent', String(current.percent)).replace(':title', current.title);
             }
             showNav(data);
+            // Point 124: the Live card takes the same answer (status JSON with live=1).
+            window.DocHamster?.emit('ocr:status', { page, data });
             return busy;
         };
         let busy = page.dataset.ocrBusy === '1';
+        // The Live card keeps polling while it is open, also when nothing waits (a new upload starts the reading).
+        const live = () => !!page.querySelector('[data-ocr-live]:not(.is-folded)');
         const tick = () => {
-            if (!busy) {
+            if (!page.isConnected) {
+                return;
+            }
+            if (!busy && !live()) {
+                setTimeout(tick, 3000);
                 return;
             }
             if (document.hidden) {
@@ -227,8 +237,15 @@
     const setupBrowserProgress = () => {
         let job = null;
         let last = 0;
+        let at = null;
         document.addEventListener('dh:ocr-job', event => {
             job = event.detail;
+            last = 0;
+            at = null;
+        });
+        // Point 124: page x of y goes along, so other tabs and the server mode of the Live card see it.
+        window.DocHamster?.on('ocr:page-start', detail => {
+            at = detail;
             last = 0;
         });
         document.addEventListener('dh:ocr-progress', event => {
@@ -243,6 +260,10 @@
             last = time;
             const body = new FormData();
             body.append('percent', String(Math.round(m.progress * 100)));
+            if (at && at.id === job.id) {
+                body.append('page', String(at.n));
+                body.append('pages', String(at.pages));
+            }
             fetch(job.progress, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' }, credentials: 'same-origin' })
                 .catch(() => { /* only a progress hint */ });
         });
@@ -250,7 +271,8 @@
 
     const start = () => {
         setupNav();
-        setupPage();
+        window.DocHamster?.on('window:open', root => root.querySelectorAll?.('[data-ocr-page]').forEach(setupPage));
+        document.querySelectorAll('[data-ocr-page]').forEach(setupPage);
         setupBrowserProgress();
         setupServerOcr();
         setupQueueTick();

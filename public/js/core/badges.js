@@ -6,14 +6,12 @@
             return;
         }
         const show = counts => {
-            let any = 0;
-            side.querySelectorAll('[data-badge]').forEach(badge => {
+            document.querySelectorAll('[data-badge]').forEach(badge => {
                 const count = counts[badge.dataset.badge] ?? 0;
                 badge.textContent = count > 9 ? '9+' : String(count);
                 badge.hidden = count === 0;
-                any += count;
             });
-            side.querySelector('[data-badge-any]').hidden = any === 0;
+            side.querySelector('[data-badge-any]').hidden = Object.values(counts).every(count => !count);
         };
         const poll = () => {
             if (document.hidden) {

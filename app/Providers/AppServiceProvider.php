@@ -5,10 +5,15 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Domain\Auth\User;
+use App\Domain\Banking\MatchAfterRecognition;
 use App\Domain\Log\LogEntry;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Membership;
 use App\Domain\Org\Permission;
+use App\Domain\Payments\InvoiceSuggestions;
+use App\Domain\Payments\SuggestInvoiceProperties;
+use App\Domain\Properties\DocumentProperty;
+use App\Events\TextRecognized;
 use App\Infrastructure\Crypto\IpHasher;
 use App\Infrastructure\Environment\NativeSystemProbe;
 use App\Infrastructure\Environment\SystemProbe;
@@ -29,6 +34,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\ServiceProvider;
+use Throwable;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -112,6 +118,18 @@ class AppServiceProvider extends ServiceProvider
                 is_numeric($lifetime) ? (int) $lifetime : 120,
                 $app,
             );
+        });
+
+        // Points 122.5, A253, A236: invoice values become suggestions after every recognition; confirmed ones teach per sender.
+        Event::listen(TextRecognized::class, SuggestInvoiceProperties::class);
+        // A268: then the document is matched against the open bookings (after the suggestions, which it reads).
+        Event::listen(TextRecognized::class, MatchAfterRecognition::class);
+        DocumentProperty::saved(static function (DocumentProperty $value): void {
+            try {
+                app(InvoiceSuggestions::class)->learn($value);
+            } catch (Throwable $e) {
+                report($e);
+            }
         });
     }
 

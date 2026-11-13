@@ -131,9 +131,39 @@
 .win-search input[type="search"] { width: 100%; }
 .win-search input[type="search"]::-webkit-search-cancel-button { appearance: none; display: none; }
 .win-search .field-addon:has(> .addon-end > :not([hidden]) ~ :not([hidden])) > input { padding-right: 4.6rem; }
-.win-search-more { flex: none; }
-.win-search-panel { min-width: 16rem; padding: .75rem; }
-.win-search-panel .field { margin: .5rem 0 0; }
+.win-search-toggle { flex: none; position: relative; }
+.win-search-toggle .icon { transition: rotate .15s; }
+.win-search-toggle[aria-expanded="true"] .icon { rotate: 180deg; }
+
+/* Points 4-7: the advanced search slides open below the tools, as wide as the window. */
+   Point 135 (A282-A285): it scrolls on its own when it is taller than the room; "Zurücksetzen" and the magnifier stay
+   fixed at its bottom. */
+.win-search-area { display: flex; flex-direction: column; max-height: min(70vh, 44rem); overflow: auto; margin: 0 1.5rem 1rem; padding: .75rem 1rem 0; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.win-search-area[hidden] { display: none; }
+/* The panel's top row, always visible (A282): ticks such as "Auch im erkannten Text" and "In allen Ordnern". */
+.search-top { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem 1.25rem; padding: 0 0 .5rem; }
+/* Its foldable sections (compact foldable cards, A283): stacked in a narrow window, two columns in a wide one (A285). */
+.search-sections { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 1.5rem; align-items: start; border-top: 1px solid var(--border); }
+@container win (width >= 44rem) { .search-sections { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* One labelled line of a section (A284): the labels in one column, the control beside them; small fields. */
+.search-line { display: grid; grid-template-columns: minmax(6rem, 9rem) minmax(0, 1fr); align-items: center; gap: .4rem .75rem; margin: 0 0 .5rem; }
+.search-line > :first-child { color: var(--muted); font-size: .9rem; }
+.search-line > .search-row { min-width: 0; }
+.search-line .button-group { flex-wrap: wrap; }
+.search-row input[type="date"] { flex: 1 1 8rem; min-width: 0; }
+.search-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 1rem 1.5rem; }
+.search-group { display: grid; align-content: start; gap: .5rem; min-width: 0; margin: 0; padding: 0; border: 0; }
+.search-group legend { margin: 0 0 .5rem; padding: 0; font-weight: 600; color: var(--primary); }
+.search-tags { grid-column: 1 / -1; }
+.search-row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .75rem; }
+.field-inline { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.field-inline select { flex: 0 1 9rem; }
+.win-search-actions { position: sticky; bottom: 0; z-index: 2; display: flex; justify-content: flex-end; align-items: center; gap: .5rem; margin: auto 0 0; padding: .6rem 0 .75rem; border-top: 1px solid var(--border); background: var(--surface); }
+
+/* Point 6: the active filters as chips above the results, each with its own X. */
+.filter-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0 0; }
+.filter-chip { display: inline-flex; align-items: center; gap: .15rem; padding: .1rem .15rem .1rem .6rem; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-size: .85rem; }
+.filter-chip .control-button { width: 1.6rem; height: 1.6rem; }
 
 /* Search results (points 105, 106, A204): a head with the count and X, each result with its folder as a quiet link. */
 .search-head { display: flex; align-items: center; gap: .5rem; margin: .5rem 0 0; }
@@ -197,5 +227,23 @@
 
 /* The notes board as a module (points 71, 73): its columns scroll inside the window, below head and toolbar. */
 .win-notes .kanban { margin-top: .5rem; }
-@media (min-width: 64rem) { .win-notes .kanban-col { max-height: calc(100dvh - 15rem); } }
+
+/* Point 141, A307: the opener window's right edge carries a short orange line at the height of its opener row
+   (--opener-y from windows.js), continuing the row's notch ▸ towards the window it opened. */
+.win.has-opener-line::after {
+    content: ""; position: absolute; z-index: 5; top: calc(var(--opener-y) - .75rem); right: -2px; width: 3px; height: 1.5rem;
+    border-radius: 2px; background: var(--primary); pointer-events: none;
+}
+@media (max-width: 63.99rem) { .win.has-opener-line::after { display: none; } }
+
+/* A308: window path – under the title the titles of the windows on the left in small grey; each brings its window back.
+   One line with ellipsis; on phones (one window) it is the way back. */
+.win-path { margin: -.5rem 0 0; padding: 0 1.5rem .75rem; overflow: hidden; color: var(--muted); font-size: .8rem; line-height: 1.3; white-space: nowrap; text-overflow: ellipsis; }
+.win-path[hidden] { display: none; }
+.win-path a { color: inherit; text-decoration: none; }
+.win-path a:hover { color: var(--primary-ink); text-decoration: underline; }
+.win-path-sep { margin: 0 .35rem; }
+.win-head:has(+ .win-path:not([hidden])) { padding-bottom: .75rem; }
+.win-head:has(+ .win-path[hidden] + .win-tools) { padding-bottom: .75rem; }
+@media (max-width: 63.99rem) { .win-path { padding-inline: 4rem var(--space); } }
 

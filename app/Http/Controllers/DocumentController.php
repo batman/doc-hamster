@@ -5,51 +5,23 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Domain\Audit\AuditLog;
-use App\Domain\Auth\User;
-use App\Domain\Documents\Document;
-use App\Domain\Documents\DocumentFile;
-use App\Domain\Documents\DocumentIntake;
 use App\Domain\Documents\Folder;
-use App\Domain\Documents\Tag;
-use App\Domain\Documents\TextDocument;
 use App\Domain\Org\CurrentOrg;
-use App\Domain\Org\Organization;
-use App\Domain\Org\Permission;
-use Carbon\CarbonImmutable;
+use App\Http\Controllers\Concerns\ScopesDocuments;
+use App\Http\Documents\DocumentListing;
 use Illuminate\Contracts\View\View;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
-use Symfony\Component\HttpFoundation\Response;
 
 /**
- * MVP receipts: list, upload (photo or PDF), protected file delivery.
- * Files are checked by their content and stay outside the web root (PLAN §11.2).
+ * Receipts: the documents windows (list with one receipt opened beside it), editing, trash and restore.
+ * The listing is built by DocumentListing; view switch, upload and file delivery have their own controllers.
  */
 final class DocumentController
 {
-    /** The views of the list, like the Windows Explorer (ui-redesign point 10), with their icon. */
-    public const VIEWS = [
-        'details' => 'list-details',
-        'list' => 'list',
-        'small' => 'layout-grid',
-        'large' => 'layout-cards',
-        'timeline' => 'timeline',
-        'calendar' => 'calendar',
-    ];
-
-    /** The display modes of the folder view (point 98); timeline and calendar are main views of their own. */
-    public const FOLDER_VIEWS = ['details', 'list', 'small', 'large'];
-
-    /** The date timeline and calendar go by (point 108): receipt date (falls back to the upload) or upload date. */
-    public const DATE_BASES = ['doc', 'upload'];
-
-    private const LIMIT = 200;
+    use ScopesDocuments;
 
     public function index(Request $request): View
     {
@@ -69,207 +41,7 @@ final class DocumentController
      */
     private function listing(Request $request): array
     {
-        $tags = Tag::query()->orderBy('name')->get();
-        $wanted = $request->query('tags');
-        $selected = $tags->pluck('id')->intersect(is_array($wanted) ? $wanted : [])->values()->all();
-
-        $query = Document::query()
-            ->visibleTo($this->userId($request), Gate::allows(Permission::ViewAllDocuments->value))
-            ->with(['files', 'tags']);
-
-        // With several tags, a receipt must have all of them.
-        foreach ($selected as $tagId) {
-            $query->whereHas('tags', static fn ($tag) => $tag->whereKey($tagId));
-        }
-
-        // Search in the window head: title, note or tag name (A104, A202); the search panel's text field looks in
-        // the recognised text (point 103), its checkbox through all folders (point 102, never the trash, A207).
-        $q = trim((string) $request->query('q', ''));
-        if ($q !== '') {
-            $like = '%'.addcslashes($q, '%_\\').'%';
-            $query->where(static fn ($w) => $w->where('title', 'like', $like)
-                ->orWhere('note', 'like', $like)
-                ->orWhereHas('tags', static fn ($tag) => $tag->where('name', 'like', $like)));
-        }
-        $ocr = trim((string) $request->query('ocr', ''));
-        if ($ocr !== '') {
-            $query->where('ocr_text', 'like', '%'.addcslashes($ocr, '%_\\').'%');
-        }
-        $all = $request->query('all') === '1';
-        // Point 105: a search shows a result list of documents only (no folders), each with its folder (A204).
-        $searching = $q !== '' || $ocr !== '';
-        if ($searching) {
-            $query->with('folder');
-        }
-
-        // Like an explorer (points 10-12): a folder shows only its own receipts, the top level only those
-        // without a folder; a search looks through everything below the current folder.
-        $folders = Folder::flat();
-        $wantedFolder = $request->query('folder');
-        $folder = is_string($wantedFolder) && collect($folders)->contains(static fn (array $row): bool => $row['folder']->id === $wantedFolder) ? $wantedFolder : null;
-        // The view belongs to the window (point 52): ?view=… in its address; a window without one starts with the
-        // view the person chose last (receipt_view).
-        $user = $this->user($request);
-        $wantedView = $request->query('view');
-        $saved = $user->receipt_view;
-        $view = is_string($wantedView) && isset(self::VIEWS[$wantedView]) ? $wantedView
-            : ($saved !== null && isset(self::VIEWS[$saved]) ? $saved : 'details');
-        // Point 98: three main views – the folder view (in its last display mode), timeline and calendar.
-        $folderMode = in_array($view, self::FOLDER_VIEWS, true) ? $view
-            : (in_array($user->folder_view, self::FOLDER_VIEWS, true) ? $user->folder_view : 'details');
-        // The results of a search show in the folder view's display mode, also in a timeline or calendar window;
-        // closing the search brings the window's own view back (?view= stays).
-        if ($searching) {
-            $view = $folderMode;
-        }
-        $wide = ! in_array($view, self::FOLDER_VIEWS, true);
-        $wantedDates = $request->query('date');
-        $dates = is_string($wantedDates) && in_array($wantedDates, self::DATE_BASES, true) ? $wantedDates
-            : (in_array($user->receipt_dates, self::DATE_BASES, true) ? $user->receipt_dates : 'doc');
-
-        // Timeline and calendar show every document of every folder (points 100, 101; the trash never, A201).
-        // A search and the tag filter look through everything below the current folder.
-        if (! $wide && ($searching || $selected !== [])) {
-            if ($folder !== null && ! ($searching && $all)) {
-                $query->whereIn('folder_id', Folder::branchIds($folder));
-            }
-        } elseif (! $wide && $folder !== null) {
-            $query->where('folder_id', $folder);
-        } elseif (! $wide) {
-            $query->whereNull('folder_id');
-        }
-
-        $month = null;
-        $range = null;
-        $dateSql = Document::dateSql($dates);
-        if ($view === 'calendar') {
-            // Point 107: only the months from the earliest to the latest document; by default the latest one,
-            // or this month when it lies inside.
-            $bounds = $query->clone()->toBase()->selectRaw("MIN($dateSql) as lo, MAX($dateSql) as hi")->first();
-            $lo = is_object($bounds) && is_string($bounds->lo ?? null) ? CarbonImmutable::parse($bounds->lo)->startOfMonth() : null;
-            $hi = is_object($bounds) && is_string($bounds->hi ?? null) ? CarbonImmutable::parse($bounds->hi)->startOfMonth() : null;
-            $now = CarbonImmutable::now()->startOfMonth();
-            $wanted = $request->query('month');
-            $parsed = is_string($wanted) && preg_match('/^\d{4}-\d{2}$/', $wanted) === 1 ? CarbonImmutable::createFromFormat('!Y-m', $wanted) : null;
-            if ($lo !== null && $hi !== null) {
-                $range = ['first' => $lo, 'last' => $hi];
-                $month = $parsed instanceof CarbonImmutable ? $parsed : ($now->between($lo, $hi) ? $now : $hi);
-                $month = $month->lessThan($lo) ? $lo : ($month->greaterThan($hi) ? $hi : $month);
-            } else {
-                $month = $now;
-            }
-            $documents = $query->whereRaw("$dateSql between ? and ?", [$month->toDateString(), $month->endOfMonth()->toDateString()])
-                ->orderByRaw("$dateSql asc")->oldest()->get();
-        } elseif ($view === 'timeline') {
-            $documents = $query->orderByRaw("$dateSql desc")->latest()->limit(self::LIMIT + 1)->get();
-        } else {
-            $documents = $query->latest()->limit(self::LIMIT + 1)->get();
-        }
-        // Filtering in the browser works only when the page holds every receipt (point 7).
-        $complete = $selected === [] && ! $searching && ($view === 'calendar' || $documents->count() <= self::LIMIT);
-
-        return [
-            'open' => null,
-            'documents' => $view === 'calendar' ? $documents : $documents->take(self::LIMIT),
-            'tags' => $tags,
-            'selected' => $selected,
-            'folders' => $folders,
-            'folder' => $folder,
-            'folderRows' => $wide || $searching ? [] : $this->folderRows($request, $folders, $folder),
-            'searching' => $searching,
-            'ocr' => $ocr,
-            'all' => $all,
-            'view' => $view,
-            'views' => self::VIEWS,
-            'folderViews' => self::FOLDER_VIEWS,
-            'folderMode' => $folderMode,
-            'wide' => $wide,
-            'dates' => $dates,
-            'range' => $range,
-            'month' => $month,
-            'complete' => $complete,
-            'trashed' => Gate::allows(Permission::TrashDocuments->value) ? $this->visible($request)->withPrintTray()->onlyTrashed()->count() : 0,
-            'tree' => Folder::tree($folders),
-            'trashName' => Folder::trashName($this->organization()),
-            'trashColor' => Folder::trashColor($this->organization()),
-        ];
-    }
-
-    /**
-     * The chosen view is the default for new windows (point 11); the window it was chosen in shows it via
-     * ?view=… (point 52). `back` is that window's address (only this app's own addresses count).
-     */
-    public function setView(Request $request): RedirectResponse
-    {
-        $data = $request->validate([
-            'view' => ['required_without:date', Rule::in(array_keys(self::VIEWS))],
-            'date' => ['required_without:view', Rule::in(self::DATE_BASES)],
-            'back' => ['nullable', 'string', 'max:2000'],
-        ]);
-        $key = isset($data['view']) ? 'view' : 'date';
-        $value = (string) $data[$key];
-
-        // A display mode of the folder view is also remembered for "Ordneransicht" (point 98); the date basis of
-        // timeline and calendar likewise (point 108).
-        $this->user($request)->forceFill(match (true) {
-            $key === 'date' => ['receipt_dates' => $value],
-            in_array($value, self::FOLDER_VIEWS, true) => ['receipt_view' => $value, 'folder_view' => $value],
-            default => ['receipt_view' => $value],
-        })->save();
-
-        $root = url('/');
-        $back = is_string($data['back'] ?? null) && str_starts_with($data['back'].'/', $root.'/') ? $data['back'] : url()->previous(route('documents.index'));
-        if (! str_starts_with($back.'/', $root.'/')) {
-            $back = route('documents.index');
-        }
-        parse_str((string) parse_url($back, PHP_URL_QUERY), $query);
-        unset($query['page']);
-        $query[$key] = $value;
-
-        return redirect()->to(explode('?', $back, 2)[0].'?'.http_build_query($query));
-    }
-
-    public function store(Request $request, AuditLog $audit, CurrentOrg $org): RedirectResponse|JsonResponse
-    {
-        // One file ("file") or several from the menu ("files[]", picked or dropped).
-        $data = $request->validate([
-            'file' => ['required_without:files', 'file', 'max:25600'],
-            'files' => ['required_without:file', 'array', 'max:20'],
-            'files.*' => ['file', 'max:25600'],
-            ...self::tagRules(),
-            ...self::folderRule(),
-        ]);
-
-        $many = $request->file('files');
-        $checked = [];
-        foreach (is_array($many) ? $many : [$request->file('file')] as $upload) {
-            $type = DocumentIntake::detect($upload);
-            if (! $upload instanceof UploadedFile || $type === null) {
-                return $request->wantsJson()
-                    ? response()->json(['message' => __('documents.wrong_type')], 422)
-                    : back()->withErrors(['file' => __('documents.wrong_type')]);
-            }
-            $checked[] = [$upload, ...$type];
-        }
-
-        $userId = $this->userId($request);
-        /** @var list<string> $tagIds */
-        $tagIds = array_values($data['tags'] ?? []);
-        foreach ($checked as [$upload, $mime, $extension]) {
-            $document = DocumentIntake::store($upload, $mime, $extension, $org->id(), $userId, $upload->getClientOriginalName(), $tagIds, folderId: $data['folder'] ?? null);
-
-            $audit->record('document.uploaded', orgId: $org->id(), userId: $userId, subject: $document, ip: $request->ip());
-        }
-
-        // Files dropped onto a folder row, a folder window or the main menu (point 85): the page stays, a toast names the folder.
-        if ($request->wantsJson()) {
-            $folderId = $data['folder'] ?? Folder::defaultIdFor($org->id());
-            $name = (string) Folder::query()->whereKey($folderId)->value('name');
-
-            return response()->json(['message' => trans_choice('documents.bulk.uploaded', count($checked), ['count' => count($checked), 'name' => $name]), 'folder' => $folderId]);
-        }
-
-        return redirect()->route('documents.index')->with('status', trans_choice('documents.saved', count($checked)));
+        return app(DocumentListing::class)->build($request, $this->user($request));
     }
 
     public function updateTags(Request $request, string $id, AuditLog $audit, CurrentOrg $org): RedirectResponse
@@ -277,8 +49,7 @@ final class DocumentController
         $data = $request->validate(self::tagRules());
         $userId = $this->userId($request);
 
-        $document = Document::query()
-            ->visibleTo($userId, Gate::allows(Permission::ViewAllDocuments->value))
+        $document = $this->visible($request)
             ->whereKey($id)
             ->firstOrFail();
 
@@ -319,7 +90,7 @@ final class DocumentController
     public function updateField(Request $request, string $id, AuditLog $audit, CurrentOrg $org): JsonResponse
     {
         $data = $request->validate([
-            'field' => ['required', 'string', Rule::in(['note', 'ocr_text', 'title'])],
+            'field' => ['required', 'string', Rule::in(['note', 'title'])],
             'value' => [...match ($request->input('field')) {
                 'note' => ['nullable', 'max:5000'],
                 // Renamed in its row (pencil, A174): a document always keeps a name.
@@ -374,13 +145,6 @@ final class DocumentController
         ]);
     }
 
-    private function organization(): ?Organization
-    {
-        $org = app(CurrentOrg::class);
-
-        return $org->isSet() ? $org->organization() : null;
-    }
-
     public function restore(Request $request, string $id, AuditLog $audit, CurrentOrg $org): RedirectResponse|JsonResponse
     {
         $document = $this->visible($request)->withPrintTray()->onlyTrashed()->whereKey($id)->firstOrFail();
@@ -391,133 +155,5 @@ final class DocumentController
         }
 
         return redirect()->route('documents.trash')->with('status', __('documents.restored'));
-    }
-
-    public function file(Request $request, string $id): Response
-    {
-        [$file, $document] = $this->visibleFile($request, $id);
-        $document->forceFill(['last_opened_at' => now()])->saveQuietly();
-        // Text documents are shown as plain text, never as a page of this site (point 21).
-        $type = TextDocument::isText($file) ? 'text/plain; charset=UTF-8' : $file->mime;
-
-        return Storage::disk('local')->response($file->path, null, ['Content-Type' => $type, 'X-Content-Type-Options' => 'nosniff']);
-    }
-
-    public function download(Request $request, string $id): Response
-    {
-        [$file, $document] = $this->visibleFile($request, $id);
-        $document->forceFill(['last_downloaded_at' => now()])->saveQuietly();
-
-        return Storage::disk('local')->download($file->path, $file->downloadName($document->title), ['Content-Type' => $file->mime]);
-    }
-
-    /** The stored small image; it never changes, so the browser may keep it. */
-    public function thumb(Request $request, string $id): Response
-    {
-        [$file] = $this->visibleFile($request, $id);
-        abort_if($file->thumb_path === null, 404);
-
-        return Storage::disk('local')->response($file->thumb_path, null, [
-            'Content-Type' => 'image/jpeg',
-            'Cache-Control' => 'private, max-age=31536000, immutable',
-        ]);
-    }
-
-    /**
-     * @return array{DocumentFile, Document}
-     */
-    private function visibleFile(Request $request, string $id): array
-    {
-        // Explicit query, not route binding: bindings run before the `org` middleware sets the scope.
-        $file = DocumentFile::query()->whereKey($id)->firstOrFail();
-
-        return [$file, $this->visible($request)->withPrintTray()->whereKey($file->document_id)->firstOrFail()];
-    }
-
-    /**
-     * @return Builder<Document>
-     */
-    private function visible(Request $request): Builder
-    {
-        return Document::query()->visibleTo($this->userId($request), Gate::allows(Permission::ViewAllDocuments->value));
-    }
-
-    /**
-     * Only existing tags of the active organisation (Tag is org-scoped).
-     *
-     * @return array<string, list<mixed>>
-     */
-    private static function tagRules(): array
-    {
-        return ['tags' => ['array'], 'tags.*' => [Rule::in(Tag::query()->pluck('id')->all())]];
-    }
-
-    /**
-     * The folder rows on top of a Belege window (window system, PO 2026-11-07): without a folder the
-     * top folders with the Papierkorb in its place, inside a folder its subfolders. Counts include
-     * everything below a folder and only receipts this person may see.
-     *
-     * @param  list<array{folder: Folder, depth: int}>  $folders
-     * @return list<array{folder: Folder|null, count: int}>
-     */
-    private function folderRows(Request $request, array $folders, ?string $folder): array
-    {
-        $direct = Document::query()->visibleTo($this->userId($request), Gate::allows(Permission::ViewAllDocuments->value))
-            ->whereNotNull('folder_id')->selectRaw('folder_id, count(*) as total')->groupBy('folder_id')->pluck('total', 'folder_id');
-        // Like an explorer: a folder row counts only the documents directly in it (point 12).
-        $total = static fn (string $id): int => (int) ($direct[$id] ?? 0);
-
-        $out = [];
-        if ($folder !== null) {
-            foreach ($folders as $row) {
-                if ($row['folder']->parent_id === $folder) {
-                    $out[] = ['folder' => $row['folder'], 'count' => $total($row['folder']->id)];
-                }
-            }
-
-            return $out;
-        }
-
-        $org = app(CurrentOrg::class);
-        foreach (Folder::menu($org->isSet() ? $org->organization() : null) as $row) {
-            if ($row['depth'] !== 0) {
-                continue;
-            }
-            if ($row['folder'] === null) {
-                // The Papierkorb, in its place among the top folders, for people who may open it.
-                if (Gate::allows(Permission::TrashDocuments->value)) {
-                    $out[] = ['folder' => null, 'count' => 0];
-                }
-
-                continue;
-            }
-            $out[] = ['folder' => $row['folder'], 'count' => $total($row['folder']->id)];
-        }
-
-        return $out;
-    }
-
-    /**
-     * Only an existing folder of the active organisation (Folder is org-scoped); empty means "Belege".
-     *
-     * @return array<string, mixed>
-     */
-    private static function folderRule(): array
-    {
-        return ['folder' => ['nullable', 'string', Rule::in(Folder::query()->pluck('id')->all())]];
-    }
-
-    private function userId(Request $request): string
-    {
-        return $this->user($request)->id;
-    }
-
-    private function user(Request $request): User
-    {
-        $user = $request->user();
-
-        abort_unless($user instanceof User, 403);
-
-        return $user;
     }
 }
