@@ -46,7 +46,10 @@ it('stores a correction for who may edit, patches the searchable text and undoes
     $stranger = Membership::factory()->owner()->create();
     $this->actingAs($stranger->user)->postJson('/documents/'.$document->id.'/words/fix', [...$this->place, 'text' => '12,00'])->assertNotFound();
 
-    $this->actingAs($this->admin->user)->postJson('/documents/'.$document->id.'/words/fix', [...$this->place, 'text' => '12,00'])->assertOk()
+    $this->actingAs($reader->user)->get('/documents/'.$document->id)->assertOk()->assertSee('data-ocr-read', false)->assertDontSee('/words/fix', false);
+    $this->actingAs($this->admin->user)->get('/documents/'.$document->id)->assertOk()->assertSee('/words/fix', false);
+
+    $this->postJson('/documents/'.$document->id.'/words/fix', [...$this->place, 'text' => '12,00'])->assertOk()
         ->assertJsonPath('pages.0.words.2.t', '12,00')
         ->assertJsonPath('pages.0.words.1.t', '12,0O')
         ->assertJsonPath('fixes.0.o', '12,0O');

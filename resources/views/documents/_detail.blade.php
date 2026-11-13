@@ -143,6 +143,7 @@
                     @endif
                 @endunless
             </div>
+            @include('documents._ocr_read')
             <x-edit-in-place name="ocr_text" :value="$document->ocr_text" :action="route('documents.field', $document->id)" multiline class="edit-in-place-small"
                 :placeholder="__('documents.ocr_placeholder')" aria-labelledby="ocr-{{ $document->id }}" />
         </section>
@@ -160,6 +161,7 @@
                     <h3>{{ __('documents.ocr_text') }}</h3>
                     @unless ($isText)<span class="pill">{{ __('ocr.state.'.$ocrState) }}</span>@endunless
                 </div>
+                @include('documents._ocr_read')
                 @if ($document->ocr_text)<p class="edit-in-place-small is-plain">{{ $document->ocr_text }}</p>@endif
             </section>
         @endif

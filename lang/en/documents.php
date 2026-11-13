@@ -204,5 +204,6 @@ return [
         'unfixed' => 'Original restored.',
         'no_word' => 'There is no word at this place.',
         'select' => 'Select text',
+        'close' => 'Close',
     ],
 ];

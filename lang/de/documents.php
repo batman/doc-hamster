@@ -204,5 +204,6 @@ return [
         'unfixed' => 'Original wiederhergestellt.',
         'no_word' => 'An dieser Stelle steht kein Wort.',
         'select' => 'Text auswählen',
+        'close' => 'Schließen',
     ],
 ];
