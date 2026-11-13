@@ -115,3 +115,33 @@ it('reads a due date and Skonto counted in days, and a foreign currency (A250, A
         ->and($r->discountUntil?->value)->toBe('2026-12-08')
         ->and($r->amount?->currency)->toBe('USD')->and($r->currency)->toBe('USD');
 });
+
+it('skips label and term lines as sender and takes the letterhead (point 133)', function (): void {
+    $english = [
+        'Terms : Due on Receipt',
+        'Northwind Traders Ltd',
+        'Invoice # INV-000123',
+        'Bill To',
+        'Max Mustermann',
+        '1 Example Street, London',
+        'Item Qty Rate Amount',
+        'Consulting 1 500.00 500.00',
+        'Total 500.00',
+        'Balance Due 500.00',
+    ];
+    $r = (new InvoiceReader)->read(invoiceWords($english));
+    expect($r->sender?->value)->toBe('Northwind Traders Ltd')->and($r->sender?->confidence)->toBe(0.65);
+
+    $plain = (new InvoiceReader)->read(null, "Datum: 01.12.2026\nTerms : Due on Receipt\nRechnung Nr. 4711\nKunde: Max Mustermann");
+    expect($plain->sender)->toBeNull();
+});
+
+it('prefers the large letterhead name and an upper-case legal form (point 133)', function (): void {
+    $words = invoiceWords(['Terms : Due on Receipt', 'Thank you for your business', 'Total 99.00']);
+    // The letterhead in large print, below a small terms line.
+    $words['pages'][0]['words'][] = ['t' => 'ACME', 'x' => 0.05, 'y' => 0.2, 'w' => 0.1, 'h' => 0.03, 'c' => 95, 'l' => 9, 'b' => 1];
+    $words['pages'][0]['words'][] = ['t' => 'LTD', 'x' => 0.17, 'y' => 0.2, 'w' => 0.06, 'h' => 0.03, 'c' => 95, 'l' => 9, 'b' => 1];
+
+    $r = (new InvoiceReader)->read($words);
+    expect($r->sender?->value)->toBe('ACME LTD')->and($r->sender?->confidence)->toBe(0.75);
+});
