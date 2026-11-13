@@ -191,7 +191,8 @@ button.col-strip:hover > .icon { color: var(--primary-ink); }
 .card-fold .card-head .card-action + .card-fold-button { margin-left: 0; }
 .card-fold-button { margin-left: auto; flex: none; }
 .card-head .card-fold-button .icon { color: currentColor; width: 1.25rem; height: 1.25rem; transition: rotate .15s; }
-.card-fold.is-folded .card-fold-button .icon { rotate: -90deg; }
+/* Point 131: the chevron points down while folded (= Aufklappen) and up while open (= Zuklappen). */
+.card-fold:not(.is-folded) .card-fold-button .icon { rotate: 180deg; }
 .card-fold > .card-body { margin-top: .5rem; }
 .card-fold > .card-body[hidden] { display: none; }
 .card-fold.is-folded { padding-bottom: 1rem; }
