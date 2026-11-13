@@ -1,0 +1,2 @@
+/* Layout measurement (point 63 / A90): the small panel of ?debug=layout, bottom right, above everything. */
+.layout-probe { position: fixed; right: 1rem; bottom: 1rem; z-index: 1000; display: flex; align-items: center; gap: .5rem; padding: .5rem .75rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); font-size: .875rem; }

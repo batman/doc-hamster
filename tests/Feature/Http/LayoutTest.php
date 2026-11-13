@@ -13,7 +13,7 @@ it('shows error pages in German with the shared layout', function (): void {
     $this->get('/does-not-exist')
         ->assertNotFound()
         ->assertSee('Seite nicht gefunden')
-        ->assertSee('css/app.css');
+        ->assertSee('css/core/base.css');
 });
 
 it('uses the signed-in user’s language if supported, else German', function (string $locale, string $expected): void {

@@ -89,7 +89,7 @@ final class OcrController extends Controller
 
     private const string PDF = 'application/pdf';
 
-    /** Browser time limit per pass in seconds (public/js/app.js PASSES), for the log message. */
+    /** Browser time limit per pass in seconds (public/js/modules/ocr-browser.js PASSES), for the log message. */
     private const array BROWSER_LIMITS = [1 => 120, 2 => 300, 3 => 600];
 
     /** Point 58/A63: browser reads that fail this often mark the document failed. */

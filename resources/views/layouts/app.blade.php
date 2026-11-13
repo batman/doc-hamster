@@ -15,11 +15,15 @@
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     <link rel="apple-touch-icon" href="{{ asset('img/apple-touch-icon.png') }}">
     <title>@hasSection('title')@yield('title') – @endif{{ config('app.name') }}</title>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ config('dochamster.version') }}">
+    @foreach (config('assets.css') as $file)
+        <link rel="stylesheet" href="{{ asset('css/'.$file.'.css') }}?v={{ config('dochamster.version') }}">
+    @endforeach
     @auth
         <link rel="stylesheet" href="{{ route('tags.css') }}">
     @endauth
-    <script src="{{ asset('js/app.js') }}?v={{ config('dochamster.version') }}"></script>
+    @foreach (config('assets.js') as $file)
+        <script src="{{ asset('js/'.$file.'.js') }}?v={{ config('dochamster.version') }}"></script>
+    @endforeach
     @stack('head')
 </head>
 {{-- Browser OCR fallback (point 18): only when the server can't read text itself (in mode app: the PDFs, point 69). Without cron the open app works off the queue (A69/A74). --}}

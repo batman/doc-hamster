@@ -1,0 +1,39 @@
+/* Point 29: menu entries never wrap; a menu is as wide as its longest entry */
+.dropdown-panel { width: max-content; max-width: calc(100vw - 2rem); }
+.menu-item { white-space: nowrap; }
+.view-details tbody td:first-child { border-top-left-radius: var(--row-radius); border-bottom-left-radius: var(--row-radius); }
+.view-details tbody td:last-child { border-top-right-radius: var(--row-radius); border-bottom-right-radius: var(--row-radius); }
+.view-details .thumb { width: 2.5rem; height: 3rem; margin-right: .75rem; vertical-align: middle; }
+.view-list { margin: 1rem 0 0; padding: 0; list-style: none; }
+.view-list li { display: flex; align-items: center; gap: .75rem; padding: .35rem .5rem; border-bottom: 1px solid var(--border); }
+.view-list li:hover { background: var(--surface); }
+.view-list .icon { color: var(--muted); }
+.view-list .muted { margin-left: auto; white-space: nowrap; }
+.view-tiles { display: grid; gap: 1rem; margin: 1rem 0 0; padding: 0; list-style: none; }
+.view-small { grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); }
+.view-large { grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); } /* A208: about twice the small tiles, with the page itself */
+.view-tiles li { min-width: 0; }
+.view-tiles a { display: block; text-decoration: none; color: var(--text); }
+.view-tiles .thumb { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius); }
+.view-tiles .name { display: block; margin-top: .35rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.view-small .name { font-size: .875rem; }
+.thumb { border-radius: 10px; object-fit: cover; -webkit-user-drag: none; user-select: none; -webkit-user-select: none; touch-action: pan-y pinch-zoom; }
+
+/* Framework round 6 (Go 2026-11-07, points 26-31) */
+
+/* "⋯" menu: entries with icon and text */
+.more-menu .dropdown-panel { min-width: 14rem; }
+.more-menu .menu-item { text-decoration: none; }
+
+/* Point 32: an open menu lies above every row and button below it (framework rule for all menus) */
+.dropdown:has(> .dropdown-panel:not([hidden])), .pick-row.is-static > .dropdown:has(> .dropdown-panel:not([hidden])) { position: relative; z-index: 40; }
+li:has(> .dropdown > .dropdown-panel:not([hidden])), tr:has(.dropdown-panel:not([hidden])) { position: relative; z-index: 40; }
+
+/* Package E */
+
+/* "⋯" menu: entries never wrap, the menu is as wide as its longest entry; a line between groups; red for destructive ones */
+.more-menu .dropdown-panel { min-width: 0; width: max-content; max-width: calc(100vw - 2rem); }
+.more-menu .menu-item { white-space: nowrap; }
+.menu-separator { margin: .25rem .5rem; border: 0; border-top: 1px solid var(--border); }
+.menu-item.menu-danger, .menu-item.menu-danger .icon { color: var(--danger); }
+.menu-item:disabled { opacity: .45; cursor: default; background: none; }

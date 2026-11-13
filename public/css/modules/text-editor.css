@@ -1,0 +1,46 @@
+/* Text documents (point 21): the editor window, formatted text and its classes (rt-*, set by RichText). */
+.text-state { font-size: .85rem; white-space: nowrap; }
+.text-state.is-dirty { color: var(--primary-ink); }
+.text-state.is-error { color: var(--error); }
+.text-editor { display: grid; gap: .5rem; }
+.rt-toolbar { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .25rem 0 .5rem; background: var(--bg); }
+.rt-toolbar select.input-small { width: auto; max-width: 11rem; }
+.rt-editor, .text-editor .plain-text {
+    box-sizing: border-box; width: 100%; max-width: none; min-height: 24rem; padding: .75rem 1rem;
+    border: 1px solid var(--field-line); border-radius: 8px; background-color: var(--field-bg); color: var(--text);
+}
+.rt-editor { outline: none; cursor: text; }
+.rt-editor:focus { border-color: rgb(255 118 34 / .7); box-shadow: 0 0 0 3px var(--field-glow); }
+.text-editor .plain-text, .plain-text-view { font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: .95rem; line-height: 1.5; }
+.plain-text-view { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.text-doc { box-sizing: border-box; max-height: 28rem; margin: 0 0 .5rem; padding: .75rem 1rem; overflow: auto; border: 1px solid var(--border); border-radius: 8px; }
+.rich-text { line-height: 1.5; overflow-wrap: anywhere; }
+.rich-text p { margin: 0 0 .5em; }
+.rich-text ul, .rich-text ol { margin: 0 0 .5em; padding-left: 1.75em; }
+.rt-align-left { text-align: left; }
+.rt-align-center { text-align: center; }
+.rt-align-right { text-align: right; }
+.rt-align-justify { text-align: justify; }
+.rt-indent-1 { margin-left: 2em; }
+.rt-indent-2 { margin-left: 4em; }
+.rt-indent-3 { margin-left: 6em; }
+.rt-indent-4 { margin-left: 8em; }
+.rt-indent-5 { margin-left: 10em; }
+.rt-indent-6 { margin-left: 12em; }
+.rt-indent-7 { margin-left: 14em; }
+.rt-indent-8 { margin-left: 16em; }
+.rt-size-1 { font-size: .625rem; }
+.rt-size-2 { font-size: .8125rem; }
+.rt-size-3 { font-size: 1rem; }
+.rt-size-4 { font-size: 1.125rem; }
+.rt-size-5 { font-size: 1.5rem; }
+.rt-size-6 { font-size: 2rem; }
+.rt-size-7 { font-size: 3rem; }
+.rt-font-sans { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+.rt-font-serif { font-family: Georgia, "Times New Roman", serif; }
+.rt-font-mono { font-family: ui-monospace, Consolas, "Courier New", monospace; }
+.text-kinds { display: grid; gap: .5rem; margin: 1rem 0 0; padding: 0; border: 0; }
+.text-kinds legend { padding: 0; font-size: .875rem; font-weight: 600; color: var(--primary-ink); }
+.text-kind { display: flex; align-items: flex-start; gap: .6rem; margin: 0; color: var(--text); cursor: pointer; }
+.text-kind span { display: grid; }
+.text-kind small { color: var(--muted); }

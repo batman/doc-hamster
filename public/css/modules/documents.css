@@ -1,0 +1,117 @@
+/* Folder colour and symbol pickers, folder import */
+.folder-icon, .folder-link .icon { color: var(--folder, currentColor); }
+.folder-icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr)); gap: .35rem; margin-top: .5rem; }
+.folder-icon-choice { position: relative; margin: 0; }
+.folder-icon-choice input { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; margin: 0; opacity: 0; cursor: pointer; }
+.folder-icon-choice span { display: grid; place-items: center; height: 2.75rem; border: 1px solid var(--border); border-radius: .5rem; }
+.folder-icon-choice input:checked + span { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary); }
+.folder-icon-choice input:focus-visible + span { outline: 2px solid var(--primary); outline-offset: 2px; }
+.tag-color .no-color { background: repeating-linear-gradient(45deg, var(--bg) 0 4px, var(--border) 4px 6px); }
+.folder-import { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.folder-import progress { width: 100%; }
+.folder-import label.button { display: inline-flex; gap: .5rem; color: var(--primary-text); }
+.folder-import label.button:has(+ input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.empty-state { text-align: center; padding-block: 2rem; }
+
+/* Receipts */
+.documents { list-style: none; padding: 0; margin-top: 2rem; }
+.documents li { padding: .75rem 0; border-top: 1px solid var(--border); }
+.documents a { display: block; word-break: break-word; }
+.documents img { display: block; max-width: 100%; max-height: 12rem; border-radius: var(--radius); margin-bottom: .25rem; }
+
+/* Receipt views (like the Windows Explorer): details, list, small icons, large icons */
+.view-details { margin-top: 1rem; overflow-x: auto; }
+.view-details table { width: 100%; border-collapse: collapse; }
+.view-details th { padding: .5rem .75rem; text-align: left; font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--border); }
+.view-details td { padding: .5rem .75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.view-details tbody tr:hover { background: var(--surface); }
+
+/* Timeline: newest first, grouped by month */
+.timeline { margin: 1rem 0 0; padding: 0 0 0 1.25rem; list-style: none; border-left: 3px solid var(--border); }
+.timeline ul { margin: 0; padding: 0; list-style: none; }
+.timeline h2 { position: relative; margin: 1.5rem 0 .5rem; font-size: 1.125rem; }
+.timeline h2::before { content: ""; position: absolute; left: calc(-1.25rem - 9px); top: .35em; width: 15px; height: 15px; border-radius: 50%; background: var(--primary); }
+.timeline li { display: flex; align-items: center; gap: .75rem; padding: .5rem 0; }
+.timeline .thumb { width: 3rem; height: 3.75rem; flex: none; }
+.timeline .when { min-width: 5.5rem; font-variant-numeric: tabular-nums; }
+
+/* Calendar: one month, receipts on their day */
+.calendar-head { display: flex; align-items: center; gap: .5rem; margin-top: 1rem; }
+.calendar-head h2 { margin: 0 auto 0 0; }
+.calendar-head button { margin: 0; width: 48px; padding: 0; background: var(--bg); color: var(--text); border: 2px solid var(--border); }
+.calendar { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); margin-top: .75rem; border-top: 1px solid var(--border); border-left: 1px solid var(--border); }
+.calendar > * { min-height: 0; padding: .35rem; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); font-size: .875rem; }
+.calendar .weekday { padding-block: .5rem; text-align: center; font-weight: 600; color: var(--muted); }
+.calendar .day { min-height: 6rem; }
+.calendar .day.is-other { background: var(--surface); color: var(--muted); }
+.calendar .day b { display: block; font-weight: 600; }
+.calendar .entry { display: block; margin-top: .2rem; padding: .1rem .4rem; overflow: hidden; border-radius: 6px; background: var(--surface); color: var(--text); text-overflow: ellipsis; white-space: nowrap; text-decoration: none; }
+.calendar .more { display: block; margin-top: .2rem; color: var(--muted); }
+
+/* Documents are never cropped: the whole page sits in a frame with padding, the frame has the rounded corners */
+.thumb-frame { display: grid; place-items: center; box-sizing: border-box; padding: .75rem; overflow: hidden; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--muted); }
+.thumb-frame .thumb { display: block; width: 100%; height: 100%; aspect-ratio: auto; object-fit: contain; border-radius: 0; }
+.view-large .thumb-frame { aspect-ratio: 4 / 5; }
+.view-small .thumb-frame { aspect-ratio: 1; }
+.view-small .thumb-frame .icon { width: 3rem; height: 3rem; }
+.timeline .thumb-frame { width: 3.5rem; height: 4.25rem; flex: none; padding: .35rem; border-radius: 12px; }
+.type-icon { flex: none; width: 1.75rem; height: 1.75rem; color: var(--muted); }
+.view-details .type-icon { margin-right: .75rem; vertical-align: middle; }
+.view-details .tags { gap: .35rem; }
+.view-details tr.is-open { background: var(--surface); }
+.view-details tr.is-open td:first-child { box-shadow: inset 4px 0 0 var(--primary); }
+.view-list li.is-open, .timeline li.is-open { background: var(--surface); }
+.view-tiles li.is-open .thumb-frame { border: 2px solid var(--primary); }
+
+/* List on the left, details on the right. On narrow windows the details open as a dialog over the list. */
+.page-split { display: flex; align-items: stretch; padding: 0; }
+.split-main { flex: 1 1 0; min-width: 0; padding: 1.5rem 2rem 3rem; }
+.split-detail { flex: none; box-sizing: border-box; width: 26rem; max-width: 45%; padding: 1.5rem; border-left: 1px solid var(--border); background: var(--bg); }
+.split-backdrop { display: none; }
+.detail-head { display: flex; align-items: center; gap: .75rem; }
+.detail-head h2 { margin: 0 auto 0 0; font-size: 1.25rem; overflow-wrap: anywhere; }
+.detail-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; }
+.detail-doc { height: 20rem; margin-bottom: .5rem; }
+.detail-section { margin-top: 1.25rem; }
+.detail-section h3 { margin: 0 0 .5rem; font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.detail-section textarea { min-height: 6rem; max-width: none; }
+.detail-section button { margin-top: .75rem; }
+.detail-facts { display: grid; grid-template-columns: auto 1fr; gap: .35rem 1rem; margin: 0; font-size: .9rem; }
+.detail-facts dt { color: var(--muted); }
+.detail-facts dd { margin: 0; }
+@media (max-width: 79.99rem) {
+    .split-detail { position: fixed; inset: 0; z-index: 41; width: min(34rem, calc(100% - 2rem)); max-width: none; height: fit-content; max-height: calc(100% - 2rem); margin: auto; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .split-backdrop { display: block; position: fixed; inset: 0; z-index: 40; background: rgb(0 0 0 / .4); }
+    .split-main { padding-inline: var(--space); }
+}
+
+/* The whole receipt, never cut (points 7, 9): the frame's single row is as high as the frame. */
+.thumb-frame { grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); }
+.thumb-frame .thumb { max-width: 100%; max-height: 100%; }
+.detail-doc { height: 28rem; }
+
+/* Document viewer in the detail window (app.js "Document viewer"): zoom, pan, box selection */
+.detail-doc:has(+ .doc-zoom) { position: relative; cursor: grab; user-select: none; }
+.detail-doc.is-selecting { cursor: crosshair; }
+.detail-doc.is-panning { cursor: grabbing; }
+.doc-zoom { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; }
+.doc-zoom input[type="range"] { flex: 1; min-width: 0; accent-color: var(--primary); }
+.doc-zoom .doc-zoom-value { min-width: 4rem; min-height: 0; margin: 0; padding: .25rem .4rem; border: 0; border-radius: 6px; background: none; box-shadow: none; color: var(--muted); font-variant-numeric: tabular-nums; cursor: pointer; }
+.doc-zoom .doc-zoom-value:hover { background: rgb(127 127 127 / .14); color: var(--text); }
+
+/* Folders explorer (points 10-12) */
+.folder-rows .pick-row > [data-folder-name] { flex: 1; min-width: 0; }
+.folder-rows .pick-row .folder-rename button { margin: 0; }
+.folder-rename:not([hidden]) { display: flex; flex: 1; min-width: 0; align-items: center; gap: .4rem; margin: 0; }
+.folder-rename input[name="name"] { flex: 1; min-width: 0; margin: 0; }
+
+/* Package H */
+
+/* PDF pages under the document (A19); the bar may wrap on narrow windows. */
+.doc-zoom { flex-wrap: wrap; }
+.doc-pages { display: flex; align-items: center; gap: .5rem; }
+.doc-pages[hidden] { display: none; }
+.doc-pages output { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.detail-doc[data-pdf]:focus { outline: none; }
+.detail-doc[data-pdf]:focus-visible { outline: 2px solid color-mix(in srgb, var(--primary) 45%, transparent); outline-offset: 2px; }

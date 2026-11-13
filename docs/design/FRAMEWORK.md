@@ -7,11 +7,11 @@ Rules for agents (also in `AGENTS.md`):
 1. Read this file before you build UI.
 2. Use only these classes and components. No own colours, shadows, button looks or column/window logic in a module.
 3. A new building block is made on the long-running branch `lead/framework`, documented here first, then used.
-4. Plain CSS and JS without a build step (D-004): `public/css/app.css`, `public/js/app.js`. UI strings via `lang/`.
+4. Plain CSS and JS without a build step (D-004), split by topic (A216): `public/css/core/*.css` and `public/js/core/*.js` = the framework (base, layout, forms, buttons, menus, lists, columns, windows, dialogs, tooltips …), `public/css/modules/*.css` and `public/js/modules/*.js` = one file per module (documents, notes, ocr, updates …). The load order is `config/assets.php` (the styleguide links the same CSS list); a new file goes there. UI strings via `lang/`.
 
 ## 1. Colours and surfaces
 
-Tokens on `:root` in `app.css`, light and dark follow the system setting.
+Tokens on `:root` in `css/core/base.css`, light and dark follow the system setting.
 
 | Token | Use |
 |-------|-----|
@@ -43,7 +43,7 @@ Every `<button>` and `.button` is a button by default. Do not reuse its look for
 
 48 px high (small 40 px), 10 px corners (icon buttons too, link or button), semi-bold, no letter spacing, light shadow that presses in on click, orange focus ring for the keyboard, faded when disabled. A link stays underlined text and never looks like a button.
 
-**Cursor (A192):** everything clickable shows the hand – one central rule in `app.css` (`:where(…)`, zero specificity): buttons, `.control-button`, icon buttons, row actions, menu entries, links (also whole rows), `summary`, tabs, strips, colour swatches, icon choices, chips, checkbox/radio labels and `select`. Drag edges show `col-resize`, things that move `grab`; disabled things `not-allowed`. Don't set `cursor: pointer` per module.
+**Cursor (A192):** everything clickable shows the hand – one central rule in `css/core/buttons.css` (`:where(…)`, zero specificity): buttons, `.control-button`, icon buttons, row actions, menu entries, links (also whole rows), `summary`, tabs, strips, colour swatches, icon choices, chips, checkbox/radio labels and `select`. Drag edges show `col-resize`, things that move `grab`; disabled things `not-allowed`. Don't set `cursor: pointer` per module.
 
 ## 3. Form fields, cards, lists, toasts, dialogs
 

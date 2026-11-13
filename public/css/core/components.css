@@ -1,0 +1,236 @@
+/* Tooltip: data-tooltip="Text" shows below the element, or right of it with .tooltip-right */
+[data-tooltip] { position: relative; }
+[data-tooltip]::before,
+[data-tooltip]::after {
+    position: absolute; left: 50%; z-index: 40;
+    background: var(--tooltip-bg);
+    opacity: 0; pointer-events: none; translate: -50% -4px;
+    transition: opacity .15s ease-out, translate .15s ease-out;
+}
+[data-tooltip]::after {
+    content: attr(data-tooltip);
+    top: calc(100% + 8px);
+    padding: .35rem .75rem; border-radius: calc(var(--radius) / 2);
+    color: var(--tooltip-text); box-shadow: var(--shadow);
+    font-size: .875rem; font-weight: 500; letter-spacing: normal; line-height: 1.3;
+    white-space: nowrap;
+}
+[data-tooltip]::before { content: ""; top: calc(100% + 3px); width: 10px; height: 10px; rotate: 45deg; }
+[data-tooltip]:hover::before, [data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::before, [data-tooltip]:focus-visible::after {
+    opacity: 1; translate: -50% 0; transition-delay: .3s;
+}
+.tooltip-right::before, .tooltip-right::after { top: 50%; left: calc(100% + 8px); translate: 4px -50%; }
+.tooltip-right::before { left: calc(100% + 3px); }
+.tooltip-right:hover::before, .tooltip-right:hover::after,
+.tooltip-right:focus-visible::before, .tooltip-right:focus-visible::after { translate: 0 -50%; }
+
+.page { padding: 1.5rem 2rem 3rem; }
+@media (max-width: 63.99rem) { .page { padding-inline: var(--space); } }
+.muted { color: var(--muted); }
+
+/* Messages and check lists */
+.error { color: var(--error); border: 1px solid var(--error); border-radius: 10px; padding: .4rem .6rem; }
+.checks { padding-left: 1.2rem; }
+.check-ok { color: var(--ok); }
+.check-warning { color: var(--warning); }
+.check-fail { color: var(--error); }
+code { word-break: break-all; background: var(--surface); padding: .1rem .3rem; border-radius: 4px; }
+
+/* One-time information, e.g. a new password */
+.notice { background: var(--surface); border-left: 4px solid var(--primary); padding: .5rem var(--space); border-radius: var(--radius); }
+
+/* Toolbar above a list: icon buttons with a dropdown (filter, view) */
+.page-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; }
+.toolbar { display: flex; align-items: center; gap: .5rem; }
+.icon-button {
+    position: relative; display: inline-flex; align-items: center; justify-content: center;
+    width: 48px; min-height: 48px; margin: 0; padding: 0;
+    border: 2px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text);
+}
+.icon-button .icon { width: 1.5rem; height: 1.5rem; }
+.icon-button:hover { box-shadow: var(--shadow); }
+.icon-button[aria-expanded="true"] { border-color: var(--primary); }
+.icon-button[aria-expanded="true"]::before, .icon-button[aria-expanded="true"]::after { display: none; }
+
+/* Count badge (task 110: one style for the filter count and the menu counts): a round number, orange;
+   .badge-alert red for "new things" in the menu. On an icon button it sits on the top right corner. */
+:root { --badge: #e8231a; --badge-text: #ffffff; }
+.badge {
+    display: inline-block; flex: none; min-width: 1.35rem; height: 1.35rem; padding: 0 .35rem;
+    border-radius: .7rem; background: var(--primary); color: var(--primary-text);
+    font-size: .75rem; font-weight: 700; line-height: 1.35rem; text-align: center;
+}
+.badge-alert { background: var(--badge); color: var(--badge-text); }
+.badge[hidden] { display: none; }
+.icon-button > .badge { position: absolute; top: -.4rem; right: -.4rem; }
+.dropdown { position: relative; }
+.dropdown-panel {
+    position: absolute; top: calc(100% + .5rem); right: 0; z-index: 35; min-width: 16rem; padding: .5rem;
+    background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.dropdown-panel[hidden] { display: none; }
+.dropdown-panel label { margin-top: 0; }
+.dropdown-panel label:not(.chip):has(> input[type="checkbox"]) { padding-inline: .5rem; }
+.dropdown-panel .dropdown-reset { width: 100%; margin: .25rem 0 0; min-height: 44px; background: none; color: var(--primary-ink); font-size: 1rem; letter-spacing: normal; }
+.dropdown-panel .dropdown-reset:hover { background: var(--surface); box-shadow: none; }
+.dropdown-title { margin: .25rem .5rem; font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.preview-branches { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.preview-branches h2 { margin: 0 0 .5rem; font-size: 1.15rem; }
+.preview-list { margin: 1rem 0; padding: .75rem; border: 1px solid var(--border); border-radius: var(--radius); }
+.preview-list legend { padding-inline: .4rem; font-weight: 600; }
+.preview-branch { display: flex; align-items: flex-start; gap: .75rem; margin: .35rem 0; padding: .75rem; border-radius: var(--radius); background: var(--surface); cursor: pointer; }
+input[type="radio"] { width: 1.25rem; height: 1.25rem; min-height: 0; max-width: none; flex: none; margin: .25rem 0 0; accent-color: var(--primary); }
+.preview-warning { margin-top: 1rem; }
+.preview-warning p { margin-top: 0; }
+.preview-warning label { display: flex; align-items: center; gap: .6rem; min-height: 48px; }
+
+/* Tags: always a pill that starts with "#", side by side like running text, never one below the other.
+   Selected and not selected have the same size; only the fill changes. The "#" is drawn by CSS. */
+.tags { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 0; padding: 0; list-style: none; }
+.tag {
+    --tag: var(--border);
+    display: inline-flex; align-items: center; box-sizing: border-box; min-height: 2rem; margin: 0; padding: 0 .85rem;
+    border: 2px solid var(--tag); border-radius: 999px; background: none; color: var(--text);
+    font: inherit; font-size: .875rem; font-weight: 600; letter-spacing: normal; line-height: 1; white-space: nowrap; text-decoration: none;
+}
+.tag::before { content: "#"; margin-right: .1rem; }
+.tag-c1 { --tag: #ff7622; }
+.tag-c2 { --tag: #3fb68f; }
+.tag-c3 { --tag: #6f9cf2; }
+.tag-c4 { --tag: #a97df0; }
+.tag-c5 { --tag: #ee7aa6; }
+.tag-c6 { --tag: #d9a826; }
+button.tag { cursor: pointer; }
+button.tag:hover { box-shadow: none; background: color-mix(in srgb, var(--tag) 22%, transparent); }
+.tag.is-selected, .tag[aria-pressed="true"], .tag-choice input:checked + .tag { background: var(--tag); color: #1a1a18; }
+button.tag.is-selected:hover, button.tag[aria-pressed="true"]:hover { background: var(--tag); }
+.tag-choice { position: relative; display: inline-block; margin: 0; font-weight: 600; }
+label.tag-choice { color: inherit; }
+.tag-choice input { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; margin: 0; opacity: 0; cursor: pointer; }
+.tag-choice input:focus-visible + .tag { outline: 2px solid var(--text); outline-offset: 2px; }
+.tag-choice .tag { cursor: pointer; }
+.tag-colors { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+.tag-color { position: relative; display: inline-block; margin: 0; }
+.tag-color input { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; margin: 0; opacity: 0; cursor: pointer; }
+.tag-color span { display: block; width: 2.25rem; height: 2.25rem; border-radius: 50%; background: var(--tag); border: 2px solid var(--bg); box-shadow: 0 0 0 2px var(--border); }
+.tag-color input:checked + span { box-shadow: 0 0 0 3px var(--text); }
+.tag-color input:focus-visible + span { outline: 2px solid var(--text); outline-offset: 4px; }
+
+/* Confirm dialog in our style */
+.dialog-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgb(0 0 0 / .4); }
+.dialog { box-sizing: border-box; width: min(26rem, calc(100% - 2rem)); padding: 1.5rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.dialog h2 { margin: 0 0 .5rem; font-size: 1.25rem; }
+.dialog-actions { display: flex; gap: .75rem; margin-top: 1.25rem; }
+.dialog-actions button { flex: 1; margin: 0; }
+
+/* Point 48 / A36: an X at the top right closes every dialog; the "Abbrechen" button is gone */
+.dialog { position: relative; }
+.dialog > .dialog-x { position: absolute; top: .75rem; right: .75rem; width: 36px; min-width: 36px; height: 36px; min-height: 36px; margin: 0; }
+.dialog:has(> .dialog-x) > :is(h2, h3):first-of-type { padding-right: 2.75rem; }
+.dialog-actions > [data-dialog-close]:not(.dialog-x), .dialog-actions form > [data-dialog-close]:not(.dialog-x) { display: none; }
+
+/* All fold/unfold arrows look the same: just the chevron, no button frame (point 3). The building block is the
+   control button (points 70, 72): .control-button, frameless icon in text colour, orange on hover; the settings
+   arrows (.col-fold) and the menu arrow are the 48 px flavour of it, window heads use 36 px. */
+.control-button {
+    display: inline-flex; align-items: center; justify-content: center; flex: none;
+    width: 36px; min-width: 36px; height: 36px; min-height: 36px; margin: 0; padding: 0;
+    border: 0; border-radius: 8px; background: none; box-shadow: none; color: var(--text); text-decoration: none; cursor: pointer;
+}
+.control-button:hover { background: none; box-shadow: none; color: var(--primary-ink); }
+.control-button:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.control-button .icon { width: 1.25rem; height: 1.25rem; }
+.col-fold, .nav-collapse {
+    display: inline-flex; align-items: center; justify-content: center; flex: none;
+    width: 48px; min-height: 48px; margin: 0; padding: 0;
+    border: 0; border-radius: calc(var(--radius) / 2); background: none; color: var(--text);
+}
+.nav-collapse { margin-top: .25rem; }
+.col-fold:hover, .nav-collapse:hover { background: none; box-shadow: none; color: var(--primary-ink); }
+.col-fold .icon, .nav-collapse .icon, button.col-strip > .icon { width: 1.25rem; height: 1.25rem; }
+button.col-strip:hover > .icon { color: var(--primary-ink); }
+
+/* Building blocks from the Update page (Go 2026-11-07, A16-A22), meant for every page */
+.card { max-width: 48rem; margin-top: 1rem; padding: 1rem 1.25rem 1.25rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); }
+.card-head { display: flex; align-items: center; gap: .5rem; margin: 0 0 .5rem; font-size: 1.05rem; }
+.card-head .icon { width: 1.35rem; height: 1.35rem; color: var(--primary); }
+.card-text { max-width: 70ch; margin: .25rem 0 .75rem; color: var(--muted); }
+.card-note { max-width: 70ch; margin: .5rem 0 0; font-size: .8rem; color: var(--muted); }
+.card-row { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+.card button { margin-top: 0; }
+.button-small { display: inline-flex; align-items: center; gap: .45rem; min-height: 40px; padding: 0 1rem; font-size: .95rem; }
+.button-small .icon { width: 1.15rem; height: 1.15rem; }
+
+/* Toast: a short status top right that closes itself (A22) */
+.toast {
+    position: fixed; top: 1rem; right: 1rem; z-index: 60; display: flex; align-items: center; gap: .6rem; max-width: min(26rem, calc(100% - 2rem));
+    padding: .7rem 1rem; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: calc(var(--radius) / 2); box-shadow: var(--shadow);
+    animation: toast-in .2s ease-out;
+}
+.toast .icon { flex: none; color: var(--ok); }
+.toast.is-leaving { opacity: 0; translate: 0 -.5rem; transition: opacity .3s, translate .3s; }
+@keyframes toast-in { from { opacity: 0; translate: 0 -.5rem; } }
+.toast .toast-action { flex: none; margin: 0 0 0 .25rem; }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } .toast.is-leaving { transition: none; } }
+@media (max-width: 63.99rem) { .toast { top: auto; bottom: 1rem; left: 1rem; right: 1rem; max-width: none; } }
+
+/* Update page round 2 (Go 2026-11-07, points 6-10): lists that say "Keine Einträge", icon buttons in the card head */
+
+/* Card head with action (task 110): one form.card-action at the right end of the head, holding an icon button
+   or a small button with icon and text. Its icons keep the button's colour, not the orange of the head icon. */
+.card-head .card-action { margin-left: auto; }
+.card-head .card-action .icon { color: currentColor; width: 1.15rem; height: 1.15rem; }
+.card-head .icon-button .icon { color: var(--text); width: 1.25rem; height: 1.25rem; }
+
+/* Pill (task 110: one label style for states and counts, was .tag-outline and .tab-count): small, round, not clickable.
+   .pill-ok green ("installiert"), .pill-new orange tint ("verfügbar", the count of the active tab). */
+.pill {
+    display: inline-block; flex: none; min-width: 1.4rem; padding: .05rem .5rem; border: 1px solid var(--border); border-radius: 999px;
+    color: var(--muted); font-size: .75rem; font-weight: 600; line-height: 1.4; text-align: center; white-space: nowrap;
+}
+.pill-ok { border-color: transparent; background: color-mix(in srgb, var(--ok) 16%, var(--bg)); color: color-mix(in srgb, var(--ok) 70%, var(--text)); }
+.pill-new, .tab[aria-current="page"] .pill { border-color: transparent; background: rgb(255 118 34 / .15); color: var(--primary-ink); }
+
+/* A93: tabs – a bar with tabs over a thin line; the active one in text colour with an orange bar that glides */
+.tab-bar { display: flex; gap: .25rem; margin: 1.25rem 0 1rem; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border); }
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab {
+    position: relative; display: inline-flex; flex: none; align-items: center; gap: .5rem; padding: .7rem .9rem .8rem;
+    color: var(--muted); font-weight: 600; white-space: nowrap; text-decoration: none; border-radius: 8px 8px 0 0;
+    transition: color .12s, background-color .12s;
+}
+.tab .icon { width: 1.15rem; height: 1.15rem; }
+.tab:hover { color: var(--text); background: var(--surface); }
+.tab[aria-current="page"] { color: var(--text); }
+.tab[aria-current="page"] .icon { color: var(--primary); }
+.tab-mark { position: absolute; left: .5rem; right: .5rem; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0; background: var(--primary); view-transition-name: tab-mark; }
+.tab:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+::view-transition-group(tab-mark) { animation-duration: .25s; animation-timing-function: ease-in-out; }
+.pager { display: flex; gap: .5rem; margin-top: 1rem; }
+
+/* Framework round 11 (Go 2026-11-11, points 46, 47) */
+
+/* A103: tooltips lie above everything – one layer on <body> (app.js) instead of the element's own ::after, which
+   cards, columns and scrolling windows cut off. The ::after rules above still decide WHETHER a tooltip shows
+   (display: none hides it); without JavaScript they draw it as before. */
+html.has-tips [data-tooltip]::before, html.has-tips [data-tooltip]::after { visibility: hidden !important; }
+.tip {
+    position: fixed; z-index: 1000; top: 0; left: 0; max-width: min(24rem, calc(100vw - 16px));
+    padding: .35rem .75rem; border-radius: calc(var(--radius) / 2); background: var(--tooltip-bg); color: var(--tooltip-text);
+    box-shadow: var(--shadow); font-size: .875rem; font-weight: 500; letter-spacing: normal; line-height: 1.3;
+    pointer-events: none; opacity: 0; transition: opacity .15s ease-out;
+}
+.tip.is-shown { opacity: 1; }
+.tip::before { content: ""; position: absolute; width: 10px; height: 10px; rotate: 45deg; background: inherit; }
+.tip[data-side="below"]::before { top: -5px; left: var(--tip-arrow, 50%); margin-left: -5px; }
+.tip[data-side="right"]::before { left: -5px; top: 50%; margin-top: -5px; }
+.tip[data-side="above"]::before { bottom: -5px; left: var(--tip-arrow, 50%); margin-left: -5px; }
+@media (prefers-reduced-motion: reduce) { .tip { transition: none; } }
+
+/* Package M (point 53): dialogs, dropdown panels, toasts and the tooltip are lifted into the top layer
+   (popover="manual", app.js), above every window. Undo the browser's popover look; each part keeps its rules. */
+:where([data-dialog][popover], .dialog-backdrop[popover], .dropdown-panel[popover], .tip[popover], .toast[popover]) {
+    inset: auto; width: auto; height: auto; margin: 0; padding: 0; border: 0; overflow: visible; color: inherit; background: none;
+}
+.dropdown-panel:popover-open { position: fixed; overflow: auto; overscroll-behavior: contain; }

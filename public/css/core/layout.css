@@ -1,0 +1,168 @@
+/* Page frame: left column = dark logo block + side menu, right = content.
+   Menu states (class on <html> or on .shell): none = wide, nav-rail = icons only, nav-closed = only the menu button. */
+.shell { display: flex; align-items: flex-start; min-height: 100vh; }
+.shell:has(> .side-plain) { flex-direction: column; }
+.content { flex: 1; min-width: 0; width: 100%; }
+.side {
+    position: sticky; top: 0; z-index: 20; flex: none;
+    display: flex; flex-direction: column;
+    width: 15rem; height: 100vh;
+    background: var(--surface); border-right: 1px solid var(--border);
+}
+.side-plain { position: static; width: auto; height: auto; background: none; border: 0; }
+.site-header { display: flex; align-items: center; flex: none; height: 3.5rem; background: var(--secondary); color: var(--secondary-text); }
+.site-header a { color: var(--secondary-text); }
+.site-header .brand { display: flex; align-items: center; padding-inline: .25rem 1rem; text-decoration: none; }
+.side-plain .site-header .brand { padding-inline: 1rem; }
+.brand img { display: block; width: auto; height: 3rem; }
+.nav-toggle { flex: none; width: 3.5rem; min-height: 3.5rem; margin: 0; padding: 0; border-radius: 0; background: none; color: var(--secondary-text); }
+.nav-toggle:hover { background: rgb(255 255 255 / .12); box-shadow: none; }
+.nav-toggle .icon { width: 1.75rem; height: 1.75rem; }
+
+/* Side menu */
+.sidebar { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: .25rem; padding: .75rem; overflow-y: auto; }
+.nav-list { display: grid; gap: .25rem; margin: 0; padding: 0; list-style: none; }
+.nav-list + .nav-list { margin-top: .5rem; padding-top: .5rem; border-top: 1px solid var(--border); }
+.nav-item, .menu-item {
+    display: flex; align-items: center; justify-content: flex-start; gap: .75rem;
+    width: 100%; min-height: 48px; margin: 0; padding: 0 .85rem;
+    border-radius: calc(var(--radius) / 2); background: none; color: var(--text);
+    font: inherit; font-weight: 500; letter-spacing: normal; text-align: left; text-decoration: none; cursor: pointer;
+}
+.nav-item .icon, .menu-item .icon { width: 1.4rem; height: 1.4rem; }
+.nav-item:hover, .menu-item:hover { background: var(--bg); box-shadow: none; }
+.nav-item[aria-current="page"], .menu-item[aria-checked="true"] { font-weight: 700; }
+.nav-item[aria-current="page"] .icon, .menu-item[aria-checked="true"] .icon { color: var(--primary); }
+.sidebar .nav-action { margin: 0 0 .5rem; background: var(--primary); color: var(--primary-text); font-weight: 600; }
+.sidebar .nav-action:hover { background: var(--primary); box-shadow: var(--shadow); }
+.nav-action:focus-within { outline: 2px solid var(--primary); outline-offset: 2px; }
+.nav-upload.is-busy .nav-action { opacity: .7; cursor: progress; }
+.nav-logout { margin-top: auto; }
+.nav-collapse {
+    align-self: flex-end; width: 2.25rem; min-height: 2.25rem; margin: .25rem 0 0; padding: 0;
+    border: 1px solid var(--border); border-radius: 50%; background: var(--bg); color: var(--muted);
+}
+.nav-collapse:hover { color: var(--text); }
+.nav-backdrop { display: none; }
+.sidebar [data-tooltip]::before, .sidebar [data-tooltip]::after { display: none; }
+
+@media (min-width: 64rem) {
+    :is(html.nav-closed, .shell.nav-closed) .side { width: 3.5rem; height: auto; background: none; border: 0; }
+    :is(html.nav-closed, .shell.nav-closed) .sidebar,
+    :is(html.nav-closed, .shell.nav-closed) .brand { display: none; }
+    :is(html.nav-rail, .shell.nav-rail) .side { width: 4.5rem; }
+    :is(html.nav-rail, .shell.nav-rail) .site-header { justify-content: center; }
+    :is(html.nav-rail, .shell.nav-rail) .brand { display: none; }
+    :is(html.nav-rail, .shell.nav-rail) .sidebar { padding-inline: .5rem; }
+    :is(html.nav-rail, .shell.nav-rail) .nav-item { justify-content: center; padding: 0; }
+    :is(html.nav-rail, .shell.nav-rail) .nav-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    :is(html.nav-rail, .shell.nav-rail) .nav-collapse { align-self: center; }
+    :is(html.nav-rail, .shell.nav-rail) .nav-collapse .icon { rotate: 180deg; }
+    :is(html.nav-rail, .shell.nav-rail) .sidebar [data-tooltip]::before,
+    :is(html.nav-rail, .shell.nav-rail) .sidebar [data-tooltip]::after { display: block; }
+}
+@media (max-width: 63.99rem) {
+    .side:not(.side-plain) { position: fixed; top: 0; left: 0; width: 3.5rem; height: 3.5rem; background: none; border: 0; }
+    .side:not(.side-plain) .brand { display: none; }
+    .shell:not(:has(> .side-plain)) .content { padding-top: 3.5rem; }
+    .sidebar {
+        position: fixed; top: 3.5rem; bottom: 0; left: 0; z-index: 20; width: min(18rem, 85vw);
+        background: var(--surface); border-right: 1px solid var(--border);
+        translate: -100% 0; visibility: hidden; transition: translate .2s ease-out, visibility .2s;
+    }
+    :is(html.nav-open, .shell.nav-open) .sidebar { translate: 0 0; visibility: visible; }
+    :is(html.nav-open, .shell.nav-open) .nav-backdrop { display: block; position: fixed; inset: 3.5rem 0 0; z-index: 15; background: rgb(0 0 0 / .4); }
+    .nav-collapse { display: none; }
+}
+
+/* Error pages */
+.error-page { text-align: center; padding-top: 3rem; }
+.error-code { font-size: 3rem; font-weight: 700; color: var(--muted); margin: 0; }
+
+.site-footer { margin-top: 2rem; padding: 0 2rem 1rem; }
+
+/* Version below "Abmelden" instead of a footer under the content (point 11). */
+.nav-version { display: block; padding: .25rem .85rem 0; color: var(--muted); font-size: .75rem; }
+:is(html.nav-rail, .shell.nav-rail) .nav-version { padding-inline: 0; text-align: center; }
+:is(html.nav-rail, .shell.nav-rail) .nav-version::after { content: "v"; }
+.site-footer { margin: 0; padding: 0 1rem 1rem; }
+
+/* Go of 2026-11-05: column menu */
+
+/* Desktop: the area right of the menu scrolls in its own box, both ways (point 7). It starts with a gap as high
+   as the dark bar, so the menu button never covers the title; scrolling takes everything up to the very top
+   (Go 2026-11-07, point 4). Columns reach the top with their background and keep their content below the gap. */
+@media (min-width: 64rem) {
+    .shell:not(:has(> .side-plain)) .content { height: 100vh; padding-top: 3.5rem; overflow: auto; }
+    .page-split { min-height: 100%; }
+    .content > .page-split:has(> .cols) { margin-top: -3.5rem; min-height: calc(100% + 3.5rem); }
+    .content > .page-split > .cols > .col { padding-top: 4.75rem; }
+    .content > .page-split > .cols > button.col-strip { padding-top: 4.5rem; }
+    /* Menu hidden: only the menu button is left, the first strip slides under it (point 5). */
+    :is(html.nav-closed, .shell.nav-closed) .side:not(.side-plain) { position: fixed; top: 0; left: 0; height: 3.5rem; }
+    .cols > .col-page, .cols > .col.is-last { min-width: 30rem; }
+    .cols > .col-pane { min-width: 20rem; }
+    /* A shade at the edge while there is more to scroll sideways (A6). */
+    .shell::before, .shell::after {
+        content: ""; position: fixed; top: 0; bottom: var(--sbh, 0px); z-index: 15; width: .75rem;
+        pointer-events: none; opacity: 0; transition: opacity .15s;
+    }
+    .shell::before { left: var(--content-left, 0px); background: linear-gradient(to right, rgb(0 0 0 / .18), transparent); }
+    .shell::after { right: var(--sbw, 0px); background: linear-gradient(to left, rgb(0 0 0 / .18), transparent); }
+    html.more-left .shell::before, html.more-right .shell::after { opacity: 1; }
+}
+
+/* Menu badges: the red count badge (.badge.badge-alert) with the number of new things in an area (A8-A11). */
+.nav-item > .badge { margin-left: auto; }
+.nav-toggle { position: relative; }
+.nav-dot { display: none; position: absolute; top: .8rem; right: .8rem; width: .65rem; height: .65rem; border-radius: 50%; background: var(--badge); box-shadow: 0 0 0 2px var(--secondary); }
+@media (min-width: 64rem) {
+    :is(html.nav-rail, .shell.nav-rail) .nav-item > .badge { position: absolute; top: .2rem; right: .2rem; margin: 0; }
+    :is(html.nav-closed, .shell.nav-closed) .nav-dot:not([hidden]) { display: block; }
+}
+@media (max-width: 63.99rem) {
+    html:not(.nav-open) .nav-dot:not([hidden]) { display: block; }
+}
+
+/* Floating menu button (Go 2026-11-07, point 3, A24): with the menu folded away on desktop, and always on phones,
+   the button floats over the content with a shadow instead of sitting in a dark block. */
+@media (min-width: 64rem) {
+    :is(html.nav-closed, .shell.nav-closed) .side:not(.side-plain) .site-header { background: none; }
+    :is(html.nav-closed, .shell.nav-closed) .nav-toggle { margin: .5rem; width: 2.75rem; min-height: 2.75rem; border-radius: 12px; background: var(--secondary); box-shadow: 0 4px 14px rgb(0 0 0 / .3); }
+    :is(html.nav-closed, .shell.nav-closed) .nav-dot { top: .45rem; right: .45rem; }
+    :is(html.nav-closed, .shell.nav-closed) .nav-toggle .icon { width: 1.5rem; height: 1.5rem; }
+}
+@media (max-width: 63.99rem) {
+    .side:not(.side-plain) .site-header { background: none; }
+    .side:not(.side-plain) .nav-toggle { margin: .5rem; width: 2.75rem; min-height: 2.75rem; border-radius: 12px; background: var(--secondary); box-shadow: 0 4px 14px rgb(0 0 0 / .3); }
+    .nav-dot { top: .45rem; right: .45rem; }
+    .side:not(.side-plain) .nav-toggle .icon { width: 1.5rem; height: 1.5rem; }
+}
+
+/* Walls between columns and right of the menu (Go 2026-11-07, points 11-13, A37-A45) */
+.side:not(.side-plain) { width: var(--nav-width, 15rem); }
+.col-wall { flex: none; position: relative; z-index: 4; width: 0; }
+.col-wall::before { content: ""; position: absolute; inset: 0 -5px; cursor: col-resize; }
+.col-wall::after, .nav-wall::after { content: ""; position: absolute; top: 0; bottom: 0; left: -1px; width: 3px; background: var(--primary); opacity: 0; transition: opacity .15s; }
+.col-wall:hover::after, .col-wall:focus-visible::after, .col-wall.is-active::after,
+.nav-wall:hover::after, .nav-wall.is-active::after { opacity: 1; }
+.col-wall:focus-visible { outline: none; }
+.nav-wall { position: absolute; top: 0; right: -5px; z-index: 25; width: 10px; height: 100%; cursor: col-resize; }
+.nav-wall::after { left: 4px; }
+:is(html.nav-closed, .shell.nav-closed) .nav-wall { display: none; }
+.cols > .col-nav { max-width: none; }
+
+/* Soft page change (A58): the browser cross-fades to the next page and slides the menu and the
+   columns into their new width. A column and its strip share a name, so one turns into the other.
+   Browsers without it simply switch, without jumping. */
+@view-transition { navigation: auto; }
+@media (min-width: 64rem) {
+    .side:not(.side-plain) { view-transition-name: side; }
+    .cols > [data-col="0"], .cols > [data-strip="0"] { view-transition-name: col0; }
+    .cols > [data-col="1"], .cols > [data-strip="1"] { view-transition-name: col1; }
+    .cols > .col-page { view-transition-name: page; }
+}
+::view-transition-group(*) { animation-duration: .25s; animation-timing-function: cubic-bezier(.45, 0, .55, 1); }
+@media (prefers-reduced-motion: reduce) {
+    @view-transition { navigation: none; }
+}

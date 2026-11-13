@@ -1,0 +1,291 @@
+/* OCR fallback (point 18) */
+// Reads receipt text in the browser with self-hosted tesseract.js when the
+// server can't (body[data-ocr-browser]). One image at a time, only while the
+// page is visible and idle, not on cellular/data saver/low battery, and not
+// while paused in the menu (point 57, localStorage dh.ocr.paused, every tab).
+// Point 56: three passes, the server hands out the lowest first; each pass
+// replaces the text of the one before. Point 58/A60/A63: every pass has a time
+// limit per document; A61: an engine that does not start is reported and
+// retried after 5 minutes instead of spinning. A78: with 4+ cores a second
+// engine reads pass-1 documents alongside; passes 2/3 stay one at a time.
+// Point 61: results carry their duration; engine start goes to the OCR log.
+(() => {
+  const startOcr = () => {
+    const base = document.body?.dataset.ocrBrowser;
+    const nextUrl = document.body?.dataset.ocrNext;
+    if (!base || !nextUrl || typeof Worker === 'undefined' || typeof WebAssembly === 'undefined') return;
+    // side = long image side in px (0 = original), scale = PDF page scale, pause after each document, limit = time per document.
+    const PASSES = {
+        1: { side: 1000, scale: 1, pause: 0, limit: 2 * 60000 },
+        2: { side: 2000, scale: 2, pause: 5000, limit: 5 * 60000 },
+        3: { side: 0, scale: 3.5, pause: 30000, limit: 10 * 60000 },
+    };
+    const MAX_PIXELS = 24e6;
+    const WAIT_MS = 60000;
+    const ENGINE_MS = 60000;
+    const ENGINE_RETRY_MS = 5 * 60000;
+    const engineUrl = document.body?.dataset.ocrEngine;
+    const logUrl = document.body?.dataset.ocrLog;
+    const PAUSE_KEY = 'dh.ocr.paused';
+    const TWO = (navigator.hardwareConcurrency ?? 1) >= 4;
+    const skip = [];
+    // Lane 0 reads every pass; lane 1 (A78) only pass 1 and only on 4+ cores.
+    const lanes = [{ main: true, engine: null, running: null, active: true }, { main: false, engine: null, running: null, active: false }];
+    const wakers = new Set();
+
+    const paused = () => {
+        try { return localStorage.getItem(PAUSE_KEY) === '1'; } catch { return false; }
+    };
+    // A sleep that "Fortsetzen" ends early.
+    const sleep = ms => new Promise(resolve => {
+        const done = () => { clearTimeout(timer); wakers.delete(done); resolve(); };
+        const timer = setTimeout(done, ms);
+        wakers.add(done);
+    });
+    const idle = () => new Promise(resolve => ('requestIdleCallback' in window
+        ? window.requestIdleCallback(() => resolve(), { timeout: 30000 })
+        : setTimeout(resolve, 1000)));
+    const allowed = async () => {
+        if (document.visibilityState !== 'visible') return false;
+        const c = navigator.connection;
+        if (c && (c.saveData === true || c.type === 'cellular')) return false;
+        if (navigator.getBattery) {
+            try {
+                const b = await navigator.getBattery();
+                if (!b.charging && b.level <= 0.2) return false;
+            } catch { /* no battery info */ }
+        }
+        return true;
+    };
+    const loadLib = () => (window.Tesseract ? Promise.resolve() : new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = base + '/tesseract.min.js';
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.append(s);
+    }));
+    // Rejects after ms; the timer is cleared either way.
+    const within = (promise, ms, reason) => {
+        let timer = null;
+        const limit = new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(reason)), ms); });
+        return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
+    };
+    const token = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const post = (url, fields) => {
+        if (!url) return;
+        const body = new FormData();
+        Object.entries(fields).forEach(([key, value]) => body.append(key, String(value)));
+        fetch(url, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' }, credentials: 'same-origin' })
+            .catch(() => { /* only a hint */ });
+    };
+    // A61: the engine start has 60 s; a worker that comes up later is closed again.
+    const getEngine = async lane => {
+        if (lane.engine) return lane.engine;
+        let late = false;
+        const began = performance.now();
+        const create = (async () => {
+            await loadLib();
+            return window.Tesseract.createWorker('deu+eng', 1, {
+                workerPath: base + '/worker.min.js',
+                corePath: base + '/core',
+                langPath: base + '/lang',
+                gzip: false,
+                workerBlobURL: false,
+                // Only the main lane feeds the progress in the menu.
+                logger: lane.main ? m => document.dispatchEvent(new CustomEvent('dh:ocr-progress', { detail: m })) : () => {},
+                errorHandler: () => { /* surfaces as a rejected job */ },
+            });
+        })();
+        create.then(w => { if (late) w.terminate().catch(() => {}); }, () => {});
+        try {
+            lane.engine = await within(create, ENGINE_MS, 'timeout 60 s');
+        } catch (e) {
+            late = true;
+            throw e;
+        }
+        // Once per lane and page, so pass 3 (engine closed between documents) does not flood the log.
+        if (!lane.logged) post(logUrl, { event: 'engine_started', duration: Math.round(performance.now() - began) });
+        lane.logged = true;
+        return lane.engine;
+    };
+    const reportEngine = error => post(engineUrl, { reason: String(error?.message || error || 'unknown').slice(0, 300) });
+    const stop = async lane => {
+        if (!lane.engine) return;
+        const e = lane.engine;
+        lane.engine = null;
+        try { await e.terminate(); } catch { /* already gone */ }
+    };
+    // Pause (point 57): the running documents are dropped unsaved and the engines closed, so the computer gets its resources back.
+    const onPause = isPaused => {
+        if (isPaused) {
+            lanes.forEach(lane => {
+                if (lane.running) lane.running.aborted = true;
+                stop(lane);
+            });
+        } else {
+            [...wakers].forEach(wake => wake());
+        }
+    };
+    document.addEventListener('dh:ocr-pause', event => onPause(event.detail === true));
+    window.addEventListener('storage', event => { if (event.key === PAUSE_KEY) onPause(event.newValue === '1'); });
+    const check = run => { if (run.aborted || run.timedOut) throw new Error('stopped'); };
+    // Images: scaled down to the pass's long side (pass 3: original), capped for memory.
+    const readImage = async (lane, url, side, run) => {
+        if (typeof createImageBitmap === 'undefined') return (await (await getEngine(lane)).recognize(url)).data?.text ?? '';
+        const res = await fetch(url, { credentials: 'same-origin' });
+        if (!res.ok) throw new Error('image');
+        const blob = await res.blob();
+        const bitmap = await createImageBitmap(blob);
+        try {
+            check(run);
+            const factor = Math.min(side > 0 ? side / Math.max(bitmap.width, bitmap.height) : 1, Math.sqrt(MAX_PIXELS / (bitmap.width * bitmap.height)));
+            if (factor >= 1) return (await (await getEngine(lane)).recognize(blob)).data?.text ?? '';
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(bitmap.width * factor));
+            canvas.height = Math.max(1, Math.round(bitmap.height * factor));
+            canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+            try {
+                return (await (await getEngine(lane)).recognize(canvas)).data?.text ?? '';
+            } finally {
+                canvas.width = canvas.height = 0;
+            }
+        } finally {
+            bitmap.close?.();
+        }
+    };
+    // Point 34: PDFs page by page with pdf.js (document viewer block). A page that already carries text
+    // gives that text; a scanned page is drawn at the pass's scale and read by tesseract. Pages joined by a blank line.
+    // Point 69: gives the page count and how many pages came from the text layer (A106/A114) for the OCR log.
+    const readPdf = async (lane, url, maxScale, run, info) => {
+        if (!DocHamster.openPdf) throw new Error('pdf.js not available');
+        const doc = await DocHamster.openPdf(url);
+        try {
+            const texts = [];
+            const last = Math.min(doc.numPages, 50);
+            info.pages = doc.numPages;
+            info.layer = 0;
+            for (let n = 1; n <= last; n++) {
+                check(run);
+                const page = await doc.getPage(n);
+                const layer = await page.getTextContent();
+                const own = layer.items.map(item => (item.str ?? '') + (item.hasEOL ? '\n' : ' ')).join('').trim();
+                if (own.replace(/\s/g, '').length >= 20) {
+                    texts.push(own);
+                    info.layer++;
+                } else {
+                    const one = page.getViewport({ scale: 1 });
+                    const scale = Math.min(maxScale, Math.sqrt(MAX_PIXELS / (one.width * one.height)));
+                    const viewport = page.getViewport({ scale });
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.floor(viewport.width);
+                    canvas.height = Math.floor(viewport.height);
+                    await page.render({ canvas, canvasContext: canvas.getContext('2d'), viewport }).promise;
+                    const { data } = await (await getEngine(lane)).recognize(canvas);
+                    texts.push((data?.text ?? '').trim());
+                    canvas.width = canvas.height = 0;
+                }
+                page.cleanup();
+            }
+            return texts.filter(Boolean).join('\n\n');
+        } finally {
+            doc.destroy().catch(() => {});
+        }
+    };
+    const announce = (lane, job) => { if (lane.main) document.dispatchEvent(new CustomEvent('dh:ocr-job', { detail: job })); };
+
+    // One document of the lowest open pass (A77: the server picks at random among them); gives the pause before
+    // the next one, or null when nothing is left. The second lane asks for pass 1 only.
+    const step = async lane => {
+        const url = new URL(nextUrl, location.href);
+        skip.forEach(id => url.searchParams.append('skip[]', id));
+        if (!lane.main) url.searchParams.set('only', '1');
+        const res = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+        if (res.status !== 200) return null;
+        const job = await res.json();
+        const pass = PASSES[job.pass] ? job.pass : 3;
+        if (!lane.main && pass !== 1) return null;
+        // A61: no engine, no document – the reason goes to the server, the next try comes in 5 minutes.
+        try {
+            await getEngine(lane);
+        } catch (e) {
+            reportEngine(e);
+            await stop(lane);
+            return lane.main ? ENGINE_RETRY_MS : null;
+        }
+        // A78: a pass-1 document on the main lane wakes the second lane.
+        if (lane.main && pass === 1 && TWO && !lanes[1].active) runLane(lanes[1]);
+        const run = { aborted: false, timedOut: false };
+        lane.running = run;
+        announce(lane, job);
+        const body = new FormData();
+        body.append('pass', String(pass));
+        const began = performance.now();
+        const info = { pages: null, layer: null };
+        try {
+            const read = job.type === 'application/pdf'
+                ? readPdf(lane, job.file, PASSES[pass].scale, run, info)
+                : readImage(lane, job.file, PASSES[pass].side, run);
+            read.catch(() => {});
+            body.append('text', await within(read, PASSES[pass].limit, 'timeout'));
+        } catch (e) {
+            // Point 58: over the time limit the engine is closed, so the computer gets its resources back.
+            if (e?.message === 'timeout') {
+                run.timedOut = true;
+                await stop(lane);
+            }
+            body.append('failed', '1');
+            body.append('reason', String(e?.message || e || 'unknown').slice(0, 290));
+        }
+        body.append('duration', String(Math.round(performance.now() - began)));
+        if (info.pages !== null) body.append('pages', String(info.pages));
+        if (info.layer !== null) body.append('layer', String(info.layer));
+        lane.running = null;
+        if (run.aborted) {
+            // Paused: nothing saved, the document comes again after "Fortsetzen".
+            announce(lane, null);
+            return 0;
+        }
+        try {
+            const saved = await fetch(job.save, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' }, credentials: 'same-origin' });
+            if (!saved.ok) skip.push(job.id);
+        } catch {
+            skip.push(job.id);
+        }
+        announce(lane, null);
+        return PASSES[pass].pause;
+    };
+
+    // The main lane runs until nothing is left; the second lane until no pass-1 document is left.
+    const runLane = async lane => {
+        lane.active = true;
+        try {
+            if (lane.main) await sleep(5000);
+            for (;;) {
+                if (paused()) {
+                    await stop(lane);
+                    await sleep(WAIT_MS);
+                    continue;
+                }
+                await idle();
+                if (paused()) continue;
+                if (!(await allowed())) {
+                    await stop(lane);
+                    await sleep(WAIT_MS);
+                    continue;
+                }
+                let pause = null;
+                try { pause = await step(lane); } catch { pause = null; }
+                if (pause === null) { await stop(lane); return; }
+                // Long pauses (pass 3) close the engine meanwhile.
+                if (pause >= 30000) await stop(lane);
+                if (pause > 0) await sleep(pause);
+            }
+        } finally {
+            lane.active = false;
+        }
+    };
+    runLane(lanes[0]);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startOcr);
+  else startOcr();
+})();

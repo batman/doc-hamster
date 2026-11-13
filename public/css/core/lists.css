@@ -1,0 +1,135 @@
+/* Point 22: every list row's hover background has rounded corners (framework rule for all lists) */
+:root { --row-radius: 8px; }
+.view-list li, .pick-row, .settings-link, .col-item, .menu-item, .nav-item, .folder-link { border-radius: var(--row-radius); }
+
+/* A list of rows to pick one from: the whole row is the choice, the picked one gets the orange bar (A20) */
+.pick-list { margin: 1rem 0; padding: 0; border: 0; display: grid; gap: .4rem; min-width: 0; }
+.pick-list label.pick-row { display: flex; align-items: flex-start; gap: .75rem; margin: 0; padding: .7rem .9rem; border-radius: calc(var(--radius) / 2); background: var(--surface); color: var(--text); font-weight: 400; cursor: pointer; }
+.pick-row > .icon { flex: none; width: 1.25rem; height: 1.25rem; margin-top: .1rem; color: var(--muted); }
+.pick-row strong { display: block; font-weight: 600; }
+.pick-row small { display: block; color: var(--muted); }
+.pick-row:hover { background: var(--bg); }
+.pick-row:has(input:checked) > .icon, .pick-mark { color: var(--primary); }
+.pick-row:has(input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
+.pick-mark { display: none; margin-left: auto; }
+.pick-row:has(input:checked) .pick-mark { display: flex; }
+
+/* Marked row (task 110: one look for the current menu entry, the chosen settings entry, the picked choice and a
+   marked list row such as the installed version): an orange bar on the left on the other surface. */
+:is(.nav-item[aria-current="page"], .menu-item[aria-checked="true"], .col-item[aria-current="true"], .pick-row:has(input:checked), .pick-row.is-marked) {
+    background: var(--mark-bg, var(--bg)); box-shadow: inset 4px 0 0 var(--primary);
+}
+.pick-row.is-marked:has(> span a):hover { background: var(--mark-bg, var(--bg)); }
+
+/* Sortable list: a handle on the left, the carried row lifts (A78) */
+.pick-handle { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 2rem; min-height: 2rem; margin: 0; padding: 0;
+    border: 0; border-radius: 8px; background: none; box-shadow: none; color: var(--muted); cursor: grab; touch-action: none; }
+.pick-handle:hover { background: rgb(127 127 127 / .14); color: var(--text); box-shadow: none; }
+.pick-row.is-dragging { box-shadow: var(--shadow); background: var(--bg); position: relative; z-index: 2; }
+.pick-row.is-dragging .pick-handle { cursor: grabbing; color: var(--primary); }
+
+/* A row takes its record's colour for the icon: --row-color, else --folder, else orange (A81) */
+.pick-row.is-static > .icon:not(.pick-handle .icon) { color: var(--row-color, var(--folder, var(--primary))); }
+
+.pick-row.is-static > button.pick-handle { margin: 0 -.25rem 0 -.5rem; }
+
+/* A91: nothing in a list looks like a link. The whole row is the click area; underlined only inside running text. */
+a { text-decoration: none; }
+:is(p, .card-text, .card-note, .field-hint, dd) a:not(.button, .icon-button, .menu-item, .tag) { text-decoration: underline; }
+.pick-row a:not(.button, .icon-button, .menu-item, .tag), .documents a, .view-list a, .view-details td a, .timeline a { color: inherit; text-decoration: none; }
+.pick-row.is-static:has(> span a) { position: relative; cursor: pointer; transition: background-color .12s; }
+.pick-row.is-static > span a::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.pick-row.is-static:has(> span a):hover { background: color-mix(in srgb, var(--surface) 88%, var(--text)); }
+.pick-row.is-static > span a:focus-visible { outline: none; }
+.pick-row.is-static:has(> span a:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
+.pick-row.is-static > :is(button, form, .dropdown, .pill, .row-actions) { position: relative; z-index: 1; }
+
+/* A92: drag to sort – the whole row is the grip, a dashed placeholder keeps its place, an orange bar shows the target */
+[data-sortable] { position: relative; }
+[data-sortable] > [data-id] { cursor: grab; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+[data-sortable] .pick-handle { touch-action: none; }
+.pick-placeholder { list-style: none; border: 2px dashed var(--border); border-radius: calc(var(--radius) / 2); background: transparent; }
+.pick-row.is-lifted, .pick-row.is-static.is-lifted { position: fixed; z-index: 60; margin: 0; box-shadow: var(--shadow); background: var(--bg); pointer-events: none; transform: scale(1.02); }
+.pick-row.is-gliding { transition: transform .18s ease-out, box-shadow .18s ease-out; }
+.pick-drop { position: absolute; left: 0; right: 0; height: 3px; margin-top: -1.5px; border-radius: 2px; background: var(--primary); pointer-events: none; }
+.pick-drop::before { content: ""; position: absolute; left: -4px; top: -3px; width: 9px; height: 9px; border-radius: 50%; background: var(--primary); }
+html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
+@media (prefers-reduced-motion: reduce) { .pick-row.is-gliding { transition: none; } }
+
+/* Lists and rows (points 75-87, A131-A177) ------------------------------------------------------------------------- */
+
+/* Row symbol (A144-A146): a fixed 38 px slot, so the names line up; app.js crops the symbol to its own box and makes it as
+   tall as the two text lines; the stroke stays 2 px. Without JavaScript the symbol keeps its normal size. Always orange. */
+.row-icon { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; color: var(--primary); }
+.row-icon > .icon { width: 24px; height: 24px; }
+.row-icon > .icon.is-fit { overflow: visible; }
+.row-icon > .icon.is-fit * { vector-effect: non-scaling-stroke; }
+.fit-probe { position: absolute; left: -9999px; top: 0; width: 24px; height: 24px; visibility: hidden; pointer-events: none; }
+
+/* Coloured row ("farbige Zeile", point 83, A156-A160): the record's colour fills the row; text dark or light by WCAG
+   contrast, the symbol orange while it reaches 3:1, else the text colour; the second line faded. Classes from tags.css
+   (row-color + c-rrggbb, like the palette classes; the CSP allows no inline styles) – folders now, tags later. */
+.pick-row.row-color { background: var(--row-bg); color: var(--row-ink); }
+.pick-row.row-color small { color: var(--row-sub); }
+.pick-row.row-color > .row-icon { color: var(--row-icon); }
+.pick-row.row-color.is-static:has(> span a):hover { background: color-mix(in srgb, var(--row-bg) 90%, var(--row-ink)); }
+
+/* Row actions ("Zeilen-Aktionen", A161-A166, A174, A177): frameless control buttons at the right end of a row (pencil,
+   gear …); shown while the row is hovered or has focus, always on touch screens; orange on hover; tooltips. */
+.row-actions { flex: none; display: inline-flex; align-items: center; gap: .1rem; margin-left: auto; opacity: 0; transition: opacity .12s; }
+:is(li, tr):is(:hover, :focus-within) .row-actions, .row-actions:focus-within { opacity: 1; }
+@media (hover: none) { .row-actions { opacity: 1; } }
+.row-actions form { display: contents; }
+.row-actions .control-button, .pick-row.is-static .row-actions .control-button { width: 2.25rem; height: 2.25rem; min-height: 0; margin: 0; padding: 0; border-radius: 8px; }
+.row-actions .control-button .icon, .view-list .row-actions .icon { width: 1.2rem; height: 1.2rem; color: inherit; }
+.row-color .row-actions .control-button { color: inherit; }
+.row-color .row-actions .control-button:hover { color: inherit; background: rgb(127 127 127 / .22); }
+.control-button.control-danger:hover { color: var(--error); }
+.view-details td.row-actions-cell { width: 1%; padding-block: 0; white-space: nowrap; }
+.view-list li .row-actions { margin-left: .25rem; }
+.trash-list li { flex-wrap: wrap; row-gap: .1rem; }
+.trash-title { flex: 1 1 10rem; min-width: 0; overflow-wrap: anywhere; }
+.doc-rename { flex: 1; min-width: 8rem; display: inline-flex; align-items: center; gap: .25rem; margin: 0; }
+.doc-rename input { flex: 1; min-width: 0; margin: 0; }
+.is-renaming .row-actions { display: none; }
+.folder-rows { position: relative; }
+.folder-rows > .folder-row { position: relative; }
+
+/* Drag and drop: the row or window a drop lands on is orange (A131, A175); picked document rows (A132) are tinted. */
+.is-drop-target, .pick-row.is-drop-target, .pick-row.row-color.is-drop-target { background: color-mix(in srgb, var(--primary) 20%, var(--bg)); box-shadow: inset 0 0 0 2px var(--primary); color: var(--text); }
+.pick-row.is-drop-target small { color: var(--muted); }
+.pick-row.is-drop-target > .row-icon { color: var(--primary); }
+.win-body.is-drop-target { box-shadow: inset 0 0 0 2px var(--primary); background: color-mix(in srgb, var(--primary) 8%, var(--bg)); border-radius: var(--row-radius); }
+
+/* Files over a folder row: the row itself becomes the drop field "Loslassen zum Hochladen in „X“" (A170). */
+.folder-row.is-upload-target > * { visibility: hidden; }
+.folder-row.is-upload-target::after { content: attr(data-upload-label); position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0 1rem;
+    font-weight: 600; color: var(--primary-ink); text-align: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.win-body.is-upload-target::before { content: attr(data-upload-label); position: sticky; top: 0; z-index: 2; display: block; margin-bottom: .5rem; padding: .6rem 1rem;
+    border-radius: var(--row-radius); background: var(--primary); color: var(--primary-text); font-weight: 600; text-align: center; }
+[data-doc].is-selected, .view-details tr[data-doc].is-selected { background: color-mix(in srgb, var(--primary) 14%, var(--bg)); }
+[data-doc].is-carried, [data-drag-folder].is-carried { opacity: .45; }
+[data-doc], [data-drag-folder] { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.drag-ghost { position: fixed; left: 0; top: 0; z-index: 70; max-width: 18rem; padding: .4rem .8rem; border-radius: var(--row-radius); background: var(--primary); color: var(--primary-text);
+    font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: var(--shadow); pointer-events: none; }
+html.is-carrying, html.is-carrying * { cursor: grabbing !important; }
+
+/* The main menu's drop field while files are dragged (A169): uploads into "Dokumente allgemein". */
+.nav-drop { display: flex; align-items: center; gap: .75rem; min-height: 4rem; margin: 0 0 .5rem; padding: .75rem; border: 2px dashed var(--primary); border-radius: var(--row-radius);
+    color: var(--primary-ink); font-weight: 600; }
+.nav-drop[hidden] { display: none; }
+.nav-drop.is-drop-target { border-style: solid; }
+.folder-step .actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.folder-step form { margin: 0; }
+.folder-step button .icon { width: 1.1rem; height: 1.1rem; margin-right: .35rem; }
+
+/* Icon choice: the hidden radio covers the whole tile (the general radio size must not shrink it). */
+.folder-icon-choice > input[type="radio"] { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; margin: 0; opacity: 0; }
+.folder-icon-choice span:hover { border-color: var(--primary); }
+
+/* Long press on a row's name (A190): a thin orange line fills under the name, 2 s mouse / 1 s finger. */
+.is-pressing { background: linear-gradient(var(--primary), var(--primary)) no-repeat left bottom / 0 2px; animation: press-line 2s linear forwards; }
+.is-pressing.is-touch { animation-duration: 1s; }
+@keyframes press-line { to { background-size: 100% 2px; } }
+[data-folder-row] [data-folder-name] a, [data-doc-title] { -webkit-touch-callout: none; }
+.pick-row [data-folder-name] strong { width: fit-content; max-width: 100%; }

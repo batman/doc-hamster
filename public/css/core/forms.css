@@ -1,0 +1,172 @@
+/* Forms */
+label { display: block; margin-top: var(--space); font-weight: 600; }
+label:not(:has(input[type="checkbox"])) { color: var(--primary); }
+.rights { max-width: 40rem; margin-top: var(--space); border: 1px solid var(--border); border-radius: var(--radius); }
+.rights label { margin-top: .25rem; font-weight: 400; }
+.chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+.chips .chip { position: relative; margin: 0; font-weight: 400; }
+.chip input { position: absolute; opacity: 0; }
+.chip span { display: inline-block; min-height: 2.75rem; line-height: 2.75rem; padding: 0 1rem; border: 1px solid var(--border); border-radius: 1.375rem; cursor: pointer; }
+.chip input:checked + span { font-weight: 600; border: 2px solid var(--primary); }
+.chip input:checked + span::before { content: "✓ "; }
+.chip input:focus-visible + span { outline: 2px solid currentColor; outline-offset: 2px; }
+input, select, textarea {
+    width: 100%; min-height: 48px; padding: .6rem .75rem; font: inherit; color: var(--text);
+    background: var(--bg); border: 2px solid var(--primary); border-radius: var(--radius);
+    max-width: 32rem;
+}
+
+/* File picker: the native "choose file" part looks like our button, the file name stays beside it */
+input[type="file"] { width: auto; max-width: 100%; min-height: 0; padding: 0; border: 0; background: none; border-radius: 0; cursor: pointer; }
+input[type="file"]::file-selector-button {
+    min-height: 48px; margin-right: .75rem; padding: .7rem 1.4rem; border: 0; border-radius: var(--radius);
+    background: var(--primary); color: var(--primary-text);
+    font: inherit; font-size: 1.125rem; font-weight: 600; letter-spacing: .07em; cursor: pointer;
+}
+input[type="file"]:hover::file-selector-button { box-shadow: var(--shadow); }
+
+/* Checkbox: the native input styled as a box, no extra markup */
+input[type="checkbox"] {
+    appearance: none; flex: none; display: inline-grid; place-content: center;
+    width: 1.25em; height: 1.25em; min-height: 0; margin: 0; padding: 0;
+    border-radius: 6px; cursor: pointer;
+}
+input[type="checkbox"]::before {
+    content: ""; width: .7em; height: .7em; background: var(--primary-text);
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0, 43% 62%);
+    transform: scale(0); transition: transform .12s ease-out;
+}
+input[type="checkbox"]:checked { background: var(--primary); }
+input[type="checkbox"]:checked::before { transform: scale(1); }
+input[type="checkbox"]:hover:not(:disabled) { box-shadow: var(--shadow); }
+input[type="checkbox"]:disabled { opacity: .5; cursor: not-allowed; }
+label:not(.chip):has(> input[type="checkbox"]) {
+    display: flex; align-items: center; gap: .6rem; min-height: 48px; font-weight: 400; cursor: pointer;
+}
+
+button, .button {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 48px; margin-top: 1.5rem; padding: .7rem 1.4rem; border: 0; border-radius: var(--radius);
+    background: var(--primary); color: var(--primary-text);
+    font: inherit; font-size: 1.125rem; font-weight: 600; letter-spacing: .07em;
+    text-decoration: none; cursor: pointer;
+}
+button:hover, .button:hover { box-shadow: var(--shadow); }
+
+/* Form fields (Go 2026-11-08, point 32, A82-A85), as the PO picked them in variant A: label above, a quiet
+   thin frame, 8 px corners, 48 px high; while typing an orange frame with a soft orange ring. */
+:root { --field-bg: #ffffff; --field-line: #d9d6cc; --field-glow: rgb(255 118 34 / .28); }
+@media (prefers-color-scheme: dark) { :root { --field-bg: #1f1f1d; --field-line: #55534e; } }
+
+.field { display: grid; gap: .4rem; margin-top: 1rem; max-width: 40rem; }
+.field > label, label.field-label { margin: 0; font-size: .875rem; font-weight: 600; line-height: 1.2; color: var(--primary-ink); }
+
+/* Older forms: a label right before its field, or a label wrapping its field, also puts the text above */
+label:not(:has(input[type="checkbox"], input[type="radio"], input[type="file"])) { font-size: .875rem; color: var(--primary-ink); }
+label:has(> :is(input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="file"]), select, textarea)) { display: grid; gap: .4rem; max-width: 40rem; }
+label + :is(input:not([type="checkbox"], [type="radio"], [type="hidden"]), select, textarea) { margin-top: .4rem; }
+
+input:not([type="checkbox"], [type="radio"], [type="color"], [type="range"], [type="file"], [type="hidden"]),
+select, textarea {
+    box-sizing: border-box; width: 100%; max-width: 40rem; min-height: 48px;
+    padding: 0 .9rem; border: 1px solid var(--field-line); border-radius: 8px;
+    background-color: var(--field-bg); color: var(--text);
+    font: inherit; font-size: 1rem; line-height: 1.4;
+    outline: none; box-shadow: none; transition: box-shadow .12s;
+}
+textarea { min-height: 6rem; padding: .7rem .9rem; resize: vertical; field-sizing: content; }
+select {
+    padding-right: 2.5rem; appearance: none; cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff7622' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6l6 -6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right .8rem center; background-size: 1.1rem;
+}
+:is(input, select, textarea):focus { border-color: rgb(255 118 34 / .7); box-shadow: 0 0 0 3px var(--field-glow); }
+:is(input, select, textarea)::placeholder { color: var(--muted); opacity: 1; }
+:is(input, select, textarea):disabled { opacity: .55; cursor: not-allowed; }
+input[readonly] { background-color: var(--surface); }
+
+/* Saved logins look like typed ones, not light blue (A82) */
+input:autofill, input:-webkit-autofill {
+    -webkit-text-fill-color: var(--text); caret-color: var(--text);
+    box-shadow: 0 0 0 1000px var(--field-bg) inset;
+}
+input:autofill:focus, input:-webkit-autofill:focus { box-shadow: 0 0 0 1000px var(--field-bg) inset, 0 0 0 3px var(--field-glow); }
+
+/* Hint and error below the field; an error turns the frame red (A84) */
+.field-hint { margin: 0; font-size: .8rem; color: var(--muted); }
+.field.has-error :is(input, select, textarea), :is(input, select, textarea)[aria-invalid="true"] { border-color: var(--danger); }
+.field.has-error :is(input, select, textarea):focus { box-shadow: 0 0 0 3px rgb(217 45 32 / .3); }
+.field.has-error .field-hint { color: var(--danger); }
+
+/* Framework round 8 (Go 2026-11-08, points 33-37) */
+
+/* A89: a frame field (fieldset) looks like a form field – no browser frame, the legend above like a label */
+fieldset { min-width: 0; max-width: 40rem; margin: 1rem 0 0; padding: 0; border: 0; }
+fieldset > legend { float: left; width: 100%; margin: 0 0 .4rem; padding: 0; font-size: .875rem; font-weight: 600; line-height: 1.2; color: var(--primary-ink); }
+fieldset > legend + * { clear: both; }
+.rights, .tag-color-field, .note-color-field, .note-tag-field { border: 0; padding: 0; border-radius: 0; }
+.rights label { display: flex; align-items: center; gap: .5rem; margin-top: .35rem; font-size: 1rem; color: var(--text); }
+
+/* A90: small field for tight spots – 40 px like small buttons, no label above. Every search field is small. */
+input.input-small, input[type="search"] { min-height: 40px; padding: 0 .75rem; font-size: .9375rem; }
+select.input-small { min-height: 40px; padding-left: .75rem; font-size: .9375rem; }
+
+/* Point 36: a colour field shows its colour as one full round dot – no square inside, no extra frame */
+input[type="color"] { -webkit-appearance: none; appearance: none; border: 0; padding: 0; overflow: hidden; background: none; }
+input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 50%; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .15); }
+input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .15); }
+input[type="color"]:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* Point 24: no thick orange frame while dragging the slider; a quiet ring only for the keyboard */
+.doc-zoom input[type="range"]:focus { outline: none; box-shadow: none; }
+.doc-zoom input[type="range"]:focus-visible { outline: 2px solid color-mix(in srgb, var(--primary) 45%, transparent); outline-offset: 3px; }
+.doc-box { position: absolute; z-index: 2; border: 2px dashed var(--primary); background: color-mix(in srgb, var(--primary) 12%, transparent); pointer-events: none; }
+.doc-box-actions { position: absolute; top: .35rem; left: .35rem; display: flex; gap: .35rem; pointer-events: auto; cursor: default; }
+
+/* Click-to-edit (point 28): plain text with a light hover hint, a field of the same size while editing */
+.edit-in-place {
+    min-height: 2.75rem; margin: 0 -.5rem; padding: .5rem; border: 1px solid transparent; border-radius: calc(var(--radius) / 2);
+    white-space: pre-wrap; overflow-wrap: anywhere; cursor: text;
+}
+.edit-in-place:hover { border-color: var(--border); background: var(--surface); }
+.edit-in-place:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.edit-in-place:empty::before { content: attr(data-placeholder); color: var(--muted); }
+.edit-in-place.is-saving { opacity: .6; }
+.edit-in-place-field { display: block; width: calc(100% + 1rem); max-width: none; margin: 0 -.5rem; padding: .5rem; font: inherit; line-height: inherit; }
+textarea.edit-in-place-field { min-height: 2.75rem; resize: vertical; field-sizing: content; }
+.edit-in-place-small, .edit-in-place-field.edit-in-place-small { font-size: .85rem; line-height: 1.45; color: var(--muted); }
+.edit-in-place-field.edit-in-place-small { color: var(--text); font-family: inherit; }
+p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere; }
+.toast.toast-error { border-color: var(--danger); }
+.toast.toast-error::before { content: ""; flex: none; width: .5rem; height: .5rem; border-radius: 50%; background: var(--danger); }
+.win-detail form > button[type="submit"] { margin-top: 1rem; }
+
+/* Field with symbol ("Feld mit Symbol", A195-A199), like input groups: a leading symbol or text (@, €, search), a
+   button inside the field on the right (✓ save, X clear, eye) and/or a state symbol (green ✓, red !). The field keeps
+   its own look, frame and focus ring; the parts lie on top of it. 48 px, small fields (input-small) 40 px. */
+.field-addon { position: relative; display: block; width: 100%; max-width: 40rem; }
+.field-addon > :is(input, select) { margin: 0; }
+.field-addon > .addon-lead { position: absolute; inset: 0 auto 0 0; display: grid; place-items: center; width: 2.75rem;
+    color: var(--muted); font-weight: 600; pointer-events: none; }
+.field-addon > .addon-lead .icon { width: 1.2rem; height: 1.2rem; }
+.field-addon:has(> .addon-lead) > :is(input, select) { padding-left: 2.6rem; }
+.field-addon > .addon-end { position: absolute; inset: 4px 4px 4px auto; display: flex; align-items: center; gap: 2px; }
+.field-addon > .addon-end > .control-button { width: 40px; min-width: 40px; height: 40px; min-height: 0; border-radius: 6px; }
+.field-addon > .addon-end > .control-button:hover { background: color-mix(in srgb, var(--primary) 10%, transparent); }
+.field-addon > .addon-end > .control-button[aria-pressed="true"] > .icon:first-of-type,
+.field-addon > .addon-end > .control-button:not([aria-pressed="true"]) > .icon + .icon { display: none; }
+.field-addon > .addon-end > .addon-state { display: grid; place-items: center; width: 2rem; height: 100%; }
+.field-addon > .addon-end > .addon-state .icon { width: 1.25rem; height: 1.25rem; }
+.field-addon:has(> .addon-end > :not([hidden])) > :is(input, select) { padding-right: 3rem; }
+.field-addon:has(> .addon-end > :not([hidden]) ~ :not([hidden])) > :is(input, select) { padding-right: 5.25rem; }
+.field-addon:has(> .addon-end > :not([hidden])) > select { background-position: right 3.2rem center; }
+.field-addon:has(> .input-small) > .addon-lead { width: 2.4rem; }
+.field-addon:has(> .input-small) > .addon-end { inset: 3px 3px 3px auto; }
+.field-addon:has(> .input-small) > .addon-end > .control-button { width: 34px; min-width: 34px; height: 34px; }
+.field-addon:has(> .input-small):has(> .addon-lead) > input { padding-left: 2.3rem; }
+.field-addon:has(> .input-small):has(> .addon-end > :not([hidden])) > input { padding-right: 2.6rem; }
+.field-addon.is-ok > :is(input, select) { border-color: var(--ok); }
+.field-addon.is-ok .addon-state { color: var(--ok); }
+.field-addon.is-error > :is(input, select), .field.has-error .field-addon > :is(input, select) { border-color: var(--danger); }
+.field-addon.is-error .addon-state { color: var(--error); }
