@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'title' => 'Settings',
     'wall' => 'Change column width',
-    'fold' => 'Fold',
+    'fold' => 'Minimise',
     'expand' => 'Open :name',
     'open' => 'Open',
     'groups' => [

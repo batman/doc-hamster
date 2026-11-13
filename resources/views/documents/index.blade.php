@@ -10,7 +10,7 @@
     {{-- Folders on the window system (PO, 2026-11-07; FRAMEWORK.md: the main menu has no sub-items): Dokumente lists the top folders
          and the Papierkorb as rows, a folder opens as a window on the right with its subfolders and receipts. --}}
     <x-window :title="$openFolder?->name ?? __('documents.title')" kind="folder" :icon="$openFolder?->iconName() ?? 'file-text'"
-              :url="route('documents.index', request()->except('page'))" :close="$openFolder ? route('documents.index') : null"
+              :url="route('documents.index', request()->except('page'))" :close="$openFolder ? route('documents.index') : route('home')"
               :upload="$openFolder ? 'folder='.$openFolder->id : null"
               :search="__('documents.search')" search-params="ocr all">
         {{-- Search details (points 102, 103): all folders (never the Papierkorb, A207) and the recognised text (A202). --}}

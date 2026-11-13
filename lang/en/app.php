@@ -23,7 +23,7 @@ return [
         'remove_short' => 'Remove from the history',
         'close' => 'Close',
         'back' => 'Back',
-        'fold' => 'Fold',
+        'fold' => 'Minimise',
         'minimise' => 'Minimise',
         'maximise' => 'Maximise',
         'restore' => 'Restore',

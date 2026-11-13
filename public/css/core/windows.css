@@ -199,5 +199,3 @@
 .win-notes .kanban { margin-top: .5rem; }
 @media (min-width: 64rem) { .win-notes .kanban-col { max-height: calc(100dvh - 15rem); } }
 
-/* The notes module alone on Home is the root of the row: no X (nothing to fall back to). */
-.windows > .win-notes:only-child .win-close { display: none; }

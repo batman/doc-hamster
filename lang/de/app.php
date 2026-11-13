@@ -23,7 +23,7 @@ return [
         'remove_short' => 'Aus dem Verlauf entfernen',
         'close' => 'Schließen',
         'back' => 'Zurück',
-        'fold' => 'Einklappen',
+        'fold' => 'Minimieren',
         'minimise' => 'Minimieren',
         'maximise' => 'Maximieren',
         'restore' => 'Wiederherstellen',

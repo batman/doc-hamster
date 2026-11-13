@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'title' => 'Einstellungen',
     'wall' => 'Spaltenbreite ändern',
-    'fold' => 'Zuklappen',
+    'fold' => 'Minimieren',
     'expand' => ':name aufklappen',
     'open' => 'Aufklappen',
     'groups' => [
