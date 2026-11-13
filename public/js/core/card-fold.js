@@ -42,7 +42,7 @@
         if (!card) return;
         const folded = !card.classList.contains('is-folded');
         set(card, folded);
-        remember(card.dataset.cardFold, folded);
+        if (!card.hasAttribute('data-card-fold-forget')) remember(card.dataset.cardFold, folded);
     });
 
     if (window.DocHamster) window.DocHamster.foldCard = set;

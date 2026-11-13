@@ -161,6 +161,23 @@
                 <div class="card-body" hidden><p class="card-text">Kein Cronjob – Erkennung läuft nur, solange die App offen ist.</p></div>
             </section>
 
+            <h3 class="sg-pad">Abschnitt, klappbar (kompakt)</h3>
+            <p class="sg-note">Die kleine Form der klappbaren Karte für Abschnitte in einem Feld, z. B. im Suchfeld (Punkt 135): ohne Rahmen, Linie darunter, kleiner Kopf; die Zusammenfassung steht offen und zugeklappt im Kopf (leer = ausgeblendet). Blade: <code>&lt;x-fold-card compact :remember="false" :folded="…" summary="…"&gt;</code> – <code>:remember="false"</code> = jedes Mal der Zustand der Seite (z. B. zu, außer ein Filter darin ist gesetzt).</p>
+            <div class="card">
+                <section class="card card-fold is-compact" data-card-fold="styleguide.compact" data-card-fold-forget>
+                    <h2 class="card-head"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/></svg><span class="card-title">Zeitraum</span><span class="card-summary" data-card-summary><span>Dieser Monat · Belegdatum</span></span>
+                        <button type="button" class="control-button card-fold-button" data-card-fold-toggle aria-expanded="true" aria-label="Zuklappen" data-tooltip="Zuklappen" data-label-fold="Zuklappen" data-label-unfold="Aufklappen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6l6 -6"/></svg></button></h2>
+                    <div class="card-body">
+                        <div class="search-line"><span>Datum</span><span class="button-choice" data-choice><input type="hidden" value=""><span class="button-group" role="group" aria-label="Datum"><button type="button" class="button-quiet button-small" data-value="" aria-pressed="true">Belegdatum</button><button type="button" class="button-quiet button-small" data-value="upload" aria-pressed="false">Hochladedatum</button></span></span></div>
+                    </div>
+                </section>
+                <section class="card card-fold is-compact is-folded" data-card-fold="styleguide.compact2" data-card-fold-forget>
+                    <h2 class="card-head"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/></svg><span class="card-title">Status</span><span class="card-summary" data-card-summary hidden><span></span></span>
+                        <button type="button" class="control-button card-fold-button" data-card-fold-toggle aria-expanded="false" aria-label="Aufklappen" data-tooltip="Aufklappen" data-label-fold="Zuklappen" data-label-unfold="Aufklappen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6l6 -6"/></svg></button></h2>
+                    <div class="card-body" hidden><p class="card-text">Nichts gesetzt: keine Zusammenfassung.</p></div>
+                </section>
+            </div>
+
             <h3 class="sg-pad">Plaketten und Zähler</h3>
             <p class="sg-note">Eine Plakette (<code>pill</code>) für Zustände und Zahlen in Tabs (<code>pill-ok</code> grün, <code>pill-new</code>/<code>pill-warning</code> orange, <code>pill-error</code> rot, z. B. im Log); ein Zähler (<code>badge</code>) als runde Zahl, orange am Filter-Knopf, rot (<code>badge-alert</code>) im Menü.</p>
             <p class="sg-pad"><span class="pill">Vorschau</span> <span class="pill pill-ok">installiert</span> <span class="pill pill-new">verfügbar</span> <span class="badge">2</span> <span class="badge badge-alert">9+</span></p>
@@ -851,6 +868,10 @@
                 <div class="button-group" role="group" aria-label="Zeitraum"><button type="button" aria-pressed="true">Monat</button><button type="button">Quartal</button><button type="button">Jahr</button></div>
             </div>
             <p class="sg-note"><code>.button-group</code>: Knöpfe direkt aneinander, außen 10 px rund, der aktive mit <code>aria-pressed="true"</code>.</p>
+            <div class="sg-row">
+                <span class="button-choice" data-choice><input type="hidden" value=""><span class="button-group" role="group" aria-label="Bank zugeordnet"><button type="button" class="button-quiet button-small" data-value="" aria-pressed="true">Alle</button><button type="button" class="button-quiet button-small" data-value="yes" aria-pressed="false">Ja</button><button type="button" class="button-quiet button-small" data-value="no" aria-pressed="false">Nein</button></span></span>
+            </div>
+            <p class="sg-note"><strong>Knopfgruppe als Auswahl</strong> (Punkt 135) statt Radios oder einer „egal“-Auswahlliste: <code>&lt;span class="button-choice" data-choice&gt;&lt;input type="hidden" name="…" value=""&gt;&lt;span class="button-group"&gt;</code> mit kleinen ruhigen Knöpfen <code>data-value</code>; „Alle“ (leer) zuerst. Ein Klick setzt das verborgene Feld und sendet <code>change</code> (<code>core/button-choice.js</code>); mit <code>data-choice-toggle</code> nimmt ein zweiter Klick die Wahl zurück.</p>
         </section>
 
 
@@ -1369,6 +1390,7 @@
 <template id="tpl-side-plain"><aside class="side side-plain"><header class="site-header"><a class="brand" href="#"><img src="../img/logo.png" alt="docHamster" width="476" height="186"></a></header></aside></template>
 
 <script src="../js/core/card-fold.js"></script>
+<script src="../js/core/button-choice.js"></script>
 <script src="styleguide.js"></script>
 </body>
 </html>

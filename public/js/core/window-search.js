@@ -91,6 +91,12 @@
             runs.set(form, run);
         };
         const areaOf = form => form.closest('section[data-window]')?.querySelector('[data-window-search-area]');
+        // Button groups as a choice follow their fields again; the module may update its panel (summaries, rows).
+        const reset = area => {
+            if (!area) return;
+            DocHamster.syncChoices?.(area);
+            DocHamster.emit('search:reset', area);
+        };
         const clear = form => {
             fieldOf(form).value = '';
             areaOf(form)?.querySelectorAll('input, select').forEach(input => {
@@ -104,6 +110,7 @@
                     input.value = '';
                 }
             });
+            reset(areaOf(form));
             search(form);
             fieldOf(form).focus();
         };
@@ -174,6 +181,7 @@
                 if (name === 'q') {
                     fieldOf(form).value = '';
                 }
+                reset(area);
                 search(form);
                 return;
             }

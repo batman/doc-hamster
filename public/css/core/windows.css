@@ -136,17 +136,29 @@
 .win-search-toggle[aria-expanded="true"] .icon { rotate: 180deg; }
 
 /* Points 4-7: the advanced search slides open below the tools, as wide as the window. */
-.win-search-area { margin: 0 1.5rem 1rem; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+   Point 135 (A282-A285): it scrolls on its own when it is taller than the room; "Zurücksetzen" and the magnifier stay
+   fixed at its bottom. */
+.win-search-area { display: flex; flex-direction: column; max-height: min(70vh, 44rem); overflow: auto; margin: 0 1.5rem 1rem; padding: .75rem 1rem 0; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
 .win-search-area[hidden] { display: none; }
+/* The panel's top row, always visible (A282): ticks such as "Auch im erkannten Text" and "In allen Ordnern". */
+.search-top { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem 1.25rem; padding: 0 0 .5rem; }
+/* Its foldable sections (compact foldable cards, A283): stacked in a narrow window, two columns in a wide one (A285). */
+.search-sections { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 1.5rem; align-items: start; border-top: 1px solid var(--border); }
+@container win (width >= 44rem) { .search-sections { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* One labelled line of a section (A284): the labels in one column, the control beside them; small fields. */
+.search-line { display: grid; grid-template-columns: minmax(6rem, 9rem) minmax(0, 1fr); align-items: center; gap: .4rem .75rem; margin: 0 0 .5rem; }
+.search-line > :first-child { color: var(--muted); font-size: .9rem; }
+.search-line > .search-row { min-width: 0; }
+.search-line .button-group { flex-wrap: wrap; }
+.search-row input[type="date"] { flex: 1 1 8rem; min-width: 0; }
 .search-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 1rem 1.5rem; }
 .search-group { display: grid; align-content: start; gap: .5rem; min-width: 0; margin: 0; padding: 0; border: 0; }
 .search-group legend { margin: 0 0 .5rem; padding: 0; font-weight: 600; color: var(--primary); }
 .search-tags { grid-column: 1 / -1; }
 .search-row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .75rem; }
-.search-row input[type="date"] { flex: 1 1 8rem; min-width: 0; }
 .field-inline { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
 .field-inline select { flex: 0 1 9rem; }
-.win-search-actions { display: flex; justify-content: flex-end; gap: .5rem; margin: 1rem 0 0; }
+.win-search-actions { position: sticky; bottom: 0; z-index: 2; display: flex; justify-content: flex-end; align-items: center; gap: .5rem; margin: auto 0 0; padding: .6rem 0 .75rem; border-top: 1px solid var(--border); background: var(--surface); }
 
 /* Point 6: the active filters as chips above the results, each with its own X. */
 .filter-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0 0; }

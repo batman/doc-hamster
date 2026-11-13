@@ -15,84 +15,93 @@
               :search="__('documents.search')" :search-params="implode(' ', ['ocr', 'all', 'tags[]', 'any', 'by', 'from', 'to', 'match', 'read', 'type', ...$propParams])" :search-count="count($filters)">
         {{-- The advanced search (points 4-7): text where, tags, period, status, file type; all in the address (point 7). --}}
         <x-slot name="searchOptions">
+            {{-- Point 135 (A282-A285): on top the ticks, always visible; below four compact foldable sections, folded unless a
+                 filter in them is set, each head with a summary of what is set (documents-search.js keeps it current). Button
+                 groups as a choice instead of radios and "egal" selects. All fields keep their address names (point 7). --}}
             @php
-                $now = \Carbon\CarbonImmutable::now();
-                $quick = [
-                    'this_month' => [$now->startOfMonth(), $now->endOfMonth()],
-                    'last_month' => [$now->subMonthNoOverflow()->startOfMonth(), $now->subMonthNoOverflow()->endOfMonth()],
-                    'this_year' => [$now->startOfYear(), $now->endOfYear()],
-                    'last_year' => [$now->subYear()->startOfYear(), $now->subYear()->endOfYear()],
-                ];
+                $choice = fn (string $name, string $value, array $options, ?string $label = null, bool $toggle = false) => view('documents._search-choice', compact('name', 'value', 'options', 'label', 'toggle'));
+                $preset = $search->preset();
+                $ranges = [];
+                foreach (\App\Http\Documents\DocumentSearch::PRESETS as $key) { $ranges[$key] = implode(' ', \App\Http\Documents\DocumentSearch::presetRange($key)); }
+                $day = fn (?string $date): string => $date ? \Carbon\Carbon::parse($date)->format('d.m.Y') : '';
+                $periodSummary = $preset === null ? '' : ($preset === 'custom' ? trim($day($period['from'] ?? null).' – '.$day($period['to'] ?? null), ' –') : __('documents.adv.quick.'.$preset)).' · '.__('documents.dates.'.$by);
+                $tagSummary = $selected === [] ? '' : __('documents.adv.tags_chosen', ['count' => count($selected)]).($anyTag ? ' · '.__('documents.adv.any_tag') : '');
+                $statusSummary = implode(' · ', array_filter([
+                    $match !== '' ? __('documents.adv.match').': '.__('documents.adv.'.$match) : null,
+                    $read !== '' ? __('documents.adv.read').': '.__('documents.adv.'.$read) : null,
+                    $type !== '' ? ($type === 'pdf' ? 'PDF' : __('documents.adv.image')) : null,
+                ]));
+                $propSummary = $properties->filter(fn ($p) => isset($propFilters[$p->id]))->pluck('name')->implode(', ');
             @endphp
-            <div class="search-grid">
-                <fieldset class="search-group">
-                    <legend>{{ __('documents.adv.text') }}</legend>
-                    <label class="check"><input type="checkbox" name="ocr" value="1" @checked($ocr)> {{ __('documents.adv.ocr') }}</label>
-                    <label class="check"><input type="checkbox" name="all" value="1" @checked($all)> {{ __('documents.search_all') }}</label>
-                </fieldset>
-                <fieldset class="search-group">
-                    <legend>{{ __('documents.adv.period') }}</legend>
-                    <div class="search-row">
-                        <input type="date" class="input-small" name="from" value="{{ $period['from'] ?? '' }}" aria-label="{{ __('documents.adv.from') }}">
-                        <span class="muted">–</span>
-                        <input type="date" class="input-small" name="to" value="{{ $period['to'] ?? '' }}" aria-label="{{ __('documents.adv.to') }}">
+            <div class="search-top">
+                <label class="check"><input type="checkbox" name="ocr" value="1" @checked($ocr)> {{ __('documents.adv.ocr') }}</label>
+                <label class="check"><input type="checkbox" name="all" value="1" @checked($all)> {{ __('documents.search_all') }}</label>
+            </div>
+            <div class="search-sections" data-doc-search data-chosen="{{ __('documents.adv.tags_chosen') }}">
+                <x-fold-card fold="documents.search.period" :remember="false" compact :folded="$period === []" :title="__('documents.adv.period')" icon="calendar" :summary="$periodSummary" data-search-section="period">
+                    <div class="search-line">
+                        <span>{{ __('documents.adv.period') }}</span>
+                        <span class="button-choice" data-choice data-choice-toggle data-period-choice>
+                            <input type="hidden" value="{{ $preset ?? '' }}">
+                            <span class="button-group" role="group" aria-label="{{ __('documents.adv.period') }}">
+                                @foreach ($ranges as $presetKey => $presetRange)
+                                    <button type="button" class="button-quiet button-small" data-value="{{ $presetKey }}" data-range="{{ $presetRange }}" aria-pressed="{{ $preset === $presetKey ? 'true' : 'false' }}">{{ __('documents.adv.quick.'.$presetKey) }}</button>
+                                @endforeach
+                                <button type="button" class="button-quiet button-small" data-value="custom" aria-pressed="{{ $preset === 'custom' ? 'true' : 'false' }}">{{ __('documents.adv.quick.custom') }}</button>
+                            </span>
+                        </span>
                     </div>
-                    <div class="search-row">
-                        @foreach ($quick as $key => [$lo, $hi])
-                            <button type="button" class="button-quiet button-small" data-period="{{ $lo->toDateString() }} {{ $hi->toDateString() }}">{{ __('documents.adv.quick.'.$key) }}</button>
-                        @endforeach
+                    <div class="search-line" data-period-custom @if ($preset !== 'custom') hidden @endif>
+                        <span>{{ __('documents.adv.from') }} – {{ __('documents.adv.to') }}</span>
+                        <span class="search-row">
+                            <input type="date" class="input-small" name="from" value="{{ $period['from'] ?? '' }}" aria-label="{{ __('documents.adv.from') }}">
+                            <span class="muted">–</span>
+                            <input type="date" class="input-small" name="to" value="{{ $period['to'] ?? '' }}" aria-label="{{ __('documents.adv.to') }}">
+                        </span>
                     </div>
-                    <div class="search-row">
-                        <label class="check"><input type="radio" name="by" value="doc" data-default @checked($by === 'doc')> {{ __('documents.dates.doc') }}</label>
-                        <label class="check"><input type="radio" name="by" value="upload" @checked($by === 'upload')> {{ __('documents.dates.upload') }}</label>
+                    <div class="search-line">
+                        <span>{{ __('documents.adv.basis') }}</span>
+                        {!! $choice('by', $by === 'upload' ? 'upload' : '', ['' => __('documents.dates.doc'), 'upload' => __('documents.dates.upload')]) !!}
                     </div>
-                </fieldset>
-                <fieldset class="search-group">
-                    <legend>{{ __('documents.adv.status') }}</legend>
-                    @foreach (['match' => $match, 'read' => $read] as $field => $value)
-                        <label class="field-inline"><span>{{ __('documents.adv.'.$field) }}</span>
-                            <select class="input-small" name="{{ $field }}">
-                                <option value="">{{ __('documents.adv.any') }}</option>
-                                <option value="yes" @selected($value === 'yes')>{{ __('documents.adv.yes') }}</option>
-                                <option value="no" @selected($value === 'no')>{{ __('documents.adv.no') }}</option>
-                            </select>
-                        </label>
-                    @endforeach
-                    <label class="field-inline"><span>{{ __('documents.adv.type') }}</span>
-                        <select class="input-small" name="type">
-                            <option value="">{{ __('documents.adv.any') }}</option>
-                            <option value="pdf" @selected($type === 'pdf')>PDF</option>
-                            <option value="image" @selected($type === 'image')>{{ __('documents.adv.image') }}</option>
-                        </select>
-                    </label>
-                </fieldset>
+                </x-fold-card>
                 @if ($tags->isNotEmpty())
-                    <fieldset class="search-group search-tags">
-                        <legend>{{ __('documents.adv.tags') }}</legend>
+                    <x-fold-card fold="documents.search.tags" :remember="false" compact :folded="$selected === []" :title="__('documents.adv.tags')" icon="tags" :summary="$tagSummary" data-search-section="tags">
                         <div class="tags">
                             @foreach ($tags as $tag)
                                 <label class="tag-choice"><input type="checkbox" name="tags[]" value="{{ $tag->id }}" @checked(in_array($tag->id, $selected, true))><span class="tag tag-{{ $tag->id }}">{{ $tag->name }}</span></label>
                             @endforeach
                         </div>
-                        <div class="search-row">
-                            <label class="check"><input type="radio" name="any" value="" data-default @checked(! $anyTag)> {{ __('documents.adv.all_tags') }}</label>
-                            <label class="check"><input type="radio" name="any" value="1" @checked($anyTag)> {{ __('documents.adv.any_tag') }}</label>
+                        <div class="search-line">
+                            <span>{{ __('documents.adv.tags_mode') }}</span>
+                            {!! $choice('any', $anyTag ? '1' : '', ['' => __('documents.adv.all_tags'), '1' => __('documents.adv.any_tag')]) !!}
                         </div>
-                    </fieldset>
+                    </x-fold-card>
                 @endif
+                <x-fold-card fold="documents.search.status" :remember="false" compact :folded="$match === '' && $read === '' && $type === ''" :title="__('documents.adv.status')" icon="circle-check" :summary="$statusSummary" data-search-section="status">
+                    @foreach (['match' => $match, 'read' => $read] as $field => $value)
+                        <div class="search-line">
+                            <span>{{ __('documents.adv.'.$field) }}</span>
+                            {!! $choice($field, $value, ['' => __('documents.adv.any'), 'yes' => __('documents.adv.yes'), 'no' => __('documents.adv.no')], __('documents.adv.'.$field)) !!}
+                        </div>
+                    @endforeach
+                    <div class="search-line">
+                        <span>{{ __('documents.adv.type') }}</span>
+                        {!! $choice('type', $type, ['' => __('documents.adv.any'), 'pdf' => 'PDF', 'image' => __('documents.adv.image')]) !!}
+                    </div>
+                </x-fold-card>
                 @if ($properties->isNotEmpty())
-                    {{-- Point 122.6: a filter per property – a range for amounts, numbers and dates, "enthält" for text and IBAN,
-                         the values of a choice; each with "hat Wert / fehlt". --}}
-                    <fieldset class="search-group search-props">
-                        <legend>{{ __('properties.search.legend') }}</legend>
+                    {{-- Point 135 (A283): "+ Filter hinzufügen" picks a property, which shows one row with the input of its type and
+                         "Alle | hat Wert | fehlt"; its X removes it. Rows of properties without a filter stay hidden. --}}
+                    <x-fold-card fold="documents.search.props" :remember="false" compact :folded="$propFilters === []" :title="__('properties.search.legend')" icon="list-details" :summary="$propSummary" data-search-section="props">
                         @foreach ($properties as $property)
                             @php
                                 $pf = $propFilters[$property->id] ?? [];
                                 $pn = fn (string $field): string => \App\Domain\Properties\PropertySearch::name($property, $field);
                                 $inputType = $property->type === 'date' ? 'date' : 'text';
                             @endphp
-                            <div class="search-prop">
-                                <span>{{ $property->name }}</span>
+                            <div class="search-prop" data-search-prop="{{ $property->id }}" data-name="{{ $property->name }}" @if ($pf === []) hidden @endif>
+                                <strong>{{ $property->name }}</strong>
+                                <button type="button" class="control-button" data-prop-remove aria-label="{{ __('properties.search.remove') }}: {{ $property->name }}" data-tooltip="{{ __('properties.search.remove') }}"><x-icon name="x" /></button>
                                 <div class="search-row">
                                     @if (in_array($property->type, ['amount', 'number', 'date'], true))
                                         <input type="{{ $inputType }}" class="input-small" name="{{ $pn('from') }}" value="{{ $pf['from'] ?? '' }}" @if ($inputType === 'text') inputmode="decimal" placeholder="{{ __('properties.search.from') }}" @endif aria-label="{{ $property->name }} {{ __('properties.search.from') }}">
@@ -108,15 +117,17 @@
                                     @else
                                         <input type="text" class="input-small" name="{{ $pn('q') }}" value="{{ $pf['q'] ?? '' }}" placeholder="{{ __('properties.search.contains') }}" aria-label="{{ $property->name }} {{ __('properties.search.contains') }}">
                                     @endif
+                                    {!! $choice($pn('has'), $pf['has'] ?? '', ['' => __('properties.search.any'), 'yes' => __('properties.search.has'), 'no' => __('properties.search.missing')]) !!}
                                 </div>
-                                <select class="input-small" name="{{ $pn('has') }}" aria-label="{{ $property->name }}: {{ __('properties.search.has') }} / {{ __('properties.search.missing') }}">
-                                    <option value="">{{ __('properties.search.any') }}</option>
-                                    <option value="yes" @selected(($pf['has'] ?? null) === 'yes')>{{ __('properties.search.has') }}</option>
-                                    <option value="no" @selected(($pf['has'] ?? null) === 'no')>{{ __('properties.search.missing') }}</option>
-                                </select>
                             </div>
                         @endforeach
-                    </fieldset>
+                        <select class="input-small search-prop-add" data-prop-add aria-label="{{ __('properties.search.add') }}">
+                            <option value="">{{ __('properties.search.add') }}</option>
+                            @foreach ($properties as $property)
+                                <option value="{{ $property->id }}" @disabled(isset($propFilters[$property->id]))>{{ $property->name }}</option>
+                            @endforeach
+                        </select>
+                    </x-fold-card>
                 @endif
             </div>
         </x-slot>

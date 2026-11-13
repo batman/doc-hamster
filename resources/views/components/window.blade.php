@@ -109,9 +109,10 @@
             {{-- Points 4-7: the advanced search slides open below the tools; its fields belong to the search above (JS). --}}
             <div class="win-search-area" data-window-search-area @if ($searchCount === 0) hidden @endif>
                 {{ $searchOptions }}
+                {{-- Fixed at the bottom of the panel (A282); a search button is always the magnifier with the tooltip "Suchen" (A305). --}}
                 <div class="win-search-actions">
-                    <button type="button" class="button-quiet" data-window-search-clear>{{ __('app.window.search_reset') }}</button>
-                    <button type="button" data-window-search-run>{{ __('app.window.search_run') }}</button>
+                    <button type="button" class="button-quiet button-small" data-window-search-clear>{{ __('app.window.search_reset') }}</button>
+                    <button type="button" class="icon-button button-small" data-window-search-run aria-label="{{ __('app.window.search_run') }}" data-tooltip="{{ __('app.window.search_run') }}"><x-icon name="search" /></button>
                 </div>
             </div>
         @endif

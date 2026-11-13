@@ -202,6 +202,15 @@ button.col-strip:hover > .icon { color: var(--primary-ink); }
 .card-head .card-summary.is-ok .icon { color: var(--ok); }
 .card-head .card-summary.is-warning .icon { color: var(--primary-ink); }
 @media (prefers-reduced-motion: reduce) { .card-head .card-fold-button .icon { transition: none; } }
+.card-fold .card-head .card-summary[hidden] { display: none; }
+/* Compact foldable section (point 135, <x-fold-card compact>): a section inside a panel, e.g. the search panel – no frame,
+   a line below, a small head; its summary shows open and folded (what is set in it). */
+.card-fold.is-compact { max-width: none; margin: 0; padding: .25rem 0 .5rem; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: transparent; }
+.card-fold.is-compact.is-folded { padding-bottom: .25rem; }
+.card-fold.is-compact > .card-head { gap: .4rem; font-size: .95rem; }
+.card-fold.is-compact > .card-head .icon { width: 1.1rem; height: 1.1rem; }
+.card-fold.is-compact .card-summary { display: inline-flex; margin-left: .25rem; }
+.card-fold.is-compact > .card-body { margin-top: .35rem; }
 
 /* Pill (task 110: one label style for states and counts, was .tag-outline and .tab-count): small, round, not clickable.
    .pill-ok green ("installiert"), .pill-new orange tint ("verfügbar", the count of the active tab). */

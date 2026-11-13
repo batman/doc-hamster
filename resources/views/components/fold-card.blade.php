@@ -6,18 +6,21 @@
     </x-fold-card>
     `fold` = page.card id (the person's own toggle is remembered per id, cookie dh_folds), `folded` = the page's
     start state. `summary` (+ `summary-tone` ok|warning, `summary-icon`) shows in the head only while folded.
+    `compact` = the small variant for sections inside a panel (point 135, e.g. the search panel): smaller head, no frame,
+    the summary always shown (empty = hidden; a module may update `[data-card-summary] > span` live).
+    `:remember="false"` = the page's state every time (no cookie), e.g. "folded unless a filter in it is set".
 --}}
-@props(['fold', 'title', 'icon' => null, 'folded' => false, 'summary' => null, 'summaryTone' => null, 'summaryIcon' => null])
+@props(['fold', 'title', 'icon' => null, 'folded' => false, 'summary' => null, 'summaryTone' => null, 'summaryIcon' => null, 'compact' => false, 'remember' => true])
 @php
-    $isFolded = \App\Http\CardFolds::folded((string) $fold, (bool) $folded);
+    $isFolded = $remember ? \App\Http\CardFolds::folded((string) $fold, (bool) $folded) : (bool) $folded;
     $summaryIcon ??= match ($summaryTone) { 'ok' => 'circle-check', 'warning' => 'alert-triangle', default => null };
     $label = __($isFolded ? 'app.card_unfold' : 'app.card_fold');
 @endphp
-<section {{ $attributes->class(['card card-fold', 'is-folded' => $isFolded]) }} data-card-fold="{{ $fold }}">
+<section {{ $attributes->class(['card card-fold', 'is-compact' => $compact, 'is-folded' => $isFolded]) }} data-card-fold="{{ $fold }}" @unless ($remember) data-card-fold-forget @endunless>
     <h2 class="card-head">
         @if ($icon)<x-icon :name="$icon" />@endif<span class="card-title">{{ $title }}</span>
-        @if ($summary !== null && $summary !== '')
-            <span @class(['card-summary', 'is-'.$summaryTone => $summaryTone !== null]) data-card-summary>@if ($summaryIcon)<x-icon :name="$summaryIcon" />@endif<span>{{ $summary }}</span></span>
+        @if ($summary !== null && ($summary !== '' || $compact))
+            <span @class(['card-summary', 'is-'.$summaryTone => $summaryTone !== null]) data-card-summary @if ($summary === '') hidden @endif>@if ($summaryIcon)<x-icon :name="$summaryIcon" />@endif<span>{{ $summary }}</span></span>
         @endif
         {{ $action ?? '' }}
         <button type="button" class="control-button card-fold-button" data-card-fold-toggle aria-expanded="{{ $isFolded ? 'false' : 'true' }}"

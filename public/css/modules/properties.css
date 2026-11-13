@@ -37,10 +37,13 @@
 .property-add h2 { font-size: 1.1rem; }
 
 /* Advanced search (122.6): one row per property – name, its fields by type, "hat Wert / fehlt" */
-.search-group.search-props { grid-column: 1 / -1; }
-.search-prop { display: grid; grid-template-columns: minmax(7rem, 11rem) minmax(0, 1fr) 8.5rem; align-items: center; gap: .4rem .75rem; }
+/* Point 135 (A283): one row per added property filter – name, the input of its type, "Alle | hat Wert | fehlt", X. */
+.search-prop { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .35rem .5rem; margin: 0 0 .6rem; }
+.search-prop[hidden] { display: none; }
+.search-prop > strong { min-width: 0; font-size: .9rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-prop > .search-row { grid-column: 1 / -1; }
 .search-prop > .search-row > :is(input, select) { flex: 1 1 7rem; min-width: 0; }
-@container win (width < 44rem) { .search-prop { grid-template-columns: minmax(0, 1fr) 8.5rem; } .search-prop > .search-row { grid-column: 1 / -1; grid-row: 2; } }
+.search-prop-add { max-width: 16rem; }
 
 /* Details view (A244): property columns, sortable by their head */
 .view-details th a[data-doc-sort] { display: inline-flex; align-items: center; gap: .2rem; color: inherit; }

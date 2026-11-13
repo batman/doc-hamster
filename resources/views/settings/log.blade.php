@@ -67,7 +67,8 @@
             <label class="log-date"><span>{{ __('log.from') }}</span><input type="date" class="input-small" name="from" value="{{ $filters['from'] }}"></label>
             <label class="log-date"><span>{{ __('log.to') }}</span><input type="date" class="input-small" name="to" value="{{ $filters['to'] }}"></label>
             <input type="search" class="input-small" name="q" value="{{ $filters['q'] }}" placeholder="{{ __('log.search') }}" aria-label="{{ __('log.search') }}">
-            <button type="submit" class="button-small" name="level" value="{{ $filters['level'] }}">{{ __('log.filter') }}</button>
+            {{-- A305: a search button is always the magnifier with the tooltip "Suchen". --}}
+            <button type="submit" class="icon-button button-small" name="level" value="{{ $filters['level'] }}" aria-label="{{ __('app.window.search_run') }}" data-tooltip="{{ __('app.window.search_run') }}"><x-icon name="search" /></button>
             @if ($query !== [])
                 <a class="button button-small button-quiet" href="{{ route('log.index') }}">{{ __('log.reset_filter') }}</a>
             @endif
