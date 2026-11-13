@@ -1,8 +1,8 @@
 /* Sticky notes on Home as a board like Trello (Go of 2026-11-08): columns side by side, scrolling sideways when
    there are many (A35); every note is as wide as its column (A34), its height follows the text up to a limit. */
-.kanban { display: flex; align-items: flex-start; gap: 1rem; margin: 1rem 0 0; padding: 0 0 1rem; overflow-x: auto; }
+.kanban { display: flex; align-items: flex-start; gap: 1rem; margin: 1rem 0 0; padding: 0 0 1rem; }
 .kanban-col {
-    flex: none; display: flex; flex-direction: column; box-sizing: border-box; width: 18rem; max-height: calc(100dvh - 10rem);
+    flex: none; display: flex; flex-direction: column; box-sizing: border-box; width: 18rem;
     border: 1px solid transparent; border-radius: var(--radius); background: transparent; transition: background-color .15s, border-color .15s;
 }
 
@@ -22,7 +22,7 @@
 @media (hover: none) { .kanban-count { visibility: visible; opacity: 1; } }
 .kanban-head .note-tool { color: var(--muted); }
 .kanban-head .note-tool:hover { background: var(--bg); }
-.kanban-cards { display: grid; align-content: start; gap: .75rem; flex: 1; min-height: 3rem; margin: 0; padding: .25rem .75rem .75rem; overflow-y: auto; list-style: none; }
+.kanban-cards { display: grid; align-content: start; gap: .75rem; flex: 1; min-height: 3rem; margin: 0; padding: .25rem .75rem .75rem; list-style: none; }
 .kanban-gap { border: 2px dashed var(--border); border-radius: var(--radius); background: var(--bg); }
 .kanban-col-gap { flex: none; align-self: stretch; min-height: 10rem; border: 2px dashed var(--border); border-radius: var(--radius); }
 
@@ -141,3 +141,10 @@
 .note-more { margin-top: 1rem; }
 .note-more > summary { display: inline-flex; align-items: center; min-height: 2.25rem; cursor: pointer; font-weight: 600; color: var(--muted); }
 .note-more > summary:hover { color: var(--text); }
+
+/* Points 8, 9, A4: full-height columns, the window scrolls (sideways too). Each column is sticky: one taller than the window
+   scrolls until its end reaches the bottom and stays there (--stick from notes.js); its name stays on top while it runs. */
+.kanban-col { position: sticky; top: var(--stick, 0px); }
+.kanban-head { position: sticky; top: 0; z-index: 1; border-radius: var(--radius) var(--radius) 0 0; background: var(--bg); }
+.kanban-col:hover > .kanban-head, .kanban.is-note-dragging > .kanban-col > .kanban-head { background: var(--surface); }
+.kanban-col.has-color > .kanban-head { background: color-mix(in srgb, var(--swatch) 18%, var(--surface)); }

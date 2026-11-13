@@ -77,27 +77,60 @@ final class DocumentController
             ->visibleTo($this->userId($request), Gate::allows(Permission::ViewAllDocuments->value))
             ->with(['files', 'tags']);
 
-        // With several tags, a receipt must have all of them.
-        foreach ($selected as $tagId) {
-            $query->whereHas('tags', static fn ($tag) => $tag->whereKey($tagId));
+        // Points 4-7: the advanced search below the search field. Tags: all of them, or at least one (any=1).
+        $anyTag = $request->query('any') === '1';
+        if ($selected !== [] && $anyTag) {
+            $query->whereHas('tags', static fn ($tag) => $tag->whereKey($selected));
+        } else {
+            foreach ($selected as $tagId) {
+                $query->whereHas('tags', static fn ($tag) => $tag->whereKey($tagId));
+            }
         }
 
-        // Search in the window head: title, note or tag name (A104, A202); the search panel's text field looks in
-        // the recognised text (point 103), its checkbox through all folders (point 102, never the trash, A207).
+        // The text looks in title, note and tag names (A104, A202), with ocr=1 also in the recognised text (point 5).
         $q = trim((string) $request->query('q', ''));
+        $ocr = $request->query('ocr') === '1';
         if ($q !== '') {
             $like = '%'.addcslashes($q, '%_\\').'%';
             $query->where(static fn ($w) => $w->where('title', 'like', $like)
                 ->orWhere('note', 'like', $like)
-                ->orWhereHas('tags', static fn ($tag) => $tag->where('name', 'like', $like)));
-        }
-        $ocr = trim((string) $request->query('ocr', ''));
-        if ($ocr !== '') {
-            $query->where('ocr_text', 'like', '%'.addcslashes($ocr, '%_\\').'%');
+                ->orWhereHas('tags', static fn ($tag) => $tag->where('name', 'like', $like))
+                ->when($ocr, static fn ($w) => $w->orWhere('ocr_text', 'like', $like)));
         }
         $all = $request->query('all') === '1';
+
+        // Period by receipt date or upload date, status and file type.
+        $by = $request->query('by') === 'upload' ? 'upload' : 'doc';
+        $period = [];
+        foreach (['from', 'to'] as $end) {
+            $value = $request->query($end);
+            if (is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1) {
+                $period[$end] = $value;
+            }
+        }
+        $periodSql = Document::dateSql($by);
+        if (isset($period['from'])) {
+            $query->whereRaw("$periodSql >= ?", [$period['from']]);
+        }
+        if (isset($period['to'])) {
+            $query->whereRaw("$periodSql <= ?", [$period['to']]);
+        }
+        $match = in_array($request->query('match'), ['yes', 'no'], true) ? (string) $request->query('match') : '';
+        if ($match !== '') {
+            $match === 'yes' ? $query->whereHas('matches') : $query->whereDoesntHave('matches');
+        }
+        $read = in_array($request->query('read'), ['yes', 'no'], true) ? (string) $request->query('read') : '';
+        if ($read !== '') {
+            $read === 'yes' ? $query->where('ocr_status', 'done') : $query->where(static fn ($w) => $w->whereNull('ocr_status')->orWhere('ocr_status', '!=', 'done'));
+        }
+        $type = in_array($request->query('type'), ['pdf', 'image'], true) ? (string) $request->query('type') : '';
+        if ($type !== '') {
+            $query->whereHas('files', static fn ($file) => $type === 'pdf' ? $file->where('mime', 'application/pdf') : $file->where('mime', 'like', 'image/%'));
+        }
+        $filters = array_filter(['tags' => $selected !== [], 'from' => isset($period['from']), 'to' => isset($period['to']), 'match' => $match !== '', 'read' => $read !== '', 'type' => $type !== '']);
+
         // Point 105: a search shows a result list of documents only (no folders), each with its folder (A204).
-        $searching = $q !== '' || $ocr !== '';
+        $searching = $q !== '' || $filters !== [];
         if ($searching) {
             $query->with('folder');
         }
@@ -129,8 +162,8 @@ final class DocumentController
 
         // Timeline and calendar show every document of every folder (points 100, 101; the trash never, A201).
         // A search and the tag filter look through everything below the current folder.
-        if (! $wide && ($searching || $selected !== [])) {
-            if ($folder !== null && ! ($searching && $all)) {
+        if (! $wide && $searching) {
+            if ($folder !== null && ! $all) {
                 $query->whereIn('folder_id', Folder::branchIds($folder));
             }
         } elseif (! $wide && $folder !== null) {
@@ -166,7 +199,7 @@ final class DocumentController
             $documents = $query->latest()->limit(self::LIMIT + 1)->get();
         }
         // Filtering in the browser works only when the page holds every receipt (point 7).
-        $complete = $selected === [] && ! $searching && ($view === 'calendar' || $documents->count() <= self::LIMIT);
+        $complete = ! $searching && ($view === 'calendar' || $documents->count() <= self::LIMIT);
 
         return [
             'open' => null,
@@ -179,6 +212,13 @@ final class DocumentController
             'searching' => $searching,
             'ocr' => $ocr,
             'all' => $all,
+            'anyTag' => $anyTag,
+            'by' => $by,
+            'period' => $period,
+            'match' => $match,
+            'read' => $read,
+            'type' => $type,
+            'filters' => $filters,
             'view' => $view,
             'views' => self::VIEWS,
             'folderViews' => self::FOLDER_VIEWS,

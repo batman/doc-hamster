@@ -131,9 +131,27 @@
 .win-search input[type="search"] { width: 100%; }
 .win-search input[type="search"]::-webkit-search-cancel-button { appearance: none; display: none; }
 .win-search .field-addon:has(> .addon-end > :not([hidden]) ~ :not([hidden])) > input { padding-right: 4.6rem; }
-.win-search-more { flex: none; }
-.win-search-panel { min-width: 16rem; padding: .75rem; }
-.win-search-panel .field { margin: .5rem 0 0; }
+.win-search-toggle { flex: none; position: relative; }
+.win-search-toggle .icon { transition: rotate .15s; }
+.win-search-toggle[aria-expanded="true"] .icon { rotate: 180deg; }
+
+/* Points 4-7: the advanced search slides open below the tools, as wide as the window. */
+.win-search-area { margin: 0 1.5rem 1rem; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.win-search-area[hidden] { display: none; }
+.search-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 1rem 1.5rem; }
+.search-group { display: grid; align-content: start; gap: .5rem; min-width: 0; margin: 0; padding: 0; border: 0; }
+.search-group legend { margin: 0 0 .5rem; padding: 0; font-weight: 600; color: var(--primary); }
+.search-tags { grid-column: 1 / -1; }
+.search-row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .75rem; }
+.search-row input[type="date"] { flex: 1 1 8rem; min-width: 0; }
+.field-inline { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.field-inline select { flex: 0 1 9rem; }
+.win-search-actions { display: flex; justify-content: flex-end; gap: .5rem; margin: 1rem 0 0; }
+
+/* Point 6: the active filters as chips above the results, each with its own X. */
+.filter-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0 0; }
+.filter-chip { display: inline-flex; align-items: center; gap: .15rem; padding: .1rem .15rem .1rem .6rem; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-size: .85rem; }
+.filter-chip .control-button { width: 1.6rem; height: 1.6rem; }
 
 /* Search results (points 105, 106, A204): a head with the count and X, each result with its folder as a quiet link. */
 .search-head { display: flex; align-items: center; gap: .5rem; margin: .5rem 0 0; }

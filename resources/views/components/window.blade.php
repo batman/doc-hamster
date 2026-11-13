@@ -8,9 +8,10 @@
     priority the later the window becomes a strip; defaults per kind below),
     search (placeholder of a search field in the toolbar, A104: Enter or the magnifier reloads the window body with ?q=…; the module reads q),
     searchLive (true = typing already searches, after a short pause; default false, points 104/105),
-    slot "searchOptions" (fields of a search panel behind a chevron beside the field, e.g. a checkbox "all" or a text field "ocr";
-    they are sent with q) and searchParams (the names of those fields, space-separated: kept out of the hidden fields and dropped,
-    like q, when the search is closed).
+    slot "searchOptions" (the advanced search, points 4-7: an area below the tools that the chevron beside the field slides open;
+    its fields are sent with q), searchParams (the names of those fields, space-separated, "tags[]" for several values: kept out of
+    the hidden fields and dropped, like q, when the search is closed) and searchCount (active filters: shown on the chevron, A3,
+    and the area starts open).
     Head like Windows (points 70, 72): title (ellipsis), then the three window controls minimise (‹), maximise, X.
     Search, actions and the module's ⋯ menu (slot "menu"; no ⋯ button without entries) stand in
     a toolbar row below the head that follows the window's own width (container queries, point 41).
@@ -18,7 +19,7 @@
     a window loaded later get a per-window suffix in app.js – write plain ids, dialog names and labels as usual.
     kind (the module type, e.g. "folder", "detail"; default the route name): picks the default widths; a dragged width belongs only to that one window (A97).
 --}}
-@props(['title', 'icon' => 'file-text', 'url' => null, 'close' => null, 'upload' => null, 'min' => null, 'optimal' => null, 'max' => null, 'priority' => null, 'search' => null, 'searchLive' => false, 'searchParams' => '', 'kind' => null])
+@props(['title', 'icon' => 'file-text', 'url' => null, 'close' => null, 'upload' => null, 'min' => null, 'optimal' => null, 'max' => null, 'priority' => null, 'search' => null, 'searchLive' => false, 'searchParams' => '', 'searchCount' => 0, 'kind' => null])
 @php
     $url ??= request()->fullUrl();
     $kind ??= request()->route()?->getName() ?? 'page';
@@ -43,7 +44,7 @@
     if ($search) {
         foreach (array_filter(explode('&', (string) parse_url($url, PHP_URL_QUERY))) as $pair) {
             [$key, $value] = array_pad(explode('=', $pair, 2), 2, '');
-            $key = urldecode($key);
+            $key = (string) preg_replace('/\[\d*\]$/', '[]', urldecode($key));
             $value = urldecode($value);
             if ($key === 'q') {
                 $searchTerm = $value;
@@ -90,16 +91,7 @@
                         </span>
                     </div>
                     @if (isset($searchOptions) && $searchOptions->hasActualContent())
-                        {{-- The search details (point 102): a panel of the same form, so its fields go with q. --}}
-                        <div class="dropdown win-search-more">
-                            <button type="button" class="icon-button @if ($searchSet) is-active @endif" aria-label="{{ __('app.window.search_options') }}" data-tooltip="{{ __('app.window.search_options') }}" aria-haspopup="true" aria-expanded="false"><x-icon name="chevron-down" /></button>
-                            <div class="dropdown-panel win-search-panel" hidden>
-                                {{ $searchOptions }}
-                                <div class="dialog-actions">
-                                    <button type="submit">{{ __('app.window.search_run') }}</button>
-                                </div>
-                            </div>
-                        </div>
+                        <button type="button" class="icon-button win-search-toggle @if ($searchCount > 0) is-active @endif" data-window-search-toggle aria-expanded="{{ $searchCount > 0 ? 'true' : 'false' }}" aria-label="{{ __('app.window.search_options') }}" data-tooltip="{{ __('app.window.search_options') }}"><x-icon name="chevron-down" /><span class="badge" data-window-search-count @if ($searchCount === 0) hidden @endif>{{ $searchCount }}</span></button>
                     @endif
                 </form>
             @endif
@@ -111,6 +103,16 @@
                 @endif
             </div>
         </div>
+        @if ($search && isset($searchOptions) && $searchOptions->hasActualContent())
+            {{-- Points 4-7: the advanced search slides open below the tools; its fields belong to the search above (JS). --}}
+            <div class="win-search-area" data-window-search-area @if ($searchCount === 0) hidden @endif>
+                {{ $searchOptions }}
+                <div class="win-search-actions">
+                    <button type="button" class="button-quiet" data-window-search-clear>{{ __('app.window.search_reset') }}</button>
+                    <button type="button" data-window-search-run>{{ __('app.window.search_run') }}</button>
+                </div>
+            </div>
+        @endif
         <div class="win-body">{{ $slot }}</div>
     </div>
     {{-- The drag edge on the right (point 44): drag, arrow keys, double-click = default width. --}}

@@ -43,4 +43,5 @@ return [
         'printer' => ['paired' => 'Drucker verbunden', 'revoked' => 'Drucker getrennt', 'setup_started' => 'Drucker-Einrichtung gestartet'],
         'update' => ['started' => 'Update gestartet'],
     ],
+    'new' => 'Neu',
 ];

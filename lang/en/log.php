@@ -43,4 +43,5 @@ return [
         'printer' => ['paired' => 'Printer paired', 'revoked' => 'Printer removed', 'setup_started' => 'Printer set-up started'],
         'update' => ['started' => 'Update started'],
     ],
+    'new' => 'New',
 ];

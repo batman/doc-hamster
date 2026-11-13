@@ -38,12 +38,15 @@ final class LogController
             ->paginate(LogEntry::PER_PAGE)->withQueryString();
         $page->withPath(route('log.index'));
         $rows = $this->hydrate(collect($page->items()));
+        // A1: errors since the last visit stay marked on this visit.
+        $since = Badges::seen($org, Badges::LOG) ?? now()->subDay();
         Badges::markSeen($org, Badges::LOG);
 
         return view('settings.log', [
             'page' => $page,
             'rows' => $rows,
             'filters' => $filters,
+            'since' => $since,
             'books' => LogEntry::BOOKS,
             'document' => $filters['doc'] !== '' ? Document::query()->withTrashed()->whereKey($filters['doc'])->value('title') : null,
             'summary' => $filters['books'] === ['ocr'] ? OcrLog::unavailableSummary($org->id()) : [],

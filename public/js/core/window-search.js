@@ -44,23 +44,21 @@
             run.abort?.abort();
             const url = new URL(win?.dataset.windowUrl ?? location.href, location.href);
             const before = url.search;
+            // The fields of the advanced search area (points 4-7) belong to this search; "name[]" fields carry several values.
+            const area = win?.querySelector('[data-window-search-area]');
             const data = new FormData(form);
-            ownedOf(form).forEach(name => {
-                const value = String(data.get(name) ?? '').trim();
-                if (value === '') {
-                    url.searchParams.delete(name);
-                } else {
-                    url.searchParams.set(name, value);
+            area?.querySelectorAll('input[name], select[name]').forEach(input => {
+                if ((input.type !== 'checkbox' && input.type !== 'radio') || input.checked) {
+                    data.append(input.name, input.value);
                 }
+            });
+            ownedOf(form).forEach(name => {
+                const values = data.getAll(name).map(value => String(value).trim()).filter(value => value !== '');
+                url.searchParams.delete(name);
+                (name.endsWith('[]') ? values : values.slice(-1)).forEach(value => url.searchParams.append(name, value));
             });
             const active = ownedOf(form).some(name => url.searchParams.has(name));
             form.querySelector('[data-window-search-clear]')?.toggleAttribute('hidden', !active && field.value === '');
-            form.querySelector('.win-search-more > .icon-button')?.classList.toggle('is-active', ownedOf(form).slice(1).some(name => url.searchParams.has(name)));
-            const panel = form.querySelector('.win-search-more > .dropdown-panel');
-            if (panel && !panel.hidden) {
-                panel.hidden = true;
-                panel.previousElementSibling?.setAttribute('aria-expanded', 'false');
-            }
             if (url.search === before) {
                 return;
             }
@@ -71,7 +69,16 @@
             }
             run.abort = new AbortController();
             runs.set(form, run);
-            DocHamster.reloadWindow(win, url, '.win-body', run.abort.signal).catch(error => {
+            DocHamster.reloadWindow(win, url, '.win-body', run.abort.signal).then(next => {
+                // A3: the number of active filters (the module puts it on its body as data-search-count) on the chevron.
+                const count = Number(next.querySelector('[data-search-count]')?.dataset.searchCount ?? 0);
+                const badge = form.querySelector('[data-window-search-count]');
+                if (badge) {
+                    badge.textContent = String(count);
+                    badge.hidden = count === 0;
+                    badge.parentElement.classList.toggle('is-active', count > 0);
+                }
+            }).catch(error => {
                 if (error?.name !== 'AbortError') {
                     location.href = url.href;
                 }
@@ -83,11 +90,16 @@
             run.timer = setTimeout(() => search(form), 300);
             runs.set(form, run);
         };
+        const areaOf = form => form.closest('section[data-window]')?.querySelector('[data-window-search-area]');
         const clear = form => {
             fieldOf(form).value = '';
-            form.querySelectorAll('.win-search-more input').forEach(input => {
+            areaOf(form)?.querySelectorAll('input, select').forEach(input => {
+                if (input.tagName === 'SELECT') {
+                    input.selectedIndex = 0;
+                    return;
+                }
                 if (input.type === 'checkbox' || input.type === 'radio') {
-                    input.checked = false;
+                    input.checked = input.hasAttribute('data-default');
                 } else {
                     input.value = '';
                 }
@@ -111,6 +123,66 @@
             if (form) {
                 event.preventDefault();
                 search(form);
+            }
+        });
+        const formOf = el => el?.closest('section[data-window]')?.querySelector('[data-window-search]');
+        // The chevron slides the area open and shut; "Suchen" in it searches; Enter in one of its fields too.
+        document.addEventListener('click', event => {
+            const toggle = event.target.closest('[data-window-search-toggle]');
+            if (toggle) {
+                const area = areaOf(toggle.closest('[data-window-search]'));
+                if (area) {
+                    area.hidden = !area.hidden;
+                    toggle.setAttribute('aria-expanded', String(!area.hidden));
+                    area.querySelector('input:not([type="hidden"]), select')?.focus();
+                }
+                return;
+            }
+            const run = event.target.closest('[data-window-search-run]');
+            if (run) {
+                search(formOf(run));
+                return;
+            }
+            // Quick picks for the period: data-period="from to" (empty = open end).
+            const period = event.target.closest('[data-period]');
+            if (period) {
+                const area = period.closest('[data-window-search-area]');
+                const [from = '', to = ''] = period.dataset.period.split(' ');
+                area.querySelector('[name="from"]').value = from;
+                area.querySelector('[name="to"]').value = to;
+                search(formOf(period));
+                return;
+            }
+            // An active-filter chip's X (point 6): that one value goes, the search runs again.
+            const drop = event.target.closest('[data-window-search-drop]');
+            if (drop) {
+                event.preventDefault();
+                const form = formOf(drop);
+                const area = areaOf(form);
+                const name = drop.dataset.windowSearchDrop;
+                area?.querySelectorAll(`[name="${CSS.escape(name)}"]`).forEach(input => {
+                    if (input.type === 'checkbox' || input.type === 'radio') {
+                        if (drop.dataset.value === undefined || input.value === drop.dataset.value) {
+                            input.checked = input.hasAttribute('data-default');
+                        }
+                    } else if (input.tagName === 'SELECT') {
+                        input.selectedIndex = 0;
+                    } else {
+                        input.value = '';
+                    }
+                });
+                if (name === 'q') {
+                    fieldOf(form).value = '';
+                }
+                search(form);
+                return;
+            }
+        });
+        document.addEventListener('keydown', event => {
+            const area = event.target.closest?.('[data-window-search-area]');
+            if (event.key === 'Enter' && area && event.target.matches('input:not([type="checkbox"]):not([type="radio"])')) {
+                event.preventDefault();
+                search(formOf(area));
             }
         });
         document.addEventListener('click', event => {

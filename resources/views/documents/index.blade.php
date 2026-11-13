@@ -12,48 +12,78 @@
     <x-window :title="$openFolder?->name ?? __('documents.title')" kind="folder" :icon="$openFolder?->iconName() ?? 'file-text'"
               :url="route('documents.index', request()->except('page'))" :close="$openFolder ? route('documents.index') : route('home')"
               :upload="$openFolder ? 'folder='.$openFolder->id : null"
-              :search="__('documents.search')" search-params="ocr all">
-        {{-- Search details (points 102, 103): all folders (never the Papierkorb, A207) and the recognised text (A202). --}}
+              :search="__('documents.search')" search-params="ocr all tags[] any by from to match read type" :search-count="count($filters)">
+        {{-- The advanced search (points 4-7): text where, tags, period, status, file type; all in the address (point 7). --}}
         <x-slot name="searchOptions">
-            <label class="check"><input type="checkbox" name="all" value="1" @checked($all)> {{ __('documents.search_all') }}</label>
-            <div class="field">
-                <label for="search-ocr">{{ __('documents.search_ocr') }}</label>
-                <input id="search-ocr" class="input-small" name="ocr" value="{{ $ocr }}" maxlength="200" autocomplete="off" enterkeyhint="search">
+            @php
+                $now = \Carbon\CarbonImmutable::now();
+                $quick = [
+                    'this_month' => [$now->startOfMonth(), $now->endOfMonth()],
+                    'last_month' => [$now->subMonthNoOverflow()->startOfMonth(), $now->subMonthNoOverflow()->endOfMonth()],
+                    'this_year' => [$now->startOfYear(), $now->endOfYear()],
+                    'last_year' => [$now->subYear()->startOfYear(), $now->subYear()->endOfYear()],
+                ];
+            @endphp
+            <div class="search-grid">
+                <fieldset class="search-group">
+                    <legend>{{ __('documents.adv.text') }}</legend>
+                    <label class="check"><input type="checkbox" name="ocr" value="1" @checked($ocr)> {{ __('documents.adv.ocr') }}</label>
+                    <label class="check"><input type="checkbox" name="all" value="1" @checked($all)> {{ __('documents.search_all') }}</label>
+                </fieldset>
+                <fieldset class="search-group">
+                    <legend>{{ __('documents.adv.period') }}</legend>
+                    <div class="search-row">
+                        <input type="date" class="input-small" name="from" value="{{ $period['from'] ?? '' }}" aria-label="{{ __('documents.adv.from') }}">
+                        <span class="muted">–</span>
+                        <input type="date" class="input-small" name="to" value="{{ $period['to'] ?? '' }}" aria-label="{{ __('documents.adv.to') }}">
+                    </div>
+                    <div class="search-row">
+                        @foreach ($quick as $key => [$lo, $hi])
+                            <button type="button" class="button-quiet button-small" data-period="{{ $lo->toDateString() }} {{ $hi->toDateString() }}">{{ __('documents.adv.quick.'.$key) }}</button>
+                        @endforeach
+                    </div>
+                    <div class="search-row">
+                        <label class="check"><input type="radio" name="by" value="doc" data-default @checked($by === 'doc')> {{ __('documents.dates.doc') }}</label>
+                        <label class="check"><input type="radio" name="by" value="upload" @checked($by === 'upload')> {{ __('documents.dates.upload') }}</label>
+                    </div>
+                </fieldset>
+                <fieldset class="search-group">
+                    <legend>{{ __('documents.adv.status') }}</legend>
+                    @foreach (['match' => $match, 'read' => $read] as $field => $value)
+                        <label class="field-inline"><span>{{ __('documents.adv.'.$field) }}</span>
+                            <select class="input-small" name="{{ $field }}">
+                                <option value="">{{ __('documents.adv.any') }}</option>
+                                <option value="yes" @selected($value === 'yes')>{{ __('documents.adv.yes') }}</option>
+                                <option value="no" @selected($value === 'no')>{{ __('documents.adv.no') }}</option>
+                            </select>
+                        </label>
+                    @endforeach
+                    <label class="field-inline"><span>{{ __('documents.adv.type') }}</span>
+                        <select class="input-small" name="type">
+                            <option value="">{{ __('documents.adv.any') }}</option>
+                            <option value="pdf" @selected($type === 'pdf')>PDF</option>
+                            <option value="image" @selected($type === 'image')>{{ __('documents.adv.image') }}</option>
+                        </select>
+                    </label>
+                </fieldset>
+                @if ($tags->isNotEmpty())
+                    <fieldset class="search-group search-tags">
+                        <legend>{{ __('documents.adv.tags') }}</legend>
+                        <div class="tags">
+                            @foreach ($tags as $tag)
+                                <label class="tag-choice"><input type="checkbox" name="tags[]" value="{{ $tag->id }}" @checked(in_array($tag->id, $selected, true))><span class="tag tag-{{ $tag->id }}">{{ $tag->name }}</span></label>
+                            @endforeach
+                        </div>
+                        <div class="search-row">
+                            <label class="check"><input type="radio" name="any" value="" data-default @checked(! $anyTag)> {{ __('documents.adv.all_tags') }}</label>
+                            <label class="check"><input type="radio" name="any" value="1" @checked($anyTag)> {{ __('documents.adv.any_tag') }}</label>
+                        </div>
+                    </fieldset>
+                @endif
             </div>
         </x-slot>
         <x-slot:actions>
             <div class="toolbar">
-                @if ($tags->isNotEmpty())
-                    {{-- Ticks only collect; "Anwenden" filters, in the browser when the page holds every receipt, else on the server. --}}
-                    <form class="dropdown" data-kind="filter" data-complete="{{ $complete ? '1' : '0' }}" method="get" action="{{ route('documents.index') }}">
-                        @if ($month)
-                            <input type="hidden" name="month" value="{{ $month->format('Y-m') }}">
-                        @endif
-                        @if (request()->has('view'))
-                            <input type="hidden" name="view" value="{{ $view }}">
-                        @endif
-                        @if ($openFolder)
-                            <input type="hidden" name="folder" value="{{ $openFolder->id }}">
-                        @endif
-                        <button type="button" class="icon-button @if ($selected !== []) is-active @endif" data-tooltip="{{ __('documents.filter') }}" aria-label="{{ __('documents.filter') }}" aria-haspopup="true" aria-expanded="false">
-                            <span data-icon="off" @if ($selected !== []) hidden @endif><x-icon name="filter" /></span>
-                            <span data-icon="on" @if ($selected === []) hidden @endif><x-icon name="filter-check" /></span>
-                            <span class="badge" @if ($selected === []) hidden @endif>{{ count($selected) }}</span>
-                        </button>
-                        <div class="dropdown-panel" hidden>
-                            <p class="dropdown-title">{{ __('tags.filter') }}</p>
-                            <div class="tags dropdown-tags">
-                                @foreach ($tags as $tag)
-                                    <label class="tag-choice"><input type="checkbox" name="tags[]" value="{{ $tag->id }}" @checked(in_array($tag->id, $selected, true))><span class="tag tag-{{ $tag->id }}">{{ $tag->name }}</span></label>
-                                @endforeach
-                            </div>
-                            <div class="dialog-actions">
-                                <button type="button" class="button-quiet" data-reset>{{ __('documents.reset') }}</button>
-                                <button type="submit" data-apply>{{ __('documents.apply') }}</button>
-                            </div>
-                        </div>
-                    </form>
-                @endif
                 @php $back = route('documents.index', request()->except('page')); @endphp
                 @if ($wide)
                     {{-- Timeline and calendar go by the receipt date or the upload date (point 108, A209); remembered and in ?date=. --}}
@@ -221,19 +251,36 @@
 
         @if ($searching)
             {{-- The result list (point 105): documents only, each with its folder; X closes it (point 106). --}}
-            <div class="search-head">
+            <div class="search-head" data-search-count="{{ count($filters) }}">
                 <h2>{{ trans_choice('documents.search_found', $documents->count(), ['count' => $documents->count()]) }}</h2>
-                <a class="control-button" href="{{ route('documents.index', request()->except(['q', 'ocr', 'all', 'page'])) }}" data-window-search-clear aria-label="{{ __('app.window.search_clear') }}" data-tooltip="{{ __('app.window.search_clear') }}"><x-icon name="x" /></a>
+                <a class="control-button" href="{{ route('documents.index', request()->except(['q', 'ocr', 'all', 'tags', 'any', 'by', 'from', 'to', 'match', 'read', 'type', 'page'])) }}" data-window-search-clear aria-label="{{ __('app.window.search_reset') }}" data-tooltip="{{ __('app.window.search_reset') }}"><x-icon name="x" /></a>
             </div>
+            {{-- Point 6: every active filter as a chip; its X removes just that one. --}}
+            @php
+                $chips = [];
+                if (request()->filled('q')) { $chips[] = ['q', null, '"'.request('q').'"']; }
+                foreach ($tags->whereIn('id', $selected) as $tag) { $chips[] = ['tags[]', $tag->id, '#'.$tag->name]; }
+                if (isset($period['from'])) { $chips[] = ['from', null, __('documents.adv.from').' '.\Carbon\Carbon::parse($period['from'])->format('d.m.Y')]; }
+                if (isset($period['to'])) { $chips[] = ['to', null, __('documents.adv.to').' '.\Carbon\Carbon::parse($period['to'])->format('d.m.Y')]; }
+                if ($match !== '') { $chips[] = ['match', null, __('documents.adv.match').': '.__('documents.adv.'.$match)]; }
+                if ($read !== '') { $chips[] = ['read', null, __('documents.adv.read').': '.__('documents.adv.'.$read)]; }
+                if ($type !== '') { $chips[] = ['type', null, $type === 'pdf' ? 'PDF' : __('documents.adv.image')]; }
+            @endphp
+            @if ($chips !== [])
+                <div class="filter-chips">
+                    @foreach ($chips as [$name, $value, $label])
+                        <span class="filter-chip">{{ $label }}<button type="button" class="control-button" data-window-search-drop="{{ $name }}" @if ($value !== null) data-value="{{ $value }}" @endif aria-label="{{ __('documents.adv.remove', ['name' => $label]) }}"><x-icon name="x" /></button></span>
+                    @endforeach
+                </div>
+            @endif
         @endif
-        @if ($documents->isEmpty() && $selected === [] && $view !== 'calendar')
+        @if ($documents->isEmpty() && $view !== 'calendar')
             {{-- A folder that only holds subfolders isn't "empty" (explorer, point 12). --}}
             @if ($folderRows === [] || $searching)
                 <div class="empty-state"><p class="muted">{{ $searching ? __('documents.search_none') : __('documents.empty') }}</p></div>
             @endif
         @else
             @include('documents.views.'.(in_array($view, ['small', 'large'], true) ? 'tiles' : $view))
-            <p class="muted" data-no-match @unless ($documents->isEmpty() && $selected !== []) hidden @endunless>{{ __('tags.no_match') }}</p>
         @endif
     </x-window>
 

@@ -92,8 +92,9 @@
                             $row['person'],
                             ...$row['details'],
                         ]);
+                        $new = $row['level'] === 'error' && $row['time']->greaterThan($since);
                     @endphp
-                    <li class="pick-row is-static log-row log-{{ $row['level'] }}">
+                    <li class="pick-row is-static log-row log-{{ $row['level'] }} @if ($new) is-marked @endif">
                         <span class="row-icon"><x-icon :name="$icon" /></span>
                         <span>
                             <strong>{{ $row['text'] }}</strong>
@@ -112,6 +113,9 @@
                             <small>{{ implode(' · ', $details) }}</small>
                         </span>
                         <span class="log-pills">
+                            @if ($new)
+                                <span class="pill pill-new">{{ __('log.new') }}</span>
+                            @endif
                             <span class="pill">{{ __('log.books.'.$row['book']) }}</span>
                             @if ($row['level'] !== 'event')
                                 <span class="pill pill-{{ $row['level'] }}">{{ __('log.levels.'.$row['level']) }}</span>

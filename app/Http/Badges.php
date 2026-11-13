@@ -50,6 +50,9 @@ final class Badges
         return $counts;
     }
 
+    /** Point 3: the badge of a settings group or entry, so the count leads down to its place (key => area). */
+    public const array SETTINGS = ['log' => self::LOG];
+
     /** The person opened the area: its badge starts again from zero. */
     public static function markSeen(CurrentOrg $org, string $area): void
     {
@@ -59,7 +62,8 @@ final class Badges
         $membership->forceFill(['seen_at' => $seen])->save();
     }
 
-    private static function seen(CurrentOrg $org, string $area): ?Carbon
+    /** When the person last opened the area (null: never). */
+    public static function seen(CurrentOrg $org, string $area): ?Carbon
     {
         $value = $org->membership()->seen_at[$area] ?? null;
 

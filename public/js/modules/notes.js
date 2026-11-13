@@ -398,4 +398,29 @@
             field.select();
         }
     }));
+
+    // Points 8, 9: the columns have no scrollbar of their own; the window scrolls. A column taller than the window scrolls
+    // along until its end reaches the bottom, then stays (sticky top = window height - column height); shorter ones stay.
+    const stickColumns = board => {
+        const frame = board.closest('.win-frame');
+        if (!frame || board.dataset.sticky) {
+            return;
+        }
+        board.dataset.sticky = '1';
+        const place = () => {
+            const room = frame.clientHeight;
+            board.querySelectorAll(':scope > .kanban-col').forEach(col => {
+                col.style.setProperty('--stick', `${Math.min(0, room - col.offsetHeight - 16)}px`);
+            });
+        };
+        const watch = new ResizeObserver(place);
+        watch.observe(frame);
+        new MutationObserver(() => {
+            board.querySelectorAll(':scope > .kanban-col').forEach(col => watch.observe(col));
+            place();
+        }).observe(board, { childList: true });
+        board.querySelectorAll(':scope > .kanban-col').forEach(col => watch.observe(col));
+    };
+    DocHamster.on('window:open', root => root.querySelectorAll?.('[data-notes]').forEach(stickColumns));
+    document.addEventListener('DOMContentLoaded', () => document.querySelectorAll('[data-notes]').forEach(stickColumns));
 })();
