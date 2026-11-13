@@ -242,3 +242,23 @@ html.has-tips [data-tooltip]::before, html.has-tips [data-tooltip]::after {
     inset: auto; width: auto; height: auto; margin: 0; padding: 0; border: 0; overflow: visible; color: inherit; background: none;
 }
 .dropdown-panel:popover-open { position: fixed; overflow: auto; overscroll-behavior: contain; }
+
+/* Vorschlags-Chip (point 120.4, A247): a value the app found, one click takes it over (other amounts, a repaired IBAN).
+   Dashed orange outline, never filled – it proposes, the main button decides. A row of them: .suggest-chips. */
+.suggest-chips { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: .4rem 0 0; }
+.suggest-chips-label { flex-basis: 100%; color: var(--muted); font-size: .8rem; }
+button.suggest-chip {
+    min-height: 2rem; margin: 0; padding: .15rem .75rem; border: 1px dashed var(--primary); border-radius: 999px;
+    background: transparent; color: var(--primary-ink); box-shadow: none; font-size: .9rem; font-variant-numeric: tabular-nums;
+}
+button.suggest-chip:hover { background: rgb(255 118 34 / .12); box-shadow: none; }
+
+/* QR-Karte (point 120): a QR code to scan, always dark on white (scanners need the contrast, also in dark mode),
+   with a caption. .is-missing: no code yet – dashed, says what is missing. .is-stale: the code is being redrawn. */
+.qr-card { display: grid; justify-items: center; gap: .4rem; margin: .75rem 0 0; padding: .75rem; border: 1px solid var(--border); border-radius: 12px; background: #fff; color: #1f1e1d; }
+.qr-card img { display: block; width: min(100%, 14rem); height: auto; aspect-ratio: 1; transition: opacity .15s; }
+.qr-card figcaption { font-size: .8rem; }
+.qr-card.is-stale img { opacity: .3; }
+.qr-card.is-missing { justify-items: start; grid-template-columns: auto 1fr; align-items: center; gap: .6rem; border-style: dashed; background: var(--surface); color: var(--muted); }
+.qr-card.is-missing p { margin: 0; font-size: .9rem; }
+.qr-card.is-missing > .icon { width: 1.75rem; height: 1.75rem; }

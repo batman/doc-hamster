@@ -13,6 +13,7 @@ use App\Http\Controllers\DocumentWordsController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\FolderImportController;
+use App\Http\Controllers\GiroCodeController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\MemberController;
@@ -67,6 +68,9 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('documents/columns', [DocumentController::class, 'setColumns'])->name('documents.columns');
     // Property values of a document (points 122.1, 122.4): card, popup "Markieren als", click-to-edit.
     Route::get('documents/{id}/properties', [DocumentPropertyController::class, 'card'])->name('documents.properties');
+    // GiroCode card (point 120): the card again and its QR code, same visibility as the document.
+    Route::get('documents/{id}/girocode', [GiroCodeController::class, 'card'])->name('documents.girocode');
+    Route::get('documents/{id}/girocode.svg', [GiroCodeController::class, 'svg'])->name('documents.girocode.svg');
     Route::middleware('can:documents.edit')->group(function (): void {
         Route::post('documents/{id}/properties', [DocumentPropertyController::class, 'store'])->name('documents.properties.set');
         Route::post('documents/{id}/properties/preview', [DocumentPropertyController::class, 'preview'])->name('documents.properties.preview');

@@ -97,6 +97,9 @@
     {{-- Eigenschaften (points 122.4, A252): the values of this document, editable in place. --}}
     @include('documents._properties')
 
+    {{-- GiroCode (point 120): payee, IBAN, amount and the QR code for the banking app. --}}
+    @include('documents._girocode')
+
     @can('documents.edit')
         <form method="post" action="{{ route('documents.update', $document->id) }}">
             @csrf
