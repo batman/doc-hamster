@@ -78,15 +78,15 @@ it('opens a receipt beside the list, saves title, note and tags, and deletes int
     $document->refresh();
     expect([$document->title, $document->note, $document->tags()->pluck('tags.id')->all()])->toBe(['Tankquittung', 'Fahrt nach Köln', [$tag->id]]);
 
-    // Note and recognised text are edited in place (points 27/28); the form keeps the note when it doesn't send it.
-    $this->postJson('/documents/'.$document->id.'/field', ['field' => 'ocr_text', 'value' => 'SUMME 12,00'])->assertOk()->assertJson(['value' => 'SUMME 12,00']);
+    // The recognised text is no longer edited as a block (point 134): only word by word (documents.words.fix).
+    $this->postJson('/documents/'.$document->id.'/field', ['field' => 'ocr_text', 'value' => 'SUMME 12,00'])->assertUnprocessable();
     // The pencil of a document row renames it in place (A174); a document always keeps a name, other fields stay closed.
     $this->postJson('/documents/'.$document->id.'/field', ['field' => 'title', 'value' => 'Neuer Name'])->assertOk()->assertJson(['value' => 'Neuer Name']);
     expect($document->fresh()?->title)->toBe('Neuer Name');
     $this->postJson('/documents/'.$document->id.'/field', ['field' => 'title', 'value' => '  '])->assertUnprocessable();
     $this->postJson('/documents/'.$document->id.'/field', ['field' => 'uploaded_by', 'value' => 'x'])->assertUnprocessable();
     $this->post('/documents/'.$document->id, ['title' => 'Tankquittung'])->assertRedirect();
-    expect($document->refresh()->only(['note', 'ocr_text']))->toBe(['note' => 'Fahrt nach Köln', 'ocr_text' => 'SUMME 12,00']);
+    expect($document->refresh()->only(['note', 'ocr_text']))->toBe(['note' => 'Fahrt nach Köln', 'ocr_text' => null]);
 
     $this->post('/documents/'.$document->id.'/delete')->assertRedirect(route('documents.index'));
     expect(Document::query()->withoutGlobalScope(OrgScope::class)->count())->toBe(0)

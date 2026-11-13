@@ -90,7 +90,7 @@ final class DocumentController
     public function updateField(Request $request, string $id, AuditLog $audit, CurrentOrg $org): JsonResponse
     {
         $data = $request->validate([
-            'field' => ['required', 'string', Rule::in(['note', 'ocr_text', 'title'])],
+            'field' => ['required', 'string', Rule::in(['note', 'title'])],
             'value' => [...match ($request->input('field')) {
                 'note' => ['nullable', 'max:5000'],
                 // Renamed in its row (pencil, A174): a document always keeps a name.
