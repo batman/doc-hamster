@@ -14,7 +14,7 @@
         $single = $current !== null && count($current['items']) === 1 && ! $__env->hasSection('pane');
         $toGroup = $hasPage && $current && ! $current['leaf'] && ! $single;
         // Point 3: the menu count shows again at the group and the entry it belongs to.
-        $badges = \App\Http\Badges::counts(app(\App\Support\CurrentOrg::class));
+        $badges = \App\Http\Badges::counts(app(\App\Domain\Org\CurrentOrg::class));
         $badgeOf = static function (string $key) use ($badges): ?int {
             $area = \App\Http\Badges::SETTINGS[$key] ?? null;
 
