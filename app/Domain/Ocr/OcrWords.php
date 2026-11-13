@@ -37,18 +37,50 @@ final class OcrWords
      */
     public static function forDocument(Document $d): ?array
     {
+        $words = self::raw($d);
+        if ($words === null) {
+            return null;
+        }
+        $fixes = self::fixes($d);
+
+        return $fixes !== [] ? self::applyFixes($words, $fixes) : $words;
+    }
+
+    /**
+     * The decoded words as recognised, without corrections (null when none).
+     *
+     * @return array{v: int, source: string, pages: list<array{n: int, words: list<array<string, mixed>>}>}|null
+     */
+    public static function raw(Document $d): ?array
+    {
         $raw = $d->getAttribute('ocr_words');
         if (! is_string($raw) || $raw === '') {
             return null;
         }
-        $words = self::sanitise(json_decode($raw, true), null);
-        if ($words === null) {
-            return null;
-        }
+
+        return self::sanitise(json_decode($raw, true), null);
+    }
+
+    /**
+     * The stored corrections (documents.ocr_fixes), malformed entries dropped.
+     *
+     * @return list<array{p: int, x: float, y: float, w: float, h: float, t: string, o: string}>
+     */
+    public static function fixes(Document $d): array
+    {
         $fixes = $d->getAttribute('ocr_fixes');
         $fixes = is_string($fixes) ? json_decode($fixes, true) : $fixes;
+        $out = [];
+        foreach (is_array($fixes) ? $fixes : [] as $fix) {
+            if (is_array($fix) && is_string($fix['t'] ?? null)) {
+                $out[] = [
+                    'p' => (int) ($fix['p'] ?? 0), 'x' => self::num($fix['x'] ?? null), 'y' => self::num($fix['y'] ?? null),
+                    'w' => self::num($fix['w'] ?? null), 'h' => self::num($fix['h'] ?? null), 't' => $fix['t'], 'o' => (string) ($fix['o'] ?? ''),
+                ];
+            }
+        }
 
-        return is_array($fixes) ? self::applyFixes($words, $fixes) : $words;
+        return $out;
     }
 
     /**

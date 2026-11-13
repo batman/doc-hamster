@@ -75,6 +75,9 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     });
     Route::get('documents/{id}', [DocumentController::class, 'show'])->name('documents.show');
     Route::get('documents/{id}/words', DocumentWordsController::class)->name('documents.words');
+    // OCR corrections of single words by position and their undo (point 122.7, A243).
+    Route::post('documents/{id}/words/fix', [DocumentWordsController::class, 'fix'])->middleware('can:documents.edit')->name('documents.words.fix');
+    Route::post('documents/{id}/words/unfix', [DocumentWordsController::class, 'unfix'])->middleware('can:documents.edit')->name('documents.words.unfix');
     Route::post('documents/{id}', [DocumentController::class, 'update'])->middleware('can:documents.edit')->name('documents.update');
     Route::post('documents/{id}/field', [DocumentController::class, 'updateField'])->middleware('can:documents.edit')->name('documents.field');
     Route::post('documents/{id}/move', [DocumentController::class, 'move'])->middleware('can:documents.edit')->name('documents.move');

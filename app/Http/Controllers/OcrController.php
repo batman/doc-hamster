@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
+use App\Domain\Ocr\OcrFixes;
 use App\Domain\Ocr\OcrLog;
 use App\Domain\Ocr\OcrWords;
 use App\Domain\Org\CurrentOrg;
@@ -302,7 +303,7 @@ final class OcrController extends Controller
             $text = trim((string) ($data['text'] ?? ''));
             $words = is_string($data['words'] ?? null) ? OcrWords::fromBrowser($data['words']) : null;
             $document->forceFill([
-                'ocr_text' => $text, 'ocr_words' => OcrWords::encode($words), 'ocr_status' => 'done', 'ocr_pass' => $pass,
+                'ocr_text' => OcrFixes::reapply($document, $text, $words), 'ocr_words' => OcrWords::encode($words), 'ocr_status' => 'done', 'ocr_pass' => $pass,
                 'ocr_failures' => 0, 'ocr_rescan' => false,
             ])->save();
             $ocr->clearBrowserError();

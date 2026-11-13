@@ -8,6 +8,7 @@ use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
 use App\Domain\Documents\RichText;
 use App\Domain\Documents\TextDocument;
+use App\Domain\Ocr\OcrFixes;
 use App\Domain\Ocr\OcrLog;
 use App\Domain\Ocr\OcrWords;
 use App\Domain\Org\OrgScope;
@@ -178,7 +179,8 @@ final class RecognizeText implements ShouldQueue
             return;
         }
         self::finish($document, [
-            'ocr_text' => $text !== null ? trim($text) : null,
+            // Point 122.7: the document's corrections go into the new text again.
+            'ocr_text' => $text !== null ? OcrFixes::reapply($document, trim($text), $words) : null,
             'ocr_words' => $text !== null ? OcrWords::encode($words) : null,
             'ocr_status' => $text !== null ? 'done' : 'failed',
             // The server reads once at full resolution: the last pass (point 56).
@@ -236,7 +238,7 @@ final class RecognizeText implements ShouldQueue
      * pdftotext has no bbox output, so there a text-layer page is rendered and read by Tesseract for its positions
      * only (its text stays the layer's), best effort within the time limit. ocrmypdf: the boxes of its output PDF.
      *
-     * @return array{0: string, 1: string, 2: ?int, 3: ?array<string, mixed>} text, event, pages, words
+     * @return array{0: string, 1: string, 2: ?int, 3: array{v: int, source: string, pages: list<array{n: int, words: list<array<string, mixed>>}>}|null} text, event, pages, words
      */
     private static function pdf(string $path, LocalOcr $ocr, bool $system): array
     {
@@ -430,7 +432,7 @@ final class RecognizeText implements ShouldQueue
      * --skip-text keeps pages that already have text and still writes their text to the sidecar. The word positions
      * come from the text layer of ocrmypdf's output PDF (poppler pdftotext -bbox-layout), when that tool is there.
      *
-     * @return array{0: string, 1: ?array<string, mixed>} text, words
+     * @return array{0: string, 1: array{v: int, source: string, pages: list<array{n: int, words: list<array<string, mixed>>}>}|null} text, words
      */
     private static function ocrmypdf(string $path, LocalOcr $ocr): array
     {
