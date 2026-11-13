@@ -28,6 +28,8 @@ return [
         'colors' => ['title' => 'Colours', 'text' => 'Colour palette for notes, folders and tags'],
         'ocr' => ['title' => 'Text recognition', 'text' => 'Status and set-up of text recognition'],
         'bank' => ['title' => 'Accounts and import', 'text' => 'Import statements, manage accounts'],
+        'bank_reasons' => ['title' => 'No receipt needed', 'text' => 'Reasons for bookings without a receipt'],
+        'bank_mcc' => ['title' => 'Card categories', 'text' => 'Which merchant category suggests which tag'],
         'export' => ['title' => 'Export', 'text' => 'Documents as ZIP, for example for the tax advisor'],
         'shares' => ['title' => 'Links', 'text' => 'Validity and valid links for sending'],
         'update' => ['title' => 'Update', 'text' => 'Look for a new version and install it'],

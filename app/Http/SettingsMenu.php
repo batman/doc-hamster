@@ -21,6 +21,8 @@ final class SettingsMenu
         ], false],
         'bank' => ['building-bank', [
             ['bank', 'bank.import', 'building-bank', 'banking.import', ['bank.import', 'bank.accounts.*']],
+            ['bank_reasons', 'bank.reasons', 'receipt-off', 'banking.import', ['bank.reasons*']],
+            ['bank_mcc', 'bank.mcc', 'tags', 'banking.import', ['bank.mcc*']],
         ], false],
         'tags' => ['tags', [
             ['tags', 'tags.index', 'tags', 'tags.manage', ['tags.*']],
