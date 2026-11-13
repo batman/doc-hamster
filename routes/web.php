@@ -8,7 +8,10 @@ use App\Http\Controllers\BankController;
 use App\Http\Controllers\BankImportController;
 use App\Http\Controllers\DocumentBulkController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\DocumentFileController;
 use App\Http\Controllers\DocumentPropertyController;
+use App\Http\Controllers\DocumentUploadController;
+use App\Http\Controllers\DocumentViewController;
 use App\Http\Controllers\DocumentWordsController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\FolderController;
@@ -59,14 +62,14 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('documents/trash/empty', [DocumentBulkController::class, 'empty'])->middleware('can:documents.trash')->name('documents.trash.empty');
     Route::post('documents/{id}/restore', [DocumentController::class, 'restore'])->middleware('can:documents.trash')->name('documents.restore');
     Route::post('documents/{id}/share-link', [ShareController::class, 'store'])->middleware('can:exports.create')->name('documents.share');
-    Route::post('documents', [DocumentController::class, 'store'])->middleware('can:documents.upload')->name('documents.store');
+    Route::post('documents', [DocumentUploadController::class, 'store'])->middleware('can:documents.upload')->name('documents.store');
     // Text documents written in the app (point 21), before documents/{id} so "text" is no id.
     Route::post('documents/text', [TextDocumentController::class, 'store'])->middleware('can:documents.upload')->name('documents.text.store');
     Route::get('documents/{id}/text', [TextDocumentController::class, 'edit'])->name('documents.text');
     Route::post('documents/{id}/text', [TextDocumentController::class, 'update'])->middleware('can:documents.edit')->name('documents.text.update');
-    Route::post('documents/view', [DocumentController::class, 'setView'])->name('documents.view');
+    Route::post('documents/view', [DocumentViewController::class, 'setView'])->name('documents.view');
     // A244: property columns of the details view, remembered per person (before documents/{id}, so "columns" is no id).
-    Route::post('documents/columns', [DocumentController::class, 'setColumns'])->name('documents.columns');
+    Route::post('documents/columns', [DocumentViewController::class, 'setColumns'])->name('documents.columns');
     // Property values of a document (points 122.1, 122.4): card, popup "Markieren als", click-to-edit.
     Route::get('documents/{id}/properties', [DocumentPropertyController::class, 'card'])->name('documents.properties');
     // GiroCode card (point 120): the card again and its QR code, same visibility as the document.
@@ -87,8 +90,8 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('documents/{id}/field', [DocumentController::class, 'updateField'])->middleware('can:documents.edit')->name('documents.field');
     Route::post('documents/{id}/move', [DocumentController::class, 'move'])->middleware('can:documents.edit')->name('documents.move');
     Route::post('documents/{id}/delete', [DocumentController::class, 'destroy'])->middleware('can:documents.trash')->name('documents.destroy');
-    Route::get('files/{id}/download', [DocumentController::class, 'download'])->name('documents.download');
-    Route::get('files/{id}/thumb', [DocumentController::class, 'thumb'])->name('documents.thumb');
+    Route::get('files/{id}/download', [DocumentFileController::class, 'download'])->name('documents.download');
+    Route::get('files/{id}/thumb', [DocumentFileController::class, 'thumb'])->name('documents.thumb');
     Route::get('tags.css', [TagController::class, 'css'])->name('tags.css');
     // Einstellungen → Log (point 115, A229-A234): all logbooks, one entry per logbook, export, reset; browser errors.
     Route::middleware('can:settings.manage')->group(function (): void {
@@ -135,7 +138,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::get('settings/{group}', [SettingsController::class, 'group'])->name('settings.group');
     Route::post('documents/{id}/tags', [DocumentController::class, 'updateTags'])->middleware('can:documents.edit')->name('documents.tags');
-    Route::get('files/{id}', [DocumentController::class, 'file'])->name('documents.file');
+    Route::get('files/{id}', [DocumentFileController::class, 'file'])->name('documents.file');
     Route::get('phone-check/qr', [PhoneCheckController::class, 'qr'])->name('phone-check.qr');
 
     // Druckerablage: what was printed on "Hamster" (print tray).

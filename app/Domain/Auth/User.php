@@ -23,8 +23,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property string $display_name
  * @property string $locale
  * @property string|null $password_hash
- * @property string|null $receipt_view How the receipt list is shown (DocumentController::VIEWS).
- * @property string|null $folder_view The last display mode of the folder view (DocumentController::FOLDER_VIEWS).
+ * @property string|null $receipt_view How the receipt list is shown (App\Http\Documents\DocumentListing::VIEWS).
+ * @property string|null $folder_view The last display mode of the folder view (App\Http\Documents\DocumentListing::FOLDER_VIEWS).
  * @property string|null $receipt_dates The date timeline and calendar go by: doc (receipt date) or upload.
  * @property list<string>|null $document_columns Property ids shown as columns of the details view (A244).
  */
