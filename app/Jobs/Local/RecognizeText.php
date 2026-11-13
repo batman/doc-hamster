@@ -15,19 +15,21 @@ use App\Domain\Org\OrgScope;
 use App\Events\TextRecognized;
 use App\Infrastructure\Environment\LocalOcr;
 use App\Infrastructure\Environment\OcrProgress;
+use App\Jobs\Local\Ocr\Deadline;
+use App\Jobs\Local\Ocr\ImageReader;
+use App\Jobs\Local\Ocr\OcrTimeout;
+use App\Jobs\Local\Ocr\OcrTools;
+use App\Jobs\Local\Ocr\PdfReader;
 use App\Queue\QueueName;
+use Closure;
 use DateTimeInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
-use Symfony\Component\Process\Exception\ProcessTimedOutException;
-use Symfony\Component\Process\ExecutableFinder;
-use Symfony\Component\Process\Process;
 use Throwable;
 
 /**
@@ -41,6 +43,9 @@ use Throwable;
  * app-owned Xpdf tools turn pages into temporary images for Tesseract (A113,
  * at most 50 pages). Every outcome goes to the OCR log with file details and a
  * plain reason (A106-A108).
+ *
+ * Point 130 (A275/A276): one read at full resolution with 10 minutes per document; only when that runs over the
+ * limit, one single retry scaled down to about 2000 px. The programs live in App\Jobs\Local\Ocr.
  */
 final class RecognizeText implements ShouldQueue
 {
@@ -48,22 +53,14 @@ final class RecognizeText implements ShouldQueue
     use InteractsWithQueue;
     use Queueable;
 
-    /** Per program run (one image, one PDF page, ocrmypdf on a whole PDF). */
-    public const int TIMEOUT_SECONDS = 120;
-
-    /** A whole PDF read page by page; stays below the queue's retry_after (600 s). */
-    public const int PDF_SECONDS = 480;
-
-    /** A page with at least this many characters (without spaces) in its text layer needs no OCR (same rule as the browser). */
-    private const int LAYER_CHARS = 20;
-
-    /** Timeouts are thrown as this code with the limit in seconds as message. */
-    private const int TIME_LIMIT = 408;
+    /** Point 130/A275: time limit of one read of a document (full resolution, and again for the A276 retry). */
+    public const int DOCUMENT_SECONDS = 600;
 
     /** Waiting for the OCR lock releases the job; real errors fail it at once. */
     public int $maxExceptions = 1;
 
-    public int $timeout = 540;
+    /** Both reads plus a margin; below the queue's retry_after (config/queue.php). */
+    public int $timeout = 2 * self::DOCUMENT_SECONDS + 60;
 
     /** @param  bool  $rescan  F17: a re-read for word positions, on the low queue behind new uploads */
     public function __construct(public readonly string $documentId, public readonly bool $rescan = false)
@@ -83,7 +80,7 @@ final class RecognizeText implements ShouldQueue
      */
     public function middleware(): array
     {
-        return [(new WithoutOverlapping('ocr'))->releaseAfter(30)->expireAfter(600)];
+        return [(new WithoutOverlapping('ocr'))->releaseAfter(30)->expireAfter(2 * self::DOCUMENT_SECONDS + 100)];
     }
 
     public function retryUntil(): DateTimeInterface
@@ -110,7 +107,7 @@ final class RecognizeText implements ShouldQueue
         if ($file !== null && TextDocument::isText($file)) {
             $display = TextDocument::display($file);
             $plain = TextDocument::isRich($file) ? RichText::toPlainText($display) : $display;
-            self::finish($document, ['ocr_text' => $plain, 'ocr_words' => null, 'ocr_status' => 'done', 'ocr_pass' => OcrProgress::PASSES, 'ocr_rescan' => false]);
+            self::finish($document, ['ocr_text' => $plain, 'ocr_words' => null, 'ocr_status' => 'done', 'ocr_pass' => OcrProgress::FULL, 'ocr_rescan' => false]);
             TextRecognized::dispatch($document->id);
 
             return;
@@ -148,25 +145,31 @@ final class RecognizeText implements ShouldQueue
             if (! is_file($path)) {
                 throw new RuntimeException(OcrLog::text('ocr.reason.file_missing'));
             }
+            $tools = new OcrTools($ocr, $app);
             if ($route === 'image') {
-                OcrProgress::page($document->id, 1, 1);
-                [$text, $page] = self::tesseract($path, 1, $ocr, $app);
-                $words = OcrWords::make('tesseract', [$page]);
+                $reader = new ImageReader($tools);
+                [$text, $words] = self::withRetry(
+                    static fn (Deadline $d): array => $reader->read($path, $document->id, $d),
+                    ImageReader::canShrink($path) ? static fn (Deadline $d): array => $reader->readShrunk($path, $document->id, $d) : null,
+                );
             } else {
-                [$text, $event, $pages, $words] = self::pdf($path, $ocr, $system, $document->id);
+                $reader = new PdfReader($tools, $system);
+                // ocrmypdf picks its own resolution: no smaller retry there.
+                [$text, $event, $pages, $words] = self::withRetry(
+                    static fn (Deadline $d): array => $reader->read($path, $document->id, $d),
+                    $system ? null : static fn (Deadline $d): array => $reader->read($path, $document->id, $d, PdfReader::RETRY_DPI),
+                );
             }
-        } catch (ProcessTimedOutException $e) {
-            $error = ['timeout', OcrLog::text('ocr.reason.timeout', ['seconds' => (int) $e->getProcess()->getTimeout()])];
+        } catch (OcrTimeout $e) {
+            $error = ['timeout', OcrLog::text('ocr.reason.timeout', ['seconds' => $e->seconds])];
         } catch (Throwable $e) {
-            $error = $e->getCode() === self::TIME_LIMIT
-                ? ['timeout', OcrLog::text('ocr.reason.timeout', ['seconds' => (int) $e->getMessage()])]
-                : ['failed', self::short($e->getMessage())];
+            $error = ['failed', OcrTools::short($e->getMessage())];
         } finally {
             OcrProgress::finish($document->id);
         }
 
         // Point 61/69: the OCR log, without the text itself.
-        $log = [...OcrLog::file($file, $pages), 'document_id' => $document->id, 'pass' => OcrProgress::PASSES, 'duration_ms' => intdiv(hrtime(true) - $started, 1_000_000)];
+        $log = [...OcrLog::file($file, $pages), 'document_id' => $document->id, 'duration_ms' => intdiv(hrtime(true) - $started, 1_000_000)];
         if ($error === null && $text !== null) {
             OcrLog::record($document->org_id, $source, $event, [...$log, 'chars' => mb_strlen(trim($text))]);
         } else {
@@ -184,8 +187,8 @@ final class RecognizeText implements ShouldQueue
             'ocr_text' => $text !== null ? OcrFixes::reapply($document, trim($text), $words) : null,
             'ocr_words' => $text !== null ? OcrWords::encode($words) : null,
             'ocr_status' => $text !== null ? 'done' : 'failed',
-            // The server reads once at full resolution: the last pass (point 56).
-            'ocr_pass' => $text !== null ? OcrProgress::PASSES : null,
+            // Point 130: one read at full resolution.
+            'ocr_pass' => $text !== null ? OcrProgress::FULL : null,
             'ocr_rescan' => false,
         ]);
         if ($text !== null) {
@@ -232,286 +235,24 @@ final class RecognizeText implements ShouldQueue
     }
 
     /**
-     * A114 first: a text layer on every page is taken as it is. Otherwise ocrmypdf (system) or, A113, each page
-     * without text as a temporary image through Tesseract (app), at most 50 pages, deleted right after.
+     * A276: the full read, and only when it runs over its time limit one single retry (with a time limit of its own).
      *
-     * Word positions (point 119): text-layer pages from `pdftotext -bbox-layout` (poppler); the app-owned Xpdf
-     * pdftotext has no bbox output, so there a text-layer page is rendered and read by Tesseract for its positions
-     * only (its text stays the layer's), best effort within the time limit. ocrmypdf: the boxes of its output PDF.
+     * @template T
      *
-     * @return array{0: string, 1: string, 2: ?int, 3: array{v: int, source: string, pages: list<array{n: int, words: list<array<string, mixed>>}>}|null} text, event, pages, words
+     * @param  Closure(Deadline): T  $full
+     * @param  (Closure(Deadline): T)|null  $retry
+     * @return T
      */
-    private static function pdf(string $path, LocalOcr $ocr, bool $system, string $documentId): array
+    private static function withRetry(Closure $full, ?Closure $retry): mixed
     {
-        $layer = self::layer($path, $ocr);
-        $pages = $layer !== null ? count($layer) : null;
-        // Point 124: the live card shows "Seite x von y" while the server reads.
-        OcrProgress::page($documentId, 1, $pages);
-        $withText = $layer !== null ? count(array_filter($layer, self::hasText(...))) : 0;
-        $layerWords = $withText > 0 ? self::boxes($path, $ocr) : null;
-        $allLayer = $layer !== null && $layer !== [] && $withText === count($layer);
-        if ($allLayer && ($layerWords !== null || $system)) {
-            return [implode("\n\n", array_map('trim', $layer)), 'text_layer', $pages, OcrWords::make('layer', $layerWords ?? [])];
-        }
-        if ($system) {
-            [$text, $words] = self::ocrmypdf($path, $ocr);
-
-            return [$text, 'recognized', $pages, $words];
-        }
-
-        $deadline = time() + self::PDF_SECONDS;
-        // Page images of a run that was killed (request or worker ended) are dropped after an hour.
-        foreach (glob(storage_path('app/ocr/tmp/*'), GLOB_ONLYDIR) ?: [] as $old) {
-            if (filemtime($old) < time() - 3600) {
-                File::deleteDirectory($old);
-            }
-        }
-        $dir = storage_path('app/ocr/tmp/'.bin2hex(random_bytes(8)));
-        File::ensureDirectoryExists($dir);
         try {
-            $texts = [];
-            $found = [];
-            $fromLayer = true;
-            $byPage = [];
-            foreach ($layerWords ?? [] as $page) {
-                $byPage[$page['n']] = $page;
-            }
-            $last = min($pages ?? LocalOcr::PDF_MAX_PAGES, LocalOcr::PDF_MAX_PAGES);
-            for ($n = 1; $n <= $last; $n++) {
-                OcrProgress::page($documentId, $n, $pages);
-                $own = $layer[$n - 1] ?? '';
-                $isLayer = self::hasText($own);
-                if ($isLayer && isset($byPage[$n])) {
-                    $texts[] = trim($own);
-                    $found[] = $byPage[$n];
-
-                    continue;
-                }
-                $left = $deadline - time();
-                if ($left <= 5) {
-                    if ($isLayer) {
-                        // Only the positions are missing: the text is there, the rest of the time is not.
-                        $texts[] = trim($own);
-
-                        continue;
-                    }
-                    throw new RuntimeException((string) self::PDF_SECONDS, self::TIME_LIMIT);
-                }
-                $fromLayer = false;
-                $root = $dir.'/p';
-                try {
-                    self::run($ocr->niced([$ocr->pdfTool('pdftopng'), '-f', (string) $n, '-l', (string) $n, '-r', '300', '-gray', $path, $root]), [], min(self::TIMEOUT_SECONDS, $left));
-                } catch (Throwable $e) {
-                    if (! $isLayer) {
-                        throw $e;
-                    }
-                }
-                $images = glob($root.'-*.png') ?: [];
-                if ($images === []) {
-                    if ($isLayer) {
-                        $texts[] = trim($own);
-
-                        continue;
-                    }
-                    // Without a text layer the page count is unknown: no image means the PDF has ended.
-                    if ($pages === null) {
-                        $pages = $n - 1;
-                        break;
-                    }
-
-                    continue;
-                }
-                try {
-                    $left = $deadline - time();
-                    try {
-                        [$read, $page] = self::tesseract($images[0], $n, $ocr, true, min(self::TIMEOUT_SECONDS, max(1, $left)));
-                    } catch (Throwable $e) {
-                        if (! $isLayer) {
-                            throw $e;
-                        }
-                        [$read, $page] = ['', null];
-                    }
-                    // A text-layer page keeps its own text; Tesseract gave only the positions.
-                    $texts[] = $isLayer ? trim($own) : trim($read);
-                    $found[] = $page;
-                } finally {
-                    array_map('unlink', $images);
-                }
-            }
-            $allLayer = $layer !== null && $withText === count($layer) && $withText > 0;
-
-            return [
-                implode("\n\n", array_filter($texts, static fn (string $t): bool => $t !== '')),
-                $allLayer ? 'text_layer' : 'recognized',
-                $pages ?? $last,
-                OcrWords::make($fromLayer ? 'layer' : 'tesseract', $found),
-            ];
-        } finally {
-            File::deleteDirectory($dir);
-        }
-    }
-
-    /**
-     * The text layer per page (pdftotext ends every page with a form feed), or null without pdftotext or on error.
-     *
-     * @return list<string>|null
-     */
-    private static function layer(string $path, LocalOcr $ocr): ?array
-    {
-        $tool = $ocr->pdfTextTool();
-        if ($tool === null) {
-            return null;
-        }
-        try {
-            $out = self::run($ocr->niced([$tool, '-enc', 'UTF-8', $path, '-']), []);
-        } catch (Throwable) {
-            return null;
-        }
-        $pages = explode("\f", $out);
-        if (count($pages) > 1 && trim((string) end($pages)) === '') {
-            array_pop($pages);
-        }
-
-        return $pages;
-    }
-
-    /**
-     * Word boxes of the text layer from `pdftotext -bbox-layout` (first 50 pages): a system poppler pdftotext first,
-     * then the app's own. Null when none has bbox output (Xpdf 4.06 has none) or all fail.
-     *
-     * @return list<array{n: int, words: list<array<string, mixed>>}>|null
-     */
-    private static function boxes(string $path, LocalOcr $ocr): ?array
-    {
-        $tools = array_unique(array_filter([(new ExecutableFinder)->find('pdftotext'), $ocr->pdfTextTool()]));
-        foreach ($tools as $tool) {
-            try {
-                $pages = OcrWords::pagesFromBboxLayout(self::run($ocr->niced([$tool, '-bbox-layout', '-enc', 'UTF-8', '-l', (string) LocalOcr::PDF_MAX_PAGES, $path, '-']), []));
-            } catch (Throwable) {
-                continue;
-            }
-            if ($pages !== null) {
-                return $pages;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * One image through Tesseract in one run: the plain text (as before) and the TSV with the word boxes.
-     *
-     * @return array{0: string, 1: array{n: int, words: list<array<string, mixed>>}|null} text, the page's words
-     */
-    private static function tesseract(string $image, int $n, LocalOcr $ocr, bool $app, int $timeout = self::TIMEOUT_SECONDS): array
-    {
-        $base = tempnam(sys_get_temp_dir(), 'tes');
-        if ($base === false) {
-            throw new RuntimeException('tempnam');
-        }
-        try {
-            self::run($ocr->command([...($app ? [] : ['tesseract']), $image, $base, '-l', 'deu+eng', '-c', 'tessedit_create_txt=1', '-c', 'tessedit_create_tsv=1'], $app), $ocr->env($app), $timeout);
-            $text = is_file($base.'.txt') ? file_get_contents($base.'.txt') : false;
-            if ($text === false) {
-                throw new RuntimeException('tesseract: keine Textdatei');
-            }
-            $tsv = is_file($base.'.tsv') ? file_get_contents($base.'.tsv') : false;
-
-            return [$text, $tsv !== false ? OcrWords::pageFromTsv($tsv, $n) : null];
-        } finally {
-            foreach ([$base, $base.'.txt', $base.'.tsv'] as $tmp) {
-                if (is_file($tmp)) {
-                    @unlink($tmp);
-                }
-            }
-        }
-    }
-
-    private static function hasText(string $text): bool
-    {
-        return mb_strlen((string) preg_replace('/\s+/u', '', $text)) >= self::LAYER_CHARS;
-    }
-
-    /**
-     * --skip-text keeps pages that already have text and still writes their text to the sidecar. The word positions
-     * come from the text layer of ocrmypdf's output PDF (poppler pdftotext -bbox-layout), when that tool is there.
-     *
-     * @return array{0: string, 1: array{v: int, source: string, pages: list<array{n: int, words: list<array<string, mixed>>}>}|null} text, words
-     */
-    private static function ocrmypdf(string $path, LocalOcr $ocr): array
-    {
-        $base = tempnam(sys_get_temp_dir(), 'ocr');
-        if ($base === false) {
-            throw new RuntimeException('tempnam');
-        }
-        $sidecar = $base.'.txt';
-        $out = $base.'.pdf';
-
-        try {
-            self::run($ocr->niced(['ocrmypdf', '--jobs', '1', '--sidecar', $sidecar, '--skip-text', '-l', 'deu+eng', '--quiet', $path, $out]), $ocr->env(false));
-            $text = is_file($sidecar) ? file_get_contents($sidecar) : false;
-            if ($text === false) {
-                throw new RuntimeException('ocrmypdf: keine Textdatei');
-            }
-            $boxes = is_file($out) ? self::boxes($out, $ocr) : null;
-
-            return [$text, OcrWords::make('tesseract', $boxes ?? [])];
-        } finally {
-            foreach ([$base, $sidecar, $out] as $tmp) {
-                if (is_file($tmp)) {
-                    @unlink($tmp);
-                }
-            }
-        }
-    }
-
-    /**
-     * Runs a program and returns its output; a failure throws with the program's own short message (A107).
-     *
-     * @param  list<string>  $command
-     * @param  array<string, string>  $env
-     */
-    private static function run(array $command, array $env, int $timeout = self::TIMEOUT_SECONDS): string
-    {
-        $process = new Process($command, null, $env, null, $timeout);
-        $process->run();
-        if (! $process->isSuccessful()) {
-            throw new RuntimeException(self::tool($command).': '.(trim($process->getErrorOutput()) ?: 'Exit '.$process->getExitCode()));
-        }
-
-        return $process->getOutput();
-    }
-
-    /**
-     * The program's short name for messages (tesseract, pdftopng, ocrmypdf …), skipping nice.
-     *
-     * @param  list<string>  $command
-     */
-    private static function tool(array $command): string
-    {
-        foreach ($command as $part) {
-            $name = basename($part);
-            if (in_array($name, ['nice', '-n', '19'], true)) {
-                continue;
+            return $full(new Deadline(self::DOCUMENT_SECONDS));
+        } catch (OcrTimeout $e) {
+            if ($retry === null) {
+                throw $e;
             }
 
-            return $name === 'AppRun' ? 'tesseract' : $name;
+            return $retry(new Deadline(self::DOCUMENT_SECONDS));
         }
-
-        return 'tool';
-    }
-
-    /** The last meaningful line of an error message, short (A107). */
-    private static function short(string $message): string
-    {
-        $lines = array_values(array_filter(array_map('trim', preg_split('/\R/', $message) ?: []), static fn (string $l): bool => $l !== ''));
-        if ($lines === []) {
-            return '?';
-        }
-        $prefix = str_contains($lines[0], ': ') ? strstr($lines[0], ': ', true).': ' : '';
-        $last = end($lines);
-        $text = count($lines) > 1 && $prefix !== '' && ! str_starts_with($last, $prefix) ? $prefix.$last : $last;
-
-        return mb_substr($text, 0, 160);
     }
 }

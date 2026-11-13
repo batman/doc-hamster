@@ -37,11 +37,11 @@ it('shows counts and progress on its own settings page and in the JSON status', 
     $this->actingAs($this->admin->user)->get('/settings/ocr')->assertOk()
         ->assertSee('Erkennung auf dem Server einrichten')->assertSee('1 von 2 erkannt')->assertSee('Gerade: b.jpg');
     $this->getJson('/ocr/status')->assertOk()
-        ->assertJson(['waiting' => 1, 'open' => 1, 'total' => 2, 'passes' => 3, 'counts' => ['done' => 1, 'waiting' => 1, 'failed' => 1, 'unavailable' => 0], 'current' => ['title' => 'b.jpg']]);
+        ->assertJson(['waiting' => 1, 'open' => 1, 'total' => 2, 'done' => 1, 'counts' => ['done' => 1, 'waiting' => 1, 'failed' => 1, 'unavailable' => 0], 'current' => ['title' => 'b.jpg']]);
 
     $clerk = Membership::factory()->withRights(RoleRight::Upload)->create(['org_id' => $this->admin->org_id]);
     $this->actingAs($clerk->user)->get('/settings/ocr')->assertForbidden();
-    $this->getJson('/ocr/status')->assertOk()->assertExactJson(['waiting' => 1, 'open' => 1, 'total' => 2, 'passes' => 3]);
+    $this->getJson('/ocr/status')->assertOk()->assertExactJson(['waiting' => 1, 'open' => 1, 'total' => 2, 'done' => 1]);
 });
 
 it('recognises all documents again and one from the detail window', function (): void {
@@ -58,35 +58,33 @@ it('recognises all documents again and one from the detail window', function ():
     expect($document->refresh()->ocr_status)->toBe('pending');
 });
 
-it('reads in three passes in the browser, the lowest pass first, and shows the indicator below Abmelden', function (): void {
+it('reads every document once in the browser and shows the indicator below Abmelden', function (): void {
     Cache::put(LocalOcr::MODE_KEY, 'browser', 300);
     $documents = Document::query()->withoutGlobalScope(OrgScope::class)->get()->keyBy('title');
     foreach ($documents as $document) {
         DocumentFile::query()->withoutGlobalScope(OrgScope::class)->create(['org_id' => $document->org_id, 'document_id' => $document->id, 'path' => 'x/'.$document->title, 'mime' => 'image/jpeg', 'size' => 4, 'sha256' => str_repeat('0', 64)]);
     }
     $a = $documents['a.jpg'];
-    $a->forceFill(['ocr_pass' => 1, 'ocr_text' => 'grob'])->save();
+    $a->forceFill(['ocr_pass' => 3, 'ocr_text' => 'alt', 'ocr_rescan' => true])->save();
     $b = $documents['b.jpg'];
 
-    $this->actingAs($this->admin->user)->get('/')->assertOk()->assertSee('OCR-Erkennung')->assertSee('2 offen');
-    $this->getJson('/ocr/next')->assertOk()->assertJson(['id' => $b->id, 'pass' => 1]);
-    $this->post('/ocr/'.$b->id, ['text' => 'erster', 'pass' => 1])->assertNoContent();
-    expect($b->refresh()->ocr_status)->toBe('done')->and($b->ocr_pass)->toBe(1);
-    expect(OcrProgress::counts($this->admin->org_id)['done'])->toBe(2);
+    $this->actingAs($this->admin->user)->get('/')->assertOk()->assertSee('OCR-Erkennung')->assertSee('1 offen');
+    // Point 130: new documents first, no passes; a re-read comes after them.
+    $this->getJson('/ocr/next')->assertOk()->assertJson(['id' => $b->id])->assertJsonMissingPath('pass');
+    $this->post('/ocr/'.$b->id, ['text' => 'erster'])->assertNoContent();
+    expect($b->refresh()->ocr_status)->toBe('done')->and($b->ocr_pass)->toBe(3);
+    // A84: a document already read is not stored again.
+    $this->post('/ocr/'.$b->id, ['text' => 'nochmal'])->assertOk()->assertJson(['ignored' => true]);
 
-    $this->getJson('/ocr/next?skip[]='.$b->id)->assertOk()->assertJson(['id' => $a->id, 'pass' => 2]);
-    // Point 58: a failed pass comes again; after three failures the earlier text stays final.
-    $this->post('/ocr/'.$a->id, ['failed' => 1, 'pass' => 2])->assertNoContent();
-    expect($a->refresh()->ocr_pass)->toBe(1)->and($a->ocr_failures)->toBe(1);
-    $this->post('/ocr/'.$a->id, ['failed' => 1, 'pass' => 2])->assertNoContent();
-    $this->post('/ocr/'.$a->id, ['failed' => 1, 'pass' => 2])->assertNoContent();
-    expect($a->refresh()->ocr_text)->toBe('grob')->and($a->ocr_pass)->toBe(3)->and($a->ocr_status)->toBe('done');
-    // A84: a pass already reached is not stored again.
-    $this->post('/ocr/'.$a->id, ['text' => 'voll', 'pass' => 3])->assertOk()->assertJson(['ignored' => true]);
-    expect($a->refresh()->ocr_text)->toBe('grob');
-    $this->post('/ocr/'.$b->id, ['text' => 'voll', 'pass' => 3])->assertNoContent();
+    $this->getJson('/ocr/next')->assertOk()->assertJson(['id' => $a->id]);
+    // Point 58: a failed read comes again; after three failures a re-read keeps its earlier text.
+    $this->post('/ocr/'.$a->id, ['failed' => 1])->assertNoContent();
+    expect($a->refresh()->ocr_failures)->toBe(1)->and((bool) $a->ocr_rescan)->toBeTrue();
+    $this->post('/ocr/'.$a->id, ['failed' => 1])->assertNoContent();
+    $this->post('/ocr/'.$a->id, ['failed' => 1])->assertNoContent();
+    expect($a->refresh()->ocr_text)->toBe('alt')->and((bool) $a->ocr_rescan)->toBeFalse()->and($a->ocr_status)->toBe('done');
     $this->getJson('/ocr/next')->assertNoContent();
-    $this->getJson('/ocr/status')->assertJson(['open' => 0, 'total' => 2, 'passes' => 6]);
+    $this->getJson('/ocr/status')->assertJson(['open' => 0, 'total' => 2, 'done' => 2]);
 });
 
 it('marks a document without text failed after three failures and shows engine errors and the cron state', function (): void {
@@ -95,7 +93,7 @@ it('marks a document without text failed after three failures and shows engine e
 
     $this->actingAs($this->admin->user);
     foreach ([1, 2, 3] as $try) {
-        $this->post('/ocr/'.$document->id, ['failed' => 1, 'pass' => 1])->assertNoContent();
+        $this->post('/ocr/'.$document->id, ['failed' => 1])->assertNoContent();
     }
     expect($document->refresh()->ocr_status)->toBe('failed');
 
@@ -113,9 +111,9 @@ it('logs browser results, engine and pause events and cron, shows them in the lo
     $document = Document::query()->withoutGlobalScope(OrgScope::class)->where('title', 'b.jpg')->firstOrFail();
 
     $this->actingAs($this->admin->user);
-    $this->post('/ocr/'.$document->id, ['failed' => 1, 'pass' => 1, 'reason' => 'timeout', 'duration' => 120000])->assertNoContent();
-    $this->post('/ocr/'.$document->id, ['text' => 'Summe 12,00', 'pass' => 1, 'duration' => 2500])->assertNoContent();
-    $this->post('/ocr/'.$document->id, ['text' => 'nochmal', 'pass' => 1])->assertOk()->assertJson(['ignored' => true]);
+    $this->post('/ocr/'.$document->id, ['failed' => 1, 'reason' => 'timeout', 'duration' => 120000])->assertNoContent();
+    $this->post('/ocr/'.$document->id, ['text' => 'Summe 12,00', 'duration' => 2500])->assertNoContent();
+    $this->post('/ocr/'.$document->id, ['text' => 'nochmal'])->assertOk()->assertJson(['ignored' => true]);
     $this->post('/ocr-log', ['event' => 'paused'])->assertNoContent();
     $this->post('/ocr-log', ['event' => 'nonsense'])->assertSessionHasErrors('event');
     $this->getJson('/ocr/status')->assertOk();
@@ -123,7 +121,7 @@ it('logs browser results, engine and pause events and cron, shows them in the lo
 
     expect(OcrLog::query()->pluck('event')->sort()->values()->all())->toBe(['cron_missing', 'paused', 'recognized', 'timeout']);
     expect(OcrLog::query()->where('event', 'recognized')->firstOrFail())
-        ->chars->toBe(11)->duration_ms->toBe(2500)->pass->toBe(1)->document_id->toBe($document->id);
+        ->chars->toBe(11)->duration_ms->toBe(2500)->pass->toBeNull()->document_id->toBe($document->id);
 
     $this->get('/settings/ocr?tab=log')->assertRedirect('/settings/log/ocr');
     $this->get('/settings/log/ocr')->assertOk()->assertSee('b.jpg')
@@ -152,7 +150,7 @@ it('logs file details, browser and reasons once per document, filters and sums u
     // A106/A109/A114: the browser took the text layer of both pages.
     $this->actingAs($this->admin->user)
         ->withHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36')
-        ->post('/ocr/'.$documents['b.jpg']->id, ['text' => 'Rechnung', 'pass' => 1, 'pages' => 2, 'layer' => 2, 'duration' => 900])->assertNoContent();
+        ->post('/ocr/'.$documents['b.jpg']->id, ['text' => 'Rechnung', 'pages' => 2, 'layer' => 2, 'duration' => 900])->assertNoContent();
     expect(OcrLog::query()->withoutGlobalScope(OrgScope::class)->where('event', 'text_layer')->firstOrFail())
         ->file_type->toBe('PDF')->size->toBe(2_500_000)->pages->toBe(2)->agent->toBe('Chrome 142 / Windows');
 
@@ -180,15 +178,4 @@ it('lets the browser read only the PDFs while the app-owned server engine has no
     expect(app(LocalOcr::class)->browserLoop())->toBeTrue();
     $this->actingAs($this->admin->user)->getJson('/ocr/next?skip[]=x')->assertOk()->assertJson(['id' => $documents['b.jpg']->id, 'type' => 'application/pdf']);
     $this->getJson('/ocr/next?skip[]='.$documents['b.jpg']->id)->assertNoContent();
-});
-
-it('hands out a random document of the lowest pass and only pass 1 to the second engine', function (): void {
-    Cache::put(LocalOcr::MODE_KEY, 'browser', 300);
-    $document = Document::query()->withoutGlobalScope(OrgScope::class)->where('title', 'a.jpg')->firstOrFail();
-    DocumentFile::query()->withoutGlobalScope(OrgScope::class)->create(['org_id' => $document->org_id, 'document_id' => $document->id, 'path' => 'x/a.jpg', 'mime' => 'image/jpeg', 'size' => 4, 'sha256' => str_repeat('0', 64)]);
-    $document->forceFill(['ocr_pass' => 2, 'ocr_text' => 'x'])->save();
-
-    $this->actingAs($this->admin->user);
-    $this->getJson('/ocr/next')->assertOk()->assertJson(['id' => $document->id, 'pass' => 3]);
-    $this->getJson('/ocr/next?only=1')->assertNoContent();
 });

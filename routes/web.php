@@ -21,7 +21,9 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\NoteColumnController;
+use App\Http\Controllers\OcrBrowserController;
 use App\Http\Controllers\OcrController;
+use App\Http\Controllers\OcrStatusController;
 use App\Http\Controllers\PaletteController;
 use App\Http\Controllers\PhoneCheckController;
 use App\Http\Controllers\PrinterSettingsController;
@@ -110,13 +112,13 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('documents/{id}/ocr', [OcrController::class, 'redo'])->middleware('can:documents.edit')->name('ocr.redo');
     // Point 123: the same page as a module of its own (the OCR widget below Abmelden), without the settings columns.
     Route::get('ocr', [OcrController::class, 'show'])->middleware('can:settings.manage')->name('ocr.live');
-    Route::get('ocr/status', [OcrController::class, 'status'])->name('ocr.status');
-    Route::get('ocr/next', [OcrController::class, 'next'])->name('ocr.next');
-    Route::post('ocr/{id}/progress', [OcrController::class, 'progress'])->name('ocr.progress');
-    Route::get('ocr/image/{id}', [OcrController::class, 'image'])->name('ocr.image');
-    Route::post('ocr/{id}', [OcrController::class, 'store'])->name('ocr.store');
-    Route::post('ocr-engine', [OcrController::class, 'engineError'])->name('ocr.engine');
-    Route::post('ocr-log', [OcrController::class, 'log'])->name('ocr.log');
+    Route::get('ocr/status', [OcrStatusController::class, 'status'])->name('ocr.status');
+    Route::get('ocr/next', [OcrBrowserController::class, 'next'])->name('ocr.next');
+    Route::post('ocr/{id}/progress', [OcrBrowserController::class, 'progress'])->name('ocr.progress');
+    Route::get('ocr/image/{id}', [OcrBrowserController::class, 'image'])->name('ocr.image');
+    Route::post('ocr/{id}', [OcrBrowserController::class, 'store'])->name('ocr.store');
+    Route::post('ocr-engine', [OcrStatusController::class, 'engineError'])->name('ocr.engine');
+    Route::post('ocr-log', [OcrStatusController::class, 'log'])->name('ocr.log');
     // A69/A74: without cron the open browser works off the queue, one job per call.
     Route::post('queue/tick', QueueTickController::class)->name('queue.tick');
     // Einstellungen → Eigenschaften (point 122.2; before settings/{group}): org-wide, so only Admins (settings.manage).

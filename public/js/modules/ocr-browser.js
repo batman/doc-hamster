@@ -3,23 +3,22 @@
 // server can't (body[data-ocr-browser]). One image at a time, only while the
 // page is visible and idle, not on cellular/data saver/low battery, and not
 // while paused in the menu (point 57, localStorage dh.ocr.paused, every tab).
-// Point 56: three passes, the server hands out the lowest first; each pass
-// replaces the text of the one before. Point 58/A60/A63: every pass has a time
-// limit per document; A61: an engine that does not start is reported and
-// retried after 5 minutes instead of spinning. A78: with 4+ cores a second
-// engine reads pass-1 documents alongside; passes 2/3 stay one at a time.
-// Point 61: results carry their duration; engine start goes to the OCR log.
+// Point 130/A275: every document is read once at full resolution with a time
+// limit of 10 minutes; A276: only when that runs over, one single retry scaled
+// down to 2000 px. Point 58/A63: the server counts failures (three → failed).
+// A61: an engine that does not start is reported and retried after 5 minutes
+// instead of spinning. Point 61: results carry their duration; engine start
+// goes to the OCR log.
 (() => {
   const startOcr = () => {
     const base = document.body?.dataset.ocrBrowser;
     const nextUrl = document.body?.dataset.ocrNext;
     if (!base || !nextUrl || typeof Worker === 'undefined' || typeof WebAssembly === 'undefined') return;
-    // side = long image side in px (0 = original), scale = PDF page scale, pause after each document, limit = time per document.
-    const PASSES = {
-        1: { side: 1000, scale: 1, pause: 0, limit: 2 * 60000 },
-        2: { side: 2000, scale: 2, pause: 5000, limit: 5 * 60000 },
-        3: { side: 0, scale: 3.5, pause: 30000, limit: 10 * 60000 },
-    };
+    // side = long side in px (0 = original), scale = largest PDF page scale. FULL first, RETRY only after a timeout (A276).
+    const FULL = { side: 0, scale: 3.5 };
+    const RETRY = { side: 2000, scale: 3.5 };
+    const LIMIT_MS = 10 * 60000;
+    const PAUSE_MS = 5000;
     const MAX_PIXELS = 24e6;
     const WAIT_MS = 60000;
     const ENGINE_MS = 60000;
@@ -27,10 +26,9 @@
     const engineUrl = document.body?.dataset.ocrEngine;
     const logUrl = document.body?.dataset.ocrLog;
     const PAUSE_KEY = 'dh.ocr.paused';
-    const TWO = (navigator.hardwareConcurrency ?? 1) >= 4;
     const skip = [];
-    // Lane 0 reads every pass; lane 1 (A78) only pass 1 and only on 4+ cores.
-    const lanes = [{ main: true, engine: null, running: null, active: true }, { main: false, engine: null, running: null, active: false }];
+    // One lane reads one document at a time (the second lane of A78 read only the retired pass 1).
+    const lanes = [{ main: true, engine: null, running: null, active: true }];
     const wakers = new Set();
 
     const paused = () => {
@@ -106,7 +104,7 @@
             late = true;
             throw e;
         }
-        // Once per lane and page, so pass 3 (engine closed between documents) does not flood the log.
+        // Once per lane and page, so an engine closed after a timeout does not flood the log.
         if (!lane.logged) post(logUrl, { event: 'engine_started', duration: Math.round(performance.now() - began) });
         lane.logged = true;
         return lane.engine;
@@ -183,7 +181,7 @@
     // Point 124: the Live card follows the main lane page by page (DocHamster events; only this tab sees them).
     const pageStart = (lane, info, n) => { if (lane.main) window.DocHamster?.emit('ocr:page-start', { id: info.id, n, pages: info.pages ?? 1 }); };
     const pageDone = (lane, info, page) => { if (lane.main) window.DocHamster?.emit('ocr:page', { id: info.id, n: page.n, pages: info.pages ?? 1, words: page.words }); };
-    // Images: scaled down to the pass's long side (pass 3: original), capped for memory.
+    // Images: original size (A276 retry: 2000 px long side), capped for memory.
     const readImage = async (lane, url, side, run, info) => {
         pageStart(lane, info, 1);
         const read = async (image, width, height) => {
@@ -216,9 +214,10 @@
         }
     };
     // Point 34: PDFs page by page with pdf.js (document viewer block). A page that already carries text
-    // gives that text; a scanned page is drawn at the pass's scale and read by tesseract. Pages joined by a blank line.
+    // gives that text; a scanned page is drawn at full scale (A276 retry: 2000 px long side) and read by tesseract.
+    // Pages joined by a blank line.
     // Point 69: gives the page count and how many pages came from the text layer (A106/A114) for the OCR log.
-    const readPdf = async (lane, url, maxScale, run, info) => {
+    const readPdf = async (lane, url, size, run, info) => {
         if (!DocHamster.openPdf) throw new Error('pdf.js not available');
         const doc = await DocHamster.openPdf(url);
         try {
@@ -240,7 +239,7 @@
                     info.layer++;
                 } else {
                     const one = page.getViewport({ scale: 1 });
-                    const scale = Math.min(maxScale, Math.sqrt(MAX_PIXELS / (one.width * one.height)));
+                    const scale = Math.min(size.scale, size.side > 0 ? size.side / Math.max(one.width, one.height) : Infinity, Math.sqrt(MAX_PIXELS / (one.width * one.height)));
                     const viewport = page.getViewport({ scale });
                     const canvas = document.createElement('canvas');
                     canvas.width = Math.floor(viewport.width);
@@ -266,17 +265,14 @@
         window.DocHamster?.emit('ocr:job', job);
     };
 
-    // One document of the lowest open pass (A77: the server picks at random among them); gives the pause before
-    // the next one, or null when nothing is left. The second lane asks for pass 1 only.
+    // One open document (A77: the server picks at random among them); gives the pause before the next one, or null
+    // when nothing is left.
     const step = async lane => {
         const url = new URL(nextUrl, location.href);
         skip.forEach(id => url.searchParams.append('skip[]', id));
-        if (!lane.main) url.searchParams.set('only', '1');
         const res = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
         if (res.status !== 200) return null;
         const job = await res.json();
-        const pass = PASSES[job.pass] ? job.pass : 3;
-        if (!lane.main && pass !== 1) return null;
         // A61: no engine, no document – the reason goes to the server, the next try comes in 5 minutes.
         try {
             await getEngine(lane);
@@ -285,21 +281,33 @@
             await stop(lane);
             return lane.main ? ENGINE_RETRY_MS : null;
         }
-        // A78: a pass-1 document on the main lane wakes the second lane.
-        if (lane.main && pass === 1 && TWO && !lanes[1].active) runLane(lanes[1]);
-        const run = { aborted: false, timedOut: false };
+        let run = { aborted: false, timedOut: false };
         lane.running = run;
         announce(lane, job);
         const body = new FormData();
-        body.append('pass', String(pass));
         const began = performance.now();
         const info = { id: job.id, pages: null, layer: null, words: null };
-        try {
+        const attempt = size => {
             const read = job.type === 'application/pdf'
-                ? readPdf(lane, job.file, PASSES[pass].scale, run, info)
-                : readImage(lane, job.file, PASSES[pass].side, run, info);
+                ? readPdf(lane, job.file, size, run, info)
+                : readImage(lane, job.file, size.side, run, info);
             read.catch(() => {});
-            body.append('text', await within(read, PASSES[pass].limit, 'timeout'));
+            return within(read, LIMIT_MS, 'timeout');
+        };
+        try {
+            let text;
+            try {
+                text = await attempt(FULL);
+            } catch (e) {
+                if (e?.message !== 'timeout' || run.aborted) throw e;
+                // A276: over the time limit at full resolution – the engine is closed and the document read once more, smaller.
+                run.timedOut = true;
+                await stop(lane);
+                run = { aborted: false, timedOut: false };
+                lane.running = run;
+                text = await attempt(RETRY);
+            }
+            body.append('text', text);
             // Point 119: the positions go along when they fit the server's limit (2 MB).
             const words = info.words?.pages?.some(p => p.words.length) ? JSON.stringify(info.words) : '';
             if (words && words.length < 2e6) body.append('words', words);
@@ -328,10 +336,10 @@
             skip.push(job.id);
         }
         announce(lane, null);
-        return PASSES[pass].pause;
+        return PAUSE_MS;
     };
 
-    // The main lane runs until nothing is left; the second lane until no pass-1 document is left.
+    // The lane runs until nothing is left.
     const runLane = async lane => {
         lane.active = true;
         try {
@@ -352,8 +360,6 @@
                 let pause = null;
                 try { pause = await step(lane); } catch { pause = null; }
                 if (pause === null) { await stop(lane); return; }
-                // Long pauses (pass 3) close the engine meanwhile.
-                if (pause >= 30000) await stop(lane);
                 if (pause > 0) await sleep(pause);
             }
         } finally {

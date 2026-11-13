@@ -23,11 +23,14 @@ final class OcrProgress
 
     private const int WAITING_TTL = 15;
 
-    /** Browser passes (point 56): 1 fast, 2 medium, 3 full resolution; the server reads once and sets 3. */
-    public const int PASSES = 3;
+    /**
+     * Point 130/A275: every document is read once at full resolution; ocr_pass keeps this value for a read document
+     * (the old browser passes 1 and 2 are gone).
+     */
+    public const int FULL = 3;
 
-    /** Point 124/A259: who reads (server or browser) and in which pass; page and pages follow as the reading goes on. */
-    public static function start(Document $document, string $engine = 'server', int $pass = self::PASSES): void
+    /** Point 124/A259: who reads (server or browser); page and pages follow as the reading goes on. */
+    public static function start(Document $document, string $engine = 'server'): void
     {
         Cache::put(self::CURRENT_KEY, [
             'id' => $document->id,
@@ -36,7 +39,6 @@ final class OcrProgress
             'started' => now()->getTimestamp(),
             'percent' => null,
             'engine' => $engine === 'browser' ? 'browser' : 'server',
-            'pass' => max(1, min(self::PASSES, $pass)),
             'page' => null,
             'pages' => null,
         ], self::CURRENT_TTL);
@@ -85,7 +87,7 @@ final class OcrProgress
     }
 
     /**
-     * @return array{id: string, title: string, started: int, percent: ?int, engine: string, pass: int, page: ?int, pages: ?int, elapsed: int}|null
+     * @return array{id: string, title: string, started: int, percent: ?int, engine: string, page: ?int, pages: ?int, elapsed: int}|null
      */
     public static function current(string $orgId): ?array
     {
@@ -101,7 +103,6 @@ final class OcrProgress
             'started' => $started,
             'percent' => isset($current['percent']) ? (int) $current['percent'] : null,
             'engine' => ($current['engine'] ?? 'server') === 'browser' ? 'browser' : 'server',
-            'pass' => (int) ($current['pass'] ?? self::PASSES),
             'page' => isset($current['page']) ? (int) $current['page'] : null,
             'pages' => isset($current['pages']) ? (int) $current['pages'] : null,
             'elapsed' => $started > 0 ? max(0, now()->getTimestamp() - $started) : 0,
@@ -138,10 +139,10 @@ final class OcrProgress
     }
 
     /**
-     * The OCR indicator in the main menu (point 57), cached 15 s: documents still open (waiting, or read by the
-     * browser in pass 1 or 2 of 3, point 56), and the passes done of all readable documents for the small bar.
+     * The OCR indicator in the main menu (point 57), cached 15 s: documents still open (waiting) and the documents
+     * read of all readable ones for the small bar (point 130: one read per document).
      *
-     * @return array{open: int, waiting: int, total: int, passes: int}
+     * @return array{open: int, waiting: int, total: int, done: int}
      */
     public static function open(string $orgId): array
     {
@@ -149,18 +150,12 @@ final class OcrProgress
             $row = self::query($orgId)
                 ->where(static fn ($w) => $w->whereNull('ocr_status')->orWhereIn('ocr_status', ['pending', 'done']))
                 ->selectRaw("sum(case when ocr_status is null or ocr_status = 'pending' then 1 else 0 end) as waiting")
-                ->selectRaw('sum(case when ocr_pass in (1, 2) and ocr_status = ? then 1 else 0 end) as reading', ['done'])
                 ->selectRaw('count(*) as total')
-                ->selectRaw("sum(case when ocr_status is null or ocr_status = 'pending' then 0 when ocr_pass in (1, 2) then ocr_pass else ".self::PASSES.' end) as passes')
                 ->toBase()->first();
             $waiting = (int) ($row->waiting ?? 0);
+            $total = (int) ($row->total ?? 0);
 
-            return [
-                'open' => $waiting + (int) ($row->reading ?? 0),
-                'waiting' => $waiting,
-                'total' => (int) ($row->total ?? 0),
-                'passes' => (int) ($row->passes ?? 0),
-            ];
+            return ['open' => $waiting, 'waiting' => $waiting, 'total' => $total, 'done' => $total - $waiting];
         });
     }
 
@@ -177,7 +172,7 @@ final class OcrProgress
 
     private static function waitingKey(string $orgId): string
     {
-        // Holds the open counts of point 57 (was a single waiting count under ocr.waiting.*).
-        return 'ocr.open.'.$orgId;
+        // Holds the open counts of point 57; v2 since point 130 (done instead of passes).
+        return 'ocr.open.v2.'.$orgId;
     }
 }

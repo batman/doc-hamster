@@ -44,7 +44,8 @@ return [
             // D-020: jobs run on the queues 'local' (no outbound network) or
             // 'net' (the only way out); see App\Queue\QueueName.
             'queue' => env('DB_QUEUE', 'local'),
-            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 600),
+            // Above RecognizeText's $timeout (two reads of 10 minutes each, point 130), so a long OCR is not handed out twice.
+            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 1320),
             'after_commit' => false,
         ],
 

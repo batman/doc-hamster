@@ -39,8 +39,8 @@
         }
         const bar = nav.querySelector('[data-ocr-nav-bar]');
         if (bar && data.total !== undefined) {
-            bar.max = Math.max(1, (data.total ?? 0) * Number(nav.dataset.passes ?? 3));
-            bar.value = data.passes ?? 0;
+            bar.max = Math.max(1, data.total ?? 0);
+            bar.value = data.done ?? 0;
         }
         nav.hidden = open === 0;
     };

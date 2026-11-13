@@ -19,7 +19,7 @@
 @endphp
 <x-fold-card fold="ocr.live" :title="__('ocr.live.title')" icon="eye" class="ocr-live"
     data-ocr-live="{{ json_encode($live) }}"
-    data-labels="{{ json_encode(__('ocr.live')) }}" data-passes="{{ \App\Infrastructure\Environment\OcrProgress::PASSES }}">
+    data-labels="{{ json_encode(__('ocr.live')) }}">
     <div class="ocr-live-now">
         <div class="ocr-live-stage" data-ocr-live-stage>
             <div class="ocr-live-page" data-ocr-live-page hidden></div>
@@ -28,7 +28,6 @@
         <dl class="detail-facts ocr-live-facts" data-ocr-live-facts>
             <dt>{{ __('ocr.live.document') }}</dt><dd data-live="title">{{ __('ocr.live.none') }}</dd>
             <dt>{{ __('ocr.live.page') }}</dt><dd data-live="page">{{ __('ocr.live.none') }}</dd>
-            <dt>{{ __('ocr.live.pass') }}</dt><dd data-live="pass">{{ __('ocr.live.none') }}</dd>
             <dt>{{ __('ocr.live.engine') }}</dt><dd data-live="engine">{{ __('ocr.live.none') }}</dd>
             <dt>{{ __('ocr.live.percent') }}</dt><dd data-live="percent">{{ __('ocr.live.none') }}</dd>
             <dt>{{ __('ocr.live.elapsed') }}</dt><dd data-live="elapsed">{{ __('ocr.live.none') }}</dd>

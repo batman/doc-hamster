@@ -69,7 +69,7 @@ it('keeps corrections through a new recognition and puts them into its text', fu
     // The browser reads it again, the word sits a little elsewhere.
     $again = $this->words;
     $again['pages'][0]['words'][2]['x'] = 0.302;
-    $this->post('/ocr/'.$document->id, ['text' => "Summe 12,0O\n12,0O", 'pass' => 3, 'words' => json_encode($again)])->assertNoContent();
+    $this->post('/ocr/'.$document->id, ['text' => "Summe 12,0O\n12,0O", 'words' => json_encode($again)])->assertNoContent();
 
     expect($document->refresh()->ocr_text)->toBe("Summe 12,0O\n12,00")
         ->and(OcrWords::forDocument($document)['pages'][0]['words'][2]['t'] ?? null)->toBe('12,00');

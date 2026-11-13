@@ -1,5 +1,5 @@
 // Live card on the Texterkennung page (point 124, A255-A259). Shows the document being read with the recognised words
-// as orange boxes (.doc-mark, unsure words .is-faint), page x of y, pass, engine, percent of the page, elapsed time and
+// as orange boxes (.doc-mark, unsure words .is-faint), page x of y, engine, percent of the page, elapsed time and
 // the tesseract.js step; figures and the last ten finished documents. Two sources:
 //  - the browser OCR of THIS tab (modules/ocr-browser.js) reports through DocHamster events: ocr:job, ocr:page-start,
 //    ocr:page (with the page's words), ocr:progress – truly live;
@@ -128,7 +128,6 @@
         const L = st.labels;
         set(card, 'title', d?.title ?? L.none);
         set(card, 'page', d?.page ? (d.pages ? fmt(L.page_of, { page: d.page, pages: d.pages }) : String(d.page)) : L.none);
-        set(card, 'pass', d?.pass ? fmt(L.pass_of, { pass: d.pass, passes: st.passes }) : L.none);
         set(card, 'engine', d?.engine ? (L.engines?.[d.engine] ?? d.engine) : L.none);
         set(card, 'percent', d?.percent !== null && d?.percent !== undefined ? `${d.percent} %` : L.none);
         st.started = d?.started ?? 0;
@@ -214,7 +213,6 @@
             title: local.job.title ?? st.serverTitle?.[local.job.id] ?? '…',
             page: local.n,
             pages: local.pages,
-            pass: local.job.pass,
             engine: 'browser',
             percent: local.percent,
             started: local.started,
@@ -262,7 +260,7 @@
         let first = null;
         try { labels = JSON.parse(card.dataset.labels ?? '{}'); } catch { /* defaults stay empty */ }
         try { first = JSON.parse(card.dataset.ocrLive ?? 'null'); } catch { /* the poll fills it */ }
-        const st = { labels, passes: Number(card.dataset.passes ?? 3), gen: 0, mediaKey: null, pdf: null, words: new Map(), started: 0, last: null, recentSig: null };
+        const st = { labels, gen: 0, mediaKey: null, pdf: null, words: new Map(), started: 0, last: null, recentSig: null };
         state.set(card, st);
         cards.add(card);
         if (first) paintServer(card, first);

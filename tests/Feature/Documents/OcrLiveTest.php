@@ -56,7 +56,7 @@ it('gives the Live card the current page, figures and the last finished document
 
     $json = $this->actingAs($this->admin->user)->getJson('/ocr/status?live=1')->assertOk()
         ->assertJsonPath('current.title', 'jetzt.pdf')->assertJsonPath('current.page', 2)->assertJsonPath('current.pages', 3)
-        ->assertJsonPath('current.engine', 'server')->assertJsonPath('current.pass', 3)
+        ->assertJsonPath('current.engine', 'server')
         ->assertJsonPath('figures.per_hour', 12)->assertJsonPath('figures.seconds_per_page', 2)
         ->json();
     expect($json['figures']['remaining_seconds'])->toBe(4)

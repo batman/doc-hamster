@@ -40,7 +40,7 @@ it('stores the browser word positions, announces the text and serves them with c
         'junk',
     ]]]];
 
-    $this->actingAs($this->admin->user)->post('/ocr/'.$document->id, ['text' => 'Summe 12,0O', 'pass' => 1, 'words' => json_encode($words)])->assertNoContent();
+    $this->actingAs($this->admin->user)->post('/ocr/'.$document->id, ['text' => 'Summe 12,0O', 'words' => json_encode($words)])->assertNoContent();
     Event::assertDispatched(TextRecognized::class, static fn (TextRecognized $e): bool => $e->documentId === $document->id);
     $document->refresh()->forceFill(['ocr_fixes' => json_encode([['p' => 1, 'x' => 0.29, 'y' => 0.49, 'w' => 0.12, 'h' => 0.04, 't' => '12,00', 'o' => '12,0O']])])->save();
 
@@ -65,13 +65,12 @@ it('puts every document back for a re-read behind new uploads, keeping the old t
     expect($read->refresh()->ocr_status)->toBe('done')->and($read->ocr_text)->toBe('alt')->and((bool) $read->ocr_rescan)->toBeTrue();
     expect($failed->refresh()->ocr_status)->toBe('pending')->and($failed->ocr_failures)->toBe(0)->and((bool) $failed->ocr_rescan)->toBeTrue();
 
-    // A new upload goes first; the second engine (pass 1 only) leaves re-reads alone.
+    // A new upload goes first; re-reads come after it.
     $new = ($this->make)('new.jpg', 'pending');
-    $this->actingAs($this->admin->user)->getJson('/ocr/next')->assertOk()->assertJson(['id' => $new->id, 'pass' => 1]);
-    $this->getJson('/ocr/next?only=1&skip[]='.$new->id)->assertNoContent();
-    $this->getJson('/ocr/next?skip[]='.$new->id)->assertOk()->assertJson(['id' => $failed->id, 'pass' => 1]);
-    // A read document is read again straight in full; its new text replaces the old one.
-    $this->getJson('/ocr/next?skip[]='.$new->id.'&skip[]='.$failed->id)->assertOk()->assertJson(['id' => $read->id, 'pass' => 3]);
-    $this->post('/ocr/'.$read->id, ['text' => 'neu', 'pass' => 3])->assertNoContent();
+    $this->actingAs($this->admin->user)->getJson('/ocr/next')->assertOk()->assertJson(['id' => $new->id]);
+    $this->getJson('/ocr/next?skip[]='.$new->id)->assertOk()->assertJson(['id' => $failed->id]);
+    // A read document is read again; its new text replaces the old one.
+    $this->getJson('/ocr/next?skip[]='.$new->id.'&skip[]='.$failed->id)->assertOk()->assertJson(['id' => $read->id]);
+    $this->post('/ocr/'.$read->id, ['text' => 'neu'])->assertNoContent();
     expect($read->refresh()->ocr_text)->toBe('neu')->and((bool) $read->ocr_rescan)->toBeFalse();
 });
