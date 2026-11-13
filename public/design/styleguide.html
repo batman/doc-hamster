@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="../css/modules/updates.css">
     <link rel="stylesheet" href="../css/modules/palette.css">
     <link rel="stylesheet" href="../css/modules/pages.css">
+    <link rel="stylesheet" href="../css/modules/properties.css">
     <link rel="stylesheet" href="../css/core/layout-debug.css">
     <style>
         /* Sheet-only helpers, not part of the app CSS. */
@@ -708,6 +709,26 @@
             <h3 class="sg-pad">Klick zum Bearbeiten</h3>
             <div style="max-width: 26rem;">
                 <div class="edit-in-place is-multiline" tabindex="0" role="button" data-placeholder="Notiz zu diesem Dokument">Parken am Flughafen, 2 Tage</div>
+            </div>
+
+            <h3 class="sg-pad" id="properties-card">Eigenschaften-Karte</h3>
+            <p class="sg-note">Im Detailfenster: nur Eigenschaften mit Wert, jeder Wert per Klick bearbeitbar (leer = entfernt). Ein vorgeschlagener Wert ist grau und kursiv, mit Plakette „vorgeschlagen“ und ✓ zum Bestätigen; X entfernt (beim Überfahren). Ein Wert mit Fundstelle hat einen orangen Namen und markiert die Stelle im Dokument. „+ Eigenschaft“ öffnet „Markieren als …“.</p>
+            <div style="max-width: 30rem;">
+                <section class="detail-section doc-properties">
+                    <div class="doc-properties-head"><h3>Eigenschaften</h3><button type="button" class="button-quiet button-small"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>Eigenschaft</button></div>
+                    <ul class="prop-list">
+                        <li class="prop-row" data-page="1"><span class="prop-name">Rechnungsbetrag</span><span class="prop-value"><div class="edit-in-place" tabindex="0" role="button">1.234,56 €</div></span><span class="row-actions"><button type="button" class="control-button" aria-label="Entfernen" data-tooltip="Entfernen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></button></span></li>
+                        <li class="prop-row is-suggested"><span class="prop-name">Fällig am</span><span class="prop-value"><div class="edit-in-place" tabindex="0" role="button">01.04.2026</div><span class="pill pill-new">vorgeschlagen</span></span><form><button type="button" class="control-button" aria-label="Bestätigen" data-tooltip="Bestätigen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5l10 -10"/></svg></button></form><span class="row-actions"><button type="button" class="control-button" aria-label="Entfernen" data-tooltip="Entfernen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></button></span></li>
+                    </ul>
+                </section>
+            </div>
+
+            <h3 class="sg-pad" id="mark-as">Popup „Markieren als …“</h3>
+            <p class="sg-note"><code>DocHamster.markAs({ win, documentId, text, page, box, anchor })</code>: ein Dialog mit dem angeklickten Text, den passenden Eigenschaften als Auswahlzeilen und dem Wert mit Live-Prüfung (grün = so wird gespeichert, rot = warum nicht). Bei „Auswahl“ eine Liste der Werte.</p>
+            <div class="dialog mark-as" role="dialog" aria-labelledby="sg-mark-title"><button type="button" class="icon-button button-small dialog-x" aria-label="Schließen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></button><h2 id="sg-mark-title">Markieren als …</h2><p class="mark-as-text">1.234,56 EUR</p>
+                <form onsubmit="return false"><div class="pick-list mark-as-list" role="radiogroup" aria-label="Eigenschaft"><label class="pick-row"><input type="radio" name="sg-mark" checked><span><strong>Rechnungsbetrag</strong><small>Betrag</small></span></label><label class="pick-row"><input type="radio" name="sg-mark"><span><strong>IBAN</strong><small>IBAN · DE89 3704 0044 0532 0130 00</small></span></label></div>
+                <div class="field"><label for="sg-mark-value">Wert</label><div class="field-addon is-ok"><input id="sg-mark-value" value="1.234,56 EUR"><span class="addon-end"><span class="addon-state" role="img" aria-label="OK"></span></span></div><p class="field-hint">Wird gespeichert als: 1.234,56 €</p></div>
+                <div class="dialog-actions"><button type="submit">Speichern</button></div></form>
             </div>
 
             <h3 class="sg-pad">Dialog mit X</h3>
