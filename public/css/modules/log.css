@@ -1,0 +1,12 @@
+/* Einstellungen → Log (point 115, A229-A234): filter bar, rows with logbook and kind as pills. */
+.log-filter { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; margin: .5rem 0 1rem; }
+.log-filter input[type="search"] { flex: 1 1 12rem; min-width: 0; }
+.log-books { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin: 0; padding: 0; border: 0; flex-basis: 100%; }
+.log-date { display: inline-flex; align-items: center; gap: .4rem; margin: 0; }
+.log-date span { color: var(--muted); font-size: .875rem; }
+.log-date input { width: auto; }
+.log-row > span:nth-child(2) { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.log-pills { display: inline-flex; flex: none; flex-wrap: wrap; justify-content: flex-end; gap: .25rem; margin-left: auto; }
+.log-error .row-icon { color: var(--error); }
+.log-warning .row-icon { color: var(--primary); }
+.log-error strong { color: color-mix(in srgb, var(--error) 75%, var(--text)); }

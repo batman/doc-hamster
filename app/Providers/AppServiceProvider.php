@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Domain\Auth\User;
+use App\Domain\Log\LogEntry;
 use App\Domain\Org\CurrentOrg;
+use App\Domain\Org\Membership;
 use App\Domain\Org\Permission;
 use App\Infrastructure\Crypto\IpHasher;
 use App\Infrastructure\Environment\NativeSystemProbe;
@@ -14,11 +16,15 @@ use App\Infrastructure\Session\NoIpDatabaseSessionHandler;
 use App\Setup\EnvFile;
 use App\Setup\SetupCode;
 use App\Setup\SetupMode;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Encryption\MissingAppKeyException;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
@@ -62,6 +68,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        self::logSignIns();
         // A local reverse proxy (e.g. nginx in front of Apache on Plesk) terminates TLS; trust its X-Forwarded-*
         // headers so scheme and host are right. Set here, not in bootstrap/app.php, where .env isn't loaded yet.
         $proxies = config('dochamster.trusted_proxies');
@@ -105,6 +112,31 @@ class AppServiceProvider extends ServiceProvider
                 is_numeric($lifetime) ? (int) $lifetime : 120,
                 $app,
             );
+        });
+    }
+
+    /** Point 115: signing in and out are events of the logbook "Allgemein", a failed sign-in is a warning. */
+    private static function logSignIns(): void
+    {
+        $orgOf = static function (mixed $user): ?string {
+            if (! $user instanceof User) {
+                return null;
+            }
+            $org = Membership::query()->withoutGlobalScopes()->where('user_id', $user->getKey())->value('org_id');
+
+            return is_string($org) ? $org : null;
+        };
+        Event::listen(Login::class, static function (Login $event) use ($orgOf): void {
+            $id = $event->user->getAuthIdentifier();
+            LogEntry::write('general', 'event', (string) __('log.actions.auth.login'), 'auth.login', $orgOf($event->user), is_string($id) ? $id : null);
+        });
+        Event::listen(Logout::class, static function (Logout $event) use ($orgOf): void {
+            $id = $event->user->getAuthIdentifier();
+            LogEntry::write('general', 'event', (string) __('log.actions.auth.logout'), 'auth.logout', $orgOf($event->user), is_string($id) ? $id : null);
+        });
+        Event::listen(Failed::class, static function (Failed $event) use ($orgOf): void {
+            $name = $event->credentials['username'] ?? null;
+            LogEntry::write('general', 'warning', (string) __('log.actions.auth.failed', ['name' => is_string($name) ? mb_substr($name, 0, 60) : '?']), 'auth.failed', $orgOf($event->user));
         });
     }
 }

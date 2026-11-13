@@ -188,7 +188,7 @@
             }
             return texts.filter(Boolean).join('\n\n');
         } finally {
-            doc.destroy().catch(() => {});
+            Promise.resolve(doc.loadingTask?.destroy ? doc.loadingTask.destroy() : doc.destroy?.()).catch(() => {}); /* pdf.js 6: freed via its loading task */
         }
     };
     const announce = (lane, job) => { if (lane.main) document.dispatchEvent(new CustomEvent('dh:ocr-job', { detail: job })); };

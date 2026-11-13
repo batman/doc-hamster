@@ -16,6 +16,7 @@ return [
         'ocr' => 'Texterkennung',
         'export' => 'Export',
         'update' => 'Update',
+        'log' => 'Log',
     ],
     'links' => [
         'members' => ['title' => 'Personen', 'text' => 'Wer Zugang hat'],
@@ -28,5 +29,9 @@ return [
         'shares' => ['title' => 'Links', 'text' => 'Gültigkeit und gültige Links zum Versenden'],
         'update' => ['title' => 'Update', 'text' => 'Neue Version suchen und installieren'],
         'phone' => ['title' => 'Handy-Test', 'text' => 'Prüfen, ob dein Handy alles kann'],
+        'log' => ['title' => 'Alle Logbücher', 'text' => 'Ereignisse und Fehler aller Logbücher'],
+        'log_general' => ['title' => 'Allgemein', 'text' => 'Anmelden, Hochladen, Ändern, Fehler'],
+        'log_ocr' => ['title' => 'Texterkennung', 'text' => 'Was die Texterkennung gelesen hat'],
+        'log_updates' => ['title' => 'Updates', 'text' => 'Installationen und Wechsel'],
     ],
 ];

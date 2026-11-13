@@ -31,6 +31,12 @@ final class SettingsMenu
         'ocr' => ['text-scan-2', [
             ['ocr', 'ocr.show', 'text-scan-2', 'settings.manage', ['ocr.show']],
         ], true],
+        'log' => ['list-details', [
+            ['log', 'log.index', 'list-details', 'settings.manage', ['log.index']],
+            ['log_general', 'log.general', 'note', 'settings.manage', ['log.general']],
+            ['log_ocr', 'log.ocr', 'text-scan-2', 'settings.manage', ['log.ocr']],
+            ['log_updates', 'log.updates', 'cloud-download', 'settings.manage', ['log.updates']],
+        ], false],
         'export' => ['file-export', [
             ['export', 'exports.form', 'file-export', 'exports.create', ['exports.*']],
             ['shares', 'shares.index', 'send', 'exports.create', ['shares.*']],

@@ -11,6 +11,10 @@
     <meta name="color-scheme" content="light dark">
     <meta name="theme-color" content="#30302e">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @auth
+        {{-- Point 115: where core/error-report.js sends browser errors (Einstellungen → Log). --}}
+        <meta name="log-client" content="{{ route('log.client') }}">
+    @endauth
     <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="48x48">
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     <link rel="apple-touch-icon" href="{{ asset('img/apple-touch-icon.png') }}">
@@ -70,7 +74,7 @@
                             ['print-tray.index', 'printer', 'print_tray.title', 'documents.upload', ['print-tray.*'], \App\Http\Badges::PRINT_TRAY],
                             ['mail-tray.index', 'mail', 'mail_tray.title', 'documents.upload', ['mail-tray.*'], null],
                             ['bank.index', 'building-bank', 'bank.title', 'banking.import', ['bank.index', 'bank.show'], null],
-                            ['settings.index', 'settings', 'settings.title', null, ['settings.*', 'members.*', 'roles.*', 'tags.*', 'exports.*', 'updates.*', 'ocr.show', 'palette.*', 'bank.import*', 'bank.accounts.*', 'phone-check*'], null],
+                            ['settings.index', 'settings', 'settings.title', null, ['settings.*', 'members.*', 'roles.*', 'tags.*', 'exports.*', 'updates.*', 'ocr.show', 'palette.*', 'bank.import*', 'bank.accounts.*', 'phone-check*', 'log.*'], \App\Http\Badges::LOG],
                         ] as [$route, $icon, $label, $ability, $active, $badge])
                             @if ($ability === null || Gate::allows($ability))
                                 <li><a class="nav-item tooltip-right" href="{{ route($route) }}" data-tooltip="{{ __($label) }}" @if (request()->routeIs(...$active)) aria-current="page" @endif><x-icon :name="$icon" /><span class="nav-text">{{ __($label) }}</span> @if ($badge !== null) @php $count = $badges[$badge] ?? 0; @endphp <span class="badge badge-alert" data-badge="{{ $badge }}" @if ($count === 0) hidden @endif>{{ $count > 9 ? '9+' : $count }}</span> @endif</a></li>

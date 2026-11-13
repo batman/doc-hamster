@@ -13,11 +13,11 @@ return [
     'css' => [
         'core/base', 'core/layout', 'core/forms', 'core/components', 'core/buttons', 'core/menus', 'core/lists',
         'core/columns', 'core/windows',
-        'modules/documents', 'modules/notes', 'modules/text-editor', 'modules/ocr', 'modules/updates',
+        'modules/documents', 'modules/notes', 'modules/text-editor', 'modules/ocr', 'modules/log', 'modules/updates',
         'modules/palette', 'modules/pages', 'core/layout-debug',
     ],
     'js' => [
-        'core/bus', 'core/menu', 'core/dropdowns', 'modules/documents-filter', 'core/sortable', 'core/tabs',
+        'core/bus', 'core/error-report', 'core/menu', 'core/dropdowns', 'modules/documents-filter', 'core/sortable', 'core/tabs',
         'core/tooltips', 'core/dialogs', 'core/windows', 'core/window-search', 'core/columns', 'core/scroll-hint',
         'core/badges', 'modules/notes', 'modules/tags-search', 'core/toasts', 'core/ajax-forms',
         'modules/updates-preview-pick', 'core/color-field', 'modules/folder-import', 'core/start',

@@ -56,9 +56,6 @@
 .ocr-rerun { margin-top: 1rem; }
 
 /* Point 69: OCR log filters (A110) and the "nicht möglich" summary (A112). */
-.ocr-filter { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: .5rem 0 1rem; }
-.ocr-filter input[type="search"] { flex: 1 1 12rem; min-width: 0; }
-.ocr-filter select { flex: 0 1 auto; width: auto; }
 .ocr-summary { display: grid; gap: .25rem; margin: 0; padding: 0; list-style: none; }
 .ocr-summary li { display: flex; gap: .75rem; align-items: baseline; }
 .ocr-summary strong { min-width: 2.5rem; text-align: right; }

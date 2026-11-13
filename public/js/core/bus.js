@@ -13,6 +13,7 @@
                     fn(root);
                 } catch (error) {
                     console.error(`DocHamster ${name}:`, error);
+                    DocHamster.reportError?.(`${error?.name ?? 'Error'}: ${error?.message ?? error}`, name);
                 }
             });
         },

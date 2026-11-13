@@ -16,6 +16,7 @@ return [
         'ocr' => 'Text recognition',
         'export' => 'Export',
         'update' => 'Update',
+        'log' => 'Log',
     ],
     'links' => [
         'members' => ['title' => 'People', 'text' => 'Who has access'],
@@ -28,5 +29,9 @@ return [
         'shares' => ['title' => 'Links', 'text' => 'Validity and valid links for sending'],
         'update' => ['title' => 'Update', 'text' => 'Look for a new version and install it'],
         'phone' => ['title' => 'Phone test', 'text' => 'Check whether your phone can do everything'],
+        'log' => ['title' => 'All logbooks', 'text' => 'Events and errors of every logbook'],
+        'log_general' => ['title' => 'General', 'text' => 'Sign-ins, uploads, changes, errors'],
+        'log_ocr' => ['title' => 'Text recognition', 'text' => 'What text recognition read'],
+        'log_updates' => ['title' => 'Updates', 'text' => 'Installs and switches'],
     ],
 ];

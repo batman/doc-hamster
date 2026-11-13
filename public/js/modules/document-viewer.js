@@ -311,7 +311,7 @@
         sweep();
         let doc;
         try { doc = await openPdf(frame.dataset.pdf); } catch { return; } // the preview image stays
-        if (!frame.isConnected) { doc.destroy().catch(() => {}); return; }
+        if (!frame.isConnected) { Promise.resolve(doc.loadingTask?.destroy ? doc.loadingTask.destroy() : doc.destroy?.()).catch(() => {}); /* pdf.js 6: freed via its loading task */ return; }
         const pdf = { doc, page: 1, pages: doc.numPages, gen: 0, drawn: null, timer: 0, task: null };
         pdfs.set(frame, pdf);
         live.add(frame);

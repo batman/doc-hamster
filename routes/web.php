@@ -12,6 +12,7 @@ use App\Http\Controllers\ExportController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\FolderImportController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LogController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\NoteColumnController;
 use App\Http\Controllers\OcrController;
@@ -67,6 +68,16 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::get('files/{id}/download', [DocumentController::class, 'download'])->name('documents.download');
     Route::get('files/{id}/thumb', [DocumentController::class, 'thumb'])->name('documents.thumb');
     Route::get('tags.css', [TagController::class, 'css'])->name('tags.css');
+    // Einstellungen → Log (point 115, A229-A234): all logbooks, one entry per logbook, export, reset; browser errors.
+    Route::middleware('can:settings.manage')->group(function (): void {
+        Route::get('settings/log', [LogController::class, 'index'])->name('log.index');
+        Route::get('settings/log/general', [LogController::class, 'index'])->defaults('book', 'general')->name('log.general');
+        Route::get('settings/log/ocr', [LogController::class, 'index'])->defaults('book', 'ocr')->name('log.ocr');
+        Route::get('settings/log/updates', [LogController::class, 'index'])->defaults('book', 'updates')->name('log.updates');
+        Route::get('settings/log/export', [LogController::class, 'export'])->name('log.export');
+        Route::post('settings/log/reset', [LogController::class, 'reset'])->name('log.reset');
+    });
+    Route::post('log/client', [LogController::class, 'client'])->middleware('throttle:30,1')->name('log.client');
     // Text recognition set-up and browser fallback (point 18).
     Route::get('settings/ocr', [OcrController::class, 'show'])->middleware('can:settings.manage')->name('ocr.show');
     Route::post('settings/ocr', [OcrController::class, 'setup'])->middleware('can:settings.manage')->name('ocr.setup');

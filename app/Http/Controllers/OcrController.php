@@ -37,44 +37,15 @@ final class OcrController extends Controller
 {
     private const array SKIP_MIMES = LocalOcr::BROWSER_SKIP_MIMES;
 
-    /** Einstellungen → Texterkennung (point 35): tabs "Übersicht" (mode, counts, progress) and "Protokoll" (points 61/69). */
-    public function show(Request $request, LocalOcr $ocr, CurrentOrg $org): View
+    /** Einstellungen → Texterkennung (point 35): mode, counts, progress. Its log is now Einstellungen → Log (point 116). */
+    public function show(Request $request, LocalOcr $ocr, CurrentOrg $org): View|RedirectResponse
     {
-        self::watch($org->id(), $ocr);
-        $tab = $request->query('tab') === 'log' ? 'log' : 'overview';
-        // A110: filters by result, engine, document and a text search over document name and message.
-        $filters = [
-            'result' => in_array($request->query('result'), array_keys(OcrLog::RESULTS), true) ? (string) $request->query('result') : '',
-            'engine' => in_array($request->query('engine'), OcrLog::SOURCES, true) ? (string) $request->query('engine') : '',
-            'doc' => is_string($request->query('doc')) ? mb_substr((string) $request->query('doc'), 0, 26) : '',
-            'q' => is_string($request->query('q')) ? mb_substr(trim((string) $request->query('q')), 0, 100) : '',
-        ];
-        $log = null;
-        $summary = [];
-        $filterDocument = null;
-        if ($tab === 'log') {
-            $like = '%'.addcslashes($filters['q'], '\\%_').'%';
-            $log = OcrLog::query()
-                ->with(['document' => static fn ($d) => $d->withTrashed()->select(['id', 'title']), 'user:id,display_name'])
-                ->when($filters['result'] !== '', static fn ($q) => $q->whereIn('event', OcrLog::RESULTS[$filters['result']] ?? []))
-                ->when($filters['engine'] !== '', static fn ($q) => $q->where('source', $filters['engine']))
-                ->when($filters['doc'] !== '', static fn ($q) => $q->where('document_id', $filters['doc']))
-                ->when($filters['q'] !== '', static fn ($q) => $q->where(static fn ($w) => $w->where('message', 'like', $like)
-                    ->orWhereHas('document', static fn ($d) => $d->withTrashed()->where('title', 'like', $like))))
-                ->orderByDesc('created_at')->orderByDesc('id')
-                ->paginate(OcrLog::PER_PAGE)->withQueryString();
-            $summary = OcrLog::unavailableSummary($org->id());
-            if ($filters['doc'] !== '') {
-                $filterDocument = Document::query()->withTrashed()->whereKey($filters['doc'])->value('title');
-            }
+        if ($request->query('tab') === 'log') {
+            return redirect()->route('log.ocr', array_filter(['doc' => $request->query('doc'), 'q' => $request->query('q')], static fn ($v) => is_string($v) && $v !== ''));
         }
+        self::watch($org->id(), $ocr);
 
         return view('settings.ocr', [
-            'tab' => $tab,
-            'log' => $log,
-            'filters' => $filters,
-            'filterDocument' => is_string($filterDocument) ? $filterDocument : null,
-            'summary' => $summary,
             'mode' => $ocr->mode(),
             'pdfReady' => $ocr->serverReadsPdf(),
             'status' => $ocr->status(),

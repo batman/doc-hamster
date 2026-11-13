@@ -115,14 +115,14 @@ it('counts new prints in the menu badge until the Druckerablage is opened', func
     $token = pairPrinter($owner);
     printOn($token)->assertCreated();
 
-    $this->actingAs($owner->user)->getJson('/badges')->assertOk()->assertExactJson(['print-tray' => 1]);
+    $this->actingAs($owner->user)->getJson('/badges')->assertOk()->assertExactJson(['print-tray' => 1, 'log' => 0]);
     $this->get('/')->assertSee('data-badge="print-tray"', false);
 
     $this->travel(1)->seconds();
     $this->get('/print-tray')->assertOk();
-    $this->getJson('/badges')->assertExactJson(['print-tray' => 0]);
+    $this->getJson('/badges')->assertExactJson(['print-tray' => 0, 'log' => 0]);
 
     $this->travel(1)->seconds();
     printOn($token)->assertCreated();
-    $this->actingAs($owner->user)->getJson('/badges')->assertExactJson(['print-tray' => 1]);
+    $this->actingAs($owner->user)->getJson('/badges')->assertExactJson(['print-tray' => 1, 'log' => 0]);
 });

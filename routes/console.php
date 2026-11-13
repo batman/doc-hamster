@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domain\Log\LogEntry;
 use App\Domain\Ocr\OcrLog;
 use App\Infrastructure\Environment\NativeSystemProbe;
 use App\Queue\QueueName;
@@ -29,4 +30,9 @@ Schedule::command('queue:work --queue='.QueueName::workerOrder().' --stop-when-e
 // Point 61: the OCR log keeps 30 days (writing also prunes now and then, for servers without cron).
 Schedule::call(static fn () => OcrLog::prune())
     ->name('ocr-log-prune')
+    ->daily();
+
+// A228: the logbooks "Allgemein" and "Updates" keep 12 months (writing also prunes now and then).
+Schedule::call(static fn () => LogEntry::prune())
+    ->name('log-prune')
     ->daily();

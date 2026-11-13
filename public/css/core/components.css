@@ -191,6 +191,8 @@ button.col-strip:hover > .icon { color: var(--primary-ink); }
 }
 .pill-ok { border-color: transparent; background: color-mix(in srgb, var(--ok) 16%, var(--bg)); color: color-mix(in srgb, var(--ok) 70%, var(--text)); }
 .pill-new, .tab[aria-current="page"] .pill { border-color: transparent; background: rgb(255 118 34 / .15); color: var(--primary-ink); }
+.pill-error { border-color: transparent; background: color-mix(in srgb, var(--error) 15%, var(--bg)); color: color-mix(in srgb, var(--error) 75%, var(--text)); }
+.pill-warning { border-color: transparent; background: rgb(255 118 34 / .15); color: var(--primary-ink); }
 
 /* A93: tabs – a bar with tabs over a thin line; the active one in text colour with an orange bar that glides */
 .tab-bar { display: flex; gap: .25rem; margin: 1.25rem 0 1rem; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border); }

@@ -108,7 +108,7 @@ it('marks a document without text failed after three failures and shows engine e
     $this->postJson('/queue/tick')->assertOk()->assertJson(['cron' => false]);
 });
 
-it('logs browser results, engine and pause events and cron, shows them on the Protokoll tab and keeps 30 days', function (): void {
+it('logs browser results, engine and pause events and cron, shows them in the logbook Texterkennung and keeps 30 days', function (): void {
     Cache::put(LocalOcr::MODE_KEY, 'browser', 300);
     $document = Document::query()->withoutGlobalScope(OrgScope::class)->where('title', 'b.jpg')->firstOrFail();
 
@@ -125,9 +125,10 @@ it('logs browser results, engine and pause events and cron, shows them on the Pr
     expect(OcrLog::query()->where('event', 'recognized')->firstOrFail())
         ->chars->toBe(11)->duration_ms->toBe(2500)->pass->toBe(1)->document_id->toBe($document->id);
 
-    $this->get('/settings/ocr?tab=log')->assertOk()->assertSee('Protokoll')->assertSee('b.jpg')
+    $this->get('/settings/ocr?tab=log')->assertRedirect('/settings/log/ocr');
+    $this->get('/settings/log/ocr')->assertOk()->assertSee('b.jpg')
         ->assertSee('erkannt · 11 Zeichen')->assertSee('Zeitlimit')->assertSee('pausiert')->assertDontSee('Summe 12,00');
-    $this->get('/settings/ocr?tab=log&result=timeout')->assertOk()->assertSee('Zeitlimit')->assertDontSee('erkannt · 11 Zeichen');
+    $this->get('/settings/log?books[]=ocr&level=errors')->assertOk()->assertSee('Zeitlimit')->assertDontSee('erkannt · 11 Zeichen');
 
     OcrLog::query()->where('event', 'paused')->toBase()->update(['created_at' => now()->subDays(31)]);
     expect(OcrLog::prune())->toBe(1);
@@ -156,11 +157,11 @@ it('logs file details, browser and reasons once per document, filters and sums u
         ->file_type->toBe('PDF')->size->toBe(2_500_000)->pages->toBe(2)->agent->toBe('Chrome 142 / Windows');
 
     // A110/A112: filters and the summary of "nicht möglich" by reason.
-    $this->get('/settings/ocr?tab=log')->assertOk()->assertSee('Nicht möglich – nach Grund')
+    $this->get('/settings/log/ocr')->assertOk()->assertSee('Nicht möglich – nach Grund')
         ->assertSee('Textebene übernommen · 8 Zeichen')->assertSee('PDF · 2,4 MB · 2 Seiten')->assertSee('Chrome 142 / Windows');
-    $this->get('/settings/ocr?tab=log&result=unavailable')->assertOk()->assertSee('HEIC im Browser nicht lesbar')->assertDontSee('Textebene übernommen');
-    $this->get('/settings/ocr?tab=log&engine=browser&q=b.jpg')->assertOk()->assertSee('Textebene übernommen')->assertDontSee('nicht möglich: HEIC');
-    $this->get('/settings/ocr?tab=log&doc='.$documents['a.jpg']->id)->assertOk()->assertSee('Dokument: a.jpg')->assertDontSee('Textebene übernommen');
+    $this->get('/settings/log?books[]=ocr&level=problems')->assertOk()->assertSee('HEIC im Browser nicht lesbar')->assertDontSee('Textebene übernommen');
+    $this->get('/settings/log?books[]=ocr&q=b.jpg')->assertOk()->assertSee('Textebene übernommen')->assertDontSee('nicht möglich: HEIC');
+    $this->get('/settings/log?books[]=ocr&doc='.$documents['a.jpg']->id)->assertOk()->assertSee('Nur Dokument: a.jpg')->assertDontSee('Textebene übernommen');
 
     // A111: "Alle neu erkennen" with count and who.
     Queue::fake();

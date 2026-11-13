@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domain\Log\LogEntry;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\PrinterApiController;
 use App\Http\Middleware\RedirectToSetup;
@@ -39,6 +40,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Point 115: every reported server error also lands in Einstellungen → Log ("Allgemein", level error).
+        $exceptions->report(static function (Throwable $e): void {
+            LogEntry::write('general', 'error', class_basename($e).': '.$e->getMessage().' ('.basename($e->getFile()).':'.$e->getLine().')', 'server.error');
+        });
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
