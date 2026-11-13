@@ -30,7 +30,7 @@ final class UpdateSource
     /**
      * The newest release, if it runs on this PHP version and can update itself.
      *
-     * @return array{version: string, installer_sha256: string, installer_url: string}|null
+     * @return array{version: string, date: string, installer_sha256: string, installer_url: string}|null
      */
     public function latest(string $phpVersion): ?array
     {
@@ -42,6 +42,7 @@ final class UpdateSource
 
         return [
             'version' => (string) $manifest['version'],
+            'date' => self::day($manifest['date'] ?? null),
             'installer_sha256' => (string) $manifest['installer_sha256'],
             'installer_url' => self::DOWNLOADS.'/download/v'.rawurlencode((string) $manifest['version']).'/install.php',
         ];
@@ -50,7 +51,7 @@ final class UpdateSource
     /**
      * Open pull requests from this repository that are marked for preview and have a built package.
      *
-     * @return list<array{number: int, title: string, branch: string, sha: string}>
+     * @return list<array{number: int, title: string, branch: string, sha: string, date: string}>
      */
     public function previewBranches(): array
     {
@@ -74,6 +75,7 @@ final class UpdateSource
                 'title' => (string) ($entry['title'] ?? ''),
                 'branch' => $entry['branch'],
                 'sha' => $entry['sha'],
+                'date' => self::day($entry['date'] ?? null),
             ];
         }
 
@@ -123,6 +125,12 @@ final class UpdateSource
         }
 
         return $body;
+    }
+
+    /** The day of a build as Y-m-d, or '' when the list or manifest has none (older builds). */
+    private static function day(mixed $value): string
+    {
+        return is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}/', $value, $m) === 1 ? $m[0] : '';
     }
 
     private function get(string $url): Response

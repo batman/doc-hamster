@@ -40,7 +40,7 @@ jobs:
           sed "s/const DH_INSTALLER_VERSION = 'dev';/const DH_INSTALLER_VERSION = '${VERSION}';/" ../installer/install.php > install.php
           grep -q "DH_INSTALLER_VERSION = '${VERSION}'" install.php
           INSTALLER_SHA=$(sha256sum install.php | cut -d' ' -f1)
-          printf '{"version":"%s","php":"%s","zip":"dochamster-%s.zip","sha256":"%s","installer_sha256":"%s"}\n' "$VERSION" "$PHP_MIN" "$VERSION" "$SHA" "$INSTALLER_SHA" > manifest.json
+          printf '{"version":"%s","php":"%s","zip":"dochamster-%s.zip","sha256":"%s","installer_sha256":"%s","date":"%s"}\n' "$VERSION" "$PHP_MIN" "$VERSION" "$SHA" "$INSTALLER_SHA" "$(date -u +%F)" > manifest.json
           cat manifest.json
 
       - name: Publish release

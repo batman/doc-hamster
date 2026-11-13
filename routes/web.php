@@ -117,7 +117,6 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('update/install', [UpdateController::class, 'install'])->name('updates.install');
         Route::post('update/install-main', [UpdateController::class, 'installMain'])->name('updates.install-main');
         Route::middleware('can:system.update_preview')->group(function (): void {
-            Route::post('update/previews', [UpdateController::class, 'checkPreviews'])->name('updates.previews');
             Route::post('update/install-preview', [UpdateController::class, 'installPreview'])->name('updates.install-preview');
         });
     });

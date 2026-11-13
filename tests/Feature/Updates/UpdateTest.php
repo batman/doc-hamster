@@ -21,6 +21,7 @@ function fakeRelease(string $version, string $installer = '<?php // new', ?strin
     Http::fake([
         'github.com/*/releases/latest/download/manifest.json' => Http::response(['version' => $version, 'php' => '8.3.0', 'installer_sha256' => hash('sha256', $installer)]),
         'github.com/*/releases/download/v'.$version.'/install.php' => Http::response($served ?? $installer),
+        'github.com/*/releases/download/previews/previews.json' => Http::response('', 404),
         'api.github.com/*' => Http::response('', 403),
     ]);
 }
@@ -44,10 +45,10 @@ it('reports a newer version only after the click', function (): void {
     fakeRelease('1.1.0');
 
     $this->post('/update/check')->assertRedirect();
-    $this->get('/update')->assertSee('Version 1.1.0');
+    $this->get('/update')->assertSee('1.0.0 → 1.1.0', false);
 
     // The page asks by Ajax and gets the list for its card only (point 8).
-    $this->postJson('/update/check')->assertOk()->assertJsonPath('html', fn (string $html): bool => str_contains($html, 'Version 1.1.0'));
+    $this->postJson('/update/check')->assertOk()->assertJsonPath('html', fn (string $html): bool => str_contains($html, '1.0.0 → 1.1.0') && str_contains($html, 'verfügbar'));
 });
 
 it('says so when already up to date', function (): void {
@@ -72,14 +73,14 @@ it('is for owners and people with the update box, and needs the password to inst
 
     // "System aktualisieren" opens the page; previews need their own box on top (PO 2026-11-07).
     $updater = Membership::factory()->withRights(RoleRight::Update)->create();
-    $this->actingAs($updater->user)->get('/update')->assertOk()->assertDontSee('update/previews');
-    $this->post('/update/previews')->assertForbidden();
+    $this->actingAs($updater->user)->get('/update')->assertOk()->assertDontSee('update/install-preview');
+    $this->post('/update/install-preview')->assertForbidden();
 
     $onlyPreview = Membership::factory()->withRights(RoleRight::UpdatePreview)->create();
     $this->actingAs($onlyPreview->user)->get('/update')->assertForbidden();
 
     $both = Membership::factory()->withRights(RoleRight::Update, RoleRight::UpdatePreview)->create();
-    $this->actingAs($both->user)->get('/update')->assertOk()->assertSee('update/previews');
+    $this->actingAs($both->user)->get('/update')->assertOk();
 });
 
 it('refuses an installer whose checksum does not match', function (): void {
@@ -116,16 +117,44 @@ it('hands over to install.php for an update without questions and says when it i
     $this->get('/update?updated=1')->assertSee('Fertig: docHamster ist jetzt auf Version 1.0.0.');
 });
 
-it('offers only the newer state of the installed preview branch under Updates', function (): void {
-    config(['dochamster.version' => 'preview-116-aaaaaaa']);
+function fakePreviews(string $sha): void
+{
     Http::fake([
+        'github.com/*/releases/latest/download/manifest.json' => Http::response(['version' => '1.1.0', 'php' => '8.3.0', 'installer_sha256' => 'x', 'date' => '2026-11-10']),
         'github.com/*/releases/download/previews/previews.json' => Http::response([
-            ['number' => 116, 'title' => 'Framework', 'branch' => 'lead/framework', 'sha' => str_repeat('b', 40)],
+            ['number' => 116, 'title' => 'Framework', 'branch' => 'lead/framework', 'sha' => $sha, 'date' => '2026-11-12T08:00:00Z'],
+            ['number' => 129, 'title' => 'Neue Update-Seite', 'branch' => 'dev', 'sha' => str_repeat('c', 40)],
         ]),
         '*' => Http::response('', 500),
     ]);
+}
 
-    $this->postJson('/update/check')->assertOk()
-        ->assertJsonPath('html', fn (string $html): bool => str_contains($html, 'Neuer Stand von #116') && ! str_contains($html, 'Version '));
-    $this->get('/update')->assertSee(__('updates.main_tile'));
+it('lists Main and the preview branches with one click, the installed one marked', function (): void {
+    fakePreviews(str_repeat('b', 40));
+    $webRoot = dirname(base_path()).'/dh-test-web-'.uniqid();
+    mkdir($webRoot);
+
+    $html = $this->withServerVariables(['SCRIPT_FILENAME' => $webRoot.'/index.php'])->postJson('/update/check')->assertOk()->json('html');
+    @rmdir($webRoot);
+
+    expect($html)->toContain('Hauptversion', '1.0.0 → 1.1.0', '#116 · lead/framework', '#129 · dev', 'Neue Update-Seite', 'is-marked', 'Wechseln');
+    Http::assertSentCount(2);
+});
+
+it('keeps an update in the installed preview branch and offers Main only as a switch', function (): void {
+    config(['dochamster.version' => 'preview-116-aaaaaaa']);
+    fakePreviews(str_repeat('b', 40));
+    $webRoot = dirname(base_path()).'/dh-test-web-'.uniqid();
+    mkdir($webRoot);
+
+    $html = $this->withServerVariables(['SCRIPT_FILENAME' => $webRoot.'/index.php'])->postJson('/update/check')->assertOk()->json('html');
+    @rmdir($webRoot);
+
+    // The preview row offers its newer state; Main is a switch, not an update.
+    expect($html)->toContain('aaaaaaa → bbbbbbb', 'data-dialog-open="update-preview"', 'data-preview-pr="116"', 'data-dialog-open="switch-main"')
+        ->not->toContain('data-dialog-open="update-main"');
+
+    // "Aktualisieren" on Main never leaves a preview branch.
+    $this->post('/update/install', ['password' => 'ein-langes-test-passwort'])->assertSessionHasErrors(['update' => __('updates.stay_in_branch')]);
+    $this->get('/update')->assertSee(__('updates.main'));
 });
