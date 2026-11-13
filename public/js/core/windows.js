@@ -109,6 +109,162 @@
         };
         const reveal = win => requestAnimationFrame(() => win.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' }));
 
+        // Opener row, notch and window path (point 141, A306–A308; FRAMEWORK.md "Öffner-Zeile", "Fensterpfad").
+        // Every window remembers the window it was opened from (data-window-from = its id) and the link
+        // (data-window-opener = href). The row of that link in the opener window carries is-opener while the child is
+        // open – found again by href after a body reload or a page load (exact address first, then the closest one).
+        // A row is the link's closest [data-window-row], li or tr, else the link itself; links in the head, toolbar,
+        // search panel or a menu mark nothing. Next to each other on a wide screen, the row gets the notch (is-linked)
+        // and the opener window a short line on its right edge at the row's height (has-opener-line, --opener-y).
+        const ROW = '[data-window-row], li, tr';
+        const NO_ROW = '.win-head, .win-tools, .win-search-area, .win-path, .dropdown-panel, .more-menu';
+        const hints = new WeakMap();
+        const parse = href => {
+            try {
+                return new URL(href, location.href);
+            } catch {
+                return null;
+            }
+        };
+        // The link whose address is closest to `wanted`: same path, then the most equal query fields (a folder link
+        // differs by ?folder=…, a document link only by the parent's own fields such as q or view).
+        const closest = (links, wanted) => {
+            const goal = parse(wanted);
+            if (!goal) {
+                return null;
+            }
+            let best = null;
+            let bestScore = -Infinity;
+            links.forEach(link => {
+                const url = parse(link.href);
+                if (!url || url.origin + url.pathname !== goal.origin + goal.pathname) {
+                    return;
+                }
+                let score = 0;
+                goal.searchParams.forEach((value, key) => {
+                    if (url.searchParams.has(key)) {
+                        score += url.searchParams.get(key) === value ? 1 : -1;
+                    }
+                });
+                if (score > bestScore) {
+                    best = link;
+                    bestScore = score;
+                }
+            });
+            return best;
+        };
+        const rowOf = link => (link.closest(NO_ROW) ? null : link.closest(ROW) ?? link);
+        const openerOf = child => {
+            if (child.dataset.windowFrom) {
+                return wins().find(other => other.dataset.windowId === child.dataset.windowFrom) ?? null;
+            }
+            const prev = child.previousElementSibling;
+            return prev?.matches('section[data-window]') ? prev : null;
+        };
+        const openerRow = child => {
+            const from = openerOf(child);
+            if (!from || from.dataset.lazy !== undefined) {
+                return null;
+            }
+            const hint = hints.get(child);
+            if (hint?.isConnected && from.contains(hint)) {
+                return hint;
+            }
+            const links = [...from.querySelectorAll('a[data-window]')].filter(link => !link.closest(NO_ROW));
+            const wanted = child.dataset.windowOpener ?? child.dataset.windowUrl;
+            const link = links.find(each => each.href === wanted) ?? links.find(each => each.href === child.dataset.windowUrl)
+                ?? closest(links, wanted);
+            return link ? rowOf(link) : null;
+        };
+        const pairs = new Map();
+        const marks = () => {
+            pairs.clear();
+            wins().forEach(child => {
+                const row = openerRow(child);
+                if (row) {
+                    pairs.set(child, row);
+                }
+            });
+            const rows = new Set(pairs.values());
+            box.querySelectorAll('.is-opener').forEach(el => {
+                if (!rows.has(el)) {
+                    el.classList.remove('is-opener', 'is-linked');
+                }
+            });
+            rows.forEach(row => row.classList.add('is-opener'));
+        };
+        // A307: only reads positions and toggles two classes and one property – cheap enough for every scroll frame.
+        const notch = () => {
+            const lines = new Map();
+            pairs.forEach((row, child) => {
+                const from = child.previousElementSibling;
+                let linked = false;
+                if (!phone.matches && row.isConnected && from === openerOf(child) && !from.classList.contains('is-min') && !child.classList.contains('is-min')) {
+                    const r = row.getBoundingClientRect();
+                    const frame = (from.querySelector(':scope > .win-frame') ?? from).getBoundingClientRect();
+                    const mid = r.top + r.height / 2;
+                    if (r.height > 0 && mid > frame.top + 8 && mid < frame.bottom - 8) {
+                        linked = true;
+                        lines.set(from, mid - from.getBoundingClientRect().top);
+                    }
+                }
+                row.classList.toggle('is-linked', linked);
+            });
+            wins().forEach(win => {
+                const y = lines.get(win);
+                win.classList.toggle('has-opener-line', y !== undefined);
+                if (y !== undefined) {
+                    win.style.setProperty('--opener-y', `${y.toFixed(1)}px`);
+                }
+            });
+        };
+        // A308: the titles of the windows on the left; each brings its window back. Rebuilt only when they change.
+        const paths = () => wins().forEach((win, at, all) => {
+            const nav = win.querySelector(':scope > .win-frame > [data-window-path]');
+            if (!nav) {
+                return;
+            }
+            const left = all.slice(0, at);
+            const sig = left.map(other => `${other.dataset.windowId}\t${other.dataset.windowTitle}`).join('\n');
+            if (nav.dataset.sig === sig) {
+                return;
+            }
+            nav.dataset.sig = sig;
+            nav.replaceChildren(...left.flatMap((other, i) => {
+                const part = document.createElement('a');
+                part.href = other.dataset.windowUrl;
+                part.dataset.windowGoto = other.dataset.windowId;
+                part.textContent = other.dataset.windowTitle;
+                if (i === 0) {
+                    return [part];
+                }
+                const sep = document.createElement('span');
+                sep.className = 'win-path-sep';
+                sep.setAttribute('aria-hidden', 'true');
+                sep.textContent = '›';
+                return [sep, part];
+            }));
+            nav.hidden = left.length === 0;
+        });
+        let tick = 0;
+        let full = false;
+        const refresh = (all = true) => {
+            full ||= all;
+            cancelAnimationFrame(tick);
+            tick = requestAnimationFrame(() => {
+                if (full) {
+                    marks();
+                    paths();
+                }
+                full = false;
+                notch();
+            });
+        };
+        DocHamster.on('window:open', () => refresh());
+        DocHamster.on('window:close', () => refresh());
+        document.addEventListener('dh:window-url', () => refresh());
+        box.addEventListener('scroll', () => refresh(false), { capture: true, passive: true });
+
         // Widths like Apple's split view (NSSplitView; points 54, 55, 64, A91–A94). The row never scrolls sideways:
         // the windows always share exactly the room there is. Every window declares min, optimal and max width and a
         // priority (data-window-min/-opt/-max/-priority from <x-window>). A width
@@ -152,6 +308,7 @@
         // own stacking layer (view-transition-name), so each window lies above the next one – the right half of its
         // drag edge reaches over the neighbour and must not be covered by it.
         const paint = info => {
+            refresh();
             box.classList.add('is-laid');
             const last = info.findLast(item => !item.strip);
             info.forEach((item, at) => {
@@ -168,6 +325,7 @@
                 return;
             }
             const all = wins();
+            refresh();
             if (phone.matches || all.length === 0) {
                 box.classList.remove('is-laid');
                 all.forEach(win => {
@@ -372,7 +530,7 @@
         const remember = () => {
             try {
                 sessionStorage.setItem(KEY, JSON.stringify({
-                    list: wins().map(win => ({ id: win.dataset.windowId, url: win.dataset.windowUrl, title: win.dataset.windowTitle, icon: win.querySelector('.win-strip .strip-label > .icon')?.outerHTML ?? '', folded: win.dataset.folded !== undefined, maxed: win.dataset.maxed !== undefined, closable: win.querySelector('[data-window-close]') !== null, kind: win.dataset.windowKind, wmin: win.dataset.windowMin, wopt: win.dataset.windowOpt, wmax: win.dataset.windowMax, prio: win.dataset.windowPriority, hand: win.dataset.windowHand })),
+                    list: wins().map(win => ({ id: win.dataset.windowId, url: win.dataset.windowUrl, title: win.dataset.windowTitle, icon: win.querySelector('.win-strip .strip-label > .icon')?.outerHTML ?? '', folded: win.dataset.folded !== undefined, maxed: win.dataset.maxed !== undefined, closable: win.querySelector('[data-window-close]') !== null, kind: win.dataset.windowKind, wmin: win.dataset.windowMin, wopt: win.dataset.windowOpt, wmax: win.dataset.windowMax, prio: win.dataset.windowPriority, hand: win.dataset.windowHand, from: win.dataset.windowFrom, opener: win.dataset.windowOpener })),
                     active: active()?.dataset.windowId ?? null,
                 }));
             } catch { /* not remembered */ }
@@ -389,6 +547,7 @@
                 history.pushState(stateOf(win), '', win.dataset.windowUrl);
             }
             remember();
+            refresh();
             document.dispatchEvent(new Event('dh:cols'));
         };
 
@@ -411,7 +570,7 @@
             }
             win.dataset.lazy = '';
             // The width values come along, so the layout treats the strip like the loaded window (point 54).
-            [['windowKind', item.kind], ['windowMin', item.wmin], ['windowOpt', item.wopt], ['windowMax', item.wmax], ['windowPriority', item.prio], ['windowHand', item.hand]]
+            [['windowKind', item.kind], ['windowMin', item.wmin], ['windowOpt', item.wopt], ['windowMax', item.wmax], ['windowPriority', item.prio], ['windowHand', item.hand], ['windowFrom', item.from], ['windowOpener', item.opener]]
                 .forEach(([key, value]) => { if (value) win.dataset[key] = value; });
             win.toggleAttribute('data-maxed', !!item.maxed);
             // The same strip as a server window has: arrow, icon and title.
@@ -447,9 +606,11 @@
                     full.toggleAttribute('data-folded', win.dataset.folded !== undefined);
                     full.style.setProperty('--win-w', win.style.getPropertyValue('--win-w'));
                     full.style.zIndex = win.style.zIndex;
-                    if (win.dataset.windowHand) {
-                        full.dataset.windowHand = win.dataset.windowHand;
-                    }
+                    ['windowHand', 'windowFrom', 'windowOpener'].forEach(key => {
+                        if (win.dataset[key]) {
+                            full.dataset[key] = win.dataset[key];
+                        }
+                    });
                     full.classList.toggle('is-fill', win.classList.contains('is-fill'));
                     full.toggleAttribute('data-maxed', win.dataset.maxed !== undefined);
                     if (keep === win) {
@@ -477,12 +638,23 @@
         // same record is open already (Explorer-like instances, point 40).
         // Only a window that can't be loaded falls back to a full page load (that would drop the windows on the
         // left, point 114); an error after that is logged and the row stays.
-        const open = (url, from) => load(url).catch(() => { location.href = url; return null; }).then(win => {
+        const open = (url, from, link = null) => load(url).catch(() => { location.href = url; return null; }).then(win => {
             if (!win) {
                 return null;
             }
             isolateWindow(win);
             name(win);
+            // A306: the new window remembers its opener window and link (kept in the tab's history).
+            if (from?.dataset.windowId) {
+                win.dataset.windowFrom = from.dataset.windowId;
+            }
+            if (link) {
+                win.dataset.windowOpener = link.href;
+                const row = rowOf(link);
+                if (row) {
+                    hints.set(win, row);
+                }
+            }
             return smooth(() => {
                 if (from) {
                     let next = from.nextElementSibling;
@@ -614,9 +786,11 @@
                 if (item.id) {
                     win.dataset.windowId = item.id;
                 }
-                if (item.hand) {
-                    win.dataset.windowHand = item.hand;
-                }
+                [['windowHand', item.hand], ['windowFrom', item.from], ['windowOpener', item.opener]].forEach(([key, value]) => {
+                    if (value) {
+                        win.dataset[key] = value;
+                    }
+                });
                 win.toggleAttribute('data-folded', !!item.folded && win !== current);
                 showMax(win, !!item.maxed && !item.folded);
                 return win;
@@ -651,11 +825,18 @@
                 if (before?.matches('section[data-window]')) {
                     restore(before);
                 }
+            } else if (event.target.closest('[data-window-goto]')) {
+                // A308: a part of the window path brings that window back.
+                event.preventDefault();
+                const target = wins().find(other => other.dataset.windowId === event.target.closest('[data-window-goto]').dataset.windowGoto);
+                if (target) {
+                    restore(target);
+                }
             } else {
                 const link = event.target.closest('a[data-window]');
                 if (link && !event.ctrlKey && !event.metaKey && !event.shiftKey && event.button === 0) {
                     event.preventDefault();
-                    open(link.href, win);
+                    open(link.href, win, link);
                 }
             }
         });

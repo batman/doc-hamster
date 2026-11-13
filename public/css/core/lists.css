@@ -21,6 +21,19 @@
 }
 .pick-row.is-marked:has(> span a):hover { background: var(--mark-bg, var(--bg)); }
 
+/* Opener row (point 141, A306, A307): the row / tile / link in a window whose click opened the window on its right – the
+   marked-row look (orange bar left, the other surface: --opener-bg, --surface on a window, --bg in a card or a pick row;
+   the hover keeps it). Next to its window (is-linked, windows.js) a small orange notch ▸ at its right edge points there. */
+.is-opener, .is-opener:hover, .pick-row.is-static.is-opener:has(> span a):hover { background: var(--opener-bg, var(--surface)); box-shadow: inset 4px 0 0 var(--primary); }
+:is(.card, .pick-row) .is-opener, .pick-row.is-opener { --opener-bg: var(--bg); }
+tr.is-opener, tr.is-opener:hover { box-shadow: none; }
+tr.is-opener > :first-child { box-shadow: inset 4px 0 0 var(--primary); }
+.is-opener.is-linked:not(tr), tr.is-opener.is-linked > :last-child { position: relative; }
+.is-opener.is-linked:not(tr)::after, tr.is-opener.is-linked > :last-child::after {
+    content: ""; position: absolute; top: 50%; right: 0; width: .4rem; height: .8rem; translate: 0 -50%;
+    background: var(--primary); clip-path: polygon(0 0, 100% 50%, 0 100%); pointer-events: none;
+}
+
 /* Sortable list: a handle on the left, the carried row lifts (A78) */
 .pick-handle { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 2rem; min-height: 2rem; margin: 0; padding: 0;
     border: 0; border-radius: 8px; background: none; box-shadow: none; color: var(--muted); cursor: grab; touch-action: none; }

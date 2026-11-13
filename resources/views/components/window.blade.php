@@ -76,6 +76,8 @@
                 <a class="control-button win-close" href="{{ $close }}" data-window-close aria-label="{{ __('app.window.close') }}" data-tooltip="{{ __('app.window.close') }}"><x-icon name="x" /></a>
             @endif
         </header>
+        {{-- Window path (A308): the titles of the windows on the left, filled by windows.js; empty for the first window. --}}
+        <nav class="win-path" data-window-path aria-label="{{ __('app.window.path') }}" hidden></nav>
         <div class="win-tools">
             @if ($search)
                 <form class="win-search" role="search" method="get" action="{{ strtok($url, '?') }}" data-window-search data-search-params="{{ implode(' ', $searchOwned) }}" @if ($searchLive) data-search-live @endif>

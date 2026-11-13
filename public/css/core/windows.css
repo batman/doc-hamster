@@ -216,3 +216,22 @@
 /* The notes board as a module (points 71, 73): its columns scroll inside the window, below head and toolbar. */
 .win-notes .kanban { margin-top: .5rem; }
 
+/* Point 141, A307: the opener window's right edge carries a short orange line at the height of its opener row
+   (--opener-y from windows.js), continuing the row's notch ▸ towards the window it opened. */
+.win.has-opener-line::after {
+    content: ""; position: absolute; z-index: 5; top: calc(var(--opener-y) - .75rem); right: -2px; width: 3px; height: 1.5rem;
+    border-radius: 2px; background: var(--primary); pointer-events: none;
+}
+@media (max-width: 63.99rem) { .win.has-opener-line::after { display: none; } }
+
+/* A308: window path – under the title the titles of the windows on the left in small grey; each brings its window back.
+   One line with ellipsis; on phones (one window) it is the way back. */
+.win-path { margin: -.5rem 0 0; padding: 0 1.5rem .75rem; overflow: hidden; color: var(--muted); font-size: .8rem; line-height: 1.3; white-space: nowrap; text-overflow: ellipsis; }
+.win-path[hidden] { display: none; }
+.win-path a { color: inherit; text-decoration: none; }
+.win-path a:hover { color: var(--primary-ink); text-decoration: underline; }
+.win-path-sep { margin: 0 .35rem; }
+.win-head:has(+ .win-path:not([hidden])) { padding-bottom: .75rem; }
+.win-head:has(+ .win-path[hidden] + .win-tools) { padding-bottom: .75rem; }
+@media (max-width: 63.99rem) { .win-path { padding-inline: 4rem var(--space); } }
+

@@ -24,6 +24,7 @@ return [
         'open' => 'Öffnen: :title',
         'remove' => ':title aus dem Verlauf entfernen',
         'remove_short' => 'Aus dem Verlauf entfernen',
+        'path' => 'Pfad',
         'close' => 'Schließen',
         'back' => 'Zurück',
         'fold' => 'Minimieren',

@@ -710,6 +710,15 @@
                 </div>
             </div>
 
+            <h3 class="sg-pad" id="opener-row">Öffner-Zeile und Fensterpfad</h3>
+            <p class="sg-note">Die Zeile (Kachel, Link), deren Klick das Fenster rechts geöffnet hat, bleibt markiert wie die markierte Zeile (<code>is-opener</code>, setzt das Fenstersystem selbst), solange dieses Fenster offen ist. Stehen beide Fenster nebeneinander, zeigt eine kleine orange Kerbe ▸ am rechten Zeilenrand zum Fenster, und auf der Trennlinie setzt ein kurzer oranger Strich sie fort. Unter jedem Fenstertitel steht klein und grau der Fensterpfad – die Titel der Fenster links davon, jeder holt sein Fenster zurück; auf dem Handy die Orientierung.</p>
+            <div class="sg-frame" style="height: 16rem; overflow: auto;">
+                <div class="windows" style="min-height: 100%; --win-min: 14rem;">
+                    <section class="win has-opener-line" style="--opener-y: 7.1rem; z-index: 2;"><div class="win-frame"><header class="win-head" style="padding-top: 1rem;"><h1 class="win-title">Girokonto</h1></header><nav class="win-path" hidden></nav><div class="win-body"><ul class="view-list"><li><a href="#opener-row">Miete November</a></li><li class="is-opener is-linked"><a href="#opener-row">Gebühr für Revolut Business</a></li><li><a href="#opener-row">Tankstelle</a></li></ul></div></div></section>
+                    <section class="win is-active" style="z-index: 1;"><div class="win-frame"><header class="win-head" style="padding-top: 1rem;"><h1 class="win-title">Gebühr für Revolut Business</h1></header><nav class="win-path"><a href="#opener-row">Bank</a><span class="win-path-sep" aria-hidden="true">›</span><a href="#opener-row">Girokonto</a></nav><div class="win-body"><p>Buchung …</p></div></div></section>
+                </div>
+            </div>
+
             <h3 class="sg-pad">Maximiert</h3>
             <p class="sg-note">Maximieren: dieses Modul füllt die Reihe, alle anderen werden Leisten. Noch ein Klick oder Doppelklick auf den Titel stellt die Breiten von vorher wieder her.</p>
             <div class="sg-frame" style="height: 18rem; overflow: auto;">
