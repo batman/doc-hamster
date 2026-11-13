@@ -98,7 +98,7 @@ a { color: var(--primary-ink); }
 }
 .nav-item .icon, .menu-item .icon { width: 1.4rem; height: 1.4rem; }
 .nav-item:hover, .menu-item:hover { background: var(--bg); box-shadow: none; }
-.nav-item[aria-current="page"], .menu-item[aria-checked="true"] { background: var(--bg); font-weight: 700; box-shadow: inset 4px 0 0 var(--primary); }
+.nav-item[aria-current="page"], .menu-item[aria-checked="true"] { font-weight: 700; }
 .nav-item[aria-current="page"] .icon, .menu-item[aria-checked="true"] .icon { color: var(--primary); }
 .sidebar .nav-action { margin: 0 0 .5rem; background: var(--primary); color: var(--primary-text); font-weight: 600; }
 .sidebar .nav-action:hover { background: var(--primary); box-shadow: var(--shadow); }
@@ -301,13 +301,17 @@ code { word-break: break-all; background: var(--surface); padding: .1rem .3rem; 
 .icon-button:hover { box-shadow: var(--shadow); }
 .icon-button[aria-expanded="true"] { border-color: var(--primary); }
 .icon-button[aria-expanded="true"]::before, .icon-button[aria-expanded="true"]::after { display: none; }
-.icon-button.is-active { border-color: var(--primary); color: var(--primary-ink); }
+/* Count badge (task 110: one style for the filter count and the menu counts): a round number, orange;
+   .badge-alert red for "new things" in the menu. On an icon button it sits on the top right corner. */
+:root { --badge: #e8231a; --badge-text: #ffffff; }
 .badge {
-    position: absolute; top: -.4rem; right: -.4rem; min-width: 1.35rem; height: 1.35rem; padding: 0 .3rem;
-    border-radius: .675rem; background: var(--primary); color: var(--primary-text);
-    font-size: .8rem; font-weight: 700; line-height: 1.35rem; text-align: center;
+    display: inline-block; flex: none; min-width: 1.35rem; height: 1.35rem; padding: 0 .35rem;
+    border-radius: .7rem; background: var(--primary); color: var(--primary-text);
+    font-size: .75rem; font-weight: 700; line-height: 1.35rem; text-align: center;
 }
+.badge-alert { background: var(--badge); color: var(--badge-text); }
 .badge[hidden] { display: none; }
+.icon-button > .badge { position: absolute; top: -.4rem; right: -.4rem; }
 .dropdown { position: relative; }
 .dropdown-panel {
     position: absolute; top: calc(100% + .5rem); right: 0; z-index: 35; min-width: 16rem; padding: .5rem;
@@ -509,7 +513,8 @@ label.tag-choice { color: inherit; }
     font: inherit; font-weight: 400; letter-spacing: normal; text-align: left;
 }
 .col-item:hover { background: var(--surface); box-shadow: none; }
-.col-item[aria-current="true"] { background: var(--surface); font-weight: 700; box-shadow: inset 4px 0 0 var(--primary); }
+.col-item { --mark-bg: var(--surface); }
+.col-item[aria-current="true"] { font-weight: 700; }
 .col-item .icon { width: 1.5rem; height: 1.5rem; color: var(--primary); }
 .col-item .go { margin-left: auto; width: 1.125rem; height: 1.125rem; color: var(--muted); }
 button.col-strip {
@@ -792,33 +797,17 @@ button.col-strip:hover > .icon { color: var(--primary-ink); }
     .col-back .icon { color: var(--primary); }
 }
 
-/* Menu badges: a red circle with the number of new things in an area (A8-A11). */
-:root { --badge: #e8231a; --badge-text: #ffffff; }
-.nav-badge {
-    margin-left: auto; min-width: 1.35rem; height: 1.35rem; padding: 0 .35rem; border-radius: .7rem;
-    background: var(--badge); color: var(--badge-text);
-    font-size: .75rem; font-weight: 700; line-height: 1.35rem; text-align: center;
-}
-.nav-badge[hidden] { display: none; }
+/* Menu badges: the red count badge (.badge.badge-alert) with the number of new things in an area (A8-A11). */
+.nav-item > .badge { margin-left: auto; }
 .nav-toggle { position: relative; }
 .nav-dot { display: none; position: absolute; top: .8rem; right: .8rem; width: .65rem; height: .65rem; border-radius: 50%; background: var(--badge); box-shadow: 0 0 0 2px var(--secondary); }
 @media (min-width: 64rem) {
-    :is(html.nav-rail, .shell.nav-rail) .nav-badge { position: absolute; top: .2rem; right: .2rem; margin: 0; }
+    :is(html.nav-rail, .shell.nav-rail) .nav-item > .badge { position: absolute; top: .2rem; right: .2rem; margin: 0; }
     :is(html.nav-closed, .shell.nav-closed) .nav-dot:not([hidden]) { display: block; }
 }
 @media (max-width: 63.99rem) {
     html:not(.nav-open) .nav-dot:not([hidden]) { display: block; }
 }
-
-/* Folders (issue #77): indented list and the bar above the receipt list; classes, because the CSP allows no inline styles. */
-.folder-list { margin: 0; padding: 0; list-style: none; }
-.folder-link { display: flex; align-items: center; gap: .5rem; padding: .4rem .5rem; border-radius: .5rem; text-decoration: none; color: inherit; }
-.folder-link span:nth-child(2) { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.folder-link.is-selected { background: rgba(127, 127, 127, .15); font-weight: 600; }
-.folder-d1 { padding-left: 1rem; }
-.folder-d2 { padding-left: 2rem; }
-.folder-d3 { padding-left: 3rem; }
-.folder-d4 { padding-left: 4rem; }
 
 /* Floating menu button (Go 2026-11-07, point 3, A24): with the menu folded away on desktop, and always on phones,
    the button floats over the content with a shadow instead of sitting in a dark block. */
@@ -852,7 +841,6 @@ button.col-strip:hover > .icon { color: var(--primary-ink); }
 .pick-row strong { display: block; font-weight: 600; }
 .pick-row small { display: block; color: var(--muted); }
 .pick-row:hover { background: var(--bg); }
-.pick-row:has(input:checked) { box-shadow: inset 4px 0 0 var(--primary); background: var(--bg); }
 .pick-row:has(input:checked) > .icon, .pick-mark { color: var(--primary); }
 .pick-row:has(input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
 .pick-mark { display: none; margin-left: auto; }
@@ -871,22 +859,37 @@ button.col-strip:hover > .icon { color: var(--primary-ink); }
 @media (max-width: 63.99rem) { .toast { top: auto; bottom: 1rem; left: 1rem; right: 1rem; max-width: none; } }
 
 /* Update page round 2 (Go 2026-11-07, points 6-10): lists that say "Keine Einträge", icon buttons in the card head */
+/* Card head with action (task 110): one form.card-action at the right end of the head, holding an icon button
+   or a small button with icon and text. Its icons keep the button's colour, not the orange of the head icon. */
 .card-head .card-action { margin-left: auto; }
-.card-head .icon-button { width: 40px; min-height: 40px; }
+.card-head .card-action .icon { color: currentColor; width: 1.15rem; height: 1.15rem; }
 .card-head .icon-button .icon { color: var(--text); width: 1.25rem; height: 1.25rem; }
-.icon-button.is-busy .icon { animation: spin 1s linear infinite; }
+/* A busy button (Ajax running): its icon spins. */
+button.is-busy > .icon { animation: spin 1s linear infinite; }
 @keyframes spin { to { rotate: 360deg; } }
-@media (prefers-reduced-motion: reduce) { .icon-button.is-busy .icon { animation: none; opacity: .5; } }
+@media (prefers-reduced-motion: reduce) { button.is-busy > .icon { animation: none; opacity: .5; } }
 .pick-list > li { list-style: none; }
 ul.pick-list { margin: .75rem 0; }
 .list-empty { margin: 0; padding: .7rem .9rem; border: 1px dashed var(--border); border-radius: calc(var(--radius) / 2); color: var(--muted); }
 .list-error { color: var(--error); border-color: currentColor; }
 .pick-row.is-static { display: flex; align-items: center; gap: .75rem; padding: .7rem .9rem; border-radius: calc(var(--radius) / 2); background: var(--surface); cursor: default; }
 .pick-row.is-static > .icon { flex: none; width: 1.25rem; height: 1.25rem; color: var(--primary); }
-.pick-row.is-static strong { display: block; font-weight: 600; }
-.pick-row.is-static small { display: block; color: var(--muted); }
+.pick-row.is-static > span:has(> strong) { flex: 1 1 auto; min-width: 0; }
 .pick-row.is-static button { margin: 0 0 0 auto; }
-.tag-outline { display: inline-block; margin-bottom: .2rem; padding: 0 .5rem; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); font-size: .75rem; font-weight: 600; }
+/* Marked row (task 110: one look for the current menu entry, the chosen settings entry, the picked choice and a
+   marked list row such as the installed version): an orange bar on the left on the other surface. */
+:is(.nav-item[aria-current="page"], .menu-item[aria-checked="true"], .col-item[aria-current="true"], .pick-row:has(input:checked), .pick-row.is-marked) {
+    background: var(--mark-bg, var(--bg)); box-shadow: inset 4px 0 0 var(--primary);
+}
+.pick-row.is-marked:has(> span a):hover { background: var(--mark-bg, var(--bg)); }
+/* Pill (task 110: one label style for states and counts, was .tag-outline and .tab-count): small, round, not clickable.
+   .pill-ok green ("installiert"), .pill-new orange tint ("verfügbar", the count of the active tab). */
+.pill {
+    display: inline-block; flex: none; min-width: 1.4rem; padding: .05rem .5rem; border: 1px solid var(--border); border-radius: 999px;
+    color: var(--muted); font-size: .75rem; font-weight: 600; line-height: 1.4; text-align: center; white-space: nowrap;
+}
+.pill-ok { border-color: transparent; background: color-mix(in srgb, var(--ok) 16%, var(--bg)); color: color-mix(in srgb, var(--ok) 70%, var(--text)); }
+.pill-new, .tab[aria-current="page"] .pill { border-color: transparent; background: rgb(255 118 34 / .15); color: var(--primary-ink); }
 
 /* Walls between columns and right of the menu (Go 2026-11-07, points 11-13, A37-A45) */
 .side:not(.side-plain) { width: var(--nav-width, 15rem); }
@@ -961,7 +964,7 @@ button .icon, .button .icon { width: 1.25rem; height: 1.25rem; }
 .win-tools .button-group > .icon-button:last-child { border-radius: 0 8px 8px 0; }
 .win-tools .button-group > .icon-button + .icon-button { margin-left: -1px; }
 .card-head .icon-button, .icon-button.button-small { width: 40px; min-height: 40px; }
-.icon-button[aria-expanded="true"], .icon-button.is-active { border-color: var(--primary); color: var(--primary-ink); }
+.icon-button[aria-expanded="true"] { border-color: var(--primary); color: var(--primary-ink); }
 /* The upload in the menu keeps its layout, with the button corner and shadow */
 .sidebar .nav-action { border-radius: 10px; box-shadow: var(--button-shadow); }
 .sidebar .nav-action:hover { background: var(--primary-hover); }
@@ -1147,7 +1150,7 @@ a { text-decoration: none; }
 .pick-row.is-static:has(> span a):hover { background: color-mix(in srgb, var(--surface) 88%, var(--text)); }
 .pick-row.is-static > span a:focus-visible { outline: none; }
 .pick-row.is-static:has(> span a:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
-.pick-row.is-static > :is(button, form, .dropdown, .tag-outline, .row-actions) { position: relative; z-index: 1; }
+.pick-row.is-static > :is(button, form, .dropdown, .pill, .row-actions) { position: relative; z-index: 1; }
 /* Point 32: an open menu lies above every row and button below it (framework rule for all menus) */
 .dropdown:has(> .dropdown-panel:not([hidden])), .pick-row.is-static > .dropdown:has(> .dropdown-panel:not([hidden])) { position: relative; z-index: 40; }
 li:has(> .dropdown > .dropdown-panel:not([hidden])), tr:has(.dropdown-panel:not([hidden])) { position: relative; z-index: 40; }
@@ -1183,8 +1186,6 @@ html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
 .tab[aria-current="page"] { color: var(--text); }
 .tab[aria-current="page"] .icon { color: var(--primary); }
 .tab-mark { position: absolute; left: .5rem; right: .5rem; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0; background: var(--primary); view-transition-name: tab-mark; }
-.tab-count { min-width: 1.4rem; padding: .05rem .45rem; border-radius: 999px; background: var(--surface); color: var(--muted); font-size: .75rem; font-weight: 600; line-height: 1.4; text-align: center; }
-.tab[aria-current="page"] .tab-count { background: rgb(255 118 34 / .15); color: var(--primary-ink); }
 .tab:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
 ::view-transition-group(tab-mark) { animation-duration: .25s; animation-timing-function: ease-in-out; }
 .pager { display: flex; gap: .5rem; margin-top: 1rem; }

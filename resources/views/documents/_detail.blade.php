@@ -131,7 +131,7 @@
             <div class="ocr-head">
                 <h3 id="ocr-{{ $document->id }}">{{ __('documents.ocr_text') }}</h3>
                 @unless ($isText)
-                    <span class="tag-outline">{{ __('ocr.state.'.$ocrState) }}</span>
+                    <span class="pill">{{ __('ocr.state.'.$ocrState) }}</span>
                     @if ($ocrState !== 'running')
                         <form method="post" action="{{ route('ocr.redo', $document->id) }}">
                             @csrf
@@ -155,7 +155,7 @@
             <section class="detail-section">
                 <div class="ocr-head">
                     <h3>{{ __('documents.ocr_text') }}</h3>
-                    @unless ($isText)<span class="tag-outline">{{ __('ocr.state.'.$ocrState) }}</span>@endunless
+                    @unless ($isText)<span class="pill">{{ __('ocr.state.'.$ocrState) }}</span>@endunless
                 </div>
                 @if ($document->ocr_text)<p class="edit-in-place-small is-plain">{{ $document->ocr_text }}</p>@endif
             </section>

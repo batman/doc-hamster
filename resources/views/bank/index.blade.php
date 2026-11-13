@@ -18,7 +18,7 @@
             <a class="tab" href="{{ route('bank.index', ['view' => $name]) }}" @if ($name === $view) aria-current="page" @endif>
                 <x-icon :name="['open' => 'receipt-off', 'matched' => 'link', 'receipts' => 'file-off'][$name]" />
                 <span>{{ __('bank.views.'.$name) }}</span>
-                <span class="tab-count">{{ $counts[$name] }}</span>
+                <span class="pill">{{ $counts[$name] }}</span>
                 @if ($name === $view)<span class="tab-mark"></span>@endif
             </a>
         @endforeach
