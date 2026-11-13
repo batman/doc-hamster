@@ -6,16 +6,20 @@ namespace App\Http\Controllers;
 
 use App\Domain\Audit\AuditLog;
 use App\Domain\Banking\BankAccount;
+use App\Domain\Banking\BankImport;
+use App\Domain\Banking\CsvStatement;
 use App\Domain\Banking\Links;
 use App\Domain\Banking\Matcher;
+use App\Domain\Banking\MccTag;
+use App\Domain\Banking\NoReceiptReason;
 use App\Domain\Banking\Transaction;
 use App\Domain\Banking\TransactionMatch;
 use App\Domain\Documents\Document;
+use App\Domain\Documents\Tag;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
 use App\Domain\Properties\DocumentProperty;
 use App\Domain\Properties\Property;
-use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -98,6 +102,12 @@ final class BankController
             'candidates' => $candidates = $matcher->candidates($transaction, $this->visible($org), $search),
             'candidateAmounts' => $this->amounts(array_map(static fn (array $c): string => $c['document']->id, $candidates)),
             'search' => $search,
+            'reasons' => NoReceiptReason::ordered(true),
+            'suggestedReason' => $transaction->suggested_reason_id === null ? null : NoReceiptReason::query()->whereKey($transaction->suggested_reason_id)->first(),
+            // A298: a refund hangs on its original; the original lists its refunds.
+            'parent' => $transaction->parent,
+            'children' => Transaction::query()->where('parent_id', $transaction->id)->orderBy('booking_date')->get(),
+            'mccTag' => $transaction->mcc === null ? null : MccTag::ordered()->firstWhere('mcc', $transaction->mcc)?->tag,
         ]);
     }
 
@@ -164,11 +174,33 @@ final class BankController
     {
         $transaction = Transaction::query()->whereKey($id)->firstOrFail();
         $undo = $request->boolean('undo');
-        $data = $request->validate(['reason' => [$undo ? 'nullable' : 'required', 'string', 'max:255']]);
-        $links->noReceipt($transaction, $undo ? null : trim((string) $data['reason']));
+        // A286/A288: a reason of the list (saved at once), the suggested one (A287) or "Anderer Grund" with a text.
+        $data = $request->validate([
+            'reason_id' => ['nullable', 'string'],
+            'reason' => [$undo || $request->filled('reason_id') ? 'nullable' : 'required', 'string', 'max:255'],
+        ]);
+        $reason = $undo || ! isset($data['reason_id']) ? null : NoReceiptReason::query()->whereKey($data['reason_id'])->first()
+            ?? throw ValidationException::withMessages(['reason_id' => __('bank.reason_gone')]);
+        $links->noReceipt($transaction, $reason, $undo || $reason !== null ? null : trim((string) $data['reason']));
         $audit->record($undo ? 'bank.receipt_needed' : 'bank.no_receipt', orgId: $org->id(), userId: $org->membership()->user_id, subject: $transaction, ip: $request->ip());
 
         return $this->done($request, $transaction, __($undo ? 'bank.receipt_needed_done' : 'bank.no_receipt_done'));
+    }
+
+    /** A300: the tag the card's category suggests, on a linked document (the tag is made when missing). */
+    public function tag(Request $request, string $id, AuditLog $audit, CurrentOrg $org): JsonResponse|RedirectResponse
+    {
+        $transaction = Transaction::query()->whereKey($id)->firstOrFail();
+        $data = $request->validate(['document_id' => ['required', 'string'], 'tag' => ['required', 'string', 'max:60']]);
+        $document = $this->visible($org)->whereKey($data['document_id'])
+            ->whereHas('matches', static fn (Builder $m) => $m->where('transaction_id', $transaction->id))->firstOrFail();
+        $name = ltrim(trim($data['tag']), '#');
+        $tag = Tag::query()->whereRaw('lower(name) = ?', [mb_strtolower($name)])->first()
+            ?? Tag::query()->create(['name' => $name, 'color' => Tag::PALETTE[Tag::query()->count() % count(Tag::PALETTE)]]);
+        $document->tags()->syncWithoutDetaching([$tag->id]);
+        $audit->record('bank.tagged', orgId: $org->id(), userId: $org->membership()->user_id, subject: $document, meta: ['tag' => $tag->name], ip: $request->ip());
+
+        return $this->done($request, $transaction, __('bank.tagged', ['tag' => $tag->name]));
     }
 
     /**
@@ -194,7 +226,9 @@ final class BankController
     }
 
     /**
-     * The account window: newest first, search in counterparty and purpose, status filter (A267, A270).
+     * The account window: newest first, search in counterparty, purposes, reference and the further details (A290),
+     * the status filter (A270, A304) and Eingänge/Ausgänge (A311) as button groups in the toolbar, a period in the
+     * search panel; the sums of what is shown (A310) and the imported periods (A296).
      *
      * @return array<string, mixed>
      */
@@ -203,33 +237,52 @@ final class BankController
         // Behind a booking window the query belongs to the booking (its candidate search), not to the account.
         $status = $own ? $request->query('status') : null;
         $status = is_string($status) && in_array($status, Transaction::STATUSES, true) ? $status : null;
+        $flow = $own ? $request->query('flow') : null;
+        $flow = in_array($flow, ['in', 'out'], true) ? $flow : null;
+        $from = $own ? CsvStatement::normaliseDate((string) $request->query('from')) : null;
+        $to = $own ? CsvStatement::normaliseDate((string) $request->query('to')) : null;
         $search = $own ? trim((string) $request->query('q')) : '';
+
+        $filtered = fn (): Builder => $this->filtered($account, $flow, $from, $to, $search);
         $counts = [];
         foreach (Transaction::STATUSES as $name) {
-            $counts[$name] = Transaction::query()->where('bank_account_id', $account->id)->status($name)->count();
+            $counts[$name] = $filtered()->status($name)->count();
         }
+        $shown = $filtered()->when($status !== null, static fn (Builder $q) => $q->status((string) $status))->where('currency', $account->currency);
+        $in = (int) (clone $shown)->where('amount_minor', '>', 0)->sum('amount_minor');
+        $out = (int) (clone $shown)->where('amount_minor', '<', 0)->sum('amount_minor');
 
         return [
             'account' => $account,
             'statusCounts' => $counts,
             'status' => $status,
+            'flow' => $flow,
+            'from' => $from,
+            'to' => $to,
             'accountSearch' => $search,
-            'transactions' => $this->transactions($account, $status, $search),
+            'totals' => ['in' => $in, 'out' => $out, 'sum' => $in + $out],
+            'periods' => BankImport::periods($account),
+            'transactions' => $filtered()->withStatusCounts()
+                ->when($status !== null, static fn (Builder $q) => $q->status((string) $status))
+                ->orderByDesc('booking_date')->orderByDesc('id')
+                ->simplePaginate(self::PER_PAGE)->withQueryString(),
         ];
     }
 
     /**
-     * @return Paginator<int, Transaction>
+     * @return Builder<Transaction>
      */
-    private function transactions(BankAccount $account, ?string $status, string $search): Paginator
+    private function filtered(BankAccount $account, ?string $flow, ?string $from, ?string $to, string $search): Builder
     {
         $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search).'%';
 
-        return Transaction::query()->where('bank_account_id', $account->id)->withStatusCounts()
-            ->when($status !== null, static fn (Builder $q) => $q->status((string) $status))
-            ->when($search !== '', static fn (Builder $q) => $q->where(static fn (Builder $w) => $w->where('counterparty', 'like', $like)->orWhere('purpose', 'like', $like)))
-            ->orderByDesc('booking_date')->orderByDesc('id')
-            ->simplePaginate(self::PER_PAGE)->withQueryString();
+        return Transaction::query()->where('bank_account_id', $account->id)
+            ->when($flow === 'in', static fn (Builder $q) => $q->where('amount_minor', '>', 0))
+            ->when($flow === 'out', static fn (Builder $q) => $q->where('amount_minor', '<', 0))
+            ->when($from !== null, static fn (Builder $q) => $q->where('booking_date', '>=', $from))
+            ->when($to !== null, static fn (Builder $q) => $q->where('booking_date', '<=', $to))
+            ->when($search !== '', static fn (Builder $q) => $q->where(static fn (Builder $w) => $w->where('counterparty', 'like', $like)->orWhere('purpose', 'like', $like)
+                ->orWhere('purpose2', 'like', $like)->orWhere('reference', 'like', $like)->orWhere('kind', 'like', $like)->orWhere('extra', 'like', $like)));
     }
 
     /**
