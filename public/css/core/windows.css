@@ -215,5 +215,4 @@
 
 /* The notes board as a module (points 71, 73): its columns scroll inside the window, below head and toolbar. */
 .win-notes .kanban { margin-top: .5rem; }
-@media (min-width: 64rem) { .win-notes .kanban-col { max-height: calc(100dvh - 15rem); } }
 

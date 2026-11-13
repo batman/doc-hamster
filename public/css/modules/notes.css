@@ -148,3 +148,10 @@
 .kanban-head { position: sticky; top: 0; z-index: 1; border-radius: var(--radius) var(--radius) 0 0; background: var(--bg); }
 .kanban-col:hover > .kanban-head, .kanban.is-note-dragging > .kanban-col > .kanban-head { background: var(--surface); }
 .kanban-col.has-color > .kanban-head { background: color-mix(in srgb, var(--swatch) 18%, var(--surface)); }
+
+/* Point 118, A235: on narrow screens too the notes window scrolls by itself (not the page): one scroll box for both
+   directions, so the sticky columns and their names hold (an inner box that scrolls sideways would stop them). */
+@media (max-width: 63.99rem) {
+    .win-notes.is-active > .win-frame { height: calc(100dvh - 3.5rem); overflow: auto; overscroll-behavior: contain; }
+    .win-notes > .win-frame > .win-body { flex: 1 0 auto; overflow: visible; }
+}

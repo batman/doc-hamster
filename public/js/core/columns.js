@@ -185,7 +185,8 @@
             });
         };
 
-        // A click on an entry folds its column to the strip before the next page opens (point 16).
+        // A click on an entry of the groups column folds it to the strip before the next page opens (point 16); the
+        // entries column next to the page stays open, so switching between its entries keeps it (point 117).
         cols.addEventListener('click', event => {
             const item = event.target.closest('a.col-item');
             const col = item?.closest('[data-col]');
@@ -193,6 +194,9 @@
                 return;
             }
             const i = Number(col.dataset.col);
+            if (i !== 0) {
+                return;
+            }
             state[i] = 'closed';
             delete widths[i];
             keepWidths();
