@@ -239,7 +239,10 @@
         clearTimeout(pdf.timer);
         pdf.task?.cancel();
         resized?.unobserve(frame);
-        pdf.doc.destroy().catch(() => {});
+        // pdf.js 6 frees a document through its loading task (PDFDocumentProxy has no destroy() any more); an error
+        // here once made every window open fall back to a full page load (point 114).
+        const doc = pdf.doc;
+        Promise.resolve(doc?.loadingTask?.destroy ? doc.loadingTask.destroy() : doc?.destroy?.()).catch(() => {});
     };
     const sweep = () => live.forEach(frame => { if (!frame.isConnected) drop(frame); });
     const draw = async (frame, pdf) => {

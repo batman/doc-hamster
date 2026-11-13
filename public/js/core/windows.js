@@ -475,7 +475,12 @@
         // A link in a window: everything right of that window closes, the new one opens on the right (points 40.2,
         // 40.3); which windows become strips decides the layout (point 54). Always a new window – also when the
         // same record is open already (Explorer-like instances, point 40).
-        const open = (url, from) => load(url).then(win => {
+        // Only a window that can't be loaded falls back to a full page load (that would drop the windows on the
+        // left, point 114); an error after that is logged and the row stays.
+        const open = (url, from) => load(url).catch(() => { location.href = url; return null; }).then(win => {
+            if (!win) {
+                return null;
+            }
             isolateWindow(win);
             name(win);
             return smooth(() => {
@@ -497,7 +502,7 @@
                 DocHamster.emit('window:open', win);
                 reveal(win);
             });
-        }).catch(() => { location.href = url; });
+        }).catch(error => console.error('DocHamster window:', error));
 
         // Maximise / back (points 72, 74). unmax(true) puts every window back as it was before; unmax(false) only
         // ends the state (something else lays out next: a window opens, a strip is clicked, a window goes).

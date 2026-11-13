@@ -21,7 +21,7 @@
 .documents img { display: block; max-width: 100%; max-height: 12rem; border-radius: var(--radius); margin-bottom: .25rem; }
 
 /* Receipt views (like the Windows Explorer): details, list, small icons, large icons */
-.view-details { margin-top: 1rem; overflow-x: auto; }
+.view-details { margin-top: 1rem; }
 .view-details table { width: 100%; border-collapse: collapse; }
 .view-details th { padding: .5rem .75rem; text-align: left; font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--border); }
 .view-details td { padding: .5rem .75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
@@ -115,3 +115,19 @@
 .doc-pages output { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .detail-doc[data-pdf]:focus { outline: none; }
 .detail-doc[data-pdf]:focus-visible { outline: 2px solid color-mix(in srgb, var(--primary) 45%, transparent); outline-offset: 2px; }
+
+/* Details view (point 113, A220-A222): no own scroll box, the table fits the window. The name takes the rest and
+   wraps beside its symbol (fixed slot, A221); narrow windows drop Tags first, then the time. */
+.view-details table { table-layout: fixed; }
+.view-details .col-date { width: 9rem; }
+.view-details .col-tags { width: 30%; }
+.view-details .col-folder { width: 25%; }
+/* The row actions take no column: they lie over the row's right end while it is hovered (A161). */
+.view-details .col-actions, .view-details td.row-actions-cell { width: 0; padding: 0; border-left: 0; }
+.view-details td.row-actions-cell { position: relative; overflow: visible; }
+.view-details td.row-actions-cell .row-actions { position: absolute; right: .5rem; top: 50%; translate: 0 -50%; background: var(--surface); border-radius: var(--radius); }
+.view-details td:first-child a { display: flex; align-items: flex-start; gap: .75rem; min-width: 0; overflow-wrap: anywhere; }
+.view-details td:first-child .type-icon { flex: none; margin: 0; }
+.view-details .col-date { white-space: nowrap; }
+@container win (width < 36rem) { .view-details .col-tags { display: none; } }
+@container win (width < 28rem) { .view-details .col-time { display: none; } .view-details .col-date { width: 6.5rem; } }

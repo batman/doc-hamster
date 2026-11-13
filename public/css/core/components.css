@@ -215,6 +215,12 @@ button.col-strip:hover > .icon { color: var(--primary-ink); }
    cards, columns and scrolling windows cut off. The ::after rules above still decide WHETHER a tooltip shows
    (display: none hides it); without JavaScript they draw it as before. */
 html.has-tips [data-tooltip]::before, html.has-tips [data-tooltip]::after { visibility: hidden !important; }
+/* Point 113: the hidden ::before/::after (they only tell app.js whether a tooltip may show) take no room, so they never
+   push a window or list wider and cause a sideways scrollbar. */
+html.has-tips [data-tooltip]::before, html.has-tips [data-tooltip]::after {
+    inset: 0 auto auto 0 !important; width: 0 !important; height: 0 !important; min-width: 0 !important;
+    margin: 0 !important; padding: 0 !important; border: 0 !important; overflow: hidden !important;
+}
 .tip {
     position: fixed; z-index: 1000; top: 0; left: 0; max-width: min(24rem, calc(100vw - 16px));
     padding: .35rem .75rem; border-radius: calc(var(--radius) / 2); background: var(--tooltip-bg); color: var(--tooltip-text);
