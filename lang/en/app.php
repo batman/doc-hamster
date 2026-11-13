@@ -12,6 +12,9 @@ return [
         'expand' => 'Widen menu',
     ],
     'more' => 'More',
+    // Foldable card (point 125): the chevron in the card head.
+    'card_fold' => 'Collapse',
+    'card_unfold' => 'Expand',
     'edit_in_place' => [
         'hint' => 'Click to edit',
         'saved' => 'Saved.',

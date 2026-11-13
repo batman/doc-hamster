@@ -17,7 +17,7 @@ return [
         'modules/palette', 'modules/pages', 'modules/properties', 'modules/ocr-text', 'modules/girocode', 'core/layout-debug',
     ],
     'js' => [
-        'core/bus', 'core/error-report', 'core/menu', 'core/dropdowns', 'modules/documents-filter', 'core/sortable', 'core/tabs',
+        'core/bus', 'core/error-report', 'core/menu', 'core/dropdowns', 'core/card-fold', 'modules/documents-filter', 'core/sortable', 'core/tabs',
         'core/tooltips', 'core/dialogs', 'core/windows', 'core/window-search', 'core/columns', 'core/scroll-hint',
         'core/badges', 'modules/notes', 'modules/tags-search', 'core/toasts', 'core/ajax-forms',
         'modules/updates-preview-pick', 'core/color-field', 'modules/folder-import', 'core/start',

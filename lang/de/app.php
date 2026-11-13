@@ -12,6 +12,9 @@ return [
         'expand' => 'Menü vergrößern',
     ],
     'more' => 'Mehr',
+    // Foldable card (point 125): the chevron in the card head.
+    'card_fold' => 'Zuklappen',
+    'card_unfold' => 'Aufklappen',
     'edit_in_place' => [
         'hint' => 'Zum Bearbeiten klicken',
         'saved' => 'Gespeichert.',

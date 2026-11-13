@@ -183,6 +183,25 @@ button.col-strip:hover > .icon { color: var(--primary-ink); }
 .card-head .card-action .icon { color: currentColor; width: 1.15rem; height: 1.15rem; }
 .card-head .icon-button .icon { color: var(--text); width: 1.25rem; height: 1.25rem; }
 
+/* Foldable card ("Karte, klappbar", point 125, A260/A261): <x-fold-card>. A chevron control button at the right end of
+   the head folds the body away; a folded card shows a short summary in its head. The state comes from the server
+   (cookie dh_folds, written by core/card-fold.js), so nothing jumps on load. */
+.card-fold .card-head { margin: 0; }
+.card-fold .card-head .card-action { margin-left: auto; }
+.card-fold .card-head .card-action + .card-fold-button { margin-left: 0; }
+.card-fold-button { margin-left: auto; flex: none; }
+.card-head .card-fold-button .icon { color: currentColor; width: 1.25rem; height: 1.25rem; transition: rotate .15s; }
+.card-fold.is-folded .card-fold-button .icon { rotate: -90deg; }
+.card-fold > .card-body { margin-top: .5rem; }
+.card-fold > .card-body[hidden] { display: none; }
+.card-fold.is-folded { padding-bottom: 1rem; }
+.card-summary { display: none; align-items: center; gap: .3rem; min-width: 0; margin-left: .5rem; color: var(--muted); font-size: .875rem; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-fold.is-folded .card-summary { display: inline-flex; }
+.card-head .card-summary .icon { flex: none; width: 1rem; height: 1rem; color: var(--muted); }
+.card-head .card-summary.is-ok .icon { color: var(--ok); }
+.card-head .card-summary.is-warning .icon { color: var(--primary-ink); }
+@media (prefers-reduced-motion: reduce) { .card-head .card-fold-button .icon { transition: none; } }
+
 /* Pill (task 110: one label style for states and counts, was .tag-outline and .tab-count): small, round, not clickable.
    .pill-ok green ("installiert"), .pill-new orange tint ("verfügbar", the count of the active tab). */
 .pill {
