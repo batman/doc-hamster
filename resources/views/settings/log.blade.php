@@ -20,8 +20,9 @@
 
     @if ($summary !== [])
         {{-- A112: what text recognition cannot read, grouped by reason (only with the logbook Texterkennung alone). --}}
-        <section class="card">
-            <h2 class="card-head"><x-icon name="alert-triangle" />{{ __('ocr.log.summary') }}</h2>
+        {{-- A263: foldable; folded it shows the total. --}}
+        <x-fold-card fold="log.ocr-summary" :title="__('ocr.log.summary')" icon="alert-triangle"
+            :summary="trans_choice('ocr.summary.documents', array_sum($summary), ['count' => array_sum($summary)])" summary-tone="warning">
             <ul class="ocr-summary">
                 @foreach ($summary as $reason => $count)
                     <li><strong>{{ $count }}</strong>
@@ -33,7 +34,7 @@
                     </li>
                 @endforeach
             </ul>
-        </section>
+        </x-fold-card>
     @endif
 
     <section class="card">
