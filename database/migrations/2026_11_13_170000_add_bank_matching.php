@@ -45,6 +45,10 @@ return new class extends Migration
     {
         Schema::dropIfExists('match_rejections');
         Schema::table('matches', function (Blueprint $table): void {
+            // MySQL/MariaDB: the org_id foreign key may be using this index – give it its own one first.
+            $table->index('org_id');
+        });
+        Schema::table('matches', function (Blueprint $table): void {
             $table->dropIndex(['org_id', 'state']);
             $table->dropColumn(['state', 'score', 'reasons', 'paid_at_set']);
         });
