@@ -90,11 +90,15 @@
                         data-label="{{ __('ocr.nav_open', ['count' => ':count']) }}" data-tooltip-label="{{ __('ocr.nav_tooltip', ['count' => ':count']) }}" data-paused-label="{{ __('ocr.nav_paused') }}"
                         data-engine-error="{{ $ocrEngineError !== null ? __('ocr.engine_error', ['reason' => $ocrEngineError]) : '' }}" data-engine-error-label="{{ __('ocr.engine_error', ['reason' => ':reason']) }}"
                         @if ($ocrOpen['open'] === 0) hidden @endif>
-                        <span class="nav-ocr-icon tooltip-right" data-ocr-icon data-tooltip="{{ $ocrTip }}" role="img" aria-label="{{ $ocrTip }}"><x-icon name="search" /></span>
-                        <span class="nav-ocr-body nav-text">
-                            <span class="nav-ocr-title">{{ __('ocr.nav_title') }}</span>
-                            <span class="nav-ocr-count" data-ocr-open-text>{{ __('ocr.nav_open', ['count' => $ocrOpen['open']]) }}</span>
-                        </span>
+                        {{-- Point 123: a click opens Texterkennung as a module of its own (no settings columns). --}}
+                        @php $ocrLink = Gate::allows('settings.manage'); @endphp
+                        <{{ $ocrLink ? 'a' : 'span' }} class="nav-ocr-link" @if ($ocrLink) href="{{ route('ocr.live') }}" @if (request()->routeIs('ocr.live')) aria-current="page" @endif @endif>
+                            <span class="nav-ocr-icon tooltip-right" data-ocr-icon data-tooltip="{{ $ocrTip }}" role="img" aria-label="{{ $ocrTip }}"><x-icon name="search" /></span>
+                            <span class="nav-ocr-body nav-text">
+                                <span class="nav-ocr-title">{{ __('ocr.nav_title') }}</span>
+                                <span class="nav-ocr-count" data-ocr-open-text>{{ __('ocr.nav_open', ['count' => $ocrOpen['open']]) }}</span>
+                            </span>
+                        </{{ $ocrLink ? 'a' : 'span' }}>
                         @if ($ocrBrowser)
                             <button type="button" class="nav-ocr-toggle tooltip-right" data-ocr-toggle data-pause="{{ __('ocr.pause') }}" data-resume="{{ __('ocr.resume') }}" data-tooltip="{{ __('ocr.pause') }}" aria-label="{{ __('ocr.pause') }}" aria-pressed="false"><x-icon name="player-pause" /><x-icon name="player-play" /></button>
                         @endif

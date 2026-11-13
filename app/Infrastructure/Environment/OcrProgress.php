@@ -26,7 +26,8 @@ final class OcrProgress
     /** Browser passes (point 56): 1 fast, 2 medium, 3 full resolution; the server reads once and sets 3. */
     public const int PASSES = 3;
 
-    public static function start(Document $document): void
+    /** Point 124/A259: who reads (server or browser) and in which pass; page and pages follow as the reading goes on. */
+    public static function start(Document $document, string $engine = 'server', int $pass = self::PASSES): void
     {
         Cache::put(self::CURRENT_KEY, [
             'id' => $document->id,
@@ -34,21 +35,42 @@ final class OcrProgress
             'title' => $document->title,
             'started' => now()->getTimestamp(),
             'percent' => null,
+            'engine' => $engine === 'browser' ? 'browser' : 'server',
+            'pass' => max(1, min(self::PASSES, $pass)),
+            'page' => null,
+            'pages' => null,
         ], self::CURRENT_TTL);
     }
 
-    /** Browser fallback only: the percent of the current document (tesseract.js logger). */
-    public static function percent(Document $document, int $percent): void
+    /** Browser fallback only: the percent of the current page (tesseract.js logger), with page and pages when known. */
+    public static function percent(Document $document, int $percent, ?int $page = null, ?int $pages = null): void
     {
         $current = Cache::get(self::CURRENT_KEY);
         if (! is_array($current) || ($current['id'] ?? null) !== $document->id) {
-            self::start($document);
+            self::start($document, 'browser');
             $current = Cache::get(self::CURRENT_KEY);
         }
         if (is_array($current)) {
             $current['percent'] = max(0, min(100, $percent));
+            if ($page !== null) {
+                $current['page'] = max(1, $page);
+                $current['pages'] = $pages !== null ? max(1, $pages) : ($current['pages'] ?? null);
+            }
             Cache::put(self::CURRENT_KEY, $current, self::CURRENT_TTL);
         }
+    }
+
+    /** Point 124: the server job reached page `$page` (of `$pages`, when known) of the current document. */
+    public static function page(string $documentId, int $page, ?int $pages = null): void
+    {
+        $current = Cache::get(self::CURRENT_KEY);
+        if (! is_array($current) || ($current['id'] ?? null) !== $documentId) {
+            return;
+        }
+        $current['page'] = max(1, $page);
+        $current['pages'] = $pages !== null ? max(1, $pages) : ($current['pages'] ?? null);
+        $current['percent'] = null;
+        Cache::put(self::CURRENT_KEY, $current, self::CURRENT_TTL);
     }
 
     public static function finish(string $documentId, ?string $orgId = null): void
@@ -63,7 +85,7 @@ final class OcrProgress
     }
 
     /**
-     * @return array{id: string, title: string, started: int, percent: ?int}|null
+     * @return array{id: string, title: string, started: int, percent: ?int, engine: string, pass: int, page: ?int, pages: ?int, elapsed: int}|null
      */
     public static function current(string $orgId): ?array
     {
@@ -71,12 +93,18 @@ final class OcrProgress
         if (! is_array($current) || ($current['org'] ?? null) !== $orgId) {
             return null;
         }
+        $started = (int) ($current['started'] ?? 0);
 
         return [
             'id' => (string) $current['id'],
             'title' => (string) ($current['title'] ?? ''),
-            'started' => (int) ($current['started'] ?? 0),
+            'started' => $started,
             'percent' => isset($current['percent']) ? (int) $current['percent'] : null,
+            'engine' => ($current['engine'] ?? 'server') === 'browser' ? 'browser' : 'server',
+            'pass' => (int) ($current['pass'] ?? self::PASSES),
+            'page' => isset($current['page']) ? (int) $current['page'] : null,
+            'pages' => isset($current['pages']) ? (int) $current['pages'] : null,
+            'elapsed' => $started > 0 ? max(0, now()->getTimestamp() - $started) : 0,
         ];
     }
 

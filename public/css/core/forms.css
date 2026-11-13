@@ -129,6 +129,8 @@ input[type="color"]:focus-visible { outline: 2px solid var(--primary); outline-o
 .doc-layer-page { position: absolute; }
 .doc-mark { position: absolute; box-sizing: border-box; border: calc(2px / var(--doc-scale, 1)) solid var(--primary); border-radius: calc(3px / var(--doc-scale, 1)); background: color-mix(in srgb, var(--primary) 28%, transparent); }
 .doc-mark.is-pulse { animation: doc-pulse .6s ease-out 3; }
+/* Point 124/A255: a word the reader is unsure about (confidence < 60) – lighter. */
+.doc-mark.is-faint { border-color: color-mix(in srgb, var(--primary) 45%, transparent); background: color-mix(in srgb, var(--primary) 10%, transparent); }
 @keyframes doc-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 60%, transparent); } 100% { box-shadow: 0 0 0 calc(14px / var(--doc-scale, 1)) transparent; } }
 @media (prefers-reduced-motion: reduce) { .doc-mark.is-pulse { animation: none; } }
 /* Click-to-edit (point 28): plain text with a light hover hint, a field of the same size while editing */

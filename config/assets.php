@@ -22,7 +22,7 @@ return [
         'core/badges', 'modules/notes', 'modules/tags-search', 'core/toasts', 'core/ajax-forms',
         'modules/updates-preview-pick', 'core/color-field', 'modules/folder-import', 'core/start',
         'modules/document-viewer', 'modules/ocr-text', 'modules/palette', 'modules/ocr-browser', 'modules/documents', 'modules/updates',
-        'modules/text-editor', 'core/edit-in-place', 'modules/ocr-progress', 'modules/note-options',
+        'modules/text-editor', 'core/edit-in-place', 'modules/ocr-progress', 'modules/ocr-live', 'modules/note-options',
         'modules/properties', 'modules/girocode', 'core/window-edge', 'core/top-layer', 'core/layout-debug',
     ],
 ];

@@ -149,10 +149,11 @@ final class RecognizeText implements ShouldQueue
                 throw new RuntimeException(OcrLog::text('ocr.reason.file_missing'));
             }
             if ($route === 'image') {
+                OcrProgress::page($document->id, 1, 1);
                 [$text, $page] = self::tesseract($path, 1, $ocr, $app);
                 $words = OcrWords::make('tesseract', [$page]);
             } else {
-                [$text, $event, $pages, $words] = self::pdf($path, $ocr, $system);
+                [$text, $event, $pages, $words] = self::pdf($path, $ocr, $system, $document->id);
             }
         } catch (ProcessTimedOutException $e) {
             $error = ['timeout', OcrLog::text('ocr.reason.timeout', ['seconds' => (int) $e->getProcess()->getTimeout()])];
@@ -240,10 +241,12 @@ final class RecognizeText implements ShouldQueue
      *
      * @return array{0: string, 1: string, 2: ?int, 3: array{v: int, source: string, pages: list<array{n: int, words: list<array<string, mixed>>}>}|null} text, event, pages, words
      */
-    private static function pdf(string $path, LocalOcr $ocr, bool $system): array
+    private static function pdf(string $path, LocalOcr $ocr, bool $system, string $documentId): array
     {
         $layer = self::layer($path, $ocr);
         $pages = $layer !== null ? count($layer) : null;
+        // Point 124: the live card shows "Seite x von y" while the server reads.
+        OcrProgress::page($documentId, 1, $pages);
         $withText = $layer !== null ? count(array_filter($layer, self::hasText(...))) : 0;
         $layerWords = $withText > 0 ? self::boxes($path, $ocr) : null;
         $allLayer = $layer !== null && $layer !== [] && $withText === count($layer);
@@ -275,6 +278,7 @@ final class RecognizeText implements ShouldQueue
             }
             $last = min($pages ?? LocalOcr::PDF_MAX_PAGES, LocalOcr::PDF_MAX_PAGES);
             for ($n = 1; $n <= $last; $n++) {
+                OcrProgress::page($documentId, $n, $pages);
                 $own = $layer[$n - 1] ?? '';
                 $isLayer = self::hasText($own);
                 if ($isLayer && isset($byPage[$n])) {

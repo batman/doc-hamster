@@ -13,6 +13,7 @@ use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
 use App\Events\TextRecognized;
 use App\Infrastructure\Environment\LocalOcr;
+use App\Infrastructure\Environment\OcrLive;
 use App\Infrastructure\Environment\OcrProgress;
 use App\Jobs\Local\RecognizeText;
 use App\Jobs\Net\SetUpOcr;
@@ -48,7 +49,8 @@ final class OcrController extends Controller
         }
         self::watch($org->id(), $ocr);
 
-        return view('settings.ocr', [
+        // Point 123: from the OCR widget the page opens as a module of its own, without the settings columns.
+        return view($request->routeIs('ocr.live') ? 'ocr.page' : 'settings.ocr', [
             'mode' => $ocr->mode(),
             'pdfReady' => $ocr->serverReadsPdf(),
             'status' => $ocr->status(),
@@ -58,6 +60,7 @@ final class OcrController extends Controller
             'cronLast' => CronClock::lastRun(),
             'cronRunning' => CronClock::running(),
             'cronLine' => '* * * * * '.CronLine::command(PHP_BINARY, base_path('artisan')),
+            'live' => $this->live($request, $org->id()),
         ]);
     }
 
@@ -154,7 +157,7 @@ final class OcrController extends Controller
     /**
      * Small JSON for polling (A21/A22, point 57): the open count and bar for everyone, the details only for settings.manage.
      */
-    public function status(LocalOcr $ocr, CurrentOrg $org): JsonResponse
+    public function status(Request $request, LocalOcr $ocr, CurrentOrg $org): JsonResponse
     {
         self::watch($org->id(), $ocr);
         $open = OcrProgress::open($org->id());
@@ -169,21 +172,65 @@ final class OcrController extends Controller
         }
         $counts = OcrProgress::counts($org->id());
 
-        return response()->json([
+        $data = [
             ...$nav,
             'waiting' => $counts['waiting'],
             'mode' => $ocr->mode(),
             'counts' => $counts,
             'current' => OcrProgress::current($org->id()),
-        ]);
+        ];
+        // Point 124: the Live card asks with live=1 for the details of the current document, figures and the last ten.
+        if ($request->boolean('live')) {
+            $data = [...$data, ...$this->live($request, $org->id(), $open['open'])];
+        }
+
+        return response()->json($data);
     }
 
-    /** Browser fallback: percent of the document being read (A24), every 2 s at most. */
+    /**
+     * Point 124 (A255-A259): what the Live card shows – the current document with its file, page and pass, the
+     * figures from the OCR log and the last ten finished documents with result and amount or sender.
+     *
+     * @return array{current: array<string, mixed>|null, figures: array<string, int|float|null>, recent: list<array<string, mixed>>}
+     */
+    private function live(Request $request, string $orgId, ?int $open = null): array
+    {
+        $current = OcrProgress::current($orgId);
+        if ($current !== null) {
+            $file = DocumentFile::query()->where('document_id', $current['id'])->orderBy('page_no')->first();
+            $current += [
+                'url' => route('documents.show', $current['id']),
+                'file' => $file !== null && self::readable(DocumentFile::query()->whereKey($file->id))->exists() ? route('ocr.image', $file->id) : null,
+                'type' => $file?->mime,
+                'thumb' => $file?->thumb_path !== null ? route('documents.thumb', $file->id) : null,
+            ];
+        }
+        $recent = array_map(static fn (array $row): array => [
+            ...$row,
+            'url' => route('documents.show', $row['id']),
+            'words' => route('documents.words', $row['id']),
+            'thumb' => $row['thumb'] === true && $row['file'] !== null ? route('documents.thumb', $row['file']) : null,
+            // Through ocr.image, which leaves last_opened_at alone (unlike documents.file).
+            'file' => $row['file'] !== null && $row['mime'] !== null && ((str_starts_with($row['mime'], 'image/') && ! in_array($row['mime'], self::SKIP_MIMES, true)) || $row['mime'] === self::PDF) ? route('ocr.image', $row['file']) : null,
+        ], OcrLive::recent($orgId, $this->visible($request)));
+
+        return [
+            'current' => $current,
+            'figures' => OcrLive::figures($orgId, $open ?? OcrProgress::open($orgId)['open']),
+            'recent' => $recent,
+        ];
+    }
+
+    /** Browser fallback: percent of the page being read (A24), every 2 s at most; with page and pages (point 124). */
     public function progress(Request $request, string $id): Response
     {
-        $data = $request->validate(['percent' => ['required', 'integer', 'min:0', 'max:100']]);
+        $data = $request->validate([
+            'percent' => ['required', 'integer', 'min:0', 'max:100'],
+            'page' => ['nullable', 'integer', 'min:1', 'max:65535'],
+            'pages' => ['nullable', 'integer', 'min:1', 'max:65535'],
+        ]);
         $document = $this->editable($request)->whereKey($id)->firstOrFail();
-        OcrProgress::percent($document, (int) $data['percent']);
+        OcrProgress::percent($document, (int) $data['percent'], isset($data['page']) ? (int) $data['page'] : null, isset($data['pages']) ? (int) $data['pages'] : null);
 
         return response()->noContent();
     }
@@ -229,10 +276,12 @@ final class OcrController extends Controller
             default => 1,
         };
         $file = ($onlyPdf ? self::pdfs(DocumentFile::query()->where('document_id', $document->id)) : self::readable(DocumentFile::query()->where('document_id', $document->id)))->orderBy('page_no')->firstOrFail();
-        OcrProgress::start($document);
+        OcrProgress::start($document, 'browser', $pass);
 
         return response()->json([
             'id' => $document->id,
+            // Point 124: the Live card names the document this tab reads.
+            'title' => $document->title,
             'file' => route('ocr.image', $file->id),
             'type' => $file->mime,
             'pass' => $pass,
@@ -395,6 +444,16 @@ final class OcrController extends Controller
         return $query->where(static fn (Builder $w) => $w
             ->where(static fn (Builder $i) => $i->where('mime', 'like', 'image/%')->whereNotIn('mime', self::SKIP_MIMES))
             ->orWhere('mime', self::PDF));
+    }
+
+    /**
+     * What this person may view (org-scoped by the global scope).
+     *
+     * @return Builder<Document>
+     */
+    private function visible(Request $request): Builder
+    {
+        return Document::query()->visibleTo((string) $request->user()?->getAuthIdentifier(), Gate::allows(Permission::ViewAllDocuments->value));
     }
 
     /**

@@ -105,6 +105,8 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('settings/ocr', [OcrController::class, 'setup'])->middleware('can:settings.manage')->name('ocr.setup');
     Route::post('settings/ocr/rerun', [OcrController::class, 'rerun'])->middleware('can:settings.manage')->name('ocr.rerun');
     Route::post('documents/{id}/ocr', [OcrController::class, 'redo'])->middleware('can:documents.edit')->name('ocr.redo');
+    // Point 123: the same page as a module of its own (the OCR widget below Abmelden), without the settings columns.
+    Route::get('ocr', [OcrController::class, 'show'])->middleware('can:settings.manage')->name('ocr.live');
     Route::get('ocr/status', [OcrController::class, 'status'])->name('ocr.status');
     Route::get('ocr/next', [OcrController::class, 'next'])->name('ocr.next');
     Route::post('ocr/{id}/progress', [OcrController::class, 'progress'])->name('ocr.progress');

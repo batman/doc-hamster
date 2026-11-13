@@ -8,6 +8,10 @@
     margin: .25rem 0 0; padding: .4rem .85rem .5rem; border-radius: calc(var(--radius) / 2); color: var(--text);
 }
 .nav-ocr[hidden] { display: none; }
+/* Point 123: icon and text are one link to the Texterkennung module (subgrid keeps the three columns). */
+.nav-ocr-link { grid-column: 1 / 3; display: grid; grid-template-columns: subgrid; align-items: center; min-width: 0; color: inherit; text-decoration: none; border-radius: calc(var(--radius) / 2); }
+a.nav-ocr-link:hover .nav-ocr-title, a.nav-ocr-link[aria-current="page"] .nav-ocr-title { color: var(--primary-ink); }
+a.nav-ocr-link[aria-current="page"] .nav-ocr-title { font-weight: 700; }
 .nav-ocr-icon { display: inline-grid; place-items: center; width: 1.4rem; height: 1.4rem; color: var(--primary); }
 .nav-ocr-icon .icon { width: 1.25rem; height: 1.25rem; animation: ocr-orbit 1.6s linear infinite; }
 @keyframes ocr-orbit {
@@ -38,6 +42,7 @@
 .nav-ocr.is-paused .nav-ocr-bar::-moz-progress-bar { background: var(--muted); }
 @media (min-width: 64rem) {
     :is(html.nav-rail, .shell.nav-rail) .nav-ocr { grid-template-columns: 1fr; justify-items: center; gap: .35rem; padding-inline: .25rem; }
+    :is(html.nav-rail, .shell.nav-rail) .nav-ocr-link { grid-column: 1; grid-template-columns: 1fr; justify-items: center; }
 }
 @media (prefers-reduced-motion: reduce) { .nav-ocr-icon .icon { animation: none; } }
 .ocr-counts { display: flex; flex-wrap: wrap; gap: .5rem 2rem; margin: .25rem 0 1rem; padding: 0; list-style: none; }
@@ -64,3 +69,29 @@
 .ocr-head h3 { margin: 0; }
 .ocr-head form { margin: 0 0 0 auto; }
 .detail-section .ocr-head button, .win-detail .ocr-head form > button[type="submit"] { margin-top: 0; }
+
+/* Live card (point 124, A255-A258): the page being read with the recognised words as orange boxes, its details,
+   figures and the last ten finished documents. Boxes are the framework's .doc-mark (is-faint = unsure word). */
+.ocr-live-now { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 1rem 1.5rem; align-items: start; margin: .25rem 0 1rem; }
+@container win (max-width: 34rem) { .ocr-live-now { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 40rem) { .ocr-live-now { grid-template-columns: minmax(0, 1fr); } }
+.ocr-live-stage { display: grid; place-items: center; min-height: 10rem; padding: .5rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.ocr-live-stage .list-empty { margin: 0; text-align: center; }
+.ocr-live-page { position: relative; width: 100%; line-height: 0; }
+.ocr-live-page[hidden] { display: none; }
+.ocr-live-page > img, .ocr-live-page > canvas { display: block; width: 100%; height: auto; background: #fff; }
+.ocr-live-page .doc-mark { border-width: 1px; border-radius: 2px; }
+.ocr-live-facts dd { min-width: 0; overflow-wrap: anywhere; }
+.ocr-live-figures { margin-bottom: .75rem; }
+.ocr-live-subhead { margin: .5rem 0; font-size: .95rem; }
+.ocr-live-recent { display: flex; gap: .6rem; margin: 0; padding: 0 0 .25rem; overflow-x: auto; list-style: none; }
+.ocr-live-recent > .list-empty { padding: 0; }
+.ocr-live-doc { position: relative; display: grid; gap: .3rem; width: 5.5rem; color: inherit; text-decoration: none; border-radius: var(--row-radius, 8px); }
+.ocr-live-doc .thumb-frame { width: 5.5rem; height: 6.75rem; padding: .35rem; border-radius: 12px; }
+.ocr-live-doc .thumb-frame .icon { width: 2rem; height: 2rem; }
+.ocr-live-doc:hover .thumb-frame { border-color: var(--primary); }
+.ocr-live-doc-text { font-size: .75rem; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ocr-live-result { position: absolute; top: .3rem; right: .3rem; display: grid; place-items: center; width: 1.25rem; height: 1.25rem; border-radius: 50%; background: var(--bg); box-shadow: var(--shadow); }
+.ocr-live-result .icon { width: .85rem; height: .85rem; }
+.ocr-live-result.is-ok .icon { color: var(--ok); }
+.ocr-live-result.is-failed .icon { color: var(--danger); }

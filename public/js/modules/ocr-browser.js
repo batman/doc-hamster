@@ -92,7 +92,10 @@
                 gzip: false,
                 workerBlobURL: false,
                 // Only the main lane feeds the progress in the menu.
-                logger: lane.main ? m => document.dispatchEvent(new CustomEvent('dh:ocr-progress', { detail: m })) : () => {},
+                logger: lane.main ? m => {
+                    document.dispatchEvent(new CustomEvent('dh:ocr-progress', { detail: m }));
+                    window.DocHamster?.emit('ocr:progress', m);
+                } : () => {},
                 errorHandler: () => { /* surfaces as a rejected job */ },
             });
         })();
@@ -177,11 +180,17 @@
         });
         return { n, words };
     };
+    // Point 124: the Live card follows the main lane page by page (DocHamster events; only this tab sees them).
+    const pageStart = (lane, info, n) => { if (lane.main) window.DocHamster?.emit('ocr:page-start', { id: info.id, n, pages: info.pages ?? 1 }); };
+    const pageDone = (lane, info, page) => { if (lane.main) window.DocHamster?.emit('ocr:page', { id: info.id, n: page.n, pages: info.pages ?? 1, words: page.words }); };
     // Images: scaled down to the pass's long side (pass 3: original), capped for memory.
     const readImage = async (lane, url, side, run, info) => {
+        pageStart(lane, info, 1);
         const read = async (image, width, height) => {
             const { data } = await (await getEngine(lane)).recognize(image, {}, READ_OUTPUT);
-            info.words = { source: 'browser', pages: [ocrWords(data, width, height, 1)] };
+            const page = ocrWords(data, width, height, 1);
+            info.words = { source: 'browser', pages: [page] };
+            pageDone(lane, info, page);
             return data?.text ?? '';
         };
         if (typeof createImageBitmap === 'undefined') return (await (await getEngine(lane)).recognize(url)).data?.text ?? '';
@@ -220,12 +229,14 @@
             info.layer = 0;
             for (let n = 1; n <= last; n++) {
                 check(run);
+                pageStart(lane, info, n);
                 const page = await doc.getPage(n);
                 const layer = await page.getTextContent();
                 const own = layer.items.map(item => (item.str ?? '') + (item.hasEOL ? '\n' : ' ')).join('').trim();
                 if (own.replace(/\s/g, '').length >= 20) {
                     texts.push(own);
                     pages.push(layerWords(layer.items, page.getViewport({ scale: 1 }), n));
+                    pageDone(lane, info, pages[pages.length - 1]);
                     info.layer++;
                 } else {
                     const one = page.getViewport({ scale: 1 });
@@ -238,6 +249,7 @@
                     const { data } = await (await getEngine(lane)).recognize(canvas, {}, READ_OUTPUT);
                     texts.push((data?.text ?? '').trim());
                     pages.push(ocrWords(data, canvas.width, canvas.height, n));
+                    pageDone(lane, info, pages[pages.length - 1]);
                     canvas.width = canvas.height = 0;
                 }
                 page.cleanup();
@@ -248,7 +260,11 @@
             Promise.resolve(doc.loadingTask?.destroy ? doc.loadingTask.destroy() : doc.destroy?.()).catch(() => {}); /* pdf.js 6: freed via its loading task */
         }
     };
-    const announce = (lane, job) => { if (lane.main) document.dispatchEvent(new CustomEvent('dh:ocr-job', { detail: job })); };
+    const announce = (lane, job) => {
+        if (!lane.main) return;
+        document.dispatchEvent(new CustomEvent('dh:ocr-job', { detail: job }));
+        window.DocHamster?.emit('ocr:job', job);
+    };
 
     // One document of the lowest open pass (A77: the server picks at random among them); gives the pause before
     // the next one, or null when nothing is left. The second lane asks for pass 1 only.
@@ -277,7 +293,7 @@
         const body = new FormData();
         body.append('pass', String(pass));
         const began = performance.now();
-        const info = { pages: null, layer: null, words: null };
+        const info = { id: job.id, pages: null, layer: null, words: null };
         try {
             const read = job.type === 'application/pdf'
                 ? readPdf(lane, job.file, PASSES[pass].scale, run, info)
