@@ -6,6 +6,7 @@ namespace App\Domain\Documents;
 
 use App\Domain\Banking\TransactionMatch;
 use App\Domain\Org\BelongsToOrg;
+use App\Domain\Properties\DocumentProperty;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -114,6 +115,16 @@ final class Document extends Model
     public function matches(): HasMany
     {
         return $this->hasMany(TransactionMatch::class);
+    }
+
+    /**
+     * The property values (point 122.1), one per property.
+     *
+     * @return HasMany<DocumentProperty, $this>
+     */
+    public function properties(): HasMany
+    {
+        return $this->hasMany(DocumentProperty::class);
     }
 
     /**
