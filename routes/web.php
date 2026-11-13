@@ -21,6 +21,7 @@ use App\Http\Controllers\NoteColumnController;
 use App\Http\Controllers\OcrController;
 use App\Http\Controllers\PaletteController;
 use App\Http\Controllers\PhoneCheckController;
+use App\Http\Controllers\PrinterSettingsController;
 use App\Http\Controllers\PrintTrayController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\QueueTickController;
@@ -122,6 +123,13 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('{id}/delete', [PropertyController::class, 'destroy'])->name('destroy');
     });
 
+    // Einstellungen → Drucker (point 127; before settings/{group}): each person's own computers with the printer "Hamster".
+    Route::middleware('can:documents.upload')->prefix('settings/printer')->name('printers.')->group(function (): void {
+        Route::get('/', [PrinterSettingsController::class, 'index'])->name('index');
+        Route::post('setup', [PrinterSettingsController::class, 'setup'])->name('setup');
+        Route::post('{id}/delete', [PrinterSettingsController::class, 'destroy'])->name('destroy');
+    });
+
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::get('settings/{group}', [SettingsController::class, 'group'])->name('settings.group');
     Route::post('documents/{id}/tags', [DocumentController::class, 'updateTags'])->middleware('can:documents.edit')->name('documents.tags');
@@ -133,8 +141,6 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::view('mail-tray', 'mail_tray.index')->middleware('can:documents.upload')->name('mail-tray.index');
     Route::middleware('can:documents.upload')->prefix('print-tray')->name('print-tray.')->group(function (): void {
         Route::get('/', [PrintTrayController::class, 'index'])->name('index');
-        Route::post('printers', [PrintTrayController::class, 'setup'])->name('setup');
-        Route::post('printers/{id}/revoke', [PrintTrayController::class, 'revoke'])->name('revoke');
         Route::post('{id}/accept', [PrintTrayController::class, 'accept'])->name('accept');
         Route::post('{id}/delete', [PrintTrayController::class, 'destroy'])->middleware('can:documents.trash')->name('destroy');
     });

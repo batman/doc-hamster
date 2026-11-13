@@ -93,7 +93,19 @@ final class Printer extends Model
             return null;
         }
 
-        return [self::query()->withoutGlobalScope(OrgScope::class)->where('token_hash', hash('sha256', $token))->firstOrFail(), $token];
+        $printer = self::query()->withoutGlobalScope(OrgScope::class)->where('token_hash', hash('sha256', $token))->firstOrFail();
+
+        // A265: the same computer paired again replaces its older pairings, so no duplicates show.
+        self::query()->withoutGlobalScope(OrgScope::class)
+            ->where('org_id', $printer->org_id)
+            ->where('user_id', $printer->user_id)
+            ->where('name', $name)
+            ->whereKeyNot($printer->id)
+            ->whereNotNull('token_hash')
+            ->whereNull('revoked_at')
+            ->update(['revoked_at' => now()]);
+
+        return [$printer, $token];
     }
 
     /** The working printer behind a token, from any organisation. */

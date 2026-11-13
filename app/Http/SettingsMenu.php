@@ -34,6 +34,9 @@ final class SettingsMenu
         'ocr' => ['text-scan-2', [
             ['ocr', 'ocr.show', 'text-scan-2', 'settings.manage', ['ocr.show']],
         ], true],
+        'printer' => ['printer', [
+            ['printer', 'printers.index', 'printer', 'documents.upload', ['printers.*']],
+        ], true],
         'log' => ['list-details', [
             ['log', 'log.index', 'list-details', 'settings.manage', ['log.index']],
             ['log_general', 'log.general', 'note', 'settings.manage', ['log.general']],

@@ -17,6 +17,7 @@ return [
         'ocr' => 'Text recognition',
         'export' => 'Export',
         'update' => 'Update',
+        'printer' => 'Printer',
         'log' => 'Log',
     ],
     'links' => [
@@ -31,6 +32,7 @@ return [
         'shares' => ['title' => 'Links', 'text' => 'Validity and valid links for sending'],
         'update' => ['title' => 'Update', 'text' => 'Look for a new version and install it'],
         'phone' => ['title' => 'Phone test', 'text' => 'Check whether your phone can do everything'],
+        'printer' => ['title' => 'Printer', 'text' => 'Set up the printer "Hamster", connected computers'],
         'log' => ['title' => 'All logbooks', 'text' => 'Events and errors of every logbook'],
         'log_general' => ['title' => 'General', 'text' => 'Sign-ins, uploads, changes, errors'],
         'log_ocr' => ['title' => 'Text recognition', 'text' => 'What text recognition read'],
