@@ -1,7 +1,5 @@
 /* GiroCode card in the detail window (points 120, 120.4, A237-A239, A247, A249, A250) – built from the Eigenschaften-Karte,
    QR-Karte, Vorschlags-Chip and Knopfgruppe; only the arrangement lives here. */
-.girocode .doc-properties-head h3 { display: flex; align-items: center; gap: .4rem; }
-.girocode .doc-properties-head .icon { width: 1.15rem; height: 1.15rem; color: var(--primary); }
 .girocode-swap { margin: .5rem 0 0; }
 .girocode-swap .card-note { margin: 0; }
 .girocode-skonto { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; margin: .75rem 0 0; }

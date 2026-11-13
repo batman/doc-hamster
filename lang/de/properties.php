@@ -55,6 +55,7 @@ return [
     'order_invalid' => 'Die Reihenfolge konnte nicht gespeichert werden.',
     'empty' => 'Noch keine Eigenschaften.',
     'card' => [
+        'summary' => ':count Wert|:count Werte',
         'add' => 'Eigenschaft',
         'add_label' => 'Eigenschaft hinzufügen',
         'none' => 'Noch keine Eigenschaften.',

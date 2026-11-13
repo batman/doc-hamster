@@ -10,13 +10,13 @@
     $propertyFormat = app(\App\Domain\Properties\PropertyValues::class);
     $propertyEdit = Gate::allows('documents.edit');
 @endphp
-<section class="detail-section doc-properties" data-doc-properties="{{ route('documents.properties', $document->id) }}" data-document="{{ $document->id }}">
-    <div class="doc-properties-head">
-        <h3>{{ __('properties.title') }}</h3>
-        @if ($propertyEdit && $propertyList->isNotEmpty())
-            <button type="button" class="button-quiet button-small" data-mark-as="{{ $document->id }}" aria-label="{{ __('properties.card.add_label') }}"><x-icon name="plus" />{{ __('properties.card.add') }}</button>
-        @endif
-    </div>
+{{-- A foldable card (point 132, A279: open at first); the reload draws it again with the remembered fold state. --}}
+<x-fold-card fold="detail.properties" :title="__('properties.title')" icon="list-details" class="doc-properties"
+    :summary="trans_choice('properties.card.summary', $propertyShown->count())"
+    :data-doc-properties="route('documents.properties', $document->id)" :data-document="$document->id">
+    @if ($propertyEdit && $propertyList->isNotEmpty())
+        <x-slot:action><span class="card-action"><button type="button" class="button-quiet button-small" data-mark-as="{{ $document->id }}" aria-label="{{ __('properties.card.add_label') }}"><x-icon name="plus" />{{ __('properties.card.add') }}</button></span></x-slot:action>
+    @endif
     @if ($propertyShown->isEmpty())
         <p class="list-empty">{{ __('properties.card.none') }}</p>
     @else
@@ -68,4 +68,4 @@
             </form>
         </noscript>
     @endif
-</section>
+</x-fold-card>

@@ -12,11 +12,14 @@
     $giroParam = ['sender' => 'name', 'iban' => 'iban', 'bic' => 'bic', 'invoice_amount' => 'amount', 'payment_reference' => 'ref'];
     $giroMax = ['sender' => 70, 'iban' => 42, 'bic' => 11, 'invoice_amount' => 30, 'payment_reference' => 140];
 @endphp
-<section class="detail-section doc-properties girocode" data-girocode="{{ route('documents.girocode', $document->id) }}" data-document="{{ $document->id }}"
-    data-svg="{{ route('documents.girocode.svg', $document->id) }}" data-set="{{ $giroSet }}" data-failed="{{ __('girocode.failed') }}" @unless ($giro['show']) hidden @endunless>
-    <div class="doc-properties-head">
-        <h3><x-icon name="qrcode" />{{ __('girocode.title') }}</h3>
-    </div>
+{{-- A foldable card (point 132, A279): open while unpaid, folded once paid with "Bezahlt am …" in the head. The two
+     states are remembered apart (fold ids detail.girocode / detail.girocode-paid), so unfolding a paid one keeps unpaid
+     ones open. The reload draws it again with the remembered fold state. --}}
+<x-fold-card :fold="$giro['paid'] !== null ? 'detail.girocode-paid' : 'detail.girocode'" :title="__('girocode.title')" icon="qrcode"
+    :folded="$giro['paid'] !== null" :summary="$giro['paid'] !== null ? __('girocode.paid', ['date' => $giro['paid']]) : null"
+    :summary-tone="$giro['paid'] !== null ? 'ok' : null" class="doc-properties girocode"
+    :data-girocode="route('documents.girocode', $document->id)" :data-document="$document->id"
+    :data-svg="route('documents.girocode.svg', $document->id)" :data-set="$giroSet" :data-failed="__('girocode.failed')" :hidden="! $giro['show']">
     <ul class="prop-list">
         @foreach ($giro['rows'] as $row)
             <li class="prop-row @if ($row['suggested']) is-suggested @endif" data-giro-param="{{ $giroParam[$row['key']] }}"
@@ -103,4 +106,4 @@
             </form>
         @endif
     @endif
-</section>
+</x-fold-card>

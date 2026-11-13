@@ -55,6 +55,7 @@ return [
     'order_invalid' => 'The order could not be saved.',
     'empty' => 'No properties yet.',
     'card' => [
+        'summary' => ':count value|:count values',
         'add' => 'Property',
         'add_label' => 'Add property',
         'none' => 'No properties yet.',
