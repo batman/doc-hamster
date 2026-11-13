@@ -44,7 +44,10 @@ final class SetUpOcr implements ShouldQueue
     {
         Document::query()->withoutGlobalScopes()->whereNull('deleted_at')
             ->where(static fn ($w) => $w->whereNull('ocr_status')->orWhereIn('ocr_status', ['pending', 'unavailable']))
+            ->where('ocr_rescan', false)
             ->select('id')->eachById(static fn (Document $d) => RecognizeText::dispatch($d->id));
+        // F17: documents marked for a re-read follow on the low queue.
+        RecognizeText::queueRescans();
     }
 
     /** Downloads url → target and checks the pinned SHA-256; an existing good file is kept. */

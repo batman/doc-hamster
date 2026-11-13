@@ -8,6 +8,7 @@ use App\Http\Controllers\BankController;
 use App\Http\Controllers\BankImportController;
 use App\Http\Controllers\DocumentBulkController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\DocumentWordsController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\FolderImportController;
@@ -61,6 +62,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('documents/{id}/text', [TextDocumentController::class, 'update'])->middleware('can:documents.edit')->name('documents.text.update');
     Route::post('documents/view', [DocumentController::class, 'setView'])->name('documents.view');
     Route::get('documents/{id}', [DocumentController::class, 'show'])->name('documents.show');
+    Route::get('documents/{id}/words', DocumentWordsController::class)->name('documents.words');
     Route::post('documents/{id}', [DocumentController::class, 'update'])->middleware('can:documents.edit')->name('documents.update');
     Route::post('documents/{id}/field', [DocumentController::class, 'updateField'])->middleware('can:documents.edit')->name('documents.field');
     Route::post('documents/{id}/move', [DocumentController::class, 'move'])->middleware('can:documents.edit')->name('documents.move');

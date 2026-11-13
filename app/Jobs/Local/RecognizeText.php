@@ -9,7 +9,9 @@ use App\Domain\Documents\DocumentFile;
 use App\Domain\Documents\RichText;
 use App\Domain\Documents\TextDocument;
 use App\Domain\Ocr\OcrLog;
+use App\Domain\Ocr\OcrWords;
 use App\Domain\Org\OrgScope;
+use App\Events\TextRecognized;
 use App\Infrastructure\Environment\LocalOcr;
 use App\Infrastructure\Environment\OcrProgress;
 use App\Queue\QueueName;
@@ -23,6 +25,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
+use Symfony\Component\Process\ExecutableFinder;
 use Symfony\Component\Process\Process;
 use Throwable;
 
@@ -61,9 +64,17 @@ final class RecognizeText implements ShouldQueue
 
     public int $timeout = 540;
 
-    public function __construct(public readonly string $documentId)
+    /** @param  bool  $rescan  F17: a re-read for word positions, on the low queue behind new uploads */
+    public function __construct(public readonly string $documentId, public readonly bool $rescan = false)
     {
-        $this->onQueue(QueueName::Local->value);
+        $this->onQueue(($rescan ? QueueName::LocalLow : QueueName::Local)->value);
+    }
+
+    /** F17: one low-priority job per document marked for a re-read. */
+    public static function queueRescans(): void
+    {
+        Document::query()->withoutGlobalScopes()->whereNull('deleted_at')->where('ocr_rescan', true)
+            ->select('id')->eachById(static fn (Document $d) => self::dispatch($d->id, true));
     }
 
     /**
@@ -85,13 +96,21 @@ final class RecognizeText implements ShouldQueue
         if ($document === null) {
             return;
         }
+        // F17: a low-priority re-read whose document was read again meanwhile (browser, "Neu erkennen").
+        $rescan = (bool) $document->getAttribute('ocr_rescan');
+        if ($this->rescan && ! $rescan) {
+            return;
+        }
+        // A re-read keeps the text it has until a new one replaces it (search keeps working).
+        $hasText = $rescan && $document->getAttribute('ocr_status') === 'done';
         $file = DocumentFile::query()->withoutGlobalScope(OrgScope::class)
             ->where('document_id', $document->id)->orderBy('page_no')->first();
         // A text document written in the app: its text is known, nothing to read.
         if ($file !== null && TextDocument::isText($file)) {
             $display = TextDocument::display($file);
             $plain = TextDocument::isRich($file) ? RichText::toPlainText($display) : $display;
-            self::finish($document, ['ocr_text' => $plain, 'ocr_status' => 'done', 'ocr_pass' => OcrProgress::PASSES]);
+            self::finish($document, ['ocr_text' => $plain, 'ocr_words' => null, 'ocr_status' => 'done', 'ocr_pass' => OcrProgress::PASSES, 'ocr_rescan' => false]);
+            TextRecognized::dispatch($document->id);
 
             return;
         }
@@ -101,14 +120,17 @@ final class RecognizeText implements ShouldQueue
         $source = $system ? 'system' : 'app';
         $route = self::route($file, $ocr, $system, $app);
         if ($route === 'browser') {
-            // The browser picks the document up itself (images in mode browser, PDFs whenever the server can't read them).
-            self::finish($document, ['ocr_status' => 'pending']);
+            // The browser picks the document up itself (images in mode browser, PDFs whenever the server can't read them);
+            // a re-read stays "done" with its flag, the browser hands it out after the new documents.
+            if (! $hasText) {
+                self::finish($document, ['ocr_status' => 'pending']);
+            }
 
             return;
         }
         if ($file === null || ! in_array($route, ['image', 'pdf'], true)) {
             OcrLog::unavailable($document->org_id, $document->id, $system || $app ? $source : 'system', $route, OcrLog::file($file));
-            self::finish($document, ['ocr_status' => 'unavailable']);
+            self::finish($document, $hasText ? ['ocr_rescan' => false] : ['ocr_status' => 'unavailable', 'ocr_rescan' => false]);
 
             return;
         }
@@ -116,6 +138,7 @@ final class RecognizeText implements ShouldQueue
         OcrProgress::start($document);
         $started = hrtime(true);
         $text = null;
+        $words = null;
         $event = 'recognized';
         $pages = $file->isImage() ? 1 : null;
         $error = null;
@@ -125,9 +148,10 @@ final class RecognizeText implements ShouldQueue
                 throw new RuntimeException(OcrLog::text('ocr.reason.file_missing'));
             }
             if ($route === 'image') {
-                $text = self::run($ocr->command([...($app ? [] : ['tesseract']), $path, 'stdout', '-l', 'deu+eng'], $app), $ocr->env($app));
+                [$text, $page] = self::tesseract($path, 1, $ocr, $app);
+                $words = OcrWords::make('tesseract', [$page]);
             } else {
-                [$text, $event, $pages] = self::pdf($path, $ocr, $system);
+                [$text, $event, $pages, $words] = self::pdf($path, $ocr, $system);
             }
         } catch (ProcessTimedOutException $e) {
             $error = ['timeout', OcrLog::text('ocr.reason.timeout', ['seconds' => (int) $e->getProcess()->getTimeout()])];
@@ -147,12 +171,23 @@ final class RecognizeText implements ShouldQueue
             OcrLog::record($document->org_id, $source, $error[0] ?? 'failed', [...$log, 'message' => $error[1] ?? null]);
         }
 
+        if ($text === null && $hasText) {
+            // A failed re-read keeps the earlier text.
+            self::finish($document, ['ocr_rescan' => false]);
+
+            return;
+        }
         self::finish($document, [
             'ocr_text' => $text !== null ? trim($text) : null,
+            'ocr_words' => $text !== null ? OcrWords::encode($words) : null,
             'ocr_status' => $text !== null ? 'done' : 'failed',
             // The server reads once at full resolution: the last pass (point 56).
             'ocr_pass' => $text !== null ? OcrProgress::PASSES : null,
+            'ocr_rescan' => false,
         ]);
+        if ($text !== null) {
+            TextRecognized::dispatch($document->id);
+        }
     }
 
     /**
@@ -197,17 +232,26 @@ final class RecognizeText implements ShouldQueue
      * A114 first: a text layer on every page is taken as it is. Otherwise ocrmypdf (system) or, A113, each page
      * without text as a temporary image through Tesseract (app), at most 50 pages, deleted right after.
      *
-     * @return array{0: string, 1: string, 2: ?int} text, event, pages
+     * Word positions (point 119): text-layer pages from `pdftotext -bbox-layout` (poppler); the app-owned Xpdf
+     * pdftotext has no bbox output, so there a text-layer page is rendered and read by Tesseract for its positions
+     * only (its text stays the layer's), best effort within the time limit. ocrmypdf: the boxes of its output PDF.
+     *
+     * @return array{0: string, 1: string, 2: ?int, 3: ?array<string, mixed>} text, event, pages, words
      */
     private static function pdf(string $path, LocalOcr $ocr, bool $system): array
     {
         $layer = self::layer($path, $ocr);
         $pages = $layer !== null ? count($layer) : null;
-        if ($layer !== null && $layer !== [] && count(array_filter($layer, self::hasText(...))) === count($layer)) {
-            return [implode("\n\n", array_map('trim', $layer)), 'text_layer', $pages];
+        $withText = $layer !== null ? count(array_filter($layer, self::hasText(...))) : 0;
+        $layerWords = $withText > 0 ? self::boxes($path, $ocr) : null;
+        $allLayer = $layer !== null && $layer !== [] && $withText === count($layer);
+        if ($allLayer && ($layerWords !== null || $system)) {
+            return [implode("\n\n", array_map('trim', $layer)), 'text_layer', $pages, OcrWords::make('layer', $layerWords ?? [])];
         }
         if ($system) {
-            return [self::ocrmypdf($path, $ocr), 'recognized', $pages];
+            [$text, $words] = self::ocrmypdf($path, $ocr);
+
+            return [$text, 'recognized', $pages, $words];
         }
 
         $deadline = time() + self::PDF_SECONDS;
@@ -221,22 +265,48 @@ final class RecognizeText implements ShouldQueue
         File::ensureDirectoryExists($dir);
         try {
             $texts = [];
+            $found = [];
+            $fromLayer = true;
+            $byPage = [];
+            foreach ($layerWords ?? [] as $page) {
+                $byPage[$page['n']] = $page;
+            }
             $last = min($pages ?? LocalOcr::PDF_MAX_PAGES, LocalOcr::PDF_MAX_PAGES);
             for ($n = 1; $n <= $last; $n++) {
                 $own = $layer[$n - 1] ?? '';
-                if (self::hasText($own)) {
+                $isLayer = self::hasText($own);
+                if ($isLayer && isset($byPage[$n])) {
                     $texts[] = trim($own);
+                    $found[] = $byPage[$n];
 
                     continue;
                 }
                 $left = $deadline - time();
                 if ($left <= 5) {
+                    if ($isLayer) {
+                        // Only the positions are missing: the text is there, the rest of the time is not.
+                        $texts[] = trim($own);
+
+                        continue;
+                    }
                     throw new RuntimeException((string) self::PDF_SECONDS, self::TIME_LIMIT);
                 }
+                $fromLayer = false;
                 $root = $dir.'/p';
-                self::run($ocr->niced([$ocr->pdfTool('pdftopng'), '-f', (string) $n, '-l', (string) $n, '-r', '300', '-gray', $path, $root]), [], min(self::TIMEOUT_SECONDS, $left));
+                try {
+                    self::run($ocr->niced([$ocr->pdfTool('pdftopng'), '-f', (string) $n, '-l', (string) $n, '-r', '300', '-gray', $path, $root]), [], min(self::TIMEOUT_SECONDS, $left));
+                } catch (Throwable $e) {
+                    if (! $isLayer) {
+                        throw $e;
+                    }
+                }
                 $images = glob($root.'-*.png') ?: [];
                 if ($images === []) {
+                    if ($isLayer) {
+                        $texts[] = trim($own);
+
+                        continue;
+                    }
                     // Without a text layer the page count is unknown: no image means the PDF has ended.
                     if ($pages === null) {
                         $pages = $n - 1;
@@ -247,13 +317,29 @@ final class RecognizeText implements ShouldQueue
                 }
                 try {
                     $left = $deadline - time();
-                    $texts[] = trim(self::run($ocr->command([$images[0], 'stdout', '-l', 'deu+eng'], true), $ocr->env(true), min(self::TIMEOUT_SECONDS, max(1, $left))));
+                    try {
+                        [$read, $page] = self::tesseract($images[0], $n, $ocr, true, min(self::TIMEOUT_SECONDS, max(1, $left)));
+                    } catch (Throwable $e) {
+                        if (! $isLayer) {
+                            throw $e;
+                        }
+                        [$read, $page] = ['', null];
+                    }
+                    // A text-layer page keeps its own text; Tesseract gave only the positions.
+                    $texts[] = $isLayer ? trim($own) : trim($read);
+                    $found[] = $page;
                 } finally {
                     array_map('unlink', $images);
                 }
             }
+            $allLayer = $layer !== null && $withText === count($layer) && $withText > 0;
 
-            return [implode("\n\n", array_filter($texts, static fn (string $t): bool => $t !== '')), 'recognized', $pages ?? $last];
+            return [
+                implode("\n\n", array_filter($texts, static fn (string $t): bool => $t !== '')),
+                $allLayer ? 'text_layer' : 'recognized',
+                $pages ?? $last,
+                OcrWords::make($fromLayer ? 'layer' : 'tesseract', $found),
+            ];
         } finally {
             File::deleteDirectory($dir);
         }
@@ -283,13 +369,70 @@ final class RecognizeText implements ShouldQueue
         return $pages;
     }
 
+    /**
+     * Word boxes of the text layer from `pdftotext -bbox-layout` (first 50 pages): a system poppler pdftotext first,
+     * then the app's own. Null when none has bbox output (Xpdf 4.06 has none) or all fail.
+     *
+     * @return list<array{n: int, words: list<array<string, mixed>>}>|null
+     */
+    private static function boxes(string $path, LocalOcr $ocr): ?array
+    {
+        $tools = array_unique(array_filter([(new ExecutableFinder)->find('pdftotext'), $ocr->pdfTextTool()]));
+        foreach ($tools as $tool) {
+            try {
+                $pages = OcrWords::pagesFromBboxLayout(self::run($ocr->niced([$tool, '-bbox-layout', '-enc', 'UTF-8', '-l', (string) LocalOcr::PDF_MAX_PAGES, $path, '-']), []));
+            } catch (Throwable) {
+                continue;
+            }
+            if ($pages !== null) {
+                return $pages;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * One image through Tesseract in one run: the plain text (as before) and the TSV with the word boxes.
+     *
+     * @return array{0: string, 1: array{n: int, words: list<array<string, mixed>>}|null} text, the page's words
+     */
+    private static function tesseract(string $image, int $n, LocalOcr $ocr, bool $app, int $timeout = self::TIMEOUT_SECONDS): array
+    {
+        $base = tempnam(sys_get_temp_dir(), 'tes');
+        if ($base === false) {
+            throw new RuntimeException('tempnam');
+        }
+        try {
+            self::run($ocr->command([...($app ? [] : ['tesseract']), $image, $base, '-l', 'deu+eng', '-c', 'tessedit_create_txt=1', '-c', 'tessedit_create_tsv=1'], $app), $ocr->env($app), $timeout);
+            $text = is_file($base.'.txt') ? file_get_contents($base.'.txt') : false;
+            if ($text === false) {
+                throw new RuntimeException('tesseract: keine Textdatei');
+            }
+            $tsv = is_file($base.'.tsv') ? file_get_contents($base.'.tsv') : false;
+
+            return [$text, $tsv !== false ? OcrWords::pageFromTsv($tsv, $n) : null];
+        } finally {
+            foreach ([$base, $base.'.txt', $base.'.tsv'] as $tmp) {
+                if (is_file($tmp)) {
+                    @unlink($tmp);
+                }
+            }
+        }
+    }
+
     private static function hasText(string $text): bool
     {
         return mb_strlen((string) preg_replace('/\s+/u', '', $text)) >= self::LAYER_CHARS;
     }
 
-    /** --skip-text keeps pages that already have text and still writes their text to the sidecar. */
-    private static function ocrmypdf(string $path, LocalOcr $ocr): string
+    /**
+     * --skip-text keeps pages that already have text and still writes their text to the sidecar. The word positions
+     * come from the text layer of ocrmypdf's output PDF (poppler pdftotext -bbox-layout), when that tool is there.
+     *
+     * @return array{0: string, 1: ?array<string, mixed>} text, words
+     */
+    private static function ocrmypdf(string $path, LocalOcr $ocr): array
     {
         $base = tempnam(sys_get_temp_dir(), 'ocr');
         if ($base === false) {
@@ -304,8 +447,9 @@ final class RecognizeText implements ShouldQueue
             if ($text === false) {
                 throw new RuntimeException('ocrmypdf: keine Textdatei');
             }
+            $boxes = is_file($out) ? self::boxes($out, $ocr) : null;
 
-            return $text;
+            return [$text, OcrWords::make('tesseract', $boxes ?? [])];
         } finally {
             foreach ([$base, $sidecar, $out] as $tmp) {
                 if (is_file($tmp)) {

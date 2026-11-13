@@ -129,8 +129,61 @@
     document.addEventListener('dh:ocr-pause', event => onPause(event.detail === true));
     window.addEventListener('storage', event => { if (event.key === PAUSE_KEY) onPause(event.newValue === '1'); });
     const check = run => { if (run.aborted || run.timedOut) throw new Error('stopped'); };
+    // Point 119: word positions relative to the page (0..1, 4 decimals), confidence, line and block index.
+    const r4 = v => Math.round(Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0)) * 1e4) / 1e4;
+    const word = (t, x, y, w, h, c, l, b) => ({ t, x: r4(x), y: r4(y), w: r4(w), h: r4(h), c: Math.round(Math.min(100, Math.max(0, c ?? 0))), l, b });
+    const READ_OUTPUT = { text: true, blocks: true, hocr: false, tsv: false };
+    // tesseract.js 5: blocks → paragraphs → lines → words with bbox in px of the image it read.
+    const ocrWords = (data, width, height, n) => {
+        const words = [];
+        if (!data?.blocks || !width || !height) return { n, words };
+        let l = 0;
+        data.blocks.forEach((block, b) => (block.paragraphs ?? []).forEach(par => (par.lines ?? []).forEach(line => {
+            (line.words ?? []).forEach(w => {
+                const t = (w.text ?? '').trim();
+                if (!t || !w.bbox) return;
+                words.push(word(t, w.bbox.x0 / width, w.bbox.y0 / height, (w.bbox.x1 - w.bbox.x0) / width, (w.bbox.y1 - w.bbox.y0) / height, w.confidence, l, b));
+            });
+            l++;
+        })));
+        return { n, words };
+    };
+    // pdf.js text layer: each item's matrix in the scale-1 viewport, split into words by characters.
+    const layerWords = (items, viewport, n) => {
+        const [a, b, c, d, e, f] = viewport.transform;
+        const words = [];
+        let l = 0;
+        let lineY = null;
+        let eol = false;
+        items.forEach(item => {
+            const str = item.str ?? '';
+            const m = item.transform;
+            if (m && str.trim()) {
+                const tx = [a * m[0] + c * m[1], b * m[0] + d * m[1], a * m[2] + c * m[3], b * m[2] + d * m[3], a * m[4] + c * m[5] + e, b * m[4] + d * m[5] + f];
+                const size = Math.hypot(tx[2], tx[3]);
+                const base = tx[5];
+                if (lineY !== null && (eol || Math.abs(base - lineY) > size * 0.5)) l++;
+                lineY = base;
+                eol = false;
+                const width = (item.width ?? 0) * viewport.scale;
+                const re = /\S+/g;
+                let hit;
+                while ((hit = re.exec(str))) {
+                    words.push(word(hit[0], (tx[4] + width * hit.index / str.length) / viewport.width, (base - size) / viewport.height,
+                        width * hit[0].length / str.length / viewport.width, size / viewport.height, 100, l, 0));
+                }
+            }
+            if (item.hasEOL) eol = true;
+        });
+        return { n, words };
+    };
     // Images: scaled down to the pass's long side (pass 3: original), capped for memory.
-    const readImage = async (lane, url, side, run) => {
+    const readImage = async (lane, url, side, run, info) => {
+        const read = async (image, width, height) => {
+            const { data } = await (await getEngine(lane)).recognize(image, {}, READ_OUTPUT);
+            info.words = { source: 'browser', pages: [ocrWords(data, width, height, 1)] };
+            return data?.text ?? '';
+        };
         if (typeof createImageBitmap === 'undefined') return (await (await getEngine(lane)).recognize(url)).data?.text ?? '';
         const res = await fetch(url, { credentials: 'same-origin' });
         if (!res.ok) throw new Error('image');
@@ -139,13 +192,13 @@
         try {
             check(run);
             const factor = Math.min(side > 0 ? side / Math.max(bitmap.width, bitmap.height) : 1, Math.sqrt(MAX_PIXELS / (bitmap.width * bitmap.height)));
-            if (factor >= 1) return (await (await getEngine(lane)).recognize(blob)).data?.text ?? '';
+            if (factor >= 1) return await read(blob, bitmap.width, bitmap.height);
             const canvas = document.createElement('canvas');
             canvas.width = Math.max(1, Math.round(bitmap.width * factor));
             canvas.height = Math.max(1, Math.round(bitmap.height * factor));
             canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
             try {
-                return (await (await getEngine(lane)).recognize(canvas)).data?.text ?? '';
+                return await read(canvas, canvas.width, canvas.height);
             } finally {
                 canvas.width = canvas.height = 0;
             }
@@ -161,6 +214,7 @@
         const doc = await DocHamster.openPdf(url);
         try {
             const texts = [];
+            const pages = [];
             const last = Math.min(doc.numPages, 50);
             info.pages = doc.numPages;
             info.layer = 0;
@@ -171,6 +225,7 @@
                 const own = layer.items.map(item => (item.str ?? '') + (item.hasEOL ? '\n' : ' ')).join('').trim();
                 if (own.replace(/\s/g, '').length >= 20) {
                     texts.push(own);
+                    pages.push(layerWords(layer.items, page.getViewport({ scale: 1 }), n));
                     info.layer++;
                 } else {
                     const one = page.getViewport({ scale: 1 });
@@ -180,12 +235,14 @@
                     canvas.width = Math.floor(viewport.width);
                     canvas.height = Math.floor(viewport.height);
                     await page.render({ canvas, canvasContext: canvas.getContext('2d'), viewport }).promise;
-                    const { data } = await (await getEngine(lane)).recognize(canvas);
+                    const { data } = await (await getEngine(lane)).recognize(canvas, {}, READ_OUTPUT);
                     texts.push((data?.text ?? '').trim());
+                    pages.push(ocrWords(data, canvas.width, canvas.height, n));
                     canvas.width = canvas.height = 0;
                 }
                 page.cleanup();
             }
+            info.words = { source: pages.length > 0 && info.layer === pages.length ? 'layer' : 'browser', pages };
             return texts.filter(Boolean).join('\n\n');
         } finally {
             Promise.resolve(doc.loadingTask?.destroy ? doc.loadingTask.destroy() : doc.destroy?.()).catch(() => {}); /* pdf.js 6: freed via its loading task */
@@ -220,13 +277,16 @@
         const body = new FormData();
         body.append('pass', String(pass));
         const began = performance.now();
-        const info = { pages: null, layer: null };
+        const info = { pages: null, layer: null, words: null };
         try {
             const read = job.type === 'application/pdf'
                 ? readPdf(lane, job.file, PASSES[pass].scale, run, info)
-                : readImage(lane, job.file, PASSES[pass].side, run);
+                : readImage(lane, job.file, PASSES[pass].side, run, info);
             read.catch(() => {});
             body.append('text', await within(read, PASSES[pass].limit, 'timeout'));
+            // Point 119: the positions go along when they fit the server's limit (2 MB).
+            const words = info.words?.pages?.some(p => p.words.length) ? JSON.stringify(info.words) : '';
+            if (words && words.length < 2e6) body.append('words', words);
         } catch (e) {
             // Point 58: over the time limit the engine is closed, so the computer gets its resources back.
             if (e?.message === 'timeout') {

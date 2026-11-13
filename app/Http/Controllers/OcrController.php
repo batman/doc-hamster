@@ -7,8 +7,10 @@ namespace App\Http\Controllers;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
 use App\Domain\Ocr\OcrLog;
+use App\Domain\Ocr\OcrWords;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
+use App\Events\TextRecognized;
 use App\Infrastructure\Environment\LocalOcr;
 use App\Infrastructure\Environment\OcrProgress;
 use App\Jobs\Local\RecognizeText;
@@ -128,7 +130,7 @@ final class OcrController extends Controller
     /** "Alle neu erkennen": every document of the organisation waits again; the server or the browser reads them one by one. */
     public function rerun(Request $request, CurrentOrg $org): RedirectResponse
     {
-        $count = Document::query()->toBase()->update(['ocr_status' => 'pending', 'ocr_pass' => null, 'ocr_failures' => 0]);
+        $count = Document::query()->toBase()->update(['ocr_status' => 'pending', 'ocr_pass' => null, 'ocr_failures' => 0, 'ocr_rescan' => false]);
         // A111: who started it and for how many documents.
         OcrLog::record($org->id(), 'system', 'rerun', ['message' => (string) $count, 'user_id' => self::userId($request)]);
         Document::query()->select('id')->eachById(static fn (Document $d) => RecognizeText::dispatch($d->id));
@@ -141,7 +143,7 @@ final class OcrController extends Controller
     public function redo(Request $request, string $id): RedirectResponse
     {
         $document = $this->editable($request)->whereKey($id)->firstOrFail();
-        $document->forceFill(['ocr_status' => 'pending', 'ocr_pass' => null, 'ocr_failures' => 0])->save();
+        $document->forceFill(['ocr_status' => 'pending', 'ocr_pass' => null, 'ocr_failures' => 0, 'ocr_rescan' => false])->save();
         RecognizeText::dispatch($document->id);
         OcrProgress::forgetWaiting($document->org_id);
 
@@ -199,24 +201,32 @@ final class OcrController extends Controller
         // A77: nothing is reserved; a random document of the lowest open pass (and fewest recent failures) is handed
         // out, so several windows mostly read different documents. A78: the second engine asks with only=1 for pass 1.
         $level = "case when ocr_status = 'done' then ocr_pass else 0 end";
+        // F17: documents marked for a re-read (word positions) come after every new one.
         $open = fn (): Builder => $this->editable($request)
             ->where(static fn ($w) => $w->whereNull('ocr_status')->orWhereIn('ocr_status', ['pending', 'unavailable'])
-                ->orWhere(static fn ($d) => $d->where('ocr_status', 'done')->whereIn('ocr_pass', [1, 2])))
+                ->orWhere(static fn ($d) => $d->where('ocr_status', 'done')->whereIn('ocr_pass', [1, 2]))
+                ->orWhere('ocr_rescan', true))
             ->whereNotIn('id', $skip)
             ->whereHas('files', $readable);
         // A document that failed lately goes behind the others of its pass, so one bad file does not block the rest.
-        $lowest = $open()->selectRaw($level.' as lvl, ocr_failures')
-            ->orderByRaw($level)->orderBy('ocr_failures')->toBase()->first();
+        $lowest = $open()->selectRaw($level.' as lvl, ocr_failures, ocr_rescan')
+            ->orderBy('ocr_rescan')->orderByRaw($level)->orderBy('ocr_failures')->toBase()->first();
         $document = null;
-        if ($lowest !== null && ! ($request->boolean('only') && (int) $lowest->lvl > 0)) {
-            $document = $open()->whereRaw($level.' = ?', [(int) $lowest->lvl])
+        if ($lowest !== null && ! ($request->boolean('only') && ((int) $lowest->lvl > 0 || (bool) $lowest->ocr_rescan))) {
+            $document = $open()->where('ocr_rescan', (bool) $lowest->ocr_rescan)
+                ->whereRaw($level.' = ?', [(int) $lowest->lvl])
                 ->where('ocr_failures', (int) $lowest->ocr_failures)
                 ->inRandomOrder()->first();
         }
         if ($document === null) {
             return response()->noContent();
         }
-        $pass = $document->ocr_status === 'done' ? (int) $document->ocr_pass + 1 : 1;
+        // A re-read of a read document goes straight to full resolution (its earlier text stays until then).
+        $pass = match (true) {
+            $document->ocr_status === 'done' && (bool) $document->getAttribute('ocr_rescan') => OcrProgress::PASSES,
+            $document->ocr_status === 'done' => (int) $document->ocr_pass + 1,
+            default => 1,
+        };
         $file = ($onlyPdf ? self::pdfs(DocumentFile::query()->where('document_id', $document->id)) : self::readable(DocumentFile::query()->where('document_id', $document->id)))->orderBy('page_no')->firstOrFail();
         OcrProgress::start($document);
 
@@ -249,11 +259,15 @@ final class OcrController extends Controller
             'reason' => ['nullable', 'string', 'max:300'],
             'pages' => ['nullable', 'integer', 'min:0', 'max:65535'],
             'layer' => ['nullable', 'integer', 'min:0', 'max:65535'],
+            // Point 119: word positions as JSON (OcrWords shape, 0..1), checked and cleaned by OcrWords::fromBrowser().
+            'words' => ['nullable', 'string', 'max:2097152'],
         ]);
         $document = $this->editable($request)->whereKey($id)->firstOrFail();
         $pass = (int) ($data['pass'] ?? OcrProgress::PASSES);
-        // A84: another window or the server already reached this pass – only the first result of a pass counts.
-        if ($document->ocr_status === 'done' && (int) $document->ocr_pass >= $pass) {
+        $rescan = (bool) $document->getAttribute('ocr_rescan');
+        // A84: another window or the server already reached this pass – only the first result of a pass counts
+        // (a document marked for a re-read takes its new full pass, F17).
+        if ($document->ocr_status === 'done' && (int) $document->ocr_pass >= $pass && ! $rescan) {
             OcrProgress::finish($document->id, $document->org_id);
 
             return response()->json(['ignored' => true]);
@@ -275,6 +289,7 @@ final class OcrController extends Controller
             $values = ['ocr_failures' => min(255, $failures)];
             if ($failures >= self::MAX_FAILURES) {
                 $values += $read ? ['ocr_pass' => OcrProgress::PASSES] : ['ocr_status' => 'failed', 'ocr_pass' => null];
+                $values['ocr_rescan'] = false;
             }
             $document->forceFill($values)->save();
             $reason = is_string($data['reason'] ?? null) ? $data['reason'] : null;
@@ -285,8 +300,13 @@ final class OcrController extends Controller
         } else {
             // Each pass replaces the text of the one before (point 56).
             $text = trim((string) ($data['text'] ?? ''));
-            $document->forceFill(['ocr_text' => $text, 'ocr_status' => 'done', 'ocr_pass' => $pass, 'ocr_failures' => 0])->save();
+            $words = is_string($data['words'] ?? null) ? OcrWords::fromBrowser($data['words']) : null;
+            $document->forceFill([
+                'ocr_text' => $text, 'ocr_words' => OcrWords::encode($words), 'ocr_status' => 'done', 'ocr_pass' => $pass,
+                'ocr_failures' => 0, 'ocr_rescan' => false,
+            ])->save();
             $ocr->clearBrowserError();
+            TextRecognized::dispatch($document->id);
             // A114: every page came from the PDF's own text layer.
             $layer = isset($data['layer']) ? (int) $data['layer'] : 0;
             $event = $pages !== null && $pages > 0 && $layer >= $pages ? 'text_layer' : 'recognized';
