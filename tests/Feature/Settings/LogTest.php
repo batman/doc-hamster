@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Domain\Audit\AuditLog;
 use App\Domain\Log\LogEntry;
+use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Membership;
+use App\Http\Badges;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 
@@ -50,11 +53,11 @@ it('takes browser errors and counts new errors on the menu', function (): void {
 
     $this->get('/documents')->assertSee('badge-alert', false);
     $this->get('/settings/log');
-    expect(App\Http\Badges::counts(app(App\Domain\Org\CurrentOrg::class))[App\Http\Badges::LOG] ?? 0)->toBe(0);
+    expect(Badges::counts(app(CurrentOrg::class))[Badges::LOG] ?? 0)->toBe(0);
 });
 
 it('logs uploads through the audit trail and keeps only settings managers out', function (): void {
-    app(App\Domain\Audit\AuditLog::class)->record('document.uploaded', orgId: $this->admin->org_id, userId: $this->admin->user_id);
+    app(AuditLog::class)->record('document.uploaded', orgId: $this->admin->org_id, userId: $this->admin->user_id);
     expect(DB::table('log_entries')->value('message'))->toBe('Dokument hochgeladen');
 
     $member = Membership::factory()->create(['org_id' => $this->admin->org_id]);
