@@ -68,6 +68,9 @@ a.nav-ocr-link[aria-current="page"] .nav-ocr-title { font-weight: 700; }
 .ocr-head { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-bottom: .5rem; }
 .ocr-head h3 { margin: 0; }
 .ocr-head form { margin: 0 0 0 auto; }
+/* A281: "Alles kopieren" at the right end of the head (after "Neu erkennen" when that is there). */
+.ocr-head .ocr-copy { margin: 0 0 0 auto; }
+.ocr-head form + .ocr-copy { margin-left: 0; }
 .detail-section .ocr-head button, .win-detail .ocr-head form > button[type="submit"] { margin-top: 0; }
 
 /* Live card (point 124, A255-A258): the page being read with the recognised words as orange boxes, its details,

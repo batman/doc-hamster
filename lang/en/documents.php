@@ -187,7 +187,7 @@ return [
     ],
     // Reading view of the recognised text, word popup and OCR corrections (points 121, 122.3, 122.7, A240-A243).
     'words' => [
-        'edit_hint' => 'Click beside a word: edit the text',
+        'edit_hint' => 'Select text to copy · Click a word: correct it',
         'word' => 'Word',
         'selection' => 'Selection',
         'recognized' => 'Recognised',
@@ -208,5 +208,10 @@ return [
         'no_word' => 'There is no word at this place.',
         'select' => 'Select text',
         'close' => 'Close',
+        // Point 134, A280/A281: selecting and copying the text.
+        'copy' => 'Copy',
+        'copy_all' => 'Copy all',
+        'copied' => 'Copied.',
+        'copy_failed' => 'Copying is not possible.',
     ],
 ];

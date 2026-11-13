@@ -146,10 +146,15 @@
                         </form>
                     @endif
                 @endunless
+                @include('documents._ocr_copy')
             </div>
             @include('documents._ocr_read')
-            <x-edit-in-place name="ocr_text" :value="$document->ocr_text" :action="route('documents.field', $document->id)" multiline class="edit-in-place-small"
-                :placeholder="__('documents.ocr_placeholder')" aria-labelledby="ocr-{{ $document->id }}" />
+            {{-- Point 134: the text is no longer edited as a block; words are corrected one by one in the word popup. --}}
+            @if ($document->ocr_text)
+                <p class="edit-in-place-small is-plain">{{ $document->ocr_text }}</p>
+            @else
+                <p class="muted">{{ __('documents.ocr_placeholder') }}</p>
+            @endif
         </section>
     @else
         <x-fold-card fold="detail.tags" :title="__('documents.tags')" icon="tags" :summary="$tagSummary">
@@ -163,6 +168,7 @@
                 <div class="ocr-head">
                     <h3>{{ __('documents.ocr_text') }}</h3>
                     @unless ($isText)<span class="pill">{{ __('ocr.state.'.$ocrState) }}</span>@endunless
+                    @include('documents._ocr_copy')
                 </div>
                 @include('documents._ocr_read')
                 @if ($document->ocr_text)<p class="edit-in-place-small is-plain">{{ $document->ocr_text }}</p>@endif

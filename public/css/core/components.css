@@ -267,10 +267,19 @@ html.has-tips [data-tooltip]::before, html.has-tips [data-tooltip]::after {
 
 /* Package M (point 53): dialogs, dropdown panels, toasts and the tooltip are lifted into the top layer
    (popover="manual", app.js), above every window. Undo the browser's popover look; each part keeps its rules. */
-:where([data-dialog][popover], .dialog-backdrop[popover], .dropdown-panel[popover], .tip[popover], .toast[popover]) {
+:where([data-dialog][popover], .dialog-backdrop[popover], .dropdown-panel[popover], .tip[popover], .toast[popover], .selection-bar[popover]) {
     inset: auto; width: auto; height: auto; margin: 0; padding: 0; border: 0; overflow: visible; color: inherit; background: none;
 }
 .dropdown-panel:popover-open { position: fixed; overflow: auto; overscroll-behavior: contain; }
+
+/* Auswahl-Leiste (point 134, A280): a small floating toolbar above a text selection (core/selection-bar.js) –
+   quiet small buttons with symbol and text on the surface colour, in the top layer like the tooltip. */
+.selection-bar {
+    position: fixed; z-index: 1000; top: 0; left: 0; display: flex; gap: .25rem; padding: .25rem;
+    border: 1px solid var(--border); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow);
+}
+.selection-bar[hidden] { display: none; }
+.selection-bar button { margin: 0; white-space: nowrap; }
 
 /* Vorschlags-Chip (point 120.4, A247): a value the app found, one click takes it over (other amounts, a repaired IBAN).
    Dashed orange outline, never filled – it proposes, the main button decides. A row of them: .suggest-chips. */

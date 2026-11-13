@@ -1,9 +1,10 @@
 /* Recognised text: reading view, word popup, OCR corrections (points 121, 122.3, 122.7, A240-A243) */
 // The words of the recognised text laid out like on the page (monospace, x gaps as spaces), page by page. Every
 // word is a pill linked with the preview above: hover lights both (amounts and IBANs as a whole group), a click (or
-// shift-click / drag for several) opens the word popup with an enlarged crop, the correction field and
-// "Markieren als …". A click beside the words edits the plain text as before. Everything is per window: the same
-// document may be open twice; state lives on the reading container.
+// shift-click for several) opens the word popup with an enlarged crop, the correction field and "Markieren als …".
+// Point 134: the text is never edited as a block. A280: dragging makes a normal text selection; Ctrl+C copies it with
+// line breaks and the Auswahl-Leiste offers "Kopieren" and "Markieren als …". A281: "Alles kopieren" in the head.
+// Everything is per window: the same document may be open twice; state lives on the reading container.
 (() => {
     const DocHamster = window.DocHamster;
     const states = new WeakMap();
@@ -12,6 +13,7 @@
     const IBAN = /^DE\d{20}$/;
     const AMOUNT = /^(?:€|EUR)?-?(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}(?:€|EUR)?$/;
     const DATE = /^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})$/;
+    const COPY_ICON = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667l0 -8.666"/><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1"/></svg>';
     const X_ICON = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>';
     const make = (tag, className = '', text = null) => {
         const el = document.createElement(tag);
@@ -103,7 +105,7 @@
     // --- State per reading container -------------------------------------------------------------------------------
     const winOf = el => el.closest('section[data-window]');
     const frameOf = st => DocHamster.viewer?.frameIn(st.win) ?? null;
-    const plainOf = read => read.parentElement.querySelector(':scope > [data-edit-in-place][data-field="ocr_text"], :scope > .is-plain');
+    const plainOf = read => read.parentElement.querySelector(':scope > .is-plain');
     const pillsOf = (st, refs) => refs.map(ref => st.root.querySelector(`.word-pill[data-p="${ref.p}"][data-i="${ref.i}"]`)).filter(Boolean);
     const wordOf = (st, ref) => st.pages.find(page => page.n === ref.p)?.words[ref.i] ?? null;
 
@@ -117,7 +119,7 @@
         if (st.pages.length === 0) {
             read.hidden = true;
             const plain = plainOf(read);
-            if (plain && !st.editing) plain.hidden = false;
+            if (plain) plain.hidden = false;
             return;
         }
         st.pages.forEach((page, pi) => {
@@ -154,7 +156,7 @@
         });
         const plain = plainOf(read);
         if (plain) plain.hidden = true;
-        read.hidden = st.editing;
+        read.hidden = false;
         paintSelection(st);
     };
     const load = st => fetch(st.root.dataset.ocrRead, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
@@ -164,7 +166,7 @@
 
     const init = read => {
         if (states.has(read)) return;
-        const st = { root: read, win: winOf(read), documentId: read.dataset.document, labels: JSON.parse(read.dataset.labels || '{}'), canEdit: !!read.dataset.fix, pages: [], fixes: [], learned: {}, group: new Map(), selection: [], editing: false };
+        const st = { root: read, win: winOf(read), documentId: read.dataset.document, labels: JSON.parse(read.dataset.labels || '{}'), canEdit: !!read.dataset.fix, pages: [], fixes: [], learned: {}, group: new Map(), selection: [] };
         states.set(read, st);
         load(st);
     };
@@ -263,60 +265,35 @@
         const pill = event.target.closest?.('.word-pill');
         const st = stateFor(pill);
         if (!st) return;
-        const ref = refOf(pill);
-        if (st.drag && event.buttons & 1) {
-            // Drag: every word between the first and this one (reading view order, one page).
-            const all = [...st.root.querySelectorAll(`.word-pill[data-p="${st.drag.p}"]`)];
-            const a = all.findIndex(el => Number(el.dataset.i) === st.drag.i), b = all.indexOf(pill);
-            if (a >= 0 && b >= 0) {
-                st.drag.moved = st.drag.moved || a !== b;
-                st.selection = all.slice(Math.min(a, b), Math.max(a, b) + 1).map(refOf);
-                paintSelection(st);
-            }
-        }
-        hoverOn(st, groupOf(st, ref));
+        if (event.buttons & 1) return;
+        hoverOn(st, groupOf(st, refOf(pill)));
     });
     document.addEventListener('pointerout', event => {
         const pill = event.target.closest?.('.word-pill');
         const st = stateFor(pill);
         if (st && !pill.contains(event.relatedTarget)) hoverOff(st);
     });
+    // A click on a word opens the popup; shift-click collects several words (no browser selection). A280: a drag makes
+    // a normal text selection instead, which wins over the popup.
     document.addEventListener('pointerdown', event => {
         const pill = event.target.closest?.('.word-pill');
         const st = stateFor(pill);
         if (!st || !st.canEdit || event.button !== 0) return;
-        event.preventDefault();
         const ref = refOf(pill);
-        st.drag = { ...ref, moved: false, shift: event.shiftKey };
-        select(st, groupOf(st, ref), event.shiftKey);
-        const up = () => {
+        if (event.shiftKey) {
+            event.preventDefault();
+            select(st, groupOf(st, ref), true);
+            st.picking = true;
+            return;
+        }
+        const press = { x: event.clientX, y: event.clientY };
+        const up = done => {
             document.removeEventListener('pointerup', up);
-            const drag = st.drag;
-            st.drag = null;
-            if (drag && !drag.shift) popup(st, pill);
+            if (selectedPills(st).length || Math.hypot(done.clientX - press.x, done.clientY - press.y) > 4) return;
+            select(st, groupOf(st, ref), false);
+            popup(st, pill);
         };
         document.addEventListener('pointerup', up);
-    });
-    // 121.3: a click into the box beside the words edits the plain text (the searchable text).
-    document.addEventListener('click', event => {
-        const read = event.target.closest?.('[data-ocr-read]');
-        const st = read && states.get(read);
-        if (!st || !st.canEdit || event.target.closest('.word-pill')) return;
-        const plain = plainOf(read);
-        if (!plain?.matches('[data-edit-in-place]')) return;
-        st.editing = true;
-        read.hidden = true;
-        plain.hidden = false;
-        plain.click();
-        // Back to reading when the field is done (edit-in-place shows its box again).
-        const back = new MutationObserver(() => {
-            if (!plain.hidden && !plain.nextElementSibling?.matches('.edit-in-place-field')) {
-                back.disconnect();
-                st.editing = false;
-                if (st.pages.length) { plain.hidden = true; read.hidden = false; }
-            }
-        });
-        back.observe(plain, { attributes: true, attributeFilter: ['hidden'] });
     });
     // Shift-pick ends with the popup when shift is let go.
     document.addEventListener('keyup', event => {
@@ -383,10 +360,67 @@
         const st = previewState(viewerFrame(event.target));
         if (st) clearTimeout(st.clickTimer);
     });
-    // Shift-clicks in the reading view collect too; letting go of shift opens the popup.
-    document.addEventListener('pointerdown', event => {
-        const st = stateFor(event.target.closest?.('.word-pill'));
-        if (st && event.shiftKey) st.picking = true;
+
+    // --- Selecting and copying the text (point 134, A280/A281) ------------------------------------------------------
+    const readOf = node => (node?.nodeType === 1 ? node : node?.parentElement)?.closest?.('[data-ocr-read]') ?? null;
+    const selectionState = () => {
+        const sel = document.getSelection();
+        if (!sel || sel.isCollapsed || !sel.rangeCount) return null;
+        const read = readOf(sel.anchorNode) ?? readOf(sel.focusNode);
+        return read ? states.get(read) ?? null : null;
+    };
+    // The word pills the browser selection touches, in reading order.
+    const selectedPills = st => {
+        const sel = document.getSelection();
+        if (!st || !sel || sel.isCollapsed || !sel.rangeCount || !sel.getRangeAt(0).intersectsNode(st.root)) return [];
+        return [...st.root.querySelectorAll('.word-pill')].filter(pill => sel.containsNode(pill, true));
+    };
+    // Words of a line joined by one space, lines by a line break, pages by a blank line.
+    const textOf = pills => {
+        const pages = [];
+        let page = null, row = null, words = null;
+        pills.forEach(pill => {
+            if (pill.dataset.p !== page) { page = pill.dataset.p; pages.push([]); row = null; }
+            if (pill.parentElement !== row) { row = pill.parentElement; words = []; pages[pages.length - 1].push(words); }
+            words.push(pill.textContent);
+        });
+        return pages.map(lines => lines.map(line => line.join(' ')).join('\n')).join('\n\n');
+    };
+    const copy = (text, labels) => DocHamster.copyText(text).then(ok => toast(ok ? labels.copied : labels.copy_failed, !ok));
+    document.addEventListener('copy', event => {
+        const pills = selectedPills(selectionState());
+        if (!pills.length || !event.clipboardData) return;
+        event.clipboardData.setData('text/plain', textOf(pills));
+        event.preventDefault();
+    });
+    // The Auswahl-Leiste above a selection in the reading view: "Kopieren" and (editors) "Markieren als …" with the
+    // union box of the selected words of the first page.
+    const offerSelection = () => setTimeout(() => {
+        const st = selectionState();
+        const pills = selectedPills(st);
+        if (!pills.length || st.popup) return;
+        const L = st.labels;
+        const actions = [{ label: L.copy, icon: COPY_ICON, run: () => copy(textOf(pills), L) }];
+        if (st.canEdit) {
+            actions.push({ label: L.mark_as, run: () => {
+                const refs = pills.map(refOf).filter(ref => ref.p === Number(pills[0].dataset.p));
+                const words = refs.map(ref => wordOf(st, ref)).filter(Boolean);
+                if (!words.length) return;
+                DocHamster.markAs?.({ win: st.win, documentId: st.documentId, text: words.map(w => w.t).join(' '), page: refs[0].p, box: union(words), anchor: null });
+            } });
+        }
+        DocHamster.selectionBar?.show(document.getSelection().getRangeAt(0).getBoundingClientRect(), actions);
+    }, 0);
+    document.addEventListener('pointerup', event => {
+        if (!event.target.closest?.('.selection-bar') && (readOf(event.target) || selectionState())) offerSelection();
+    });
+    document.addEventListener('keyup', event => { if (event.shiftKey || event.key === 'Shift') offerSelection(); });
+    // A281: "Alles kopieren" – the whole recognised text with its line breaks.
+    document.addEventListener('click', event => {
+        const button = event.target.closest?.('[data-ocr-copy]');
+        const plain = button?.closest('.detail-section')?.querySelector('.is-plain');
+        if (!button || !plain) return;
+        copy(plain.textContent.replace(/\f/g, '\n\n').trim(), { copied: button.dataset.done, copy_failed: button.dataset.failed });
     });
 
     // --- The word popup (122.3, 122.7) ---------------------------------------------------------------------------

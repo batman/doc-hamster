@@ -187,7 +187,7 @@ return [
     ],
     // Reading view of the recognised text, word popup and OCR corrections (points 121, 122.3, 122.7, A240-A243).
     'words' => [
-        'edit_hint' => 'Klick neben ein Wort: Text bearbeiten',
+        'edit_hint' => 'Text markieren zum Kopieren · Klick auf ein Wort: korrigieren',
         'word' => 'Wort',
         'selection' => 'Auswahl',
         'recognized' => 'Erkannt',
@@ -208,5 +208,10 @@ return [
         'no_word' => 'An dieser Stelle steht kein Wort.',
         'select' => 'Text auswählen',
         'close' => 'Schließen',
+        // Point 134, A280/A281: selecting and copying the text.
+        'copy' => 'Kopieren',
+        'copy_all' => 'Alles kopieren',
+        'copied' => 'Kopiert.',
+        'copy_failed' => 'Kopieren nicht möglich.',
     ],
 ];
