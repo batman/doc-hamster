@@ -231,7 +231,7 @@
 .win-notes .kanban { margin-top: .5rem; }
 
 /* Point 141, A307: the opener window's right edge carries a short orange line at the height of its opener row
-   (--opener-y from windows.js), continuing the row's notch ▸ towards the window it opened. */
+   (--opener-y from windows.js), pointing towards the window it opened (the row itself has no notch, point 162). */
 .win.has-opener-line::after {
     content: ""; position: absolute; z-index: 5; top: calc(var(--opener-y) - .75rem); right: -2px; width: 3px; height: 1.5rem;
     border-radius: 2px; background: var(--primary); pointer-events: none;
