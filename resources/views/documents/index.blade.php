@@ -374,7 +374,15 @@
         @if ($documents->isEmpty() && $view !== 'calendar')
             {{-- A folder that only holds subfolders isn't "empty" (explorer, point 12). --}}
             @if ($folderRows === [] || $searching)
-                <div class="empty-state"><p class="muted">{{ $searching ? __('documents.search_none') : __('documents.empty') }}</p></div>
+                @if ($searching)
+                    <x-empty icon="search" :text="__('empty.search')" />
+                @else
+                    <x-empty icon="folder" :text="__('empty.documents')">
+                        @if ($canUpload)
+                            @include('documents._upload-button', ['folder' => $openFolder?->id])
+                        @endif
+                    </x-empty>
+                @endif
             @endif
         @else
             {{-- Point 196, A370: checkboxes in the list and details views; the selection bar moves the picked rows. --}}

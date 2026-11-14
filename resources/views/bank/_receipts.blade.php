@@ -13,7 +13,7 @@
                 </span>
             </li>
         @empty
-            <li class="list-empty">{{ __('bank.receipts_empty') }}</li>
+            <x-empty tag="li" icon="circle-check" :text="__('bank.receipts_empty')" />
         @endforelse
     </ul>
     @include('bank._pages', ['pages' => $receipts])

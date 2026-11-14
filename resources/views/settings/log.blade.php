@@ -89,7 +89,7 @@
         @endif
 
         @if ($rows === [])
-            <p class="list-empty">{{ __('log.empty') }}</p>
+            <x-empty icon="list" :text="$query !== [] ? __('empty.log_filtered') : __('empty.log')" />
         @else
             <ul class="pick-list log-list">
                 @foreach ($rows as $row)

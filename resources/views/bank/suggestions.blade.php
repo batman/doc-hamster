@@ -47,7 +47,7 @@
                         </span>
                     </li>
                 @empty
-                    <li class="list-empty">{{ $search !== '' ? __('bank.no_search_results') : __('bank.no_suggestions') }}</li>
+                    <x-empty tag="li" icon="search" :text="$search !== '' ? __('bank.no_search_results') : __('bank.no_suggestions')" />
                 @endforelse
             </ul>
             @if ($suggestions === [] && $search === '')

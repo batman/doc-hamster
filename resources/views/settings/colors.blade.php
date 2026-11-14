@@ -13,7 +13,7 @@
     @endif
 
     @if ($colors->isEmpty())
-        <p class="muted">{{ __('palette.empty') }}</p>
+        <x-empty icon="palette" :text="__('palette.empty')" />
     @else
         <ul class="pick-list palette-rows" data-sortable data-palette-order="{{ route('palette.order') }}" data-order-failed="{{ __('palette.order_invalid') }}">
             @foreach ($colors as $color)

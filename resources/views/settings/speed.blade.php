@@ -47,7 +47,7 @@
                     <span class="pill {{ $row['median'] <= 150 ? 'pill-ok' : 'pill-warning' }}">{{ $row['median'] }} ms</span>
                 </li>
             @empty
-                <li class="list-empty">{{ __('speed.none') }}</li>
+                <x-empty tag="li" icon="gauge" :text="__('speed.none')" />
             @endforelse
         </ul>
     </section>

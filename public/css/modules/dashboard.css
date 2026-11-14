@@ -61,3 +61,8 @@
 .dash-drop small { color: var(--muted); }
 .dash-drop.is-busy { opacity: .6; }
 .dash-drop.is-drop-target, .dash-photo.is-drop-target { border-color: var(--primary); }
+
+/* Erste Schritte (point 213, F31): a card above the grid; a done step is quieter, its symbol the orange check. */
+.first-steps { max-width: none; margin: 0 0 1rem; }
+.first-steps .pick-list { margin-bottom: 0; }
+.first-steps [data-done] strong { color: var(--muted); font-weight: 500; }

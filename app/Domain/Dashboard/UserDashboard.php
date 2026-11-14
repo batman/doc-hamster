@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
  * @property string $user_id
  * @property array<string, mixed>|null $layout
  * @property string|null $photo_path
+ * @property Carbon|null $first_steps_hidden_at
  * @property Carbon|null $updated_at
  */
 final class UserDashboard extends Model
@@ -36,7 +37,7 @@ final class UserDashboard extends Model
      */
     protected function casts(): array
     {
-        return ['layout' => 'array'];
+        return ['layout' => 'array', 'first_steps_hidden_at' => 'datetime'];
     }
 
     /** The person's dashboard; a new person gets the default layout (A352), stored on the first change. */

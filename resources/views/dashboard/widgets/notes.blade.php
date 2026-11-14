@@ -1,6 +1,6 @@
 {{-- Notizen (A349): notes have no pin, so the person's three newest; the board is /notes. --}}
 @if ($notes->isEmpty())
-    <p class="list-empty">{{ __('dashboard.notes_empty') }}</p>
+    <x-empty icon="note" :text="__('dashboard.notes_empty')" />
 @else
     <ul class="pick-list dash-list">
         @foreach ($notes as $note)

@@ -29,7 +29,7 @@
                     </span>
                 </li>
             @empty
-                <li class="list-empty">{{ __('print_tray.no_printers') }}</li>
+                <x-empty tag="li" icon="printer" :text="__('empty.printers')" />
             @endforelse
         </ul>
     </section>

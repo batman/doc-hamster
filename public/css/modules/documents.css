@@ -12,7 +12,6 @@
 .folder-import label.button { display: inline-flex; gap: .5rem; color: var(--primary-text); }
 .folder-import label.button:has(+ input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
 
-.empty-state { text-align: center; padding-block: 2rem; }
 
 /* Receipts */
 .documents { list-style: none; padding: 0; margin-top: 2rem; }

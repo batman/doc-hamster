@@ -109,7 +109,7 @@
                     @endif
                 </li>
             @empty
-                <li class="list-empty">{{ __('backup.none') }}</li>
+                <x-empty tag="li" icon="archive" :text="__('backup.none')" />
             @endforelse
         </ul>
     </section>

@@ -43,7 +43,7 @@ it('looks in the name and the recognised text by default, elsewhere only when "S
         // the default chips are ticked and none is a hidden field of the window
         ->assertSee('name="in[]" value="ocr" checked', false)->assertDontSee('name="in[]" value="note" checked', false)
         ->assertDontSee('type="hidden" name="in[]"', false);
-    $this->get('/documents?q=Diesel&in[]=name')->assertSee('Nichts gefunden.');
+    $this->get('/documents?q=Diesel&in[]=name')->assertSee(__('empty.search'));
     // the old address keeps working: ocr=1 adds the recognised text
     $this->get('/documents?q=Diesel&in[]=name&ocr=1')->assertSee('tank-rechnung.pdf');
     // unknown fields are ignored, nothing left = the default
@@ -59,7 +59,7 @@ it('searches the note, tag names and property values only with their chip (187.1
     app(PropertyValues::class)->set($hotel, 'sender', 'Musterhotel GmbH');
 
     foreach (['note' => 'Hannover', 'tags' => 'Dienstreise', 'props' => 'Musterhotel'] as $field => $term) {
-        $this->get('/documents?q='.$term.'&all=1')->assertSee('Nichts gefunden.');
+        $this->get('/documents?q='.$term.'&all=1')->assertSee(__('empty.search'));
         $this->get('/documents?q='.$term.'&all=1&in[]='.$field)->assertSee('hotel-rechnung.pdf')->assertDontSee('tank-rechnung.pdf')
             ->assertSee('name="in[]" value="'.$field.'" checked', false);
     }

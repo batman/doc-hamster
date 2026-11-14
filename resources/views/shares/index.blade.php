@@ -25,7 +25,7 @@
 
     <h2>{{ __('shares.active') }}</h2>
     @if ($links->isEmpty())
-        <p class="muted">{{ __('shares.none') }}</p>
+        <x-empty icon="link" :text="__('shares.none')" />
     @else
         <ul class="documents">
             @foreach ($links as $link)

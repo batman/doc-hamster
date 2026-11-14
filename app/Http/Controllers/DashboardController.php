@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Domain\Backup\Backup;
 use App\Domain\Dashboard\DashboardLayout;
 use App\Domain\Dashboard\DashboardWidgets;
+use App\Domain\Dashboard\FirstSteps;
 use App\Domain\Dashboard\UserDashboard;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
@@ -41,6 +42,7 @@ final class DashboardController
             'available' => $available,
             'addable' => array_values(array_diff($available, array_column($widgets, 'type'))),
             'backupHint' => $this->backupHint($org),
+            'firstSteps' => $this->firstSteps($dashboard),
         ]);
     }
 
@@ -57,6 +59,35 @@ final class DashboardController
         $days = (int) $last->diffInDays(now());
 
         return $days > 90 ? $days : null;
+    }
+
+    /**
+     * F31: "Erste Schritte" – the steps this person may do, ticked from the data; null = no card.
+     *
+     * @return list<array{key: string, done: bool}>|null
+     */
+    private function firstSteps(UserDashboard $dashboard): ?array
+    {
+        if ($dashboard->first_steps_hidden_at !== null) {
+            return null;
+        }
+        $allowed = [
+            ...(Gate::allows(Permission::ImportBanking->value) ? ['account', 'import'] : []),
+            ...(Gate::allows(Permission::UploadDocuments->value) ? ['upload', 'phone'] : []),
+        ];
+
+        return $allowed === [] ? null : FirstSteps::card(FirstSteps::done(), $allowed);
+    }
+
+    /** F31: the X on "Erste Schritte" – hidden for this person for good. */
+    public function hideFirstSteps(Request $request, CurrentOrg $org): JsonResponse|RedirectResponse
+    {
+        $dashboard = UserDashboard::of($this->userId($org));
+        $dashboard->layout = $dashboard->cleanLayout();
+        $dashboard->first_steps_hidden_at = now();
+        $dashboard->save();
+
+        return $this->answer($request, __('empty.first_steps.hidden'));
     }
 
     /** A350: order, sizes and removals – the whole list of widgets as the person sees it now. */

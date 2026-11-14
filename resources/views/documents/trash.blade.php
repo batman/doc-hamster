@@ -36,7 +36,7 @@
             <p class="check-ok" role="status">{{ session('status') }}</p>
         @endif
         @if ($documents->isEmpty())
-            <p class="muted">{{ __('documents.trash_empty') }}</p>
+            <x-empty icon="trash" :text="__('empty.trash')" />
         @else
             <ul class="view-list trash-list">
                 @foreach ($documents as $document)

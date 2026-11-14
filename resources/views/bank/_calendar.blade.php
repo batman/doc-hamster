@@ -20,7 +20,11 @@
     @endforeach
 </div>
 @if ($range === null)
-    <p class="list-empty">{{ $status || $flow || $from || $to || $accountSearch !== '' ? __('bank.empty_filtered') : __('bank.empty') }}</p>
+    @if ($status || $flow || $from || $to || $accountSearch !== '')
+        <x-empty icon="filter" :text="__('bank.empty_filtered')" />
+    @else
+        <x-empty icon="receipt" :text="$account->isCash() ? __('bank.empty') : __('empty.bookings')" />
+    @endif
 @endif
 <div class="calendar bank-calendar">
     @foreach (__('documents.weekdays') as $weekday)

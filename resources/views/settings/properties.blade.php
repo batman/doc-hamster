@@ -14,7 +14,7 @@
     @endif
 
     @if ($properties->isEmpty())
-        <p class="list-empty">{{ __('properties.empty') }}</p>
+        <x-empty icon="list-details" :text="__('empty.properties')" />
     @else
         <ul class="pick-list property-rows" data-sortable data-properties-order="{{ route('properties.order') }}" data-order-failed="{{ __('properties.order_invalid') }}">
             @foreach ($properties as $property)

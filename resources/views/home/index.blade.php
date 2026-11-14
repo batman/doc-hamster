@@ -92,11 +92,14 @@
                     </x-more-menu>
                 </header>
 
+                {{-- Point 213: shows while the column holds no note (CSS hides it as soon as one is dropped in). --}}
+                <x-empty icon="note" :text="__('empty.notes')" class="kanban-empty" />
                 <ul class="kanban-cards" data-kanban-cards="{{ $column->id }}">
                     @foreach ($cards as $note)
                         @include('home._note', ['note' => $note])
                     @endforeach
                 </ul>
+
             </section>
         @endforeach
 

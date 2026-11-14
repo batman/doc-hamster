@@ -16,6 +16,11 @@
             <li data-tag-name="{{ mb_strtolower($entry->name) }}"><a class="tag tag-{{ $entry->id }} @if ($tag?->id === $entry->id) is-selected @endif" href="{{ route('tags.index', ['tag' => $entry->id]) }}" data-window>{{ $entry->name }}</a></li>
         @endforeach
     </ul>
+    @if ($tags->isEmpty())
+        <x-empty icon="tags" :text="__('empty.tags')">
+            <a class="button button-small" href="{{ route('tags.index', ['new' => 1]) }}" data-window><x-icon name="plus" />{{ __('tags.new') }}</a>
+        </x-empty>
+    @endif
 @endsection
 
 @if ($tag || request()->boolean('new') || session('status') || session('confirm_delete') || $errors->any())

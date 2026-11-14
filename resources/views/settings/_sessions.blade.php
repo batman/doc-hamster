@@ -33,7 +33,7 @@
                 @endif
             </li>
         @empty
-            <li class="list-empty">{{ __('devices.sessions.empty') }}</li>
+            <x-empty tag="li" icon="device-laptop" :text="__('devices.sessions.empty')" />
         @endforelse
     </ul>
 </section>

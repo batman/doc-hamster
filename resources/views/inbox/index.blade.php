@@ -55,7 +55,13 @@
         @endif
 
         @if ($documents->isEmpty())
-            <p class="list-empty">{{ $source !== null && $source !== 'api' ? __('inbox.empty_source.'.$source) : __('inbox.empty') }}</p>
+            @if ($source !== null && $source !== 'api')
+                <x-empty :icon="\App\Domain\Documents\Inbox::ICONS[$source]" :text="__('inbox.empty_source.'.$source)" />
+            @else
+                <x-empty icon="inbox" :text="__('empty.inbox')">
+                    @include('documents._upload-button')
+                </x-empty>
+            @endif
             @unless ($hasPrinter)
                 {{-- A266: gone once a computer is paired. --}}
                 <p class="muted" data-no-printer>{{ __('print_tray.no_printer_hint') }} <a href="{{ route('printers.index') }}">{{ __('print_tray.no_printer_link') }}</a></p>

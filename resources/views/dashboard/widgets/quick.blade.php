@@ -1,7 +1,7 @@
 {{-- Schnellzugriff (A349, A351): tiles of pinned places – app windows (open on the right) or https links (new tab).
      In edit mode each tile has an X, and "+ Link" pins an https address. --}}
 @if ($pins === [])
-    <p class="dash-empty"><x-icon name="pin" />{{ __('dashboard.quick_hint') }}</p>
+    <x-empty icon="pin" :text="__('dashboard.quick_hint')" />
 @else
     <ul class="dash-tiles">
         @foreach ($pins as $pin)

@@ -131,7 +131,11 @@
                 @endif
             </li>
         @empty
-            <li class="list-empty">{{ $status || $flow || $from || $to || $accountSearch !== '' ? __('bank.empty_filtered') : __('bank.empty') }}</li>
+            @if ($status || $flow || $from || $to || $accountSearch !== '')
+                <x-empty tag="li" icon="filter" :text="__('bank.empty_filtered')" />
+            @else
+                <x-empty tag="li" icon="receipt" :text="$account->isCash() ? __('bank.empty') : __('empty.bookings')" />
+            @endif
         @endforelse
     </ul>
     @include('bank._pages', ['pages' => $transactions])

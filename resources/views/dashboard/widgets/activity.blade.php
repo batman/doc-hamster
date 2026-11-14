@@ -1,6 +1,6 @@
 {{-- Letzte Aktivitäten (A349): the person's own events (uploaded, moved, paid, linked); each opens its document where it can. --}}
 @if ($rows === [])
-    <p class="list-empty">{{ __('dashboard.activity_empty') }}</p>
+    <x-empty icon="clock" :text="__('dashboard.activity_empty')" />
 @else
     <ul class="pick-list dash-list">
         @foreach ($rows as $row)

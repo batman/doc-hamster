@@ -1,6 +1,6 @@
 {{-- Offene Buchungen (A349): bookings without a document per account with their sum; a row opens the account filtered to "offen". --}}
 @if ($rows === [])
-    <p class="list-empty">{{ __('dashboard.bookings_empty') }}</p>
+    <x-empty icon="circle-check" :text="__('dashboard.bookings_empty')" />
 @else
     <ul class="pick-list dash-list">
         @foreach ($rows as $row)

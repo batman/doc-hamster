@@ -42,6 +42,9 @@
                 <p class="card-note"><x-icon name="archive" /> {{ $backupHint < 0 ? __('backup.home_never') : __('backup.home_days', ['days' => $backupHint]) }}
                     <a href="{{ route('backup.index') }}">{{ __('backup.home_link') }}</a></p>
             @endif
+            @if (($firstSteps ?? null) !== null)
+                @include('dashboard._first-steps', ['steps' => $firstSteps])
+            @endif
             <ul class="dash-grid" data-dash-grid>
                 @foreach ($widgets as $widget)
                     @include('dashboard._widget', ['widget' => $widget])

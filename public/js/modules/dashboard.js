@@ -160,6 +160,16 @@
 
     // "+ Link" in Schnellzugriff: posted in the background, the tiles are drawn again.
     document.addEventListener('submit', event => {
+        // F31: the X on "Erste Schritte" hides the card in every open Home window.
+        const hide = event.target.closest?.('[data-first-steps-hide]');
+        if (hide) {
+            event.preventDefault();
+            send(hide.action, new FormData(hide)).then(json => {
+                document.querySelectorAll('[data-first-steps]').forEach(card => card.remove());
+                toast(json.message);
+            }).catch(error => fail(dashOf(hide), error));
+            return;
+        }
         const form = event.target.closest?.('[data-dash-link]');
         if (!form) {
             return;

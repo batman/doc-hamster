@@ -56,6 +56,13 @@ ul.pick-list { margin: .75rem 0; }
    the Umschalter (.switcher, buttons.css). */
 .option-cards { gap: .4rem; }
 .list-empty { margin: 0; padding: .7rem .9rem; border: 1px dashed var(--border); border-radius: var(--row-radius); color: var(--muted); }
+/* Leerer Zustand (point 213, <x-empty>): the same quiet block with a small orange symbol, one sentence and an optional
+   button on the right; narrow, the button wraps below the sentence. */
+.empty-state { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; list-style: none; }
+.empty-state > .icon { flex: none; width: 1.25rem; height: 1.25rem; color: var(--primary); }
+.empty-state > .empty-text { flex: 1 1 12rem; min-width: 0; }
+.empty-state > .empty-action { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-left: auto; }
+.empty-state > .empty-action form { margin: 0; }
 .list-error { color: var(--error); border-color: currentColor; }
 
 /* Marked (task 110, look point 155 / variant A3): the current menu entry, a checked menu entry, the picked choice, a

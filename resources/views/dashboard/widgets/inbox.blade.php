@@ -1,6 +1,6 @@
 {{-- Posteingang (A349): the newest five with their source. --}}
 @if ($documents->isEmpty())
-    <p class="list-empty">{{ __('dashboard.inbox_empty') }}</p>
+    <x-empty icon="inbox" :text="__('dashboard.inbox_empty')" />
 @else
     <ul class="pick-list dash-list">
         @foreach ($documents as $document)

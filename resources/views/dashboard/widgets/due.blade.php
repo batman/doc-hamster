@@ -1,6 +1,6 @@
 {{-- Fällige Rechnungen (A349): unpaid documents with a due date, the nearest first, with the amount. --}}
 @if ($rows === [])
-    <p class="list-empty">{{ __('dashboard.due_empty') }}</p>
+    <x-empty icon="file-invoice" :text="__('dashboard.due_empty')" />
 @else
     <ul class="pick-list dash-list">
         @foreach ($rows as $row)

@@ -165,3 +165,6 @@
     .win-notes.is-active > .win-frame { height: calc(100dvh - 3.5rem); overflow: auto; overscroll-behavior: contain; }
     .win-notes > .win-frame > .win-body { flex: 1 0 auto; overflow: visible; }
 }
+/* Point 213: an empty column says how a note gets in; gone as soon as the column holds one. */
+.kanban-empty { margin: .25rem .75rem 0; }
+.kanban-col:has(.kanban-cards > li) .kanban-empty { display: none; }
