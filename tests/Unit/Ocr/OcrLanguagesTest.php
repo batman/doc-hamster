@@ -15,10 +15,16 @@ it('pins every catalogue data pack and keeps modules out of install (173.1, 173.
     foreach (Catalogue::all() as $key => $ext) {
         expect($ext->key)->toBe($key);
         if ($ext->kind === Extension::DATA) {
-            expect($ext->installable())->toBeTrue()
-                ->and($ext->size())->toBeGreaterThan(100_000);
+            expect($ext->installable())->toBeTrue();
+            // A bundle (e.g. Griechisch → Deutsch) has no files of its own, only what it requires.
+            if ($ext->files !== []) {
+                expect($ext->size())->toBeGreaterThan(100_000);
+            } else {
+                expect($ext->requires)->not->toBeEmpty();
+            }
             foreach ($ext->files as $file) {
-                expect($file['url'])->toStartWith('https://github.com/tesseract-ocr/tessdata_fast/raw/4.1.0/')
+                // Only the two fixed sources: tessdata_fast 4.1.0 (OCR) and Mozilla's attachments CDN (translation, 172).
+                expect($file['url'])->toMatch('#^https://(github\.com/tesseract-ocr/tessdata_fast/raw/4\.1\.0/|firefox-settings-attachments\.cdn\.mozilla\.net/)#')
                     ->and($file['sha256'])->toMatch('/^[0-9a-f]{64}$/');
             }
         } else {
