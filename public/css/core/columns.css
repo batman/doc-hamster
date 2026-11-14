@@ -16,7 +16,6 @@
 }
 .col-item:hover { background: var(--surface); box-shadow: none; }
 .col-item { --mark-bg: var(--surface); }
-.col-item[aria-current="true"] { font-weight: 700; }
 .col-item .icon { width: 1.5rem; height: 1.5rem; color: var(--primary); }
 .col-item > .badge { margin-left: auto; }
 .col-item > .badge:not([hidden]) + .go { margin-left: .5rem; } /* point 128: a hidden count keeps the arrow at the right edge */

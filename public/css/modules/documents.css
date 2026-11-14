@@ -60,7 +60,7 @@
 .view-details .type-icon { margin-right: .75rem; vertical-align: middle; }
 .view-details .tags { gap: .35rem; }
 .view-details tr.is-open { background: var(--surface); }
-.view-details tr.is-open td:first-child { box-shadow: inset 4px 0 0 var(--primary); }
+.view-details tr.is-open td { background: var(--mark-surface); }
 .view-list li.is-open, .timeline li.is-open { background: var(--surface); }
 .view-tiles li.is-open .thumb-frame { border: 2px solid var(--primary); }
 

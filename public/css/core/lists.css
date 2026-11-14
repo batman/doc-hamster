@@ -14,20 +14,23 @@
 .pick-mark { display: none; margin-left: auto; }
 .pick-row:has(input:checked) .pick-mark { display: flex; }
 
-/* Marked row (task 110: one look for the current menu entry, the chosen settings entry, the picked choice and a
-   marked list row such as the installed version): an orange bar on the left on the other surface. */
-:is(.nav-item[aria-current="page"], .menu-item[aria-checked="true"], .col-item[aria-current="true"], .pick-row:has(input:checked), .pick-row.is-marked) {
-    background: var(--mark-bg, var(--bg)); box-shadow: inset 4px 0 0 var(--primary);
+/* Marked row (task 110, look point 155 / variant A3): one look for the current menu entry, the chosen settings entry,
+   the picked choice, a marked list row and the opener row – a raised white surface with a light shadow and the orange
+   symbol. No bar, no border, no bold text; it reads on the menu, in windows, in cards and in the folded rail. */
+:root { --mark-surface: #fff; --mark-shadow: 0 1px 3px rgb(60 40 20 / .18), 0 4px 10px rgb(60 40 20 / .08); }
+@media (prefers-color-scheme: dark) { :root { --mark-surface: color-mix(in srgb, var(--text) 13%, var(--bg)); --mark-shadow: 0 1px 3px rgb(0 0 0 / .45), 0 4px 10px rgb(0 0 0 / .25); } }
+:is(.nav-item[aria-current="page"], .menu-item[aria-checked="true"], .col-item[aria-current="true"], .pick-row:has(input:checked), .pick-row.is-marked),
+:is(.nav-item[aria-current="page"], .menu-item[aria-checked="true"], .col-item[aria-current="true"], .pick-row:has(input:checked), .pick-row.is-marked):hover {
+    background: var(--mark-surface); box-shadow: var(--mark-shadow); font-weight: inherit;
 }
-.pick-row.is-marked:has(> span a):hover { background: var(--mark-bg, var(--bg)); }
+:is(.nav-item[aria-current="page"], .menu-item[aria-checked="true"], .col-item[aria-current="true"], .pick-row:has(input:checked), .pick-row.is-marked, .is-opener) .icon { color: var(--primary); }
 
 /* Opener row (point 141, A306, A307): the row / tile / link in a window whose click opened the window on its right – the
    marked-row look (orange bar left, the other surface: --opener-bg, --surface on a window, --bg in a card or a pick row;
    the hover keeps it). Next to its window (is-linked, windows.js) a small orange notch ▸ at its right edge points there. */
-.is-opener, .is-opener:hover, .pick-row.is-static.is-opener:has(> span a):hover { background: var(--opener-bg, var(--surface)); box-shadow: inset 4px 0 0 var(--primary); }
-:is(.card, .pick-row) .is-opener, .pick-row.is-opener { --opener-bg: var(--bg); }
+.is-opener, .is-opener:hover, .pick-row.is-static.is-opener:has(> span a):hover { background: var(--mark-surface); box-shadow: var(--mark-shadow); }
 tr.is-opener, tr.is-opener:hover { box-shadow: none; }
-tr.is-opener > :first-child { box-shadow: inset 4px 0 0 var(--primary); }
+tr.is-opener > td { background: var(--mark-surface); }
 .is-opener.is-linked:not(tr), tr.is-opener.is-linked > :last-child { position: relative; }
 .is-opener.is-linked:not(tr)::after, tr.is-opener.is-linked > :last-child::after {
     content: ""; position: absolute; top: 50%; right: 0; width: .4rem; height: .8rem; translate: 0 -50%;

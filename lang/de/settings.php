@@ -28,7 +28,7 @@ return [
         'colors' => ['title' => 'Farben', 'text' => 'Farbpalette für Notizen, Ordner und Tags'],
         'ocr' => ['title' => 'Texterkennung', 'text' => 'Stand und Einrichtung der Texterkennung'],
         'bank' => ['title' => 'Konten und Import', 'text' => 'Kontoauszüge importieren, Konten verwalten'],
-        'bank_reasons' => ['title' => 'Kein Beleg nötig', 'text' => 'Gründe für Buchungen ohne Beleg'],
+        'bank_reasons' => ['title' => 'Kein Dokument nötig', 'text' => 'Gründe für Buchungen ohne Dokument'],
         'bank_mcc' => ['title' => 'Kartenkategorien', 'text' => 'Welche Händlerkategorie welchen Tag vorschlägt'],
         'export' => ['title' => 'Export', 'text' => 'Dokumente als ZIP, zum Beispiel für den Steuerberater'],
         'shares' => ['title' => 'Links', 'text' => 'Gültigkeit und gültige Links zum Versenden'],

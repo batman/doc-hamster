@@ -76,7 +76,7 @@ return [
     ],
     'dates' => [
         'label' => 'Datum',
-        'doc' => 'Belegdatum',
+        'doc' => 'Dokumentdatum',
         'upload' => 'Hochladedatum',
     ],
     'name' => 'Name',
