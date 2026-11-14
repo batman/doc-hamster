@@ -59,6 +59,13 @@ return [
         'ukr' => 'Ukrainian',
         'ara' => 'Arabic',
     ],
+    // Point 172: translation packs (group "translate").
+    'translate_title' => 'Translation',
+    'translate_intro' => 'Translates the recognised text of a document – in the browser, with Mozilla\'s language models (Firefox Translations, MPL-2.0). The server does no work for it.',
+    'translate_name' => 'Translation: :from → :to',
+    'translate_text' => 'Language model by Mozilla, runs in the browser',
+    'translate_via' => 'Mozilla has no direct model – translates via English and installs :first and :second for it',
+    'translate_languages' => ['de' => 'German', 'en' => 'English', 'el' => 'Greek'],
     'items' => [
         'revolut' => ['name' => 'Revolut Business', 'text' => 'Fetch bookings directly from Revolut Business'],
     ],

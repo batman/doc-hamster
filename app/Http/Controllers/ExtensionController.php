@@ -35,6 +35,9 @@ final class ExtensionController extends Controller
         $installed = $extensions->installed();
         $rows = [];
         foreach (Catalogue::all() as $key => $ext) {
+            if (! $ext->listed()) {
+                continue;
+            }
             $rows[] = [
                 'ext' => $ext,
                 'installed' => $extensions->isInstalled($key),
@@ -107,23 +110,48 @@ final class ExtensionController extends Controller
         return back()->with('status', __('ocr.rerun_started'));
     }
 
-    /** The display name of an entry (OCR languages: "Texterkennung: Griechisch"). */
+    /** The display name of an entry (OCR languages: "Texterkennung: Griechisch", 172: "Übersetzung: Griechisch → Deutsch"). */
     public static function name(Extension $ext): string
     {
-        return $ext->group === 'ocr'
-            ? __('extensions.ocr_name', ['language' => __('extensions.languages.'.($ext->meta['lang'] ?? ''))])
-            : __('extensions.items.'.$ext->key.'.name');
+        return match ($ext->group) {
+            'ocr' => __('extensions.ocr_name', ['language' => __('extensions.languages.'.($ext->meta['lang'] ?? ''))]),
+            'translate' => __('extensions.translate_name', ['from' => __('extensions.translate_languages.'.($ext->meta['from'] ?? '')), 'to' => __('extensions.translate_languages.'.($ext->meta['to'] ?? ''))]),
+            default => __('extensions.items.'.$ext->key.'.name'),
+        };
     }
 
     public static function text(Extension $ext): string
     {
-        return $ext->group === 'ocr' ? __('extensions.ocr_text') : __('extensions.items.'.$ext->key.'.text');
+        if ($ext->group === 'translate' && $ext->files === []) {
+            // 172.4: a bundle over the English pivot names the pairs it installs.
+            $names = array_map(static fn (string $key): string => '„'.self::name(Catalogue::find($key) ?? $ext).'“', $ext->requires);
+
+            return __('extensions.translate_via', ['first' => $names[0] ?? '', 'second' => $names[1] ?? '']);
+        }
+
+        return match ($ext->group) {
+            'ocr' => __('extensions.ocr_text'),
+            'translate' => __('extensions.translate_text'),
+            default => __('extensions.items.'.$ext->key.'.text'),
+        };
     }
 
-    /** Download size, e.g. "4,2 MB". */
+    /** Download size with everything installed along with it, e.g. "4,2 MB". */
     public static function size(Extension $ext): string
     {
-        return number_format($ext->size() / 1048576, 1, ',', '.').' MB';
+        $bytes = [];
+        $add = static function (Extension $e) use (&$add, &$bytes): void {
+            $bytes[$e->key] = $e->size();
+            foreach ($e->requires as $key) {
+                $required = Catalogue::find($key);
+                if ($required !== null && ! isset($bytes[$key])) {
+                    $add($required);
+                }
+            }
+        };
+        $add($ext);
+
+        return number_format(array_sum($bytes) / 1048576, 1, ',', '.').' MB';
     }
 
     private function changed(Extension $ext, LocalOcr $ocr): void

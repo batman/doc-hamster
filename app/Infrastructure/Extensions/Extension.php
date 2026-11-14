@@ -18,8 +18,9 @@ use InvalidArgumentException;
  *    such entries show "kommt später" (installable() is false), there is no install path for them.
  *
  * dir is below storage/app for data packs and below the app root for modules (modules/<key>).
- * A group names the feature the pack belongs to ('ocr', later 'translate'), meta carries what that feature needs
- * (e.g. ['lang' => 'ell'] for an OCR language).
+ * A group names the feature the pack belongs to ('ocr', 'translate'), meta carries what that feature needs
+ * (e.g. ['lang' => 'ell'] for an OCR language). requires lists catalogue keys installed along with it (172.4: the
+ * translation runtime under every language pair; "Griechisch → Deutsch" = el-en + en-de, a bundle without own files).
  */
 final readonly class Extension
 {
@@ -30,6 +31,7 @@ final readonly class Extension
     /**
      * @param  list<array{name: string, url: string, sha256: string, size: int}>  $files
      * @param  array<string, string>  $meta
+     * @param  list<string>  $requires
      */
     public function __construct(
         public string $key,
@@ -39,6 +41,7 @@ final readonly class Extension
         public array $files,
         public string $dir,
         public array $meta = [],
+        public array $requires = [],
     ) {
         if (preg_match('/^[a-z0-9][a-z0-9-]{1,39}$/', $key) !== 1) {
             throw new InvalidArgumentException('Bad extension key: '.$key);
@@ -57,10 +60,16 @@ final readonly class Extension
         }
     }
 
-    /** Only complete data packs can be installed; modules come later (see the class comment). */
+    /** Only complete data packs (or bundles of them) can be installed; modules come later (see the class comment). */
     public function installable(): bool
     {
-        return $this->kind === self::DATA && $this->version !== null && $this->files !== [];
+        return $this->kind === self::DATA && $this->version !== null && ($this->files !== [] || $this->requires !== []);
+    }
+
+    /** Shown on Einstellungen → Erweiterungen (the translation runtime is only installed along with a pair). */
+    public function listed(): bool
+    {
+        return ($this->meta['hidden'] ?? '') !== '1';
     }
 
     /** Download size in bytes (0 = not known yet). */

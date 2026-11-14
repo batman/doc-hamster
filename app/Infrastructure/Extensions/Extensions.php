@@ -17,6 +17,8 @@ use RuntimeException;
  * App\Jobs\Net\InstallExtension). Removing deletes exactly the files the state lists.
  *
  * "enabled" lets an installed data pack be switched off without deleting it (OCR: the language is not used).
+ * 172: an entry's requires are installed along with it ("auto": true = only there for another entry); removing an
+ * entry also removes its auto-installed requires that nothing else installed needs any more.
  */
 final class Extensions
 {
@@ -24,7 +26,7 @@ final class Extensions
 
     public function __construct(private readonly ?string $root = null) {}
 
-    /** @return array<string, array{version: string, files: list<string>, enabled: bool, at: string}> */
+    /** @return array<string, array{version: string, files: list<string>, enabled: bool, auto: bool, at: string}> */
     public function installed(): array
     {
         $file = $this->stateFile();
@@ -40,6 +42,7 @@ final class Extensions
                     'version' => $entry['version'],
                     'files' => array_values(array_filter($entry['files'], 'is_string')),
                     'enabled' => ($entry['enabled'] ?? true) !== false,
+                    'auto' => ($entry['auto'] ?? false) === true,
                     'at' => is_string($entry['at'] ?? null) ? $entry['at'] : '',
                 ];
             }
@@ -48,15 +51,15 @@ final class Extensions
         return $out;
     }
 
-    /** Installed and all its files on disk. */
+    /** Installed, all its files on disk and everything it requires installed too. */
     public function isInstalled(string $key): bool
     {
         $entry = $this->installed()[$key] ?? null;
-        if ($entry === null) {
+        if ($entry === null || ! $this->present($entry['files'])) {
             return false;
         }
-        foreach ($entry['files'] as $path) {
-            if (! is_file($this->path($path))) {
+        foreach (Catalogue::find($key)->requires ?? [] as $required) {
+            if (! $this->isInstalled($required)) {
                 return false;
             }
         }
@@ -83,48 +86,60 @@ final class Extensions
         $entry = $this->installed()[$key] ?? null;
         $ext = Catalogue::find($key);
 
-        return $entry !== null && $ext !== null && $ext->installable() && $ext->version !== $entry['version'];
+        if ($entry === null || $ext === null || ! $ext->installable()) {
+            return false;
+        }
+        if ($ext->version !== $entry['version']) {
+            return true;
+        }
+        foreach ($ext->requires as $required) {
+            if ($this->updatable($required)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
-     * Installs or updates a catalogue entry. Files of an older version that the new one no longer lists are removed.
+     * Installs or updates a catalogue entry and, first, what it requires (172). Files of an older version that the
+     * new one no longer lists are removed; a required entry that is already there in its version is kept as it is.
      *
      * @param  Closure(string, string, string): void  $fetch  downloads url → target and checks the SHA-256 (net job, D-020)
      */
     public function install(string $key, Closure $fetch): void
     {
         $ext = Catalogue::find($key) ?? throw new RuntimeException('Unbekannte Erweiterung: '.$key);
-        if (! $ext->installable()) {
-            throw new RuntimeException('Noch nicht verfügbar: '.$key);
+        $order = [...self::requiredBy($ext), $ext];
+        foreach ($order as $item) {
+            if (! $item->installable()) {
+                throw new RuntimeException('Noch nicht verfügbar: '.$item->key);
+            }
         }
-        $this->locked(function () use ($ext, $fetch): void {
-            File::ensureDirectoryExists($this->path($ext->dir));
-            foreach ($ext->files as $file) {
-                $target = $this->path($ext->dir.'/'.$file['name']);
-                $fetch($file['url'], $file['sha256'], $target);
-                if (! self::verify($target, $file['sha256'], $file['size'])) {
-                    @unlink($target);
-                    throw new RuntimeException('Prüfsumme falsch: '.$file['name']);
+        $this->locked(function () use ($order, $ext, $fetch): void {
+            foreach ($order as $item) {
+                $state = $this->installed();
+                $current = $state[$item->key] ?? null;
+                $explicit = $item->key === $ext->key;
+                if ($explicit || $current === null || $current['version'] !== $item->version || ! $this->present($current['files'])) {
+                    $this->fetchFiles($item, $fetch);
+                    foreach (array_diff($current['files'] ?? [], $item->paths()) as $old) {
+                        $this->unlinkInside($old);
+                    }
                 }
+                $state[$item->key] = ['version' => (string) $item->version, 'files' => $item->paths(), 'enabled' => $current['enabled'] ?? true,
+                    'auto' => ! $explicit && ($current['auto'] ?? true), 'at' => now()->toIso8601String()];
+                $this->write($state);
             }
-            $state = $this->installed();
-            foreach (array_diff($state[$ext->key]['files'] ?? [], $ext->paths()) as $old) {
-                $this->unlinkInside($old);
-            }
-            $state[$ext->key] = ['version' => (string) $ext->version, 'files' => $ext->paths(), 'enabled' => $state[$ext->key]['enabled'] ?? true, 'at' => now()->toIso8601String()];
-            $this->write($state);
         });
     }
 
-    /** Deletes the pack's files and forgets it. */
+    /** Deletes the pack's files and forgets it, with its auto-installed requires nothing else needs (172). */
     public function remove(string $key): void
     {
         $this->locked(function () use ($key): void {
             $state = $this->installed();
-            foreach ($state[$key]['files'] ?? [] as $path) {
-                $this->unlinkInside($path);
-            }
-            unset($state[$key]);
+            $this->drop($key, $state);
             $this->write($state);
         });
     }
@@ -138,6 +153,75 @@ final class Extensions
                 $this->write($state);
             }
         });
+    }
+
+    /**
+     * What an entry requires, deepest first, each once.
+     *
+     * @param  array<string, true>  $seen
+     * @return list<Extension>
+     */
+    private static function requiredBy(Extension $ext, array &$seen = []): array
+    {
+        $out = [];
+        foreach ($ext->requires as $key) {
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $required = Catalogue::find($key) ?? throw new RuntimeException('Unbekannte Erweiterung: '.$key);
+            array_push($out, ...self::requiredBy($required, $seen));
+            $out[] = $required;
+        }
+
+        return $out;
+    }
+
+    /** Downloads the files that are not there yet in their pinned form. @param Closure(string, string, string): void $fetch */
+    private function fetchFiles(Extension $ext, Closure $fetch): void
+    {
+        if ($ext->files === []) {
+            return;
+        }
+        File::ensureDirectoryExists($this->path($ext->dir));
+        foreach ($ext->files as $file) {
+            $target = $this->path($ext->dir.'/'.$file['name']);
+            if (is_file($target) && hash_equals($file['sha256'], (string) hash_file('sha256', $target))) {
+                continue;
+            }
+            $fetch($file['url'], $file['sha256'], $target);
+            if (! self::verify($target, $file['sha256'], $file['size'])) {
+                @unlink($target);
+                throw new RuntimeException('Prüfsumme falsch: '.$file['name']);
+            }
+        }
+    }
+
+    /** @param array<string, array{version: string, files: list<string>, enabled: bool, auto: bool, at: string}> $state */
+    private function drop(string $key, array &$state): void
+    {
+        foreach ($state[$key]['files'] ?? [] as $path) {
+            $this->unlinkInside($path);
+        }
+        unset($state[$key]);
+        foreach (Catalogue::find($key)->requires ?? [] as $required) {
+            $needed = array_filter(array_keys($state), static fn (string $other): bool => in_array($required, Catalogue::find($other)->requires ?? [], true));
+            if (($state[$required]['auto'] ?? false) && $needed === []) {
+                $this->drop($required, $state);
+            }
+        }
+    }
+
+    /** @param list<string> $files */
+    private function present(array $files): bool
+    {
+        foreach ($files as $path) {
+            if (! is_file($this->path($path))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /** A file matches its pin: exact size and SHA-256. */
@@ -157,7 +241,7 @@ final class Extensions
         return $this->path('extensions.json');
     }
 
-    /** @param array<string, array{version: string, files: list<string>, enabled: bool, at: string}> $installed */
+    /** @param array<string, array{version: string, files: list<string>, enabled: bool, auto: bool, at: string}> $installed */
     private function write(array $installed): void
     {
         $tmp = $this->stateFile().'.tmp';
