@@ -1,20 +1,14 @@
 /* Package L */
 // Point 44 / A37: the drag edge right of a window changes that window's width (drag, arrow keys, double-click =
-// back to the module's optimal width) through the window system's sizer (A91–A94: the windows on the right give
-// way). A97: the width belongs to this one window (data-window-hand, kept in the tab's window history); for the
-// layout it is the window's preferred width. New windows start at their kind's optimal width.
+// back to the automatic width) through the window system's sizer (A91–A94: the windows on the right give way).
+// Point 199: the width is remembered per window kind + content kind (DocHamster.windowHand, e.g. the folder overview)
+// and is the preferred width of every such window from then on; without one the content's width hint decides.
 // Point 52 / A39: the view switcher of a list belongs to its window – it reloads only that window with ?view=…
 // and saves the choice as the default for new windows.
 (() => {
     const DocHamster = window.DocHamster;
-    // The window's own width (null = back to the module's optimal width); sizer.end() stores it in the history.
-    const write = (win, width) => {
-        if (width === null) {
-            delete win.dataset.windowHand;
-        } else {
-            win.dataset.windowHand = String(Math.round(width));
-        }
-    };
+    // The hand width for this window kind + content kind (null = back to automatic).
+    const write = (win, width) => DocHamster.windowHand?.set(win, width);
     // One sizing step through the window system's sizer (A91–A94): it shares the width out with the windows on the
     // right; the width that came out is remembered for this window.
     const size = (win, step) => {

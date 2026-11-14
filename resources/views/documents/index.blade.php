@@ -5,12 +5,22 @@
 @section('main_class', 'page-windows')
 
 @section('content')
-    @php $openFolder = $folder !== null ? collect($folders)->pluck('folder')->firstWhere('id', $folder) : null; @endphp
+    @php
+        $openFolder = $folder !== null ? collect($folders)->pluck('folder')->firstWhere('id', $folder) : null;
+        // Point 199: the width the content needs – only folder rows narrow, a document list wide, tiles and the calendar as wide as possible.
+        [$winFit, $winContent] = match (true) {
+            ! $searching && $documents->isEmpty() && $view !== 'calendar' => ['narrow', $folderRows === [] ? 'empty' : 'folders'],
+            in_array($view, ['small', 'large'], true) => ['full', 'gallery'],
+            $view === 'calendar' => ['full', 'calendar'],
+            $view === 'timeline' => ['wide', 'timeline'],
+            default => ['wide', 'documents'],
+        };
+    @endphp
     <div class="windows" data-windows>
     {{-- Folders on the window system (PO, 2026-11-07; FRAMEWORK.md: the main menu has no sub-items): Dokumente lists the top folders
          and the Papierkorb as rows, a folder opens as a window on the right with its subfolders and receipts.
          Points 185.2, A364: an open folder is renamed by its window title (people with edit rights). --}}
-    <x-window :title="$openFolder?->name ?? __('documents.title')" kind="folder" :icon="$openFolder?->iconName() ?? 'file-text'"
+    <x-window :title="$openFolder?->name ?? __('documents.title')" kind="folder" :icon="$openFolder?->iconName() ?? 'file-text'" :fit="$winFit" :content="$winContent"
               :url="route('documents.index', request()->except('page'))" :close="$openFolder ? route('documents.index') : route('home')"
               :upload="$openFolder ? 'folder='.$openFolder->id : null"
               :rename-url="$openFolder && Gate::allows('documents.edit') ? route('folders.update', $openFolder->id) : null" :rename-data="['only_name' => 1]"

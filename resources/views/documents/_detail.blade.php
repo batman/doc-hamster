@@ -23,7 +23,7 @@
     $canTrash = Gate::allows('documents.trash');
 @endphp
 {{-- Points 185.2, A364: the name is edited in the window title (Fenstertitel umbenennen) – no name field in the body. --}}
-<x-window :title="$document->title" icon="file-text" kind="detail" :url="route('documents.show', [$document->id, ...request()->query()])" :close="$close" class="win-detail" :drag-doc="$document->id" :drag-file="$document->dragFile()"
+<x-window :title="$document->title" icon="file-text" kind="detail" :url="route('documents.show', [$document->id, ...request()->query()])" fit="medium" content="detail" :close="$close" class="win-detail" :drag-doc="$document->id" :drag-file="$document->dragFile()"
     :rename-url="$canEdit ? route('documents.field', $document->id) : null" rename-field="value" :rename-data="['field' => 'title']">
     {{-- Only "Herunterladen" stays a button of its own; everything else is in the ⋯ menu (point 26). --}}
     @if ($file)

@@ -8,7 +8,7 @@
     $money = static fn (int $minor): string => \App\Domain\Banking\Transaction::money($minor, $transaction->currency);
     $why = static fn (array $reasons): string => __('bank.why', ['reasons' => implode(', ', array_map(static fn (string $key): string => __('bank.reasons.'.$key), array_keys($reasons)))]);
 @endphp
-<x-window :title="$transaction->formattedAmount().' · '.($transaction->counterparty ?? __('bank.transaction'))" icon="receipt" kind="bank-transaction"
+<x-window :title="$transaction->formattedAmount().' · '.($transaction->counterparty ?? __('bank.transaction'))" icon="receipt" kind="bank-transaction" fit="medium" content="booking"
           min="28rem" optimal="38rem" max="56rem" priority="2"
           :url="route('bank.show', $transaction->id)" :close="route('bank.account', $transaction->bank_account_id)">
     @if (session('status'))

@@ -50,6 +50,51 @@
     };
     // reloadWindow (window-search.js) gives a reloaded body the same per-window ids.
     DocHamster.isolate = isolate;
+
+    // Point 199: what a window shows (its content kind, data-window-content, and the width hint data-window-fit, both
+    // from <x-window fit content>, also on its .win-body so a body reload brings the new ones). A width dragged by hand
+    // is remembered per window kind + content kind (localStorage), e.g. "folder:folders", and used for every such
+    // window; null forgets it (double-click on the edge = automatic again).
+    const HANDS = 'dh-win-hands';
+    const handKey = win => `${win.dataset.windowKind ?? 'page'}:${win.dataset.windowContent || win.dataset.windowFit || 'any'}`;
+    const hands = () => {
+        try {
+            return JSON.parse(localStorage.getItem(HANDS)) ?? {};
+        } catch {
+            return {};
+        }
+    };
+    DocHamster.windowHand = {
+        get: win => Number(hands()[handKey(win)]) || 0,
+        set: (win, width) => {
+            const all = hands();
+            if (width === null) {
+                delete all[handKey(win)];
+            } else {
+                all[handKey(win)] = Math.round(width);
+            }
+            try { localStorage.setItem(HANDS, JSON.stringify(all)); } catch { /* not remembered */ }
+        },
+    };
+    // The hint of a (re)loaded body goes onto its window; true when it changed.
+    const syncHint = win => {
+        const body = win.querySelector(':scope > .win-frame > .win-body');
+        if (!body) {
+            return false;
+        }
+        let changed = false;
+        [['windowFit', body.dataset.windowFit], ['windowContent', body.dataset.windowContent]].forEach(([key, value]) => {
+            if ((win.dataset[key] ?? '') !== (value ?? '')) {
+                if (value) {
+                    win.dataset[key] = value;
+                } else {
+                    delete win.dataset[key];
+                }
+                changed = true;
+            }
+        });
+        return changed;
+    };
     const isolateWindow = win => {
         if (win.dataset.windowKey === undefined) {
             win.dataset.windowKey = newKey();
@@ -238,10 +283,13 @@
 
         // Widths like Apple's split view (NSSplitView; points 54, 55, 64, A91–A94). The row never scrolls sideways:
         // the windows always share exactly the room there is. Every window declares min, optimal and max width and a
-        // priority (data-window-min/-opt/-max/-priority from <x-window>). A width
-        // dragged by hand (A97: data-window-hand, only this one window, kept in the tab's window history) is its
-        // preferred width; a new window starts at its kind's optimal width. A window keeps its width from one layout
-        // to the next; only the difference to the room is shared out:
+        // priority (data-window-min/-opt/-max/-priority from <x-window>). Point 199 "Platz folgt der Aufmerksamkeit":
+        // the preferred width is what the content needs (data-window-fit: narrow, medium, wide, full or a length,
+        // kept within min/max; without a hint the optimal width); a width dragged by hand for this window kind +
+        // content kind wins (DocHamster.windowHand). Narrow content never grows past its need, except as the last
+        // window. When a window opens (or a strip is opened again) the others go back to at most their preferred
+        // width and that window gets the rest. Otherwise a window keeps its width from one layout to the next; only
+        // the difference to the room is shared out:
         //  - too little room → windows shrink towards their min, lowest priority first (among equals from the left),
         //    the newest and the one just opened again last; still too little → the lowest-priority window becomes a
         //    strip (never the newest or the one just opened again);
@@ -260,16 +308,23 @@
         };
         const STRIP = 3.5 * rem;
         const SPARE = 4 * rem;
-        // A97: widths were once stored per kind; that store is gone.
+        // The old per-kind store (before A97) is gone; point 199 keeps hands per kind + content (dh-win-hands).
         try { localStorage.removeItem('dh-win-widths'); } catch { /* nothing stored */ }
+        const FITS = { narrow: 22, medium: 44, wide: 56, full: 64 };
         const measure = (win, at) => {
-            const own = parseFloat(win.dataset.windowHand);
+            const own = DocHamster.windowHand.get(win);
             const min = px(win.dataset.windowMin, 24);
-            const pref = own > 0 ? own : Math.max(min, px(win.dataset.windowOpt, 32));
+            const opt = Math.max(min, px(win.dataset.windowOpt, 32));
+            const top = Math.max(min, px(win.dataset.windowMax, 48));
+            const fit = win.dataset.windowFit;
+            const hint = fit ? Math.min(top, Math.max(min, FITS[fit] ? FITS[fit] * rem : px(fit, 32))) : opt;
+            const pref = own > 0 ? own : hint;
             return {
                 win, at, pref, hand: own > 0,
                 min: Math.min(min, pref),
-                max: Math.max(pref, px(win.dataset.windowMax, 48)),
+                // What a window just opened keeps while the others make room: its preferred width, at most its optimal.
+                need: Math.min(pref, opt),
+                max: fit === 'narrow' && !(own > 0) ? pref : Math.max(pref, top),
                 prio: Number(win.dataset.windowPriority) || 1,
                 folded: win.dataset.folded !== undefined,
             };
@@ -291,7 +346,7 @@
                 }
             });
         };
-        const layout = (fresh = false) => {
+        const layout = (fresh = false, attend = false) => {
             if (dragging) {
                 return;
             }
@@ -323,6 +378,10 @@
                 item.hold = win === keep || (win === newest && (fresh || !(cur > 0)));
                 item.strip = item.folded || (!fresh && wasStrip && win !== keep);
                 item.w = !fresh && !wasStrip && cur > 0 ? cur : item.pref;
+                // Point 199: attention moved to the new window / the one opened again – the others shrink to their need.
+                if (attend && !item.hold) {
+                    item.w = Math.min(item.w, item.pref);
+                }
                 return item;
             });
             const open = () => info.filter(item => !item.strip);
@@ -332,7 +391,7 @@
             const shrink = (all = false) => {
                 let need = used() - avail;
                 open().sort((a, b) => a.protect - b.protect || byPrio(a, b)).forEach(item => {
-                    const give = Math.min(item.w - (all || !item.hold ? item.min : Math.max(item.min, item.pref)), need);
+                    const give = Math.min(item.w - (all || !item.hold ? item.min : Math.max(item.min, item.need)), need);
                     if (give > 0) {
                         item.w -= give;
                         need -= give;
@@ -383,7 +442,9 @@
                 }
             }
             let room = avail - used();
-            const wide = open().sort((a, b) => b.protect - a.protect || byPrio(b, a));
+            // The window attention is on grows first: the one opened again, then the newest.
+            const rank = item => (item.win === keep ? 2 : item.protect ? 1 : 0);
+            const wide = open().sort((a, b) => rank(b) - rank(a) || byPrio(b, a));
             const grow = cap => wide.forEach(item => {
                 const add = Math.min(cap(item) - item.w, room);
                 if (add > 0) {
@@ -501,7 +562,7 @@
         const remember = () => {
             try {
                 sessionStorage.setItem(KEY, JSON.stringify({
-                    list: wins().map(win => ({ id: win.dataset.windowId, url: win.dataset.windowUrl, title: win.dataset.windowTitle, icon: win.querySelector('.win-strip .strip-label > .icon')?.outerHTML ?? '', folded: win.dataset.folded !== undefined, maxed: win.dataset.maxed !== undefined, closable: win.querySelector('[data-window-close]') !== null, kind: win.dataset.windowKind, wmin: win.dataset.windowMin, wopt: win.dataset.windowOpt, wmax: win.dataset.windowMax, prio: win.dataset.windowPriority, hand: win.dataset.windowHand, from: win.dataset.windowFrom, opener: win.dataset.windowOpener })),
+                    list: wins().map(win => ({ id: win.dataset.windowId, url: win.dataset.windowUrl, title: win.dataset.windowTitle, icon: win.querySelector('.win-strip .strip-label > .icon')?.outerHTML ?? '', folded: win.dataset.folded !== undefined, maxed: win.dataset.maxed !== undefined, closable: win.querySelector('[data-window-close]') !== null, kind: win.dataset.windowKind, wmin: win.dataset.windowMin, wopt: win.dataset.windowOpt, wmax: win.dataset.windowMax, prio: win.dataset.windowPriority, fit: win.dataset.windowFit, content: win.dataset.windowContent, from: win.dataset.windowFrom, opener: win.dataset.windowOpener })),
                     active: active()?.dataset.windowId ?? null,
                 }));
             } catch { /* not remembered */ }
@@ -571,7 +632,7 @@
             }
             win.dataset.lazy = '';
             // The width values come along, so the layout treats the strip like the loaded window (point 54).
-            [['windowKind', item.kind], ['windowMin', item.wmin], ['windowOpt', item.wopt], ['windowMax', item.wmax], ['windowPriority', item.prio], ['windowHand', item.hand], ['windowFrom', item.from], ['windowOpener', item.opener]]
+            [['windowKind', item.kind], ['windowMin', item.wmin], ['windowOpt', item.wopt], ['windowMax', item.wmax], ['windowPriority', item.prio], ['windowFit', item.fit], ['windowContent', item.content], ['windowFrom', item.from], ['windowOpener', item.opener]]
                 .forEach(([key, value]) => { if (value) win.dataset[key] = value; });
             win.toggleAttribute('data-maxed', !!item.maxed);
             // The same strip as a server window has: arrow, icon and title.
@@ -607,7 +668,7 @@
                     full.toggleAttribute('data-folded', win.dataset.folded !== undefined);
                     full.style.setProperty('--win-w', win.style.getPropertyValue('--win-w'));
                     full.style.zIndex = win.style.zIndex;
-                    ['windowHand', 'windowFrom', 'windowOpener'].forEach(key => {
+                    ['windowFrom', 'windowOpener'].forEach(key => {
                         if (win.dataset[key]) {
                             full.dataset[key] = win.dataset[key];
                         }
@@ -632,7 +693,7 @@
             delete full.dataset.folded;
             keep = full;
             focus(full, push);
-            layout();
+            layout(false, true);
         }).then(() => reveal(full))).catch(() => { location.href = win.dataset.windowUrl; });
 
         // A link in a window: everything right of that window closes, the new one opens on the right (points 40.2,
@@ -677,7 +738,7 @@
                 box.append(win);
                 keep = null;
                 focus(win);
-                layout();
+                layout(false, true);
             }).then(() => {
                 DocHamster.emit('window:open', win);
                 reveal(win);
@@ -795,7 +856,7 @@
                 if (item.id) {
                     win.dataset.windowId = item.id;
                 }
-                [['windowHand', item.hand], ['windowFrom', item.from], ['windowOpener', item.opener]].forEach(([key, value]) => {
+                [['windowFrom', item.from], ['windowOpener', item.opener]].forEach(([key, value]) => {
                     if (value) {
                         win.dataset[key] = value;
                     }
@@ -875,6 +936,14 @@
         });
         // A window changed its own address (search, A104): the stored history keeps it.
         document.addEventListener('dh:window-url', remember);
+        // Point 199: a reloaded body may show other content (folders → documents, list → gallery); the hint follows.
+        DocHamster.on('window:open', root => {
+            const win = root?.closest?.('section[data-window]');
+            if (win && win !== root && syncHint(win)) {
+                layout();
+                remember();
+            }
+        });
     };
 
     document.addEventListener('DOMContentLoaded', setupWindows);

@@ -17,18 +17,23 @@
     a toolbar row below the head that follows the window's own width (container queries, point 41).
     One window = one instance of a module for one record; the same record can be open twice (point 40), so ids inside
     a window loaded later get a per-window suffix in app.js – write plain ids, dialog names and labels as usual.
-    kind (the module type, e.g. "folder", "detail"; default the route name): picks the default widths; a dragged width belongs only to that one window (A97).
+    kind (the module type, e.g. "folder", "detail"; default the route name): picks the default widths.
+    fit, content (point 199, "Platz folgt der Aufmerksamkeit"): fit = how wide the content wants to be – narrow (a few rows,
+    ~22rem, never grows past it), medium (~44rem), wide (~56rem), full (as wide as possible) or a length –, kept within
+    min/max; content = what the window shows (e.g. "folders", "documents", "gallery"); a dragged width is remembered per
+    kind + content. Both may change with the body (a body reload brings the new ones).
     dragDoc, dragFile (point 160): the head drags this document (id, DownloadURL "mime:name:url") into other windows, tabs or the desktop.
     renameUrl, renameField, renameData (points 185.2, A364, "Fenstertitel umbenennen"): with a renameUrl the title is edited in place
     (core/window-rename.js) – POST renameData + renameField = the new name; give it only to people with edit rights.
 --}}
-@props(['title', 'icon' => 'file-text', 'url' => null, 'close' => null, 'upload' => null, 'min' => null, 'optimal' => null, 'max' => null, 'priority' => null, 'search' => null, 'searchLive' => false, 'searchParams' => '', 'searchCount' => 0, 'kind' => null, 'dragDoc' => null, 'dragFile' => null, 'renameUrl' => null, 'renameField' => 'name', 'renameData' => []])
+@props(['title', 'icon' => 'file-text', 'url' => null, 'close' => null, 'upload' => null, 'min' => null, 'optimal' => null, 'max' => null, 'priority' => null, 'search' => null, 'searchLive' => false, 'searchParams' => '', 'searchCount' => 0, 'kind' => null, 'dragDoc' => null, 'dragFile' => null, 'renameUrl' => null, 'renameField' => 'name', 'renameData' => [], 'fit' => null, 'content' => null])
 @php
     $url ??= request()->fullUrl();
     $kind ??= request()->route()?->getName() ?? 'page';
     // Widths per module kind (point 54): [min, optimal, max] in rem and the priority. Lists narrower, documents wider.
     [$minRem, $optRem, $maxRem, $prio] = match ($kind) {
-        'folder' => [20, 26, 34, 1],
+        // A folder window shows a few folder rows or a whole document list or gallery; its fit hint says which (point 199).
+        'folder' => [20, 26, 96, 1],
         'trash', 'mail' => [22, 30, 40, 1],
         'detail' => [30, 44, 64, 2],
         'text' => [32, 48, 72, 2],
@@ -60,7 +65,7 @@
         }
     }
 @endphp
-<section {{ $attributes->class('win') }} data-window data-window-url="{{ $url }}" data-window-title="{{ $title }}" @if ($upload) data-window-upload="{{ $upload }}" @endif data-window-min="{{ $min }}" data-window-opt="{{ $optimal }}" data-window-max="{{ $max }}" data-window-priority="{{ $priority }}" data-window-kind="{{ $kind }}" aria-label="{{ $title }}">
+<section {{ $attributes->class('win') }} data-window data-window-url="{{ $url }}" data-window-title="{{ $title }}" @if ($upload) data-window-upload="{{ $upload }}" @endif data-window-min="{{ $min }}" data-window-opt="{{ $optimal }}" data-window-max="{{ $max }}" data-window-priority="{{ $priority }}" data-window-kind="{{ $kind }}" @if ($fit) data-window-fit="{{ $fit }}" @endif @if ($content) data-window-content="{{ $content }}" @endif aria-label="{{ $title }}">
     <button type="button" class="win-strip" data-window-activate aria-label="{{ __('app.window.open', ['title' => $title]) }}">
         <x-icon name="chevron-right" />
         <span class="strip-label"><x-icon :name="$icon" /><span>{{ $title }}</span></span>
@@ -130,7 +135,7 @@
                 </div>
             </div>
         @endif
-        <div class="win-body">{{ $slot }}</div>
+        <div class="win-body" @if ($fit) data-window-fit="{{ $fit }}" @endif @if ($content) data-window-content="{{ $content }}" @endif>{{ $slot }}</div>
     </div>
     {{-- The drag edge on the right (point 44): drag, arrow keys, double-click = default width. --}}
     <div class="win-edge" data-window-edge role="separator" aria-orientation="vertical" tabindex="0" aria-label="{{ __('app.window.resize') }}" title="{{ __('app.window.resize_hint') }}"></div>
