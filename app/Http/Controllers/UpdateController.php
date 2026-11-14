@@ -61,7 +61,8 @@ final class UpdateController
 
         if (! $allPreviews) {
             // Without the preview box only the installed branch shows, for its own updates.
-            $branches = array_values(array_filter($branches, fn (array $branch): bool => $branch['number'] === ($preview['number'] ?? null)));
+            $branches = array_values(array_filter($branches, fn (array $branch): bool => $branch['number'] === ($preview['number'] ?? null)
+                || ($branch['number'] === UpdateSource::DEV_PREVIEW && $this->followsDev($preview, $branches))));
         }
         // Kept for the install, which names the branch afterwards (point 6).
         $request->session()->put('updates.preview_list', $branches);
@@ -106,13 +107,15 @@ final class UpdateController
         ]];
 
         $listed = false;
+        // A335: a numbered preview of the branch dev that is no longer listed continues as the fixed preview "dev".
+        $followsDev = $this->followsDev($preview, $branches);
         foreach ($branches as $branch) {
-            $mine = $preview !== null && $branch['number'] === $preview['number'];
+            $mine = $preview !== null && ($branch['number'] === $preview['number'] || ($followsDev && $branch['number'] === UpdateSource::DEV_PREVIEW));
             $listed = $listed || $mine;
             $rows[] = [
                 'kind' => 'preview',
                 'number' => $branch['number'],
-                'label' => '#'.$branch['number'].($branch['branch'] !== '' ? ' · '.$branch['branch'] : ''),
+                'label' => self::label($branch['number'], $branch['branch']),
                 'title' => $branch['title'],
                 'version' => $mine ? $preview['sha'] : substr($branch['sha'], 0, 7),
                 'date' => $mine ? $installedDate : $branch['date'],
@@ -128,7 +131,7 @@ final class UpdateController
             $rows[] = [
                 'kind' => 'preview',
                 'number' => $preview['number'],
-                'label' => '#'.$preview['number'].($preview['branch'] !== '' ? ' · '.$preview['branch'] : ''),
+                'label' => self::label($preview['number'], $preview['branch']),
                 'title' => $preview['title'],
                 'version' => $preview['sha'],
                 'date' => $installedDate,
@@ -143,6 +146,33 @@ final class UpdateController
         }
 
         return $rows;
+    }
+
+    /** "#129 · feature-x" for a pull request, just "dev" for the working branch (A335). */
+    private static function label(int $number, string $branch): string
+    {
+        if ($number === UpdateSource::DEV_PREVIEW) {
+            return 'dev';
+        }
+
+        return '#'.$number.($branch !== '' ? ' · '.$branch : '');
+    }
+
+    /**
+     * A335: the installed preview came from the branch dev under a pull request number that is no longer listed,
+     * while the fixed preview "dev" is – its updates come from there now.
+     *
+     * @param  array{number: int, sha: string, branch: string, title: string}|null  $preview
+     * @param  list<array{number: int, title: string, branch: string, sha: string, date: string}>  $branches
+     */
+    private function followsDev(?array $preview, array $branches): bool
+    {
+        if ($preview === null || $preview['number'] === UpdateSource::DEV_PREVIEW || $preview['branch'] !== 'dev') {
+            return false;
+        }
+        $numbers = array_column($branches, 'number');
+
+        return ! in_array($preview['number'], $numbers, true) && in_array(UpdateSource::DEV_PREVIEW, $numbers, true);
     }
 
     /** The day the installed program files were written (the VERSION file of the package), or ''. */

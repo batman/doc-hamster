@@ -3,33 +3,43 @@ name: Preview package
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled, closed]
+  # A335: the working branch dev is always a preview of its own, without a pull request. It uses the reserved
+  # number 1000000 (no pull request ever gets it), so the installer and the Update page treat it like any preview.
+  push:
+    branches: [dev]
 
 permissions:
   contents: read
   pull-requests: read
 
 concurrency:
-  group: preview-pr-${{ github.event.pull_request.number }}
+  group: preview-pr-${{ github.event.pull_request.number || 'dev' }}
   cancel-in-progress: true
+
+env:
+  DEV_PREVIEW: 1000000
 
 jobs:
   package:
     if: >-
+      github.event_name == 'push' || (
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref != 'dev' &&
       github.event.action != 'closed' &&
       github.event.action != 'unlabeled' &&
-      contains(github.event.pull_request.labels.*.name, 'preview-ready')
+      contains(github.event.pull_request.labels.*.name, 'preview-ready'))
     runs-on: ubuntu-24.04
     permissions:
       contents: read
       pull-requests: read
     outputs:
       tag: ${{ steps.package.outputs.tag }}
+      number: ${{ steps.package.outputs.number }}
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
       - uses: shivammathur/setup-php@v2
@@ -42,8 +52,8 @@ jobs:
       - name: Build preview package
         id: package
         env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number || env.DEV_PREVIEW }}
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           VERSION="preview-${PR_NUMBER}-${COMMIT_SHA:0:7}"
           TAG="preview-pr-${PR_NUMBER}"
@@ -66,10 +76,11 @@ jobs:
           printf '{"version":"%s","php":"%s","zip":"dochamster-preview.zip","sha256":"%s","installer_sha256":"%s","pr":%s,"commit_sha":"%s"}\n' \
             "$VERSION" "$PHP_MIN" "$SHA" "$INSTALLER_SHA" "$PR_NUMBER" "$COMMIT_SHA" > manifest.json
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: preview-${{ github.event.pull_request.number }}
+          name: preview-${{ github.event.pull_request.number || env.DEV_PREVIEW }}
           path: |
             build/dochamster-preview.zip
             build/manifest.json
@@ -87,22 +98,25 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: preview-${{ github.event.pull_request.number }}
+          name: preview-${{ github.event.pull_request.number || env.DEV_PREVIEW }}
           path: preview
 
       - name: Replace preview release
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ needs.package.outputs.number }}
           TAG: ${{ needs.package.outputs.tag }}
         run: |
           gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
-          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "DocHamster preview PR #${PR_NUMBER}" --prerelease \
+          TITLE="DocHamster preview PR #${PR_NUMBER}"; [ "$PR_NUMBER" = "$DEV_PREVIEW" ] && TITLE="DocHamster preview dev"
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "$TITLE" --prerelease \
             --notes "Preview package for the open PR. Do not use as a production release." \
             preview/dochamster-preview.zip preview/manifest.json preview/install.php
 
   remove:
     if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.ref != 'dev' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       (github.event.action == 'closed' ||
       (github.event.action == 'unlabeled' && github.event.label.name == 'preview-ready'))
@@ -146,6 +160,15 @@ jobs:
             # Only a package built from the branch's current commit is offered.
             if [ "$built" = "$sha" ]; then echo "$pr" >> listed.jsonl; fi
           done < open.jsonl
+          # A335: the working branch dev, when its package is built from its current commit.
+          dev=$(gh api "repos/$R/branches/dev" --jq '{sha: .commit.sha, date: .commit.commit.committer.date}' 2>/dev/null || true)
+          if [ -n "$dev" ]; then
+            devsha=$(jq -r .sha <<<"$dev")
+            built=$(gh release download "preview-pr-$DEV_PREVIEW" --repo "$R" -p manifest.json -O - 2>/dev/null | jq -r '.commit_sha // empty' || true)
+            if [ "$built" = "$devsha" ]; then
+              jq -c --argjson n "$DEV_PREVIEW" '{number: $n, title: "Arbeitsstand", branch: "dev", sha: .sha, date: .date}' <<<"$dev" >> listed.jsonl
+            fi
+          fi
           jq -s 'sort_by(.number)' listed.jsonl > previews.json
           cat previews.json
           gh release view previews --repo "$R" >/dev/null 2>&1 || gh release create previews --repo "$R" --prerelease \

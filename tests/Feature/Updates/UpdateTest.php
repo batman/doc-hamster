@@ -158,3 +158,23 @@ it('keeps an update in the installed preview branch and offers Main only as a sw
     $this->post('/update/install', ['password' => 'ein-langes-test-passwort'])->assertSessionHasErrors(['update' => __('updates.stay_in_branch')]);
     $this->get('/update')->assertSee(__('updates.main'));
 });
+
+it('continues an installed numbered dev preview as the fixed preview "dev" (A335)', function (): void {
+    config(['dochamster.version' => 'preview-136-aaaaaaa']);
+    Storage::disk('local')->put('preview-installed.json', json_encode(['number' => 136, 'branch' => 'dev', 'title' => 'dev: working branch']));
+    Http::fake([
+        'github.com/*/releases/latest/download/manifest.json' => Http::response(['version' => '1.1.0', 'php' => '8.3.0', 'installer_sha256' => 'x']),
+        'github.com/*/releases/download/previews/previews.json' => Http::response([
+            ['number' => 1000000, 'title' => 'Arbeitsstand', 'branch' => 'dev', 'sha' => str_repeat('d', 40), 'date' => '2026-11-14T08:00:00Z'],
+        ]),
+        '*' => Http::response('', 500),
+    ]);
+    $webRoot = dirname(base_path()).'/dh-test-web-'.uniqid();
+    mkdir($webRoot);
+
+    $html = $this->withServerVariables(['SCRIPT_FILENAME' => $webRoot.'/index.php'])->postJson('/update/check')->assertOk()->json('html');
+    @rmdir($webRoot);
+    Storage::disk('local')->delete('preview-installed.json');
+
+    expect($html)->toContain('aaaaaaa → ddddddd', 'data-preview-pr="1000000"', '>dev<')->not->toContain('#1000000');
+});

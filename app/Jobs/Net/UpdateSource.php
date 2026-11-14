@@ -25,6 +25,9 @@ final class UpdateSource
     private const DOWNLOADS = 'https://github.com/batman/doc-hamster/releases';
 
     /** The list of branches open for preview, kept current by .github/workflows/preview.yml. */
+    /** A335: the working branch dev is a preview of its own under this reserved number (no pull request gets it). */
+    public const DEV_PREVIEW = 1_000_000;
+
     private const PREVIEW_LIST = self::DOWNLOADS.'/download/previews/previews.json';
 
     /**
