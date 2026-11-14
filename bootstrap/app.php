@@ -40,6 +40,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
             // Points 152.2, A330: an iPhone shortcut or a program sends documents with its device key.
             Route::post('api/upload', UploadApiController::class)->middleware('throttle:120,1')->name('api.upload');
+            // Point 201.5: "Verbindung testen" – the same key check, nothing is stored.
+            Route::get('api/upload', [UploadApiController::class, 'check'])->middleware('throttle:30,1')->name('api.upload.check');
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {

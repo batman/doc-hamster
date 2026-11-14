@@ -14,12 +14,22 @@
     @endif
 
     @if ($fresh !== null)
-        <section class="card">
-            <h2 class="card-head"><x-icon name="lock" />{{ __('devices.key_title', ['name' => $fresh['name']]) }}</h2>
-            <p class="card-text">{{ __('devices.key_once') }} {{ __('devices.key_scope') }}</p>
-            @include('settings._device-copy', ['id' => 'device-url', 'label' => __('devices.url'), 'value' => $apiUrl])
-            @include('settings._device-copy', ['id' => 'device-header', 'label' => __('devices.header'), 'value' => $header])
-        </section>
+        {{-- Point 201.2: the key at once in an open dialog (no flash), with copy fields and "Verbindung testen". --}}
+        <div class="dialog-backdrop" data-dialog="device-key" data-device-key>
+            <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="device-key-title">
+                <h2 id="device-key-title">{{ __('devices.key_title', ['name' => $fresh['name']]) }}</h2>
+                <p class="card-text"><strong>{{ __('devices.key_once') }}</strong> {{ __('devices.key_scope') }}</p>
+                @include('settings._device-copy', ['id' => 'device-url', 'label' => __('devices.url'), 'value' => $apiUrl])
+                @include('settings._device-copy', ['id' => 'device-header', 'label' => __('devices.header'), 'value' => $header])
+                <p class="device-test-result" data-device-test-result role="status" aria-live="polite"></p>
+                <div class="dialog-actions">
+                    <button type="button" class="button-quiet" data-device-test="device-header" data-url="{{ route('api.upload.check') }}"
+                        data-running="{{ __('devices.test_running') }}" data-msg401="{{ __('devices.test_401') }}" data-msg403="{{ __('devices.test_403') }}"
+                        data-msg-other="{{ __('devices.test_other', ['status' => ':status']) }}" data-msg-failed="{{ __('devices.test_failed') }}"><x-icon name="plug" />{{ __('devices.test') }}</button>
+                    <button type="button" data-dialog-close>{{ __('devices.done') }}</button>
+                </div>
+            </div>
+        </div>
     @endif
 
     <section class="card">
@@ -40,6 +50,7 @@
                     </span>
                     <span class="pill">{{ __('devices.kinds.'.$device->kind) }}</span>
                     <span class="row-actions">
+                        <button type="button" class="control-button" data-dialog-open="rekey-device-{{ $device->id }}" aria-label="{{ __('devices.rekey') }}: {{ $device->name }}" data-tooltip="{{ __('devices.rekey') }}"><x-icon name="refresh" /></button>
                         <button type="button" class="control-button" data-dialog-open="delete-device-{{ $device->id }}" aria-label="{{ __('devices.delete') }}: {{ $device->name }}" data-tooltip="{{ __('devices.delete') }}"><x-icon name="trash" /></button>
                     </span>
                 </li>
@@ -71,6 +82,19 @@
     </div>
 
     @foreach ($devices as $device)
+        <div class="dialog-backdrop" data-dialog="rekey-device-{{ $device->id }}" hidden>
+            <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="rekey-device-{{ $device->id }}-title">
+                <h2 id="rekey-device-{{ $device->id }}-title">{{ __('devices.rekey_title') }}</h2>
+                <p>{{ __('devices.rekey_text') }}</p>
+                <div class="dialog-actions">
+                    <button type="button" class="button-quiet" data-dialog-close>{{ __('devices.cancel') }}</button>
+                    <form method="post" action="{{ route('devices.rekey', $device->id) }}">
+                        @csrf
+                        <button type="submit"><x-icon name="refresh" />{{ __('devices.rekey') }}</button>
+                    </form>
+                </div>
+            </div>
+        </div>
         <div class="dialog-backdrop" data-dialog="delete-device-{{ $device->id }}" hidden>
             <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="delete-device-{{ $device->id }}-title">
                 <h2 id="delete-device-{{ $device->id }}-title">{{ __('devices.delete_title') }}</h2>
@@ -86,14 +110,40 @@
         </div>
     @endforeach
 
-    <x-fold-card fold="devices.iphone" :title="__('devices.iphone_title')" icon="device-mobile" :folded="$fresh !== null && $fresh['kind'] !== 'iphone'" :remember="$fresh === null">
-        <ol class="card-text">
-            @foreach (__('devices.iphone_steps') as $step)
-                <li>{{ $step }}</li>
-            @endforeach
-        </ol>
+    {{-- Point 202: the ready-made shortcut (QR + link) and its four steps. --}}
+    <x-fold-card fold="devices.shortcut" :title="__('devices.shortcut_title')" icon="device-mobile">
+        <div class="device-shortcut">
+            <img class="phone-qr" src="{{ $shortcutQr }}" width="180" height="180" alt="{{ __('devices.shortcut_qr') }}">
+            <div>
+                <a class="button button-small" href="{{ $shortcutUrl }}" target="_blank" rel="noopener"><x-icon name="download" />{{ __('devices.shortcut_load') }}</a>
+                <ol class="card-text">
+                    @foreach (__('devices.shortcut_steps') as $step)
+                        <li>{{ $step }}</li>
+                    @endforeach
+                </ol>
+            </div>
+        </div>
         @include('settings._device-copy', ['id' => 'iphone-url', 'label' => __('devices.url'), 'value' => $apiUrl])
         @include('settings._device-copy', ['id' => 'iphone-header', 'label' => __('devices.header'), 'value' => $fresh !== null && $fresh['kind'] === 'iphone' ? $header : '', 'placeholder' => __('devices.key_placeholder')])
+        {{-- Point 201.4: where the value comes from. --}}
+        <p class="field-hint">{{ __('devices.header_hint') }}</p>
+    </x-fold-card>
+
+    {{-- Point 203: building it by hand, the traps shown as wrong → right. --}}
+    <x-fold-card fold="devices.manual" :title="__('devices.manual_title')" icon="tools" :folded="true">
+        <p class="card-text">{{ __('devices.manual_intro') }}</p>
+        <ol class="device-manual">
+            @foreach (__('devices.manual_steps') as $step)
+                <li>
+                    <span>{{ $step['text'] }}</span>
+                    <span class="device-compare">
+                        <span class="device-state is-wrong"><x-icon name="x" /><span class="visually-hidden">{{ __('devices.wrong') }}:</span> {{ $step['wrong'] }}</span>
+                        <span aria-hidden="true">→</span>
+                        <span class="device-state is-right"><x-icon name="check" /><span class="visually-hidden">{{ __('devices.right') }}:</span> {{ $step['right'] }}</span>
+                    </span>
+                </li>
+            @endforeach
+        </ol>
     </x-fold-card>
 
     <x-fold-card fold="devices.program" :title="__('devices.program_title')" icon="device-desktop" :folded="$fresh === null || $fresh['kind'] !== 'program'" :remember="$fresh === null">

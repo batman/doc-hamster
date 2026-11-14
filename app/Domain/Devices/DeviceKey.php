@@ -65,6 +65,15 @@ final class DeviceKey extends Model
         return [$device, $key];
     }
 
+    /** Point 201.3: a new key for this device; the old one stops working at once. Returns the key (only now). */
+    public function renew(): string
+    {
+        $key = self::PREFIX.Str::random(40);
+        $this->update(['key_hash' => hash('sha256', $key), 'key_prefix' => substr($key, 0, 10)]);
+
+        return $key;
+    }
+
     /** The working device behind a key, from any organisation. */
     public static function byKey(string $key): ?self
     {

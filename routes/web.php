@@ -176,6 +176,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::get('/', [DeviceSettingsController::class, 'index'])->name('index');
         Route::post('/', [DeviceSettingsController::class, 'store'])->name('store');
         Route::post('{id}/delete', [DeviceSettingsController::class, 'destroy'])->name('destroy');
+        Route::post('{id}/rekey', [DeviceSettingsController::class, 'rekey'])->name('rekey');
     });
 
     // "Teilen → DocHamster" (points 151, A328): the service worker keeps the share, this page sends it (also after login).

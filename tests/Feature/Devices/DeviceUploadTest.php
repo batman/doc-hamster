@@ -23,9 +23,18 @@ beforeEach(fn () => Storage::fake('local'));
 function addDevice(Membership $member, string $kind = 'iphone'): string
 {
     $response = test()->actingAs($member->user)->post('/settings/devices', ['name' => 'iPhone von Max', 'kind' => $kind]);
-    $response->assertRedirect('/settings/devices')->assertSessionHas('device_key');
 
-    return (string) session('device_key')['key'];
+    return shownKey((string) $response->headers->get('Location'));
+}
+
+/** Point 201.1: the key shows on the page the redirect leads to (no session flash). */
+function shownKey(string $location): string
+{
+    expect($location)->toContain('/settings/devices?shown=');
+    preg_match('/Bearer (dhk_[A-Za-z0-9]+)/', test()->get($location)->assertOk()->getContent(), $match);
+    expect($match)->not->toBeEmpty();
+
+    return $match[1];
 }
 
 function pdfFile(): UploadedFile
@@ -97,4 +106,18 @@ it('stores a shared text as PDF document from the phone and lists it on the conf
     expect($document->source)->toBe('phone')->and($document->title)->toBe('Notiz')
         ->and($document->files()->firstOrFail()->mime)->toBe('application/pdf');
     $this->get('/share/done')->assertOk()->assertSee('1 Dokument gespeichert');
+});
+
+it('renews a key – the old one stops – checks a key and says when no file came (point 201)', function (): void {
+    $owner = Membership::factory()->owner()->create();
+    $old = addDevice($owner);
+    $device = DeviceKey::query()->withoutGlobalScope(OrgScope::class)->latest('id')->firstOrFail();
+
+    $this->getJson('/api/upload', ['Authorization' => 'Bearer '.$old])->assertOk()->assertJson(['ok' => true]);
+    $this->postJson('/api/upload', [], ['Authorization' => 'Bearer '.$old])->assertStatus(422)->assertJson(['message' => __('devices.api_no_file')]);
+
+    $new = shownKey((string) $this->actingAs($owner->user)->post('/settings/devices/'.$device->id.'/rekey')->headers->get('Location'));
+    expect($new)->not->toBe($old);
+    $this->getJson('/api/upload', ['Authorization' => 'Bearer '.$old])->assertStatus(401);
+    $this->getJson('/api/upload', ['Authorization' => 'Bearer '.$new])->assertOk();
 });
