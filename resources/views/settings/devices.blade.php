@@ -9,7 +9,6 @@
 @endphp
 
 @section('page')
-    <div class="col-head"><h1>{{ __('devices.title') }}</h1></div>
     @if (session('status'))
         <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
     @endif

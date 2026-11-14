@@ -131,8 +131,8 @@ label.tag-choice { color: inherit; }
 .dialog-actions > [data-dialog-close]:not(.dialog-x), .dialog-actions form > [data-dialog-close]:not(.dialog-x) { display: none; }
 
 /* All fold/unfold arrows look the same: just the chevron, no button frame (point 3). The building block is the
-   control button (points 70, 72): .control-button, frameless icon in text colour, orange on hover; the settings
-   arrows (.col-fold) and the menu arrow are the 48 px flavour of it, window heads use 36 px. */
+   control button (points 70, 72): .control-button, frameless icon in text colour, orange on hover; the menu arrow
+   is the 48 px flavour of it, window heads use 36 px. */
 .control-button {
     display: inline-flex; align-items: center; justify-content: center; flex: none;
     width: 36px; min-width: 36px; height: 36px; min-height: 36px; margin: 0; padding: 0;
@@ -141,15 +141,14 @@ label.tag-choice { color: inherit; }
 .control-button:hover { background: none; box-shadow: none; color: var(--primary-ink); }
 .control-button:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
 .control-button .icon { width: 1.25rem; height: 1.25rem; }
-.col-fold, .nav-collapse {
+.nav-collapse {
     display: inline-flex; align-items: center; justify-content: center; flex: none;
     width: 48px; min-height: 48px; margin: 0; padding: 0;
     border: 0; border-radius: calc(var(--radius) / 2); background: none; color: var(--text);
 }
 .nav-collapse { margin-top: .25rem; }
-.col-fold:hover, .nav-collapse:hover { background: none; box-shadow: none; color: var(--primary-ink); }
-.col-fold .icon, .nav-collapse .icon, button.col-strip > .icon { width: 1.25rem; height: 1.25rem; }
-button.col-strip:hover > .icon { color: var(--primary-ink); }
+.nav-collapse:hover { background: none; box-shadow: none; color: var(--primary-ink); }
+.nav-collapse .icon { width: 1.25rem; height: 1.25rem; }
 
 /* Building blocks from the Update page (Go 2026-11-07, A16-A22), meant for every page */
 .card { max-width: 48rem; margin-top: 1rem; padding: 1rem 1.25rem 1.25rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); }
@@ -300,3 +299,19 @@ button.suggest-chip:hover { background: rgb(255 118 34 / .12); box-shadow: none;
 .qr-card.is-missing { justify-items: start; grid-template-columns: auto 1fr; align-items: center; gap: .6rem; border-style: dashed; background: var(--surface); color: var(--muted); }
 .qr-card.is-missing p { margin: 0; font-size: .9rem; }
 .qr-card.is-missing > .icon { width: 1.75rem; height: 1.75rem; }
+
+/* Moved from the old settings columns (point 156): tags, colour field, dialog forms, tag dropdown. */
+label.tag-choice:not(.chip):has(> input[type="checkbox"]) { display: inline-block; min-height: 0; gap: 0; padding: 0; font-weight: 600; }
+.tag.is-selected, .tag[aria-pressed="true"], .tag-choice input:checked + .tag { color: var(--tag-text, #1a1a18); }
+.dialog-actions form { flex: 1; display: flex; }
+.dialog-actions form button { flex: 1; margin: 0; }
+.dropdown-tags { padding: .25rem .5rem .75rem; }
+.dropdown-panel .dialog-actions { margin-top: .25rem; padding: 0 .5rem .5rem; }
+.tag-color-field { margin: 1rem 0 0; padding: 0; border: 0; }
+.tag-color-field legend { padding: 0; font-weight: 600; color: var(--primary); }
+.tag-color-own { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-top: .75rem; }
+.tag-color-own label { margin: 0; }
+.tag-color-own input[type="color"] { width: 3rem; height: 3rem; min-height: 0; padding: 0; border-radius: 50%; cursor: pointer; }
+.tag-color-own input[data-color-hex] { max-width: 9rem; }
+.detail-doc .thumb { max-height: 100%; }
+.tag-search { margin-bottom: 1rem; max-width: none; }

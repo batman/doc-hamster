@@ -93,17 +93,11 @@
 
 /* Desktop: the area right of the menu scrolls in its own box, both ways (point 7). It starts with a gap as high
    as the dark bar, so the menu button never covers the title; scrolling takes everything up to the very top
-   (Go 2026-11-07, point 4). Columns reach the top with their background and keep their content below the gap. */
+   (Go 2026-11-07, point 4). Windows reach the top with their background and keep their content below the gap. */
 @media (min-width: 64rem) {
     .shell:not(:has(> .side-plain)) .content { height: 100vh; padding-top: 3.5rem; overflow: auto; }
-    .page-split { min-height: 100%; }
-    .content > .page-split:has(> .cols) { margin-top: -3.5rem; min-height: calc(100% + 3.5rem); }
-    .content > .page-split > .cols > .col { padding-top: 4.75rem; }
-    .content > .page-split > .cols > button.col-strip { padding-top: 4.5rem; }
     /* Menu hidden: only the menu button is left, the first strip slides under it (point 5). */
     :is(html.nav-closed, .shell.nav-closed) .side:not(.side-plain) { position: fixed; top: 0; left: 0; height: 3.5rem; }
-    .cols > .col-page, .cols > .col.is-last { min-width: 30rem; }
-    .cols > .col-pane { min-width: 20rem; }
     /* A shade at the edge while there is more to scroll sideways (A6). */
     .shell::before, .shell::after {
         content: ""; position: fixed; top: 0; bottom: var(--sbh, 0px); z-index: 15; width: .75rem;
@@ -141,28 +135,19 @@
     .side:not(.side-plain) .nav-toggle .icon { width: 1.5rem; height: 1.5rem; }
 }
 
-/* Walls between columns and right of the menu (Go 2026-11-07, points 11-13, A37-A45) */
+/* The wall right of the menu (Go 2026-11-07, points 11-13, A37-A45) */
 .side:not(.side-plain) { width: var(--nav-width, 15rem); }
-.col-wall { flex: none; position: relative; z-index: 4; width: 0; }
-.col-wall::before { content: ""; position: absolute; inset: 0 -5px; cursor: col-resize; }
-.col-wall::after, .nav-wall::after { content: ""; position: absolute; top: 0; bottom: 0; left: -1px; width: 3px; background: var(--primary); opacity: 0; transition: opacity .15s; }
-.col-wall:hover::after, .col-wall:focus-visible::after, .col-wall.is-active::after,
+.nav-wall::after { content: ""; position: absolute; top: 0; bottom: 0; left: -1px; width: 3px; background: var(--primary); opacity: 0; transition: opacity .15s; }
 .nav-wall:hover::after, .nav-wall.is-active::after { opacity: 1; }
-.col-wall:focus-visible { outline: none; }
 .nav-wall { position: absolute; top: 0; right: -5px; z-index: 25; width: 10px; height: 100%; cursor: col-resize; }
 .nav-wall::after { left: 4px; }
 :is(html.nav-closed, .shell.nav-closed) .nav-wall { display: none; }
-.cols > .col-nav { max-width: none; }
 
-/* Soft page change (A58): the browser cross-fades to the next page and slides the menu and the
-   columns into their new width. A column and its strip share a name, so one turns into the other.
+/* Soft page change (A58): the browser cross-fades to the next page and slides the menu into its new width.
    Browsers without it simply switch, without jumping. */
 @view-transition { navigation: auto; }
 @media (min-width: 64rem) {
     .side:not(.side-plain) { view-transition-name: side; }
-    .cols > [data-col="0"], .cols > [data-strip="0"] { view-transition-name: col0; }
-    .cols > [data-col="1"], .cols > [data-strip="1"] { view-transition-name: col1; }
-    .cols > .col-page { view-transition-name: page; }
 }
 ::view-transition-group(*) { animation-duration: .25s; animation-timing-function: cubic-bezier(.45, 0, .55, 1); }
 @media (prefers-reduced-motion: reduce) {

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 
 /**
- * Einstellungen as a column menu (design points 21 to 23): groups, their
+ * Einstellungen as menu windows (design points 21 to 23, 156): groups, their
  * entries, and which of them the current page belongs to.
  */
 final class SettingsMenu
@@ -100,5 +100,11 @@ final class SettingsMenu
         $group = $request->route('group');
 
         return [is_string($group) && isset(self::GROUPS[$group]) ? $group : null, null];
+    }
+
+    /** Whether the current page is part of Einstellungen (the main menu keeps "Einstellungen" marked there). */
+    public static function owns(Request $request): bool
+    {
+        return $request->routeIs('settings.*') || self::current($request)[0] !== null;
     }
 }

@@ -4,10 +4,6 @@ declare(strict_types=1);
 
 return [
     'title' => 'Settings',
-    'wall' => 'Change column width',
-    'fold' => 'Minimise',
-    'expand' => 'Open :name',
-    'open' => 'Open',
     'groups' => [
         'properties' => 'Properties',
         'people' => 'People & roles',
@@ -19,6 +15,19 @@ return [
         'update' => 'Update',
         'eingang' => 'Incoming',
         'log' => 'Log',
+    ],
+    // Point 156: the short description of each group on its tile.
+    'group_texts' => [
+        'properties' => 'Fields like invoice amount, date or IBAN',
+        'people' => 'Who has access and what they may do',
+        'bank' => 'Accounts, import, reasons and card categories',
+        'tags' => 'Manage labels for documents',
+        'colors' => 'Colour palette for notes, folders and tags',
+        'ocr' => 'Status and setup of text recognition',
+        'export' => 'ZIP export and links to send',
+        'update' => 'New version and phone test',
+        'eingang' => 'Printer, e-mail and devices for the inbox',
+        'log' => 'Events and errors',
     ],
     'links' => [
         'properties' => ['title' => 'Properties', 'text' => 'Fields like invoice amount, date or IBAN'],

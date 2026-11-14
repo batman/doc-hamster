@@ -3,7 +3,6 @@
 @section('title', __('members.title'))
 
 @section('page')
-    <h1>{{ __('members.title') }}</h1>
 
     @if (session('status'))
         <p class="check-ok" role="status">{{ session('status') }}</p>

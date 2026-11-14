@@ -4,7 +4,6 @@
 @section('title', __('palette.title'))
 
 @section('page')
-    <div class="col-head"><h1>{{ __('palette.title') }}</h1></div>
     <p class="muted">{{ __('palette.intro') }}</p>
     @if (session('status'))
         <p class="check-ok" role="status">{{ session('status') }}</p>

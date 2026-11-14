@@ -8,7 +8,6 @@
 @endpush
 
 @section('page')
-    <h1>{{ __('phone_check.qr_title') }}</h1>
 
     <h2>{{ __('phone_check.qr_step_page') }}</h2>
     <p>{{ __('phone_check.qr_step_page_hint') }}</p>

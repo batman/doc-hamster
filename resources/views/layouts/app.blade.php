@@ -79,7 +79,7 @@
                             ['settings.index', 'settings', 'settings.title', null, ['settings.*', 'members.*', 'roles.*', 'tags.*', 'exports.*', 'updates.*', 'ocr.show', 'palette.*', 'bank.import', 'bank.accounts.*', 'phone-check*', 'log.*', 'printers.*', 'inbox.mail'], \App\Http\Badges::LOG],
                         ] as [$route, $icon, $label, $ability, $active, $badge])
                             @if ($ability === null || Gate::allows($ability))
-                                <li><a class="nav-item tooltip-right" href="{{ route($route) }}" data-tooltip="{{ __($label) }}" @if (request()->routeIs(...$active)) aria-current="page" @endif><x-icon :name="$icon" /><span class="nav-text">{{ __($label) }}</span> @if ($badge !== null) @php $count = $badges[$badge] ?? 0; @endphp <span class="badge badge-alert" data-badge="{{ $badge }}" @if ($count === 0) hidden @endif>{{ $count > 9 ? '9+' : $count }}</span> @endif</a></li>
+                                <li><a class="nav-item tooltip-right" href="{{ route($route) }}" data-tooltip="{{ __($label) }}" @if (request()->routeIs(...$active) || ($route === 'settings.index' && \App\Http\SettingsMenu::owns(request()))) aria-current="page" @endif><x-icon :name="$icon" /><span class="nav-text">{{ __($label) }}</span> @if ($badge !== null) @php $count = $badges[$badge] ?? 0; @endphp <span class="badge badge-alert" data-badge="{{ $badge }}" @if ($count === 0) hidden @endif>{{ $count > 9 ? '9+' : $count }}</span> @endif</a></li>
                             @endif
                         @endforeach
                     </ul>

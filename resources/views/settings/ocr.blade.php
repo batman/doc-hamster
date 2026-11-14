@@ -5,6 +5,5 @@
 @section('title', __('ocr.title'))
 
 @section('page')
-    <h1>{{ __('ocr.title') }}</h1>
     @include('settings._ocr')
 @endsection

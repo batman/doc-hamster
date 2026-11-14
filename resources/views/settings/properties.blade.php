@@ -5,7 +5,6 @@
 @section('title', __('properties.title'))
 
 @section('page')
-    <div class="col-head"><h1>{{ __('properties.title') }}</h1></div>
     <p class="muted">{{ __('properties.intro') }}</p>
     @if (session('status'))
         <p class="check-ok" role="status">{{ session('status') }}</p>

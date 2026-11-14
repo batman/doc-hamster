@@ -12,7 +12,6 @@
         $bookNames = implode(', ', array_map(static fn (string $b): string => __('log.books.'.$b), $filters['books']));
     @endphp
 
-    <h1>{{ __('log.title') }}</h1>
 
     @if (session('status'))
         <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>

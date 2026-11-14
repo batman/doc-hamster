@@ -5,7 +5,6 @@
 @section('title', __('print_tray.settings_title'))
 
 @section('page')
-    <div class="col-head"><h1>{{ __('print_tray.settings_title') }}</h1></div>
     @if (session('status'))
         <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
     @endif

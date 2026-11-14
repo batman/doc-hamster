@@ -24,8 +24,14 @@
 .win-body { flex: 1; min-width: 0; padding: 0 1.5rem 3rem; overflow-x: auto; }
 .win.is-prev .win-title { font-size: 1.15rem; }
 
-/* The strip of a window in the history: icon and title turned like the column strips, X to remove (A65) */
+/* The strip of a window in the history: icon and title turned by 90°, X to remove (A65) */
 .win-strip, .win-strip-x { display: none; }
+.strip-label { display: inline-flex; align-items: center; gap: .6rem; writing-mode: vertical-rl; white-space: nowrap; }
+.strip-label .icon { rotate: 90deg; width: 1.25rem; height: 1.25rem; color: var(--primary); }
+@media (max-width: 63.99rem) {
+    .strip-label { writing-mode: horizontal-tb; }
+    .strip-label .icon { rotate: 0deg; }
+}
 .win.is-min .win-frame { display: none; }
 .win.is-min .win-strip {
     display: flex; flex-direction: column; align-items: center; gap: .6rem; width: 100%; min-height: 0; margin: 0;
@@ -72,10 +78,6 @@
     .page-windows > .windows { height: 100%; min-height: 0; }
     .win { height: 100%; }
     .win-frame { overflow: auto; overscroll-behavior: contain; }
-    /* Point 38: the Einstellungen columns scroll each on their own, like windows; menu and page stay put */
-    .content > .page-split:has(> .cols) { height: calc(100% + 3.5rem); min-height: 0; }
-    .page-split > .cols { height: 100%; min-height: 0; }
-    .page-split > .cols > .col { height: 100%; overflow-y: auto; overscroll-behavior: contain; }
     .win-frame > .win-body { flex: 1 0 auto; overflow: visible; }
     .win.is-min .win-strip { height: 100%; overflow: hidden; }
 }
@@ -235,3 +237,8 @@
     border-radius: 2px; background: var(--primary); pointer-events: none;
 }
 @media (max-width: 63.99rem) { .win.has-opener-line::after { display: none; } }
+
+/* A window that holds a plain page (e.g. an Einstellungen page, point 156): form buttons in a row with air above. */
+.win-page .actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.5rem; }
+.win-page .actions button { margin: 0; }
+.win-page .tag-colors { margin-bottom: 1rem; }

@@ -7,7 +7,6 @@
 @section('page')
     @php($status = $updated ? __('updates.done', ['version' => $current]) : session('status'))
 
-    <h1>{{ __('updates.title') }}</h1>
 
     @if ($status)
         <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ $status }}</span></div>

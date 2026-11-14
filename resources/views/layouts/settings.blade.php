@@ -1,77 +1,65 @@
-{{-- Einstellungen as columns: groups, entries, page. Each pane folds to a strip on its own (app.js); the page gives way.
-     On phones only the last level shows, with a back link. --}}
+{{-- Einstellungen on the window system (points 156, A331; docs/design/FRAMEWORK.md "Menü-Fenster"): a row of windows –
+     the groups (menu window, tiles), the entries of a group (menu window, list; skipped for a leaf group or one with a
+     single entry), then the page. A page with @section('pane') (Tags) gets that pane as its own window before the page;
+     @section('pane_actions') fills that window's toolbar, @section('page_title') names the page window (default: the
+     menu entry). Strips, room, minimise and the phone back arrow all come from windows.js. --}}
 @extends('layouts.app')
 
-@section('main_class', 'page page-split')
+@section('main_class', 'page-windows')
 
 @section('content')
     @php
         $groups = \App\Http\SettingsMenu::groups();
         [$group, $item] = \App\Http\SettingsMenu::current(request());
         $current = $group !== null ? ($groups[$group] ?? null) : null;
+        $entry = $current !== null && $item !== null ? collect($current['items'])->firstWhere('key', $item) : null;
         $hasPage = trim($__env->yieldContent('page')) !== '';
-        // Point 37: a group with a single entry and no own middle content gets no middle column.
-        $single = $current !== null && count($current['items']) === 1 && ! $__env->hasSection('pane');
-        $toGroup = $hasPage && $current && ! $current['leaf'] && ! $single;
-        // Point 3: the menu count shows again at the group and the entry it belongs to.
+        $hasPane = trim($__env->yieldContent('pane')) !== '';
+        $withEntries = $current !== null && ! $current['leaf'] && count($current['items']) > 1;
+        $groupUrl = $group !== null ? route('settings.group', $group) : route('settings.index');
+        // The red counts lead down: group tile → entry row (point 3).
         $badges = \App\Http\Badges::counts(app(\App\Domain\Org\CurrentOrg::class));
-        $badgeOf = static function (string $key) use ($badges): ?int {
+        $badge = static function (string $key) use ($badges): array {
             $area = \App\Http\Badges::SETTINGS[$key] ?? null;
 
-            return $area !== null ? ($badges[$area] ?? 0) : null;
+            return ['badge' => $area, 'count' => $area !== null ? ($badges[$area] ?? 0) : null];
         };
+        $groupEntries = [];
+        foreach ($groups as $key => $each) {
+            $groupEntries[] = ['href' => route('settings.group', $key), 'icon' => $each['icon'], 'title' => __('settings.groups.'.$key), 'text' => __('settings.group_texts.'.$key), ...$badge($key)];
+        }
+        $itemEntries = [];
+        foreach ($current['items'] ?? [] as $each) {
+            $itemEntries[] = ['href' => route($each['route']), 'icon' => $each['icon'], 'title' => __('settings.links.'.$each['key'].'.title'), 'text' => __('settings.links.'.$each['key'].'.text'), ...$badge($each['key'])];
+        }
+        $itemTitle = $entry !== null ? __('settings.links.'.$entry['key'].'.title') : __('settings.title');
+        $itemIcon = $entry['icon'] ?? ($current['icon'] ?? 'settings');
+        $itemUrl = $entry !== null ? route($entry['route']) : $groupUrl;
+        $pageTitle = html_entity_decode(trim($__env->yieldContent('page_title')), ENT_QUOTES | ENT_HTML5);
+        // The window left of the page marks the row that opened it (opener row): the entry, else the group.
+        $pageOpener = $hasPane ? null : ($withEntries ? $itemUrl : $groupUrl);
+        $pageClose = $hasPane ? $itemUrl : $groupUrl;
     @endphp
-    <div class="cols" data-cols data-wall-label="{{ __('settings.wall') }}">
-        @if ($current)
-            <a class="col-back" href="{{ $toGroup ? route('settings.group', $group) : route('settings.index') }}"><x-icon name="chevron-left" /><span>{{ $toGroup ? __('settings.groups.'.$group) : __('settings.title') }}</span></a>
-        @endif
-        <button type="button" class="col-strip tooltip-right" data-strip="0" data-tooltip="{{ __('settings.open') }}" aria-label="{{ __('settings.expand', ['name' => __('settings.title')]) }}" @unless ($hasPage) hidden @endunless>
-            <x-icon name="chevron-right" />
-            <span class="strip-label"><x-icon name="settings" /><span>{{ __('settings.title') }}</span></span>
-        </button>
-        <nav class="col col-nav @if (! $current) is-last @endif" data-col="0" aria-label="{{ __('settings.title') }}" @if ($hasPage) hidden @endif>
-            <div class="col-head">
-                <h2>{{ __('settings.title') }}</h2>
-                @if ($current)
-                    <button type="button" class="col-fold control-button" data-fold="0" aria-label="{{ __('settings.fold') }}" data-tooltip="{{ __('settings.fold') }}"><x-icon name="chevron-left" /></button>
-                @endif
-            </div>
-            <ul class="col-list">
-                @foreach ($groups as $key => $entry)
-                    <li><a class="col-item tooltip-right" data-tooltip="{{ __('settings.groups.'.$key) }}" href="{{ route('settings.group', $key) }}" @if ($key === $group) aria-current="true" @endif><x-icon :name="$entry['icon']" /><span>{{ __('settings.groups.'.$key) }}</span>@php $count = $badgeOf($key); @endphp @if ($count !== null)<span class="badge badge-alert" data-badge="{{ \App\Http\Badges::SETTINGS[$key] }}" @if ($count === 0) hidden @endif>{{ $count > 9 ? '9+' : $count }}</span>@endif<span class="go"><x-icon name="chevron-right" /></span></a></li>
-                @endforeach
-            </ul>
+    <div class="windows" data-windows>
+        <x-menu-window :title="__('settings.title')" icon="settings" :url="route('settings.index')" :close="route('home')" view="settings" display="tiles" :entries="$groupEntries">
             @yield('nav_footer')
-        </nav>
+        </x-menu-window>
 
-        @if ($current && ! $single)
-            <button type="button" class="col-strip tooltip-right" data-strip="1" data-tooltip="{{ __('settings.open') }}" aria-label="{{ __('settings.expand', ['name' => __('settings.groups.'.$group)]) }}" hidden>
-                <x-icon name="chevron-right" />
-                <span class="strip-label"><x-icon :name="$current['icon']" /><span>{{ __('settings.groups.'.$group) }}</span></span>
-            </button>
-            <div class="col {{ $__env->hasSection('pane') ? 'col-pane' : 'col-nav' }} @if (! $hasPage) is-last @endif" data-col="1">
-                @hasSection('pane')
-                    @yield('pane')
-                @else
-                    <div class="col-head">
-                        <h2>{{ __('settings.groups.'.$group) }}</h2>
-                        @if ($hasPage)
-                            <button type="button" class="col-fold control-button" data-fold="1" aria-label="{{ __('settings.fold') }}" data-tooltip="{{ __('settings.fold') }}"><x-icon name="chevron-left" /></button>
-                        @endif
-                    </div>
-                    <ul class="col-list">
-                        @foreach ($current['items'] as $entry)
-                            <li><a class="col-item tooltip-right" data-tooltip="{{ __('settings.links.'.$entry['key'].'.title') }}" href="{{ route($entry['route']) }}" @if ($entry['key'] === $item) aria-current="true" @endif><x-icon :name="$entry['icon']" /><span>{{ __('settings.links.'.$entry['key'].'.title') }}</span>@php $count = $badgeOf($entry['key']); @endphp @if ($count !== null)<span class="badge badge-alert" data-badge="{{ \App\Http\Badges::SETTINGS[$entry['key']] }}" @if ($count === 0) hidden @endif>{{ $count > 9 ? '9+' : $count }}</span>@endif<span class="go"><x-icon name="chevron-right" /></span></a></li>
-                        @endforeach
-                    </ul>
-                @endif
-            </div>
+        @if ($withEntries)
+            <x-menu-window :title="__('settings.groups.'.$group)" :icon="$current['icon']" :url="$groupUrl" :close="route('settings.index')" :view="'settings.'.$group" display="list" :entries="$itemEntries" />
+        @endif
+
+        @if ($hasPane)
+            <x-window :title="$itemTitle" :icon="$itemIcon" kind="settings-pane" :url="$itemUrl" :close="$groupUrl" min="18rem" optimal="24rem" max="32rem" priority="1" :data-window-opener="$withEntries ? $itemUrl : $groupUrl">
+                <x-slot:actions>@yield('pane_actions')</x-slot:actions>
+                @yield('pane')
+            </x-window>
         @endif
 
         @if ($hasPage)
-            <section class="col col-page">
+            <x-window :title="$pageTitle !== '' ? $pageTitle : $itemTitle" :icon="$itemIcon" kind="settings-page" :close="$pageClose" min="28rem" optimal="44rem" max="72rem" priority="2" class="win-page" :data-window-opener="$pageOpener">
                 @yield('page')
-            </section>
+            </x-window>
         @endif
     </div>
 @endsection

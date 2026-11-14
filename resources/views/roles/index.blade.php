@@ -3,7 +3,6 @@
 @section('title', __('roles.title'))
 
 @section('page')
-    <h1>{{ __('roles.title') }}</h1>
     <p class="muted">{{ __('roles.admin_hint') }}</p>
 
     @if (session('status'))

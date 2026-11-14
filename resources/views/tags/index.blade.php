@@ -1,21 +1,25 @@
-{{-- Tags (design point 19): pills with a search on the left, the editor on the right. --}}
+{{-- Tags (design point 19, point 156): the window "Tags" with a search and the pills; a pill opens its editor as the next
+     window, + opens "Neuer Tag". The editor window shows only for a tag, ?new=1, or a message after saving or deleting. --}}
 @extends('layouts.settings')
 
 @section('title', __('tags.title'))
 
+@section('pane_actions')
+    <a class="icon-button" href="{{ route('tags.index', ['new' => 1]) }}" data-window aria-label="{{ __('tags.new') }}" data-tooltip="{{ __('tags.new') }}"><x-icon name="plus" /></a>
+@endsection
+
 @section('pane')
-    <div class="col-head">
-        <h2>{{ __('tags.title') }}</h2>
-        <button type="button" class="col-fold control-button" data-fold="1" aria-label="{{ __('settings.fold') }}" data-tooltip="{{ __('settings.fold') }}"><x-icon name="chevron-left" /></button>
-    </div>
     <label for="tag-search" class="visually-hidden">{{ __('tags.search') }}</label>
-    <input id="tag-search" class="col-search" type="search" placeholder="{{ __('tags.search') }}" data-tag-search>
+    <input id="tag-search" class="tag-search" type="search" placeholder="{{ __('tags.search') }}" data-tag-search>
     <ul class="tags">
         @foreach ($tags as $entry)
-            <li data-tag-name="{{ mb_strtolower($entry->name) }}"><a class="tag tag-{{ $entry->id }} @if ($tag?->id === $entry->id) is-selected @endif" href="{{ route('tags.index', ['tag' => $entry->id]) }}">{{ $entry->name }}</a></li>
+            <li data-tag-name="{{ mb_strtolower($entry->name) }}"><a class="tag tag-{{ $entry->id }} @if ($tag?->id === $entry->id) is-selected @endif" href="{{ route('tags.index', ['tag' => $entry->id]) }}" data-window>{{ $entry->name }}</a></li>
         @endforeach
     </ul>
 @endsection
+
+@if ($tag || request()->boolean('new') || session('status') || session('confirm_delete') || $errors->any())
+@section('page_title', $tag?->name ?? __('tags.new'))
 
 @section('page')
     @if (session('status'))
@@ -36,10 +40,7 @@
     @endif
 
     @if ($tag)
-        <div class="col-head">
-            <h1><span class="tag tag-{{ $tag->id }} is-selected">{{ $tag->name }}</span></h1>
-            <a class="icon-button" href="{{ route('tags.index') }}" aria-label="{{ __('documents.close') }}" data-tooltip="{{ __('documents.close') }}"><x-icon name="x" /></a>
-        </div>
+        <p><span class="tag tag-{{ $tag->id }} is-selected">{{ $tag->name }}</span></p>
         <p><a href="{{ route('documents.index', ['tags' => [$tag->id]]) }}">{{ trans_choice('tags.used', $tag->documents_count, ['count' => $tag->documents_count]) }}</a></p>
         <form method="post" action="{{ route('tags.update', $tag->id) }}">
             @csrf
@@ -65,7 +66,6 @@
             </div>
         </div>
     @else
-        <div class="col-head"><h1>{{ __('tags.new') }}</h1></div>
         <form method="post" action="{{ route('tags.store') }}">
             @csrf
             @include('tags._fields', ['name' => '', 'color' => null])
@@ -73,3 +73,4 @@
         </form>
     @endif
 @endsection
+@endif

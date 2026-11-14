@@ -12,13 +12,13 @@ declare(strict_types=1);
 return [
     'css' => [
         'core/base', 'core/layout', 'core/forms', 'core/components', 'core/buttons', 'core/menus', 'core/lists',
-        'core/columns', 'core/windows',
+        'core/windows', 'core/menu-window',
         'modules/documents', 'modules/notes', 'modules/text-editor', 'modules/ocr', 'modules/log', 'modules/updates',
         'modules/palette', 'modules/pages', 'modules/properties', 'modules/ocr-text', 'modules/girocode', 'core/layout-debug',
     ],
     'js' => [
         'core/bus', 'core/error-report', 'core/menu', 'core/dropdowns', 'core/card-fold', 'core/button-choice', 'modules/documents-filter', 'core/sortable', 'core/tabs',
-        'core/tooltips', 'core/dialogs', 'core/windows', 'core/window-search', 'core/columns', 'core/scroll-hint',
+        'core/tooltips', 'core/dialogs', 'core/windows', 'core/window-search', 'core/menu-window', 'core/scroll-hint',
         'core/badges', 'modules/notes', 'modules/tags-search', 'core/toasts', 'core/selection-bar', 'core/ajax-forms',
         'modules/updates-preview-pick', 'core/color-field', 'modules/folder-import', 'core/start',
         'modules/document-viewer', 'modules/ocr-text', 'modules/palette', 'modules/ocr-browser', 'modules/documents', 'modules/documents-rows', 'modules/documents-forms',

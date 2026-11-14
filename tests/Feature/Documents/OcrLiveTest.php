@@ -27,13 +27,13 @@ beforeEach(function (): void {
     };
 });
 
-it('opens Texterkennung as a module of its own without the settings columns', function (): void {
+it('opens Texterkennung as a module of its own without the settings menu windows', function (): void {
     ($this->make)('a.jpg', 'pending');
 
     $this->actingAs($this->admin->user)->get('/ocr')->assertOk()
-        ->assertSee('data-window-kind="ocr"', false)->assertDontSee('data-cols', false)
+        ->assertSee('data-window-kind="ocr"', false)->assertDontSee('win-menu-window', false)
         ->assertSee('Live')->assertSee('Wartet auf Dokumente');
-    $this->get('/settings/ocr')->assertOk()->assertSee('data-cols', false)->assertSee('Live');
+    $this->get('/settings/ocr')->assertOk()->assertSee('win-menu-window', false)->assertSee('Live');
     // The OCR widget links to it.
     $this->get('/')->assertSee('href="'.route('ocr.live').'"', false);
 

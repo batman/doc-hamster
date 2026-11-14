@@ -4,10 +4,6 @@ declare(strict_types=1);
 
 return [
     'title' => 'Einstellungen',
-    'wall' => 'Spaltenbreite ändern',
-    'fold' => 'Minimieren',
-    'expand' => ':name aufklappen',
-    'open' => 'Aufklappen',
     'groups' => [
         'properties' => 'Eigenschaften',
         'people' => 'Personen & Rollen',
@@ -19,6 +15,19 @@ return [
         'update' => 'Update',
         'eingang' => 'Eingang',
         'log' => 'Log',
+    ],
+    // Point 156: the short description of each group on its tile.
+    'group_texts' => [
+        'properties' => 'Felder wie Rechnungsbetrag, Datum oder IBAN',
+        'people' => 'Wer Zugang hat und was er darf',
+        'bank' => 'Konten, Import, Gründe und Kartenkategorien',
+        'tags' => 'Etiketten für Dokumente verwalten',
+        'colors' => 'Farbpalette für Notizen, Ordner und Tags',
+        'ocr' => 'Stand und Einrichtung der Texterkennung',
+        'export' => 'ZIP-Export und Links zum Versenden',
+        'update' => 'Neue Version und Handy-Test',
+        'eingang' => 'Drucker, E-Mail und Geräte für den Posteingang',
+        'log' => 'Ereignisse und Fehler',
     ],
     'links' => [
         'properties' => ['title' => 'Eigenschaften', 'text' => 'Felder wie Rechnungsbetrag, Datum oder IBAN'],

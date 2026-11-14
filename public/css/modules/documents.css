@@ -65,10 +65,10 @@
 .view-tiles li.is-open .thumb-frame { border: 2px solid var(--primary); }
 
 /* List on the left, details on the right. On narrow windows the details open as a dialog over the list. */
-.page-split { display: flex; align-items: stretch; padding: 0; }
 .split-main { flex: 1 1 0; min-width: 0; padding: 1.5rem 2rem 3rem; }
 .split-detail { flex: none; box-sizing: border-box; width: 26rem; max-width: 45%; padding: 1.5rem; border-left: 1px solid var(--border); background: var(--bg); }
 .split-backdrop { display: none; }
+
 .detail-head { display: flex; align-items: center; gap: .75rem; }
 .detail-head h2 { margin: 0 auto 0 0; font-size: 1.25rem; overflow-wrap: anywhere; }
 .detail-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; }

@@ -3,7 +3,6 @@
 @section('title', __('exports.title'))
 
 @section('page')
-    <h1>{{ __('exports.title') }}</h1>
     <p>{{ __('exports.text') }}</p>
 
     <form method="post" action="{{ route('exports.store') }}">
