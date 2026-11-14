@@ -299,7 +299,7 @@ it('shows the folders as sortable rows in the Dokumente window, not in the main 
         ->assertDontSee('nav-folders', false)
         ->assertSee('data-folder-order', false)->assertDontSee('pick-handle', false)->assertDontSee('icon-tile', false)
         ->assertSee('data-id="trash"', false)
-        ->assertSeeInOrder(['Dokumente allgemein', 'Rechnungen', 'Kein Dokument', 'Papierkorb']);
+        ->assertSeeInOrder(['Dokumente allgemein', 'Leer', 'Rechnungen', '1 Ordner', '1 Dokument insgesamt', 'Papierkorb', 'Kein Dokument']);
     $this->get('/documents?folder='.$invoices->id)->assertOk()
         ->assertSee('data-window-upload="folder='.$invoices->id.'"', false)
         ->assertSee('data-id="'.$phone->id.'"', false)
@@ -307,6 +307,27 @@ it('shows the folders as sortable rows in the Dokumente window, not in the main 
         ->assertDontSee('data-id="trash"', false)
         ->assertSee('Ordner anlegen');
     $this->get('/documents/trash')->assertOk()->assertSee('data-window-title="Papierkorb"', false);
+});
+
+it('counts subfolders, own documents and all documents below a folder row; trashed ones never (point 161)', function (): void {
+    $invoices = folderNamed('Rechnungen');
+    $phone = makeFolder($this->orgId, 'Telefon', $invoices->id);
+    $mobile = makeFolder($this->orgId, 'Handy', $phone->id);
+    makeFolder($this->orgId, 'Strom', $invoices->id);
+    $this->actingAs($this->admin->user);
+    foreach ([[$invoices, 'a'], [$phone, 'b'], [$mobile, 'c'], [$mobile, 'd'], [$mobile, 'gone']] as [$folder, $name]) {
+        $this->post('/documents', ['file' => UploadedFile::fake()->image($name.'.jpg'), 'folder' => $folder->id]);
+    }
+    Document::query()->withoutGlobalScope(OrgScope::class)->where('folder_id', $mobile->id)->latest('id')->firstOrFail()->delete();
+
+    $counts = Folder::counts(Folder::flat(), [$invoices->id => 1, $phone->id => 1, $mobile->id => 2]);
+    expect($counts[$invoices->id])->toBe(['folders' => 2, 'documents' => 1, 'total' => 4])
+        ->and($counts[$phone->id])->toBe(['folders' => 1, 'documents' => 1, 'total' => 3])
+        ->and($counts[$mobile->id])->toBe(['folders' => 0, 'documents' => 2, 'total' => 2]);
+
+    $this->get('/documents')->assertOk()->assertSeeInOrder(['Rechnungen', '2 Ordner', '1 Dokument', '4 Dokumente insgesamt', 'Papierkorb']);
+    $this->get('/documents?folder='.$invoices->id)->assertOk()
+        ->assertSeeInOrder(['Strom', 'Leer', 'Telefon', '1 Ordner', '1 Dokument', '3 Dokumente insgesamt']);
 });
 
 it('saves the order of one level by drag and drop, the Papierkorb included', function (): void {

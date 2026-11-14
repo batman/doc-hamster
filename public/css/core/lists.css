@@ -111,6 +111,13 @@ html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
 .folder-rows { position: relative; }
 .folder-rows > .folder-row { position: relative; }
 
+/* Inhaltszähler (point 161 / F5 variant D, <x-row-stats>): "6 [folder] · 3 [document] (50 [document] insgesamt)" as a row's
+   second line; small inline symbols, each part with its words as tooltip (it lies above the row's link area for that). */
+.row-stats, .pick-row small.row-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 0 .3rem; }
+.row-stat { position: relative; z-index: 1; display: inline-flex; align-items: center; }
+.row-stat > [aria-hidden] { display: inline-flex; align-items: center; gap: .1rem; }
+.row-stat .icon { width: .95em; height: .95em; color: inherit; }
+
 /* Drag and drop: the row or window a drop lands on is orange (A131, A175); picked document rows (A132) are tinted. */
 .is-drop-target, .pick-row.is-drop-target, .pick-row.row-color.is-drop-target { background: color-mix(in srgb, var(--primary) 20%, var(--bg)); box-shadow: inset 0 0 0 2px var(--primary); color: var(--text); }
 .pick-row.is-drop-target small { color: var(--muted); }

@@ -186,43 +186,45 @@ final class DocumentListing
 
     /**
      * The folder rows on top of a Belege window (window system, PO 2026-11-07): without a folder the
-     * top folders with the Papierkorb in its place, inside a folder its subfolders. Counts include
-     * everything below a folder and only receipts this person may see.
+     * top folders with the Papierkorb in its place, inside a folder its subfolders. Each row counts its subfolders, its
+     * own documents and all documents below it (point 161) – one grouped query for all folders, only documents this
+     * person may see (the trash is never counted, it shows its own count).
      *
      * @param  list<array{folder: Folder, depth: int}>  $folders
-     * @return list<array{folder: Folder|null, count: int}>
+     * @return list<array{folder: Folder|null, folders: int, documents: int, total: int}>
      */
     private function folderRows(User $user, bool $seesAll, array $folders, ?string $folder): array
     {
-        $direct = Document::query()->visibleTo($user->id, $seesAll)
-            ->whereNotNull('folder_id')->selectRaw('folder_id, count(*) as total')->groupBy('folder_id')->pluck('total', 'folder_id');
-        // Like an explorer: a folder row counts only the documents directly in it (point 12).
-        $total = static fn (string $id): int => (int) ($direct[$id] ?? 0);
+        $own = Document::query()->visibleTo($user->id, $seesAll)
+            ->whereNotNull('folder_id')->selectRaw('folder_id, count(*) as total')->groupBy('folder_id')->pluck('total', 'folder_id')
+            ->map(static fn (mixed $n): int => is_numeric($n) ? (int) $n : 0)->all();
+        $counts = Folder::counts($folders, $own);
+        $row = static fn (Folder $f): array => ['folder' => $f, ...($counts[$f->id] ?? ['folders' => 0, 'documents' => 0, 'total' => 0])];
 
         $out = [];
         if ($folder !== null) {
-            foreach ($folders as $row) {
-                if ($row['folder']->parent_id === $folder) {
-                    $out[] = ['folder' => $row['folder'], 'count' => $total($row['folder']->id)];
+            foreach ($folders as $entry) {
+                if ($entry['folder']->parent_id === $folder) {
+                    $out[] = $row($entry['folder']);
                 }
             }
 
             return $out;
         }
 
-        foreach (Folder::menu($this->organization()) as $row) {
-            if ($row['depth'] !== 0) {
+        foreach (Folder::menu($this->organization()) as $entry) {
+            if ($entry['depth'] !== 0) {
                 continue;
             }
-            if ($row['folder'] === null) {
+            if ($entry['folder'] === null) {
                 // The Papierkorb, in its place among the top folders, for people who may open it.
                 if (Gate::allows(Permission::TrashDocuments->value)) {
-                    $out[] = ['folder' => null, 'count' => 0];
+                    $out[] = ['folder' => null, 'folders' => 0, 'documents' => 0, 'total' => 0];
                 }
 
                 continue;
             }
-            $out[] = ['folder' => $row['folder'], 'count' => $total($row['folder']->id)];
+            $out[] = $row($entry['folder']);
         }
 
         return $out;

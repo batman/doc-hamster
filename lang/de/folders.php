@@ -62,6 +62,12 @@ return [
     'cancel' => 'Abbrechen',
     'empty' => 'Noch kein Ordner. Lege rechts den ersten an.',
     'used' => '{0} Kein Dokument|{1} :count Dokument|[2,*] :count Dokumente',
+    // Point 161: what a folder row holds.
+    'stat_folders' => '{1} :count Ordner|[0,*] :count Ordner',
+    'stat_documents' => '{1} :count Dokument|[0,*] :count Dokumente',
+    'stat_total' => '{1} :count Dokument insgesamt|[0,*] :count Dokumente insgesamt',
+    'stat_total_word' => 'insgesamt',
+    'stat_empty' => 'Leer',
     'saved' => 'Der Ordner wurde gespeichert.',
     'deleted' => 'Der Ordner wurde gelöscht. Seine Dokumente und Unterordner liegen jetzt eine Ebene höher.',
     'delete_title' => 'Ordner löschen?',

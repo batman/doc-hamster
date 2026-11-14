@@ -282,7 +282,7 @@
                             data-upload-label="{{ __('documents.bulk.drop_upload', ['name' => $f->name]) }}"
                             @if ($canEdit && ! $f->is_default) data-drag-folder @endif>
                             <span class="row-icon"><x-icon :name="$f->iconName()" /></span>
-                            <span data-folder-name><strong><a href="{{ route('documents.index', ['folder' => $f->id]) }}" data-window>{{ $f->name }}</a></strong><small>{{ trans_choice('folders.used', $row['count'], ['count' => $row['count']]) }}</small></span>
+                            <span data-folder-name><strong><a href="{{ route('documents.index', ['folder' => $f->id]) }}" data-window>{{ $f->name }}</a></strong><x-row-stats :folders="$row['folders']" :documents="$row['documents']" :total="$row['total']" /></span>
                             @if ($canEdit)
                                 {{-- Rename in place (pencil or a long press on the name, A161, A188-A190); also "Dokumente allgemein" (A18). --}}
                                 <form class="folder-rename" method="post" action="{{ route('folders.update', $f->id) }}" data-folder-rename-form hidden>

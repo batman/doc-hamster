@@ -62,6 +62,12 @@ return [
     'cancel' => 'Cancel',
     'empty' => 'No folders yet. Create the first one on the right.',
     'used' => '{0} No documents|{1} :count document|[2,*] :count documents',
+    // Point 161: what a folder row holds.
+    'stat_folders' => '{1} :count folder|[0,*] :count folders',
+    'stat_documents' => '{1} :count document|[0,*] :count documents',
+    'stat_total' => '{1} :count document in total|[0,*] :count documents in total',
+    'stat_total_word' => 'in total',
+    'stat_empty' => 'Empty',
     'saved' => 'The folder was saved.',
     'deleted' => 'The folder was deleted. Its documents and subfolders moved up one level.',
     'delete_title' => 'Delete folder?',

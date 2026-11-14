@@ -242,6 +242,37 @@ final class Folder extends Model
         return $out;
     }
 
+    /**
+     * What a folder row says about its content (point 161 / F5 variant D): its direct subfolders, its own documents and
+     * all documents in its branch. Pure PHP over the folder tree, so one grouped count query serves every folder.
+     *
+     * @param  list<array{folder: Folder, depth: int}>  $flat
+     * @param  array<string, int>  $own  documents directly in a folder, by folder id
+     * @return array<string, array{folders: int, documents: int, total: int}>
+     */
+    public static function counts(array $flat, array $own): array
+    {
+        $children = [];
+        $totals = [];
+        foreach (self::tree($flat) as $id => $place) {
+            $parent = $place['path'][count($place['path']) - 2] ?? null;
+            if ($parent !== null) {
+                $children[$parent] = ($children[$parent] ?? 0) + 1;
+            }
+            foreach ($place['path'] as $ancestor) {
+                $totals[$ancestor] = ($totals[$ancestor] ?? 0) + ($own[$id] ?? 0);
+            }
+        }
+
+        $out = [];
+        foreach ($flat as $row) {
+            $id = $row['folder']->id;
+            $out[$id] = ['folders' => $children[$id] ?? 0, 'documents' => $own[$id] ?? 0, 'total' => $totals[$id] ?? 0];
+        }
+
+        return $out;
+    }
+
     /** 0 for a top folder. */
     public function depth(): int
     {
