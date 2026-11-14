@@ -58,6 +58,12 @@ final readonly class EnvFile
 
             throw new RuntimeException('Could not write '.$this->path);
         }
+
+        // Point 164.5: a cached configuration (php artisan optimize) would keep the old values.
+        $cached = dirname($this->path).'/bootstrap/cache/config.php';
+        if (is_file($cached)) {
+            @unlink($cached);
+        }
     }
 
     private static function quote(string $value): string

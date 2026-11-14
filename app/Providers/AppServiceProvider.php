@@ -23,6 +23,7 @@ use App\Infrastructure\Session\NoIpDatabaseSessionHandler;
 use App\Setup\EnvFile;
 use App\Setup\SetupCode;
 use App\Setup\SetupMode;
+use App\View\Icon;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -32,6 +33,7 @@ use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Encryption\MissingAppKeyException;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -87,6 +89,7 @@ class AppServiceProvider extends ServiceProvider
         DB::listen(fn (QueryExecuted $query) => $this->app->make(RequestTiming::class)->query($query->time ?? 0.0));
         View::creator('*', fn () => $this->app->make(RequestTiming::class)->viewCreated());
         TagsCss::watch();
+        Blade::prepareStringsForCompilationUsing(static fn (string $template): string => Icon::compile($template));
         // A local reverse proxy (e.g. nginx in front of Apache on Plesk) terminates TLS; trust its X-Forwarded-*
         // headers so scheme and host are right. Set here, not in bootstrap/app.php, where .env isn't loaded yet.
         $proxies = config('dochamster.trusted_proxies');

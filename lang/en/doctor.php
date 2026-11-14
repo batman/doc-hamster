@@ -29,6 +29,13 @@ return [
         'addon_speech_to_text' => 'Add-on speech-to-text',
         'addon_heic' => 'Add-on HEIC conversion',
         'addon_vips' => 'Add-on fast image processing',
+        'speed_opcache' => 'PHP cache (OPcache)',
+        'speed_debug' => 'Debug mode (APP_DEBUG)',
+        'speed_config' => 'Configuration cached',
+        'speed_routes' => 'Routes cached',
+        'speed_events' => 'Events cached',
+        'speed_xdebug' => 'Xdebug',
+        'speed_database' => 'Database response time',
     ],
 
     'details' => [
@@ -50,6 +57,18 @@ return [
         'proc_open_disabled' => 'Disabled – add-ons are not possible on this server. The core still works.',
         'addon_available' => 'Available.',
         'addon_missing' => 'Not available – missing: :missing. The core still works.',
+        'speed_opcache_on' => 'Enabled.',
+        'speed_opcache_off' => 'Off – every request compiles all program code again. Enable "opcache.enable" in the PHP settings (Plesk).',
+        'speed_opcache_cli' => 'Only measurable on Einstellungen → Geschwindigkeit.',
+        'speed_debug_off' => 'Off.',
+        'speed_debug_on' => 'On – slower and shows internals. Set APP_DEBUG=false in .env.',
+        'speed_cached' => 'Yes.',
+        'speed_not_cached' => 'No – read again on every request. Fix: "Prepare now" under Einstellungen → Geschwindigkeit; happens by itself after every update.',
+        'speed_xdebug_off' => 'Not loaded.',
+        'speed_xdebug_on' => 'Loaded – makes PHP several times slower. Turn it off on the server.',
+        'speed_db_fast' => ':ms ms per query.',
+        'speed_db_slow' => ':ms ms per query – the database is far away or busy. Best on the same server (localhost).',
+        'speed_db_unreachable' => 'Not reachable.',
     ],
 
     'summary' => [

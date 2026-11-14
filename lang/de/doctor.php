@@ -29,6 +29,13 @@ return [
         'addon_speech_to_text' => 'Zusatzfunktion Spracherkennung',
         'addon_heic' => 'Zusatzfunktion HEIC-Umwandlung',
         'addon_vips' => 'Zusatzfunktion schnelle Bildverarbeitung',
+        'speed_opcache' => 'PHP-Zwischenspeicher (OPcache)',
+        'speed_debug' => 'Fehlersuche-Modus (APP_DEBUG)',
+        'speed_config' => 'Konfiguration vorbereitet',
+        'speed_routes' => 'Adressen vorbereitet',
+        'speed_events' => 'Ereignisse vorbereitet',
+        'speed_xdebug' => 'Xdebug',
+        'speed_database' => 'Datenbank-Antwortzeit',
     ],
 
     'details' => [
@@ -50,6 +57,18 @@ return [
         'proc_open_disabled' => 'Gesperrt – Zusatzfunktionen sind auf diesem Server nicht möglich. Der Kern funktioniert trotzdem.',
         'addon_available' => 'Verfügbar.',
         'addon_missing' => 'Nicht verfügbar – fehlt: :missing. Der Kern funktioniert trotzdem.',
+        'speed_opcache_on' => 'Eingeschaltet.',
+        'speed_opcache_off' => 'Aus – jede Anfrage übersetzt den ganzen Programmcode neu. In Plesk unter PHP-Einstellungen „opcache.enable“ einschalten.',
+        'speed_opcache_cli' => 'Nur auf der Seite Einstellungen → Geschwindigkeit messbar.',
+        'speed_debug_off' => 'Aus.',
+        'speed_debug_on' => 'An – langsamer und zeigt Interna. In der .env APP_DEBUG=false setzen.',
+        'speed_cached' => 'Ja.',
+        'speed_not_cached' => 'Nein – wird bei jeder Anfrage neu gelesen. Abhilfe: „Jetzt vorbereiten“ unter Einstellungen → Geschwindigkeit; geschieht nach jedem Update von selbst.',
+        'speed_xdebug_off' => 'Nicht geladen.',
+        'speed_xdebug_on' => 'Geladen – macht PHP mehrfach langsamer. Auf dem Server abschalten.',
+        'speed_db_fast' => ':ms ms je Abfrage.',
+        'speed_db_slow' => ':ms ms je Abfrage – die Datenbank ist weit weg oder ausgelastet. Am besten liegt sie auf demselben Server (localhost).',
+        'speed_db_unreachable' => 'Nicht erreichbar.',
     ],
 
     'summary' => [

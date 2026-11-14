@@ -23,3 +23,22 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# Point 164.8e: static files from the browser cache. Files linked with ?v=<version> (CSS, JS) never change under
+# that address: a year, without asking again. Everything else a week. The service worker always asks.
+<IfModule mod_headers.c>
+    <FilesMatch "\.(css|js|mjs|svg|png|jpe?g|webp|gif|ico|woff2?|wasm|traineddata|gz)$">
+        Header set Cache-Control "public, max-age=604800"
+        <If "%{QUERY_STRING} =~ /(^|&)v=/">
+            Header set Cache-Control "public, max-age=31536000, immutable"
+        </If>
+    </FilesMatch>
+    <Files "sw.js">
+        Header set Cache-Control "no-cache"
+    </Files>
+</IfModule>
+
+# Text compressed on the way (pages, CSS, JS, JSON, SVG).
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/plain text/javascript application/javascript application/json image/svg+xml
+</IfModule>

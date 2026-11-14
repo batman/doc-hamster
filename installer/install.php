@@ -505,6 +505,27 @@ function migrate(string $appDir): void
     }
 }
 
+/**
+ * Point 164.5: `php artisan optimize` (config, events, routes, views cached) in this PHP process; without $on, or
+ * when it fails, the caches are removed again – the app then simply runs without them. Never stops the update.
+ */
+function optimize(string $appDir, bool $on): void
+{
+    try {
+        $kernel = app()->make('Illuminate\Contracts\Console\Kernel');
+        if (! $on || $kernel->call('optimize') !== 0) {
+            // Not optimize:clear: that would also empty the application cache (OCR set-up state and such).
+            foreach (['config:clear', 'route:clear', 'event:clear'] as $command) {
+                $kernel->call($command);
+            }
+        }
+    } catch (Throwable $e) {
+        foreach (['config', 'routes-v7', 'events'] as $file) {
+            @unlink($appDir.'/bootstrap/cache/'.$file.'.php');
+        }
+    }
+}
+
 /** @return array<string, string> */
 function readEnv(string $file): array
 {
@@ -739,6 +760,9 @@ if ($existing) {
             file_put_contents($appDir.'/.env', (string) preg_replace('/^DOCHAMSTER_INSTALLED=.*$/m', 'DOCHAMSTER_INSTALLED=false', $env));
             file_put_contents($appDir.'/storage/app/private/setup-code.txt', $code."\n");
         }
+        // Point 164.5: configuration, routes, events and pages compiled once – every request saves that work.
+        // Only for an installed app: the wizard still writes .env.
+        optimize($appDir, ! $needsOwner);
     } catch (Throwable $e) {
         @unlink($zipFile);
         removeTree($tmpDir);
