@@ -9,6 +9,7 @@ use App\Domain\Banking\BankAccount;
 use App\Domain\Banking\CsvStatement;
 use App\Domain\Banking\Links;
 use App\Domain\Banking\Matcher;
+use App\Domain\Banking\StandingDocuments;
 use App\Domain\Banking\StatementColumns;
 use App\Domain\Banking\StatementImporter;
 use App\Domain\Banking\Transaction;
@@ -300,7 +301,9 @@ final class BankImportController
 
         $result = StatementImporter::store($statement, $prepared, $decisions, $profile, $pending['iban'] ?? null);
         $this->forget($request);
-        $suggested = $matcher->afterImport($org->id(), [...$result['new'], ...$result['completed']]);
+        // A322: Dauerbelege first; the matcher leaves bookings with a link alone.
+        $suggested = app(StandingDocuments::class)->afterImport($org->id(), $result['new']);
+        $suggested += $matcher->afterImport($org->id(), [...$result['new'], ...$result['completed']]);
         $noReceipt = Links::suggestNoReceipt($result['new']);
 
         $summary = ['new' => count($result['new']), 'known' => $result['known'], 'unreadable' => $prepared['unreadable']];

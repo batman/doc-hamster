@@ -23,6 +23,10 @@
                 .catch(() => { /* offline or logged out: keep what is shown */ });
         };
         setInterval(poll, 60000);
+        // Point 149: a module that just changed what a badge counts asks for the numbers at once.
+        if (window.DocHamster) {
+            window.DocHamster.refreshBadges = poll;
+        }
         document.addEventListener('visibilitychange', poll);
     };
 

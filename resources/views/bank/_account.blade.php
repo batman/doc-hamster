@@ -1,6 +1,6 @@
 {{-- One account as a window (A267): its bookings newest first. In the toolbar the status filter (A304) and
-     Eingänge/Ausgänge (A311) as button groups with counts, one click filters (modules/bank.js reloads this window); a
-     narrow window shows them as dropdowns. The search panel (A305) holds the period. On top the sums of what is shown
+     Eingänge/Ausgänge (A311) as button groups with counts (bank._filters), one click filters (modules/bank.js reloads
+     this window); when they do not fit they show as dropdowns (point 150). The search panel (A305) holds the period. On top the sums of what is shown
      (A310) and the imported periods (A296). Rows: an icon for the kind of booking (A312), the bank's type and a
      pending/reverted state as small pills (A293), amounts always with sign (A309). A statement dropped onto the window
      imports into this account; a document dragged onto a booking row links it (A269, data-doc-drop). --}}
@@ -20,32 +20,7 @@
           :search="__('bank.search')" search-params="from to" :search-count="($from ? 1 : 0) + ($to ? 1 : 0)"
           data-statement-drop="{{ route('bank.import.upload') }}" data-account="{{ $account->id }}" data-drop-label="{{ __('bank.drop_into', ['name' => $account->name]) }}">
     <x-slot:actions>
-        <div class="button-group win-wide-only" role="group" aria-label="{{ __('bank.status_filter') }}">
-            @foreach ($statusOptions as $value => [$label, $count])
-                <a class="button button-quiet button-small" href="{{ $with(['status' => $value === '' ? null : $value]) }}" data-bank-filter aria-pressed="{{ ($status ?? '') === $value ? 'true' : 'false' }}">{{ $label }}@if ($count) <span class="pill">{{ $count }}</span>@endif</a>
-            @endforeach
-        </div>
-        <div class="button-group win-wide-only" role="group" aria-label="{{ __('bank.flow') }}">
-            @foreach ($flowOptions as $value => $label)
-                <a class="button button-quiet button-small" href="{{ $with(['flow' => $value === '' ? null : $value]) }}" data-bank-filter aria-pressed="{{ ($flow ?? '') === $value ? 'true' : 'false' }}">{{ $label }}</a>
-            @endforeach
-        </div>
-        <div class="dropdown win-narrow-only">
-            <button type="button" class="icon-button @if ($status) is-active @endif" aria-haspopup="true" aria-expanded="false" aria-label="{{ __('bank.status_filter') }}: {{ $statusOptions[$status ?? ''][0] }}" data-tooltip="{{ __('bank.status_filter') }}"><x-icon name="filter" /></button>
-            <div class="dropdown-panel" role="menu" hidden>
-                @foreach ($statusOptions as $value => [$label, $count])
-                    <a class="menu-item" role="menuitemradio" aria-checked="{{ ($status ?? '') === $value ? 'true' : 'false' }}" href="{{ $with(['status' => $value === '' ? null : $value]) }}" data-bank-filter><span>{{ $label }}</span>@if ($count) <span class="pill">{{ $count }}</span>@endif</a>
-                @endforeach
-            </div>
-        </div>
-        <div class="dropdown win-narrow-only">
-            <button type="button" class="icon-button @if ($flow) is-active @endif" aria-haspopup="true" aria-expanded="false" aria-label="{{ __('bank.flow') }}: {{ $flowOptions[$flow ?? ''] }}" data-tooltip="{{ __('bank.flow') }}"><x-icon name="arrows-left-right" /></button>
-            <div class="dropdown-panel" role="menu" hidden>
-                @foreach ($flowOptions as $value => $label)
-                    <a class="menu-item" role="menuitemradio" aria-checked="{{ ($flow ?? '') === $value ? 'true' : 'false' }}" href="{{ $with(['flow' => $value === '' ? null : $value]) }}" data-bank-filter><span>{{ $label }}</span></a>
-                @endforeach
-            </div>
-        </div>
+        @include('bank._filters')
     </x-slot:actions>
     <x-slot:searchOptions>
         <fieldset class="search-group">
@@ -58,6 +33,8 @@
         <p class="check-ok" role="status">{{ session('status') }}</p>
     @endif
     <div data-search-count="{{ ($from ? 1 : 0) + ($to ? 1 : 0) }}" hidden></div>
+    {{-- Fresh filters with counts for the toolbar after a reload of only the body (search, point 149, A326). --}}
+    <template data-bank-filters-fresh>@include('bank._filters')</template>
     {{-- A310: the sums of what is shown. --}}
     <p class="amount-summary">
         <span>{{ __('bank.totals_in') }} <span class="row-amount is-income">{{ $money($totals['in']) }}</span></span>
@@ -78,6 +55,10 @@
                 </span>
                 @if ($entry->kind)
                     <span class="pill">{{ \Illuminate\Support\Str::limit(ucfirst(mb_strtolower(str_replace('_', ' ', $entry->kind))), 24) }}</span>
+                @endif
+                @if ($entry->note)
+                    {{-- A319: the booking has a note; the tooltip shows it. --}}
+                    <span class="row-note" data-tooltip="{{ \Illuminate\Support\Str::limit($entry->note, 300) }}" aria-label="{{ __('bank.note') }}: {{ \Illuminate\Support\Str::limit($entry->note, 300) }}"><x-icon name="note" /></span>
                 @endif
                 @if ($entry->isUnsettled())
                     <span class="pill pill-warning">{{ __('bank.bank_state.'.$entry->bank_state) }}</span>

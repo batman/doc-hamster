@@ -143,6 +143,21 @@ html.is-carrying, html.is-carrying * { cursor: grabbing !important; }
 .amount-summary { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; margin: 0 0 .5rem; color: var(--muted); font-size: .95rem; }
 .amount-summary .row-amount { margin-left: .35rem; color: var(--text); }
 .amount-summary .row-amount.is-income { color: color-mix(in srgb, var(--ok) 70%, var(--text)); }
+/* The account window's filters (point 150): labels never wrap; when the groups do not fit, modules/bank.js marks the
+   window is-filters-tight and the dropdowns take their place (beside the narrow-window rule of windows.css). */
+.bank-filters { display: flex; align-items: center; gap: .4rem; min-width: 0; }
+.bank-filters .button { white-space: nowrap; }
+.win.is-filters-tight .bank-filters-wide { display: none; }
+.win.is-filters-tight .bank-filters-narrow { display: block; }
+/* A319: a booking with a note shows a small note sign; the tooltip holds the note. */
+.row-note { flex: none; display: inline-flex; color: var(--muted); }
+.row-note .icon { width: 1rem; height: 1rem; }
+/* A325: "Dauerbeleg für: …" in the document detail, with its end button. */
+.standing-line { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .5rem; margin: .5rem 0; color: var(--muted); }
+.standing-line > form { margin: 0; }
+.standing-line .icon { flex: none; width: 1rem; height: 1rem; }
+/* Ticks above the candidates of a booking (A318, A322). */
+.bank-ticks { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; margin: 0 0 .5rem; }
 /* Choice stack (A286): menu entries one below the other in a dialog, each its own form (one click saves). */
 .menu-stack { display: grid; gap: .15rem; margin: 0 0 1rem; }
 .menu-stack > form { margin: 0; }

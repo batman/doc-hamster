@@ -53,6 +53,7 @@ return [
         'iban' => 'IBAN',
         'invoice_number' => 'invoice number',
         'sender' => 'sender',
+        'standing' => 'standing document',
     ],
     'why' => 'Matches: :reasons',
     'confirm' => 'Confirm',
@@ -229,4 +230,25 @@ return [
     'mcc_deleted' => 'Deleted.',
     'mcc_delete' => 'Delete',
     'status_suggest_none' => 'no receipt?',
+    // Point 147, A319: a note per booking.
+    'note' => 'Note',
+    'note_placeholder' => 'Add a note …',
+    'note_saved' => 'Note saved.',
+    // Point 145, A318: documents linked elsewhere.
+    'show_linked' => 'Also show linked ones',
+    'linked_with' => 'already linked with :names',
+    'remaining' => 'open :amount',
+    // Point 148, A322–A325: standing document.
+    'standing_tick' => 'Apply to all equal bookings',
+    'standing_hint' => 'The document then belongs to every booking of this counterparty with this amount, future ones too.',
+    'standing_done' => '{0} Document linked. Future equal bookings get it too.|{1} Document linked, plus 1 more booking.|[2,*] Document linked, plus :count more bookings.',
+    'standing_for' => 'Standing document for: :name',
+    'standing_end' => 'End',
+    'standing_ended' => 'Standing document ended. Existing links stay.',
+    'interval' => [
+        'monthly' => 'monthly',
+        'quarterly' => 'quarterly',
+        'yearly' => 'yearly',
+        'irregular' => 'irregular',
+    ],
 ];

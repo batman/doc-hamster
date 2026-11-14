@@ -41,7 +41,7 @@ final class ReceiptArchive
             throw new RuntimeException('Could not create the index.');
         }
         fwrite($index, "\xEF\xBB\xBF");
-        fputcsv($index, ['Datum', 'Titel', 'Datei', 'Typ', 'Größe (Bytes)', 'SHA-256', 'Tags', 'Buchung', ...$properties->map(static fn (Property $p): string => self::safeCell($p->name))->all()], ';', '"', '');
+        fputcsv($index, ['Datum', 'Titel', 'Datei', 'Typ', 'Größe (Bytes)', 'SHA-256', 'Tags', 'Buchung', 'Buchungsnotiz', ...$properties->map(static fn (Property $p): string => self::safeCell($p->name))->all()], ';', '"', '');
 
         foreach ($documents as $document) {
             $values = $document->properties->keyBy('property_id');
@@ -70,6 +70,7 @@ final class ReceiptArchive
                     $file->sha256,
                     self::safeCell($document->tags->pluck('name')->implode(', ')),
                     self::safeCell(self::bookings($document)),
+                    self::safeCell(self::bookingNotes($document)),
                     ...$cells,
                 ], ';', '"', '');
             }
@@ -95,6 +96,13 @@ final class ReceiptArchive
                 $match->transaction->counterparty,
             )))
             ->implode(' / ');
+    }
+
+    /** Point 147, A321: the notes of the linked bookings, next to them. */
+    private static function bookingNotes(Document $document): string
+    {
+        return $document->matches->map(static fn (TransactionMatch $match): string => trim((string) $match->transaction->note))
+            ->filter(static fn (string $note): bool => $note !== '')->implode(' / ');
     }
 
     private static function entryName(Document $document, DocumentFile $file): string

@@ -97,6 +97,7 @@
 
     {{-- Eigenschaften (points 122.4, A252): the values of this document, editable in place. --}}
     @include('documents._properties')
+    @include('bank._standing')
 
     {{-- GiroCode (point 120): payee, IBAN, amount and the QR code for the banking app. --}}
     @include('documents._girocode')

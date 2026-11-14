@@ -234,6 +234,8 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('transactions/{id}/unmatch', [BankController::class, 'unmatch'])->name('unmatch');
         Route::post('transactions/{id}/no-receipt', [BankController::class, 'noReceipt'])->name('no-receipt');
         Route::post('transactions/{id}/tag', [BankController::class, 'tag'])->name('tag');
+        Route::post('transactions/{id}/note', [BankController::class, 'note'])->name('note');
+        Route::post('standing/{id}/end', [BankController::class, 'endStanding'])->name('standing.end');
     });
 
     Route::middleware('can:exports.create')->group(function (): void {

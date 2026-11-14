@@ -25,12 +25,57 @@
             return json;
         });
 
-    const reloadAll = () => document.querySelectorAll('[data-windows] > section[data-window]').forEach(win => {
-        if (KINDS.includes(win.dataset.windowKind) && win.querySelector('.win-body')) {
-            DocHamster.reloadWindow(win, new URL(win.dataset.windowUrl ?? location.href, location.href), '.win-body').catch(() => {});
+    // Point 149: every Bank window's body (the account's toolbar counts come along in its template, see below) and the
+    // menu badge at once.
+    const reloadAll = () => {
+        document.querySelectorAll('[data-windows] > section[data-window]').forEach(win => {
+            if (KINDS.includes(win.dataset.windowKind) && win.querySelector('.win-body')) {
+                DocHamster.reloadWindow(win, new URL(win.dataset.windowUrl ?? location.href, location.href), '.win-body').catch(() => {});
+            }
+        });
+        DocHamster.refreshBadges?.();
+    };
+    DocHamster.on('bank:changed', reloadAll);
+    // A booking's note (point 147) shows as a sign in its account row (A319).
+    DocHamster.on('edit-in-place:saved', ({ box }) => {
+        if (box?.closest('section[data-window]')?.dataset.windowKind === 'bank-transaction') {
+            reloadAll();
         }
     });
-    DocHamster.on('bank:changed', reloadAll);
+
+    // --- Account window toolbar (point 150, A326) ----------------------------------------------------------------
+    // After a reload of only the body (search, an action) its template carries the filters with fresh counts. The
+    // groups show as dropdowns whenever they do not fit beside the search (is-filters-tight), whatever the width.
+    const fit = win => {
+        const filters = win.querySelector('.win-actions [data-bank-filters]');
+        if (!filters) {
+            return;
+        }
+        win.classList.remove('is-filters-tight');
+        if (filters.scrollWidth > filters.clientWidth + 1) {
+            win.classList.add('is-filters-tight');
+        }
+    };
+    const watched = new WeakSet();
+    const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(entries => entries.forEach(entry => fit(entry.target))) : null;
+    DocHamster.on('window:open', root => {
+        const wins = root instanceof Element
+            ? [root.matches('section[data-window]') ? root : root.closest('section[data-window]')]
+            : [...document.querySelectorAll('section[data-window]')];
+        wins.filter(win => win?.dataset.windowKind === 'bank-account').forEach(win => {
+            const fresh = win.querySelector('.win-body template[data-bank-filters-fresh]');
+            const old = win.querySelector('.win-actions [data-bank-filters]');
+            const next = fresh?.content.querySelector('[data-bank-filters]');
+            if (old && next) {
+                old.replaceWith(document.importNode(next, true));
+            }
+            fit(win);
+            if (resize && !watched.has(win)) {
+                watched.add(win);
+                resize.observe(win);
+            }
+        });
+    });
 
     // Opens an address as a window to the right of `win`, like a click on a data-window link inside it.
     const openBeside = (win, url) => {
@@ -55,7 +100,12 @@
             button.disabled = true;
             button.classList.add('is-busy');
         }
-        send(form.action, new FormData(form))
+        const body = new FormData(form);
+        // A322: "Für alle gleichen Buchungen übernehmen" above the candidates goes along with "Zuordnen".
+        if (form.matches('[data-bank-match]') && form.closest('section[data-window]')?.querySelector('input[data-bank-standing]')?.checked) {
+            body.append('standing', '1');
+        }
+        send(form.action, body)
             .then(json => {
                 const dialog = form.closest('[data-dialog]');
                 if (dialog) {
@@ -82,6 +132,16 @@
         }
         event.preventDefault();
         DocHamster.reloadWindow(win, new URL(link.href, location.href), '.win-frame').catch(() => { location.href = link.href; });
+    });
+
+    // --- A318: "Auch schon verknüpfte zeigen" reloads the booking window with or without them ------------------
+    document.addEventListener('change', event => {
+        const tick = event.target.closest?.('input[data-bank-reload]');
+        const win = tick?.closest('section[data-window]');
+        if (!tick || !win) {
+            return;
+        }
+        DocHamster.reloadWindow(win, new URL(tick.dataset.bankReload, location.href), '.win-body').catch(() => { location.href = tick.dataset.bankReload; });
     });
 
     // --- "Kein Beleg nötig": "Anderer Grund" opens its field (A288); the other reasons save with their click ----

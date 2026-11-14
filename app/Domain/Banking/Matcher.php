@@ -60,14 +60,16 @@ final class Matcher
     /**
      * "Dokument zuordnen" (A269): the documents the person may link, best score first, then nearest to the booking day.
      * Without a search only documents near in time or amount are looked at; with one, everything that matches it.
+     * Documents with a confirmed link to another booking only with $withLinked (point 145, A318).
      *
      * @param  Builder<Document>  $visible  documents the person may see
      * @return list<array{document: Document, score: int, reasons: array<string, int>}>
      */
-    public function candidates(Transaction $transaction, Builder $visible, ?string $search = null, int $limit = 30): array
+    public function candidates(Transaction $transaction, Builder $visible, ?string $search = null, int $limit = 30, bool $withLinked = false): array
     {
         $query = $visible->matchable()->with('files')
             ->whereDoesntHave('matches', static fn (Builder $match) => $match->where('transaction_id', $transaction->id))
+            ->when(! $withLinked, static fn (Builder $q) => $q->whereDoesntHave('matches', static fn (Builder $match) => $match->where('state', TransactionMatch::CONFIRMED)))
             ->whereNotIn('documents.id', MatchRejection::query()->where('transaction_id', $transaction->id)->select('document_id'));
 
         $search = trim((string) $search);

@@ -12,6 +12,8 @@ use App\Domain\Banking\Links;
 use App\Domain\Banking\Matcher;
 use App\Domain\Banking\MccTag;
 use App\Domain\Banking\NoReceiptReason;
+use App\Domain\Banking\StandingDocument;
+use App\Domain\Banking\StandingDocuments;
 use App\Domain\Banking\Transaction;
 use App\Domain\Banking\TransactionMatch;
 use App\Domain\Documents\Document;
@@ -77,6 +79,7 @@ final class BankController
 
         $documentsTotal = (int) $linked->sum(static fn (Document $d): int => abs($amounts[$d->id] ?? 0));
         $search = trim((string) $request->query('q'));
+        $withLinked = $request->boolean('linked');
         $rows = [];
         foreach ($matches as $match) {
             $document = $linked->get($match->document_id);
@@ -99,9 +102,11 @@ final class BankController
                 'difference' => abs($transaction->amount_minor) - $documentsTotal,
                 'missing' => $linked->contains(static fn (Document $d): bool => ! isset($amounts[$d->id])),
             ],
-            'candidates' => $candidates = $matcher->candidates($transaction, $this->visible($org), $search),
+            'candidates' => $candidates = $matcher->candidates($transaction, $this->visible($org), $search, withLinked: $withLinked),
             'candidateAmounts' => $this->amounts(array_map(static fn (array $c): string => $c['document']->id, $candidates)),
+            'candidateLinks' => $withLinked ? $this->linkedElsewhere(array_map(static fn (array $c): string => $c['document']->id, $candidates)) : [],
             'search' => $search,
+            'withLinked' => $withLinked,
             'reasons' => NoReceiptReason::ordered(true),
             'suggestedReason' => $transaction->suggested_reason_id === null ? null : NoReceiptReason::query()->whereKey($transaction->suggested_reason_id)->first(),
             // A298: a refund hangs on its original; the original lists its refunds.
@@ -111,18 +116,54 @@ final class BankController
         ]);
     }
 
-    /** "Zuordnen" in the list of candidates: linked and confirmed at once. */
-    public function match(Request $request, string $id, AuditLog $audit, CurrentOrg $org, Links $links): JsonResponse|RedirectResponse
+    /**
+     * "Zuordnen" in the list of candidates: linked and confirmed at once. With "Für alle gleichen Buchungen übernehmen"
+     * (A322) the document becomes a Dauerbeleg of the counterparty and amount.
+     */
+    public function match(Request $request, string $id, AuditLog $audit, CurrentOrg $org, Links $links, StandingDocuments $standing): JsonResponse|RedirectResponse
     {
         $transaction = Transaction::query()->whereKey($id)->firstOrFail();
-        $data = $request->validate(['document_id' => ['required', 'string']]);
+        $data = $request->validate(['document_id' => ['required', 'string'], 'standing' => ['nullable', 'boolean']]);
         $document = $this->visible($org)->matchable()->whereKey($data['document_id'])->first()
             ?? throw ValidationException::withMessages(['document_id' => __('bank.receipt_gone')]);
 
         $links->link($transaction, $document, $org->membership()->user_id);
         $audit->record('bank.matched', orgId: $org->id(), userId: $org->membership()->user_id, subject: $transaction, meta: ['document' => $document->id], ip: $request->ip());
+        if ($request->boolean('standing')) {
+            $rule = $standing->create($transaction, $document, $org->membership()->user_id);
+            $count = TransactionMatch::query()->where('standing_id', $rule->id)->count() - 1;
+            $audit->record('bank.standing', orgId: $org->id(), userId: $org->membership()->user_id, subject: $document, meta: ['rule' => $rule->id, 'linked' => $count], ip: $request->ip());
+
+            return $this->done($request, $transaction, trans_choice('bank.standing_done', $count, ['count' => $count]));
+        }
 
         return $this->done($request, $transaction, __('bank.matched'));
+    }
+
+    /** Point 147: the booking's note, edited in place (x-edit-in-place answers {"value"}). */
+    public function note(Request $request, string $id, AuditLog $audit, CurrentOrg $org): JsonResponse
+    {
+        $transaction = Transaction::query()->whereKey($id)->firstOrFail();
+        $data = $request->validate(['field' => ['required', 'in:note'], 'value' => ['nullable', 'string', 'max:5000']]);
+        $value = trim((string) ($data['value'] ?? ''));
+        $transaction->forceFill(['note' => $value !== '' ? $value : null])->save();
+        $audit->record('bank.noted', orgId: $org->id(), userId: $org->membership()->user_id, subject: $transaction, ip: $request->ip());
+
+        return response()->json(['value' => $value, 'message' => __('bank.note_saved')]);
+    }
+
+    /** A325: the Dauerbeleg links nothing more; its links stay. */
+    public function endStanding(Request $request, string $id, AuditLog $audit, CurrentOrg $org, StandingDocuments $standing): JsonResponse|RedirectResponse
+    {
+        $rule = StandingDocument::query()->whereKey($id)->firstOrFail();
+        $document = $this->visible($org)->whereKey($rule->document_id)->firstOrFail();
+        $standing->end($rule);
+        $audit->record('bank.standing_ended', orgId: $org->id(), userId: $org->membership()->user_id, subject: $document, meta: ['rule' => $rule->id], ip: $request->ip());
+        if ($request->expectsJson()) {
+            return response()->json(['message' => __('bank.standing_ended')]);
+        }
+
+        return redirect()->route('documents.show', $rule->document_id)->with('status', __('bank.standing_ended'));
     }
 
     /** Documents dragged onto a booking row (A269): all picked ones at once. */
@@ -146,6 +187,7 @@ final class BankController
     {
         [$transaction, $match] = $this->pair($request, $id, $org);
         $links->confirm($match, $org->membership()->user_id);
+        StandingDocuments::confirmed($match);
         $audit->record('bank.confirmed', orgId: $org->id(), userId: $org->membership()->user_id, subject: $transaction, meta: ['document' => $match->document_id], ip: $request->ip());
 
         return $this->done($request, $transaction, __('bank.confirmed'));
@@ -282,7 +324,27 @@ final class BankController
             ->when($from !== null, static fn (Builder $q) => $q->where('booking_date', '>=', $from))
             ->when($to !== null, static fn (Builder $q) => $q->where('booking_date', '<=', $to))
             ->when($search !== '', static fn (Builder $q) => $q->where(static fn (Builder $w) => $w->where('counterparty', 'like', $like)->orWhere('purpose', 'like', $like)
-                ->orWhere('purpose2', 'like', $like)->orWhere('reference', 'like', $like)->orWhere('kind', 'like', $like)->orWhere('extra', 'like', $like)));
+                ->orWhere('purpose2', 'like', $like)->orWhere('reference', 'like', $like)->orWhere('kind', 'like', $like)->orWhere('extra', 'like', $like)->orWhere('note', 'like', $like)));
+    }
+
+    /**
+     * A318: what the documents already got from other bookings - when and from whom, and the sum of their confirmed links.
+     *
+     * @param  array<string>  $ids
+     * @return array<string, array{names: string, sum: int}>
+     */
+    private function linkedElsewhere(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        return TransactionMatch::query()->whereIn('document_id', $ids)->where('state', TransactionMatch::CONFIRMED)->with('transaction')->get()
+            ->groupBy('document_id')
+            ->map(static fn ($list): array => [
+                'names' => $list->map(static fn (TransactionMatch $m): string => $m->transaction->booking_date->format('d.m.Y').' '.($m->transaction->counterparty ?? $m->transaction->purpose ?? '–'))->unique()->take(3)->implode(', '),
+                'sum' => (int) $list->sum(static fn (TransactionMatch $m): int => abs($m->transaction->amount_minor)),
+            ])->all();
     }
 
     /**

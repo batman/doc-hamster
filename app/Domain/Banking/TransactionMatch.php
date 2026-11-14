@@ -25,6 +25,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $score
  * @property array<string, int>|null $reasons
  * @property Carbon|null $paid_at_set
+ * @property string|null $standing_id The Dauerbeleg rule that made it (A322).
  * @property-read Transaction $transaction
  * @property-read Document $document
  */
@@ -39,7 +40,7 @@ final class TransactionMatch extends Model
 
     protected $table = 'matches';
 
-    protected $fillable = ['org_id', 'transaction_id', 'document_id', 'decided_by', 'state', 'score', 'reasons', 'paid_at_set'];
+    protected $fillable = ['org_id', 'transaction_id', 'document_id', 'decided_by', 'state', 'score', 'reasons', 'paid_at_set', 'standing_id'];
 
     /** New rows are confirmed unless the matcher says otherwise (the column default, also for old rows). */
     protected $attributes = ['state' => self::CONFIRMED];

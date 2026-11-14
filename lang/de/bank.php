@@ -56,6 +56,7 @@ return [
         'iban' => 'IBAN',
         'invoice_number' => 'Rechnungsnummer',
         'sender' => 'Absender',
+        'standing' => 'Dauerbeleg',
     ],
     'why' => 'Passt: :reasons',
     'confirm' => 'Bestätigen',
@@ -237,4 +238,25 @@ return [
     'mcc_deleted' => 'Gelöscht.',
     'mcc_delete' => 'Löschen',
     'status_suggest_none' => 'kein Beleg?',
+    // Point 147, A319: a note per booking.
+    'note' => 'Notiz',
+    'note_placeholder' => 'Notiz hinzufügen …',
+    'note_saved' => 'Notiz gespeichert.',
+    // Point 145, A318: documents linked elsewhere.
+    'show_linked' => 'Auch schon verknüpfte zeigen',
+    'linked_with' => 'schon verknüpft mit :names',
+    'remaining' => 'offen :amount',
+    // Point 148, A322–A325: Dauerbeleg.
+    'standing_tick' => 'Für alle gleichen Buchungen übernehmen',
+    'standing_hint' => 'Das Dokument gehört dann zu jeder Buchung dieses Empfängers mit diesem Betrag, auch zu künftigen.',
+    'standing_done' => '{0} Dokument zugeordnet. Künftige gleiche Buchungen bekommen es auch.|{1} Dokument zugeordnet, dazu 1 weitere Buchung.|[2,*] Dokument zugeordnet, dazu :count weitere Buchungen.',
+    'standing_for' => 'Dauerbeleg für: :name',
+    'standing_end' => 'Beenden',
+    'standing_ended' => 'Dauerbeleg beendet. Bestehende Zuordnungen bleiben.',
+    'interval' => [
+        'monthly' => 'monatlich',
+        'quarterly' => 'vierteljährlich',
+        'yearly' => 'jährlich',
+        'irregular' => 'unregelmäßig',
+    ],
 ];

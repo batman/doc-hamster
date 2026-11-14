@@ -51,6 +51,7 @@ use Illuminate\Support\Carbon;
  * @property array<string, string>|null $extra Columns nobody mapped (A290).
  * @property array<string, string>|null $raw The row as the file had it (143).
  * @property string|null $parent_id The original of a refund or reversal (A298).
+ * @property string|null $note A person's note on the booking (point 147).
  * @property-read BankAccount $account
  * @property-read Transaction|null $parent
  */
@@ -74,7 +75,7 @@ final class Transaction extends Model
 
     protected $fillable = ['org_id', 'bank_account_id', 'booking_date', 'amount_minor', 'currency', 'counterparty', 'counterparty_iban', 'purpose', 'fingerprint', 'no_receipt', 'no_receipt_reason',
         'no_receipt_reason_id', 'suggested_reason_id', 'booking_id', 'value_date', 'purpose2', 'kind', 'reference', 'creditor_id', 'counterparty_bic', 'orig_amount_minor', 'orig_currency',
-        'fee_minor', 'fee_currency', 'balance_minor', 'category', 'card_last4', 'bank_state', 'sub_account', 'related_id', 'mcc', 'extra', 'raw', 'parent_id'];
+        'fee_minor', 'fee_currency', 'balance_minor', 'category', 'card_last4', 'bank_state', 'sub_account', 'related_id', 'mcc', 'extra', 'raw', 'parent_id', 'note'];
 
     /**
      * @return array<string, string>

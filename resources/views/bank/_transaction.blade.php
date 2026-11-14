@@ -9,7 +9,7 @@
 @endphp
 <x-window :title="$transaction->formattedAmount().' · '.($transaction->counterparty ?? __('bank.transaction'))" icon="receipt" kind="bank-transaction"
           min="28rem" optimal="38rem" max="56rem" priority="2"
-          :url="route('bank.show', array_filter([$transaction->id, 'q' => $search !== '' ? $search : null]))" :close="route('bank.account', $transaction->bank_account_id)"
+          :url="route('bank.show', array_filter([$transaction->id, 'q' => $search !== '' ? $search : null, 'linked' => $withLinked ? 1 : null]))" :close="route('bank.account', $transaction->bank_account_id)"
           :search="__('bank.candidates_search')">
     @if (session('status'))
         <p class="check-ok" role="status">{{ session('status') }}</p>
@@ -65,6 +65,12 @@
                 <li class="prop-row"><span class="prop-name">{{ __('bank.no_receipt_reason') }}</span><span class="prop-value">{{ $transaction->no_receipt_reason }}</span></li>
             @endif
         </ul>
+        {{-- Point 147: a note on the booking, edited in place like the document's note. --}}
+        <section class="detail-section">
+            <h3 id="bank-note-{{ $transaction->id }}">{{ __('bank.note') }}</h3>
+            <x-edit-in-place name="note" :value="$transaction->note" :action="route('bank.note', $transaction->id)" multiline maxlength="5000"
+                :placeholder="__('bank.note_placeholder')" aria-labelledby="bank-note-{{ $transaction->id }}" />
+        </section>
         @if ($parent)
             <p class="card-note">{{ __('bank.refund_hint') }}</p>
         @endif
@@ -228,9 +234,14 @@
     <section class="card">
         <h2 class="card-head"><x-icon name="file-text" />{{ __('bank.candidates') }}</h2>
         <p class="card-note">{{ __('bank.candidates_hint') }}</p>
+        {{-- A318: documents with a booking already stay out unless asked for; A322: the next "Zuordnen" makes a Dauerbeleg. --}}
+        <div class="bank-ticks">
+            <label class="check"><input type="checkbox" data-bank-reload="{{ route('bank.show', array_filter([$transaction->id, 'q' => $search !== '' ? $search : null, 'linked' => $withLinked ? null : 1])) }}" @checked($withLinked)> {{ __('bank.show_linked') }}</label>
+            <label class="check" data-tooltip="{{ __('bank.standing_hint') }}"><input type="checkbox" data-bank-standing> {{ __('bank.standing_tick') }}</label>
+        </div>
         <ul class="pick-list">
             @forelse ($candidates as $candidate)
-                @php $document = $candidate['document']; $amount = $candidateAmounts[$document->id] ?? null; @endphp
+                @php $document = $candidate['document']; $amount = $candidateAmounts[$document->id] ?? null; $elsewhere = $candidateLinks[$document->id] ?? null; @endphp
                 <li class="pick-row is-static">
                     <span class="row-icon"><x-icon name="file-text" /></span>
                     <span>
@@ -239,12 +250,15 @@
                             {{ $document->created_at->format('d.m.Y') }}
                             @if ($amount !== null) · {{ $money(abs($amount)) }}@endif
                             @if ($candidate['reasons'] !== []) · {{ $why($candidate['reasons']) }}@endif
+                            @if ($elsewhere)
+                                <br>{{ __('bank.linked_with', ['names' => $elsewhere['names']]) }}@if ($amount !== null) · {{ __('bank.remaining', ['amount' => $money(abs($amount) - $elsewhere['sum'])]) }}@endif
+                            @endif
                         </small>
                     </span>
                     @if ($candidate['score'] >= \App\Domain\Banking\MatchScore::SUGGEST)
                         <span class="pill pill-new">{{ __('bank.score', ['score' => $candidate['score']]) }}</span>
                     @endif
-                    <form method="post" action="{{ route('bank.match', $transaction->id) }}" data-bank-action>
+                    <form method="post" action="{{ route('bank.match', $transaction->id) }}" data-bank-action data-bank-match>
                         @csrf
                         <input type="hidden" name="document_id" value="{{ $document->id }}">
                         <button type="submit" class="button-quiet button-small">{{ __('bank.link') }}</button>
