@@ -5,7 +5,6 @@
 @section('title', __('bank.reasons_title'))
 
 @section('page')
-    <div class="col-head"><h1>{{ __('bank.reasons_title') }}</h1></div>
     <p class="muted">{{ __('bank.reasons_intro') }}</p>
     @if (session('status'))
         <p class="check-ok" role="status">{{ session('status') }}</p>
