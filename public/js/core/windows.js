@@ -843,13 +843,7 @@
                 }
             }
         });
-        // A double-click on a window's title maximises it or brings the layout back (Windows-like, A124).
-        box.addEventListener('dblclick', event => {
-            const win = event.target.closest('section[data-window]');
-            if (win && !phone.matches && event.target.closest('.win-title')) {
-                maximise(win);
-            }
-        });
+        // Point 169: no double-click on the title any more (no double-click actions); the maximise icon does it.
         // A click into a wide window that isn't the active one makes it the active one (address, title).
         box.addEventListener('pointerdown', event => {
             const win = event.target.closest('section[data-window]');

@@ -1,0 +1,10 @@
+/* Pane with a drag edge below (point 168.1, core/pane-edge.js): the pane is a column whose first child (e.g. the
+   document viewer frame) takes the height left after the rest; the edge looks like the window edge, turned. */
+.pane { display: flex; flex-direction: column; height: clamp(12rem, var(--pane-size, var(--pane-default, 31rem)), 85vh); }
+.pane[data-pane] > :first-child { flex: 1 1 0; min-height: 0; height: auto; margin-bottom: .5rem; }
+.pane[data-pane] > :last-child { margin-bottom: 0; }
+.pane-edge { position: relative; height: 12px; margin: 0 0 .5rem; cursor: row-resize; touch-action: none; }
+.pane-edge::after { content: ""; position: absolute; left: 0; right: 0; top: 4px; height: 3px; border-radius: 2px; background: var(--primary); opacity: 0; transition: opacity .15s; }
+.pane-edge::before { content: ""; position: absolute; left: 50%; top: 4px; width: 2.5rem; height: 3px; margin-left: -1.25rem; border-radius: 2px; background: var(--border); }
+.pane-edge:hover::after, .pane-edge:focus-visible::after, .pane-edge.is-active::after { opacity: 1; }
+.pane-edge:focus-visible { outline: none; box-shadow: none; }

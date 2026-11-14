@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="../css/core/lists.css">
     <link rel="stylesheet" href="../css/core/windows.css">
     <link rel="stylesheet" href="../css/core/menu-window.css">
+    <link rel="stylesheet" href="../css/core/pane-edge.css">
     <link rel="stylesheet" href="../css/modules/documents.css">
     <link rel="stylesheet" href="../css/modules/notes.css">
     <link rel="stylesheet" href="../css/modules/text-editor.css">
@@ -28,6 +29,7 @@
     <link rel="stylesheet" href="../css/modules/ocr-text.css">
     <link rel="stylesheet" href="../css/modules/girocode.css">
     <link rel="stylesheet" href="../css/modules/dnd.css">
+    <link rel="stylesheet" href="../css/modules/doc-fullscreen.css">
     <link rel="stylesheet" href="../css/core/layout-debug.css">
     <style>
         /* Sheet-only helpers, not part of the app CSS. */
@@ -842,6 +844,14 @@
             <h3 class="sg-pad" id="doc-mark">Vorschau-Markierung</h3>
             <p class="sg-note">Ein Kasten über der Vorschau, der mit Zoom und Verschieben mitgeht (<code>DocHamster.viewer.layer(frame)</code>): halbtransparent orange für Überfahren und Auswahl, <code>is-pulse</code> pulsiert kurz, wenn eine Eigenschaft ihre Fundstelle zeigt.</p>
             <div class="sg-row sg-top"><span class="thumb-frame" style="position:relative;width:12rem;aspect-ratio:4/5"><span class="doc-layer" style="inset:0"><span class="doc-layer-page" style="inset:.75rem"><span class="doc-mark" style="left:10%;top:20%;width:45%;height:5%"></span><span class="doc-mark is-pulse" style="left:55%;top:60%;width:35%;height:6%"></span></span></span></span></div>
+
+            <h3 class="sg-pad" id="pane-edge">Bereich mit Ziehkante</h3>
+            <p class="sg-note">Punkt 168.1: <code>.pane[data-pane="detail"]</code> + <code>.pane-edge</code> darunter (role=separator). Ziehen oder Pfeiltasten ändern die Höhe (12rem bis 85 % des Fensters), gemerkt pro Art; das Symbol „Höhe zurücksetzen“ (<code>data-pane-reset</code>) setzt sie zurück.</p>
+            <div style="max-width:24rem"><div class="pane" data-pane="sg" style="--pane-size: var(--pane-sg, 14rem)"><span class="thumb-frame"></span><div class="doc-zoom"><button type="button" class="icon-button button-small" data-pane-reset="sg" aria-label="Höhe zurücksetzen" data-tooltip="Höhe zurücksetzen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.06 13a9 9 0 1 0 .49 -4.087"/><path d="M3 4.001v5h5"/><path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/></svg></button></div></div><div class="pane-edge" data-pane-edge="sg" role="separator" aria-orientation="horizontal" tabindex="0" aria-label="Höhe ändern"></div></div>
+
+            <h3 class="sg-pad" id="doc-fullscreen">Vollbild-Ansicht</h3>
+            <p class="sg-note">Punkt 168.2: das Symbol „Vollbild“ in der Zoomleiste öffnet das Dokument als Dialog über der ganzen App (dunkler Hintergrund, Esc oder X schließt). Leiste: ‹ › anderes Dokument der Liste (← / →), Verkleinern, Vergrößern, Prozent, An Breite anpassen, Ganze Seite, Originalgröße, Seiten, Herunterladen. Strg + Mausrad und zwei Finger zoomen, Ziehen verschiebt, Wörter zeigen sich beim Überfahren.</p>
+            <div class="doc-zoom doc-fullscreen-bar" style="padding-right:0"><span class="doc-fullscreen-title">Rechnung Muster GmbH</span><div class="button-group"><button type="button" class="icon-button button-small" aria-label="Verkleinern"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M7 10l6 0"/><path d="M21 21l-6 -6"/></svg></button><button type="button" class="icon-button button-small" aria-label="Vergrößern"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M7 10l6 0"/><path d="M10 7l0 6"/><path d="M21 21l-6 -6"/></svg></button></div><output class="doc-fullscreen-value">150 %</output><button type="button" class="icon-button button-small" aria-label="Vollbild"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8v-2a2 2 0 0 1 2 -2h2"/><path d="M4 16v2a2 2 0 0 0 2 2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v2"/><path d="M16 20h2a2 2 0 0 0 2 -2v-2"/></svg></button></div>
 
             <h3 class="sg-pad" id="word-popup">Wort-Popup</h3>
             <p class="sg-note">Klick auf ein Wort (Text oder Vorschau; Umschalt/Ziehen für mehrere): vergrößerter Ausschnitt der Stelle, das erkannte Wort im Feld mit Live-Hinweis (IBAN mit Prüfziffer grün/rot, Betrag, Datum), „Übernehmen“ speichert die Korrektur, „Markieren als …“ öffnet das Popup oben (mit geänderter Korrektur zuerst gespeichert). Korrigierte Wörter: „Original anzeigen“ nimmt die Korrektur zurück; gelernte Korrektur des Absenders als Vorschlag.</p>

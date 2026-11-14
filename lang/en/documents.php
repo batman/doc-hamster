@@ -99,6 +99,19 @@ return [
     'page_of' => 'Page :page of :pages',
     'page_prev' => 'Previous page',
     'page_next' => 'Next page',
+    // Points 168.1/168.2: preview height and the fullscreen viewer.
+    'viewer' => [
+        'height' => 'Change the preview height',
+        'height_reset' => 'Reset height',
+        'fullscreen' => 'Full screen',
+        'zoom_in' => 'Zoom in',
+        'zoom_out' => 'Zoom out',
+        'fit_width' => 'Fit width',
+        'fit_page' => 'Whole page',
+        'actual' => 'Actual size (100 %)',
+        'doc_prev' => 'Previous document',
+        'doc_next' => 'Next document',
+    ],
     // Text documents written in the app (point 21).
     'text' => [
         'new' => 'New document',

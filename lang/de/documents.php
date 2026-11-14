@@ -99,6 +99,19 @@ return [
     'page_of' => 'Seite :page von :pages',
     'page_prev' => 'Vorherige Seite',
     'page_next' => 'Nächste Seite',
+    // Points 168.1/168.2: preview height and the fullscreen viewer.
+    'viewer' => [
+        'height' => 'Höhe der Vorschau ändern',
+        'height_reset' => 'Höhe zurücksetzen',
+        'fullscreen' => 'Vollbild',
+        'zoom_in' => 'Vergrößern',
+        'zoom_out' => 'Verkleinern',
+        'fit_width' => 'An Breite anpassen',
+        'fit_page' => 'Ganze Seite',
+        'actual' => 'Originalgröße (100 %)',
+        'doc_prev' => 'Vorheriges Dokument',
+        'doc_next' => 'Nächstes Dokument',
+    ],
     // Text documents written in the app (point 21).
     'text' => [
         'new' => 'Neues Dokument',

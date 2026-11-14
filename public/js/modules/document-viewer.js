@@ -1,5 +1,6 @@
 // Document viewer in the detail window: wheel zoom towards the mouse, drag to pan, slider 25-400 %,
-// box selection with "Zoomen" / "Kopieren", double click back to fit. Delegated, so windows loaded later work too.
+// box selection with "Zoomen" / "Kopieren"; the percent button goes back to fit (point 169: no double-click actions).
+// Delegated, so windows loaded later work too; the fullscreen viewer (modules/doc-fullscreen.js) is the same frame + bar pair.
 // PDFs (frame[data-pdf], point 33/A19): pdf.js draws the page into a canvas.thumb that takes the image's place;
 // it is drawn again at device pixels x zoom after each zoom, so the text stays sharp. All state lives per frame.
 (() => {
@@ -35,8 +36,10 @@
         st.img.style.transform = st.s === 1 && !st.x && !st.y ? '' : `translate(${st.x}px, ${st.y}px) scale(${st.s})`;
         frame.classList.toggle('is-zoomed', st.s > 1);
         const pct = Math.round(st.s * 100);
-        st.bar.querySelector('[data-zoom-range]').value = pct;
-        st.bar.querySelector('[data-zoom-value]').textContent = pct + ' %';
+        const range = st.bar.querySelector('[data-zoom-range]');
+        if (range) range.value = pct;
+        const value = st.bar.querySelector('[data-zoom-value]');
+        if (value) value.textContent = pct + ' %';
         syncLayer(frame, st);
         const pdf = pdfs.get(frame);
         if (pdf && pdf.drawn !== Math.max(1, st.s)) redraw(frame, pdf, 150);
@@ -202,11 +205,6 @@
             if (frame) { const st = stateOf(frame); clearBox(st); reset(frame, st); }
         }
     });
-    document.addEventListener('dblclick', e => {
-        if (!e.target.matches?.('[data-zoom-range]')) return;
-        const frame = frameOf(e.target.closest('[data-doc-zoom]').previousElementSibling);
-        if (frame) { const st = stateOf(frame); clearBox(st); reset(frame, st); }
-    });
 
     document.addEventListener('pointerdown', e => {
         if (e.target.closest?.('.doc-box-actions')) return;
@@ -247,14 +245,6 @@
         frame.addEventListener('pointermove', move);
         frame.addEventListener('pointerup', up);
         frame.addEventListener('pointercancel', up);
-    });
-
-    document.addEventListener('dblclick', e => {
-        const frame = frameOf(e.target);
-        if (!frame || e.target.closest('.doc-box-actions')) return;
-        const st = stateOf(frame);
-        clearBox(st);
-        reset(frame, st);
     });
 
     document.addEventListener('keydown', e => { if (e.key === 'Escape') clearAll(); });
@@ -322,6 +312,7 @@
         if (gen !== pdf.gen || !frame.isConnected) return;
         pdf.task = null;
         pdf.drawn = level;
+        pdf.width = one.width; // PDF points, for "100 %" (point 168.2)
         const old = frame.querySelector(':scope > .thumb, :scope > .icon');
         if (old) old.replaceWith(canvas); else frame.prepend(canvas);
         const now = stateOf(frame);
@@ -379,8 +370,13 @@
     // For modules that point at places on the document (modules/ocr-text.js, document:highlight). Pages count from 1;
     // boxes are page-relative {x, y, w, h} (0..1) like the OCR words.
     DocHamster.viewer = {
-        // The viewer frame of a window (null when the document has no picture).
-        frameIn: win => [...(win?.querySelectorAll?.('.detail-doc') ?? [])].find(frame => frameOf(frame) === frame) ?? null,
+        // The viewer frame of a window (null when the document has no picture); while the window's fullscreen viewer
+        // is open (point 168.2), that one – so word hover, selection and highlights follow it there.
+        frameIn: win => {
+            const full = win?.querySelector?.('.doc-fullscreen:not([hidden]) .detail-doc');
+            if (full && frameOf(full) === full) return full;
+            return [...(win?.querySelectorAll?.('.detail-doc') ?? [])].find(frame => frameOf(frame) === frame && !frame.closest('.doc-fullscreen')) ?? null;
+        },
         page: pageOf,
         // Shows that page; resolves true when it is drawn (false when the document has no such page).
         goTo: (frame, page) => {
@@ -412,6 +408,34 @@
             const img = stateOf(frame).img;
             const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
             return w && h ? { img, w, h } : null;
+        },
+        // Point 168.2 (fullscreen viewer): pdf.js for a frame added later, freeing it again, and zoom/pan from outside.
+        init: frame => (frame?.dataset.pdf ? initPdf(frame) : undefined),
+        release: drop,
+        scale: frame => stateOf(frame).s,
+        // Zoom by a factor around a client point (default: the frame's centre).
+        zoomBy: (frame, factor, at = null) => {
+            const st = stateOf(frame);
+            clearBox(st);
+            zoomAt(frame, st, st.s * factor, at ? point(frame, at) : center(frame));
+        },
+        pan: (frame, dx, dy) => { const st = stateOf(frame); st.x += dx; st.y += dy; apply(frame, st); },
+        // 'page' = whole page (fit), 'width' = page width fills the frame (top shown), 'actual' = 100 % (CSS pixels).
+        fit: (frame, mode) => {
+            const st = stateOf(frame);
+            clearBox(st);
+            const c = content(st);
+            if (mode === 'page' || !c) { reset(frame, st); return; }
+            if (mode === 'width') {
+                st.s = Math.min(MAX, Math.max(MIN, frame.clientWidth / c.pw));
+                st.x = -st.img.offsetLeft - st.s * c.x;
+                st.y = -st.img.offsetTop - st.s * c.y;
+                apply(frame, st);
+                return;
+            }
+            const pdf = pdfs.get(frame);
+            const natural = pdf?.width ? pdf.width * 96 / 72 : (st.img.naturalWidth || st.img.width);
+            zoomAt(frame, st, natural / c.pw, center(frame));
         },
     };
     DocHamster.on('window:close', root => root.querySelectorAll?.('.detail-doc[data-pdf]').forEach(drop));

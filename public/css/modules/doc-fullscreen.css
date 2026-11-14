@@ -1,0 +1,14 @@
+/* Fullscreen viewer (point 168.2, modules/doc-fullscreen.js): a framework dialog that fills the app on a dark
+   backdrop; the bar (frame's next sibling for document-viewer.js) is drawn on top, the document fills the rest. */
+.doc-fullscreen { background: rgb(0 0 0 / .8); }
+.dialog.doc-fullscreen-box { display: flex; flex-direction: column; width: calc(100vw - 2rem); max-width: none; height: calc(100dvh - 2rem); padding: .75rem; }
+.doc-fullscreen-box > .doc-fullscreen-bar { order: -1; margin: 0 0 .5rem; padding-right: 3rem; gap: .5rem; }
+.doc-fullscreen-box > .dialog-x { top: .75rem; right: .75rem; }
+.doc-fullscreen-box > .doc-fullscreen-frame { flex: 1 1 0; height: auto; min-height: 0; margin: 0; touch-action: none; }
+.doc-fullscreen-title { flex: 1; min-width: 0; overflow: hidden; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.doc-fullscreen-value { min-width: 3.5rem; color: var(--muted); font-variant-numeric: tabular-nums; text-align: center; }
+.doc-fullscreen-bar [data-fs-docs][hidden] { display: none; }
+@media (max-width: 40rem) {
+    .dialog.doc-fullscreen-box { width: 100vw; height: 100dvh; padding: .5rem; border-radius: 0; }
+    .doc-fullscreen-title { flex-basis: 100%; order: -1; }
+}

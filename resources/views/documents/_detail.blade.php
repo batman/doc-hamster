@@ -50,6 +50,14 @@
         @endif
     </x-slot:menu>
 
+    @php
+        // Points 168.1/168.2: the viewer (picture or PDF + zoom bar) sits in a pane whose height the edge below
+        // changes (remembered per kind 'detail'); the fullscreen viewer is cloned from the template at the end.
+        $isPdf = $file?->mime === 'application/pdf';
+        $viewer = ! $isText && ($file?->isImage() || $file?->thumb_path || $isPdf);
+        $viewerSrc = $file?->isImage() ? route('documents.file', $file->id) : ($file?->thumb_path ? route('documents.thumb', $file->id) : null);
+    @endphp
+    @if ($viewer)<div class="pane" data-pane="detail" style="--pane-size: var(--pane-detail)">@endif
     @if ($file?->isImage())
         <span class="thumb-frame detail-doc"><img class="thumb" src="{{ route('documents.file', $file->id) }}" alt="" draggable="false"></span>
     @elseif ($isText)
@@ -72,7 +80,7 @@
     @elseif ($file)
         @include('documents._thumb', ['frameClass' => 'detail-doc'])
     @endif
-    @if ($file?->isImage() || $file?->thumb_path || $file?->mime === 'application/pdf')
+    @if ($viewer)
         {{-- Zoom bar for the viewer above (app.js "Document viewer"): wheel, slider, box zoom and box copy. --}}
         <div class="doc-zoom" data-doc-zoom data-label-zoom="{{ __('documents.zoom_in_area') }}" data-label-copy="{{ __('documents.copy_area') }}" data-label-copied="{{ __('documents.copied') }}">
             {{-- Two modes (point 25): Bewegen pans, Markieren draws a box; Bewegen is the default. --}}
@@ -92,7 +100,54 @@
                     <output data-page-label></output>
                 </div>
             @endif
+            <button type="button" class="icon-button button-small" data-pane-reset="detail" aria-label="{{ __('documents.viewer.height_reset') }}" data-tooltip="{{ __('documents.viewer.height_reset') }}"><x-icon name="restore" /></button>
+            <button type="button" class="icon-button button-small" data-doc-fullscreen="{{ $document->id }}" aria-label="{{ __('documents.viewer.fullscreen') }}" data-tooltip="{{ __('documents.viewer.fullscreen') }}"><x-icon name="maximize" /></button>
         </div>
+        </div>
+        <div class="pane-edge" data-pane-edge="detail" role="separator" aria-orientation="horizontal" tabindex="0" aria-label="{{ __('documents.viewer.height') }}" data-tooltip="{{ __('documents.viewer.height') }}"></div>
+        {{-- Fullscreen viewer (point 168.2, modules/doc-fullscreen.js): a framework dialog over the whole app; the same
+             frame + zoom bar pair as above, so modules/document-viewer.js drives it (zoom, pan, pages, word overlay). --}}
+        <template data-doc-fullscreen-tpl>
+            <div class="dialog-backdrop doc-fullscreen" hidden>
+                <div class="dialog doc-fullscreen-box" role="dialog" aria-modal="true" aria-label="{{ $document->title }}">
+                    <button type="button" class="icon-button button-small dialog-x" data-dialog-close aria-label="{{ __('documents.close') }}" data-tooltip="{{ __('documents.close') }}"><x-icon name="x" /></button>
+                    <span class="thumb-frame detail-doc doc-fullscreen-frame" tabindex="0" @if ($isPdf) data-pdf="{{ route('documents.file', $file->id) }}" @endif>
+                        @if ($viewerSrc)
+                            <img class="thumb" src="{{ $viewerSrc }}" alt="" draggable="false">
+                        @else
+                            <x-icon :name="$file->typeIcon()" />
+                        @endif
+                    </span>
+                    <div class="doc-zoom doc-fullscreen-bar" data-doc-zoom data-label-zoom="{{ __('documents.zoom_in_area') }}" data-label-copy="{{ __('documents.copy_area') }}" data-label-copied="{{ __('documents.copied') }}">
+                        <div class="button-group" role="group" data-fs-docs hidden>
+                            <button type="button" class="icon-button button-small" data-fs-doc-step="-1" aria-label="{{ __('documents.viewer.doc_prev') }}" data-tooltip="{{ __('documents.viewer.doc_prev') }} (←)"><x-icon name="chevron-left" /></button>
+                            <button type="button" class="icon-button button-small" data-fs-doc-step="1" aria-label="{{ __('documents.viewer.doc_next') }}" data-tooltip="{{ __('documents.viewer.doc_next') }} (→)"><x-icon name="chevron-right" /></button>
+                        </div>
+                        <span class="doc-fullscreen-title">{{ $document->title }}</span>
+                        <div class="button-group" role="group" aria-label="{{ __('documents.zoom') }}">
+                            <button type="button" class="icon-button button-small" data-fs-zoom="out" aria-label="{{ __('documents.viewer.zoom_out') }}" data-tooltip="{{ __('documents.viewer.zoom_out') }}"><x-icon name="zoom-out" /></button>
+                            <button type="button" class="icon-button button-small" data-fs-zoom="in" aria-label="{{ __('documents.viewer.zoom_in') }}" data-tooltip="{{ __('documents.viewer.zoom_in') }}"><x-icon name="zoom-in" /></button>
+                        </div>
+                        <output class="doc-fullscreen-value" data-zoom-value>100 %</output>
+                        <div class="button-group" role="group">
+                            <button type="button" class="icon-button button-small" data-fs-zoom="width" aria-label="{{ __('documents.viewer.fit_width') }}" data-tooltip="{{ __('documents.viewer.fit_width') }}"><x-icon name="arrow-autofit-width" /></button>
+                            <button type="button" class="icon-button button-small" data-fs-zoom="page" aria-label="{{ __('documents.viewer.fit_page') }}" data-tooltip="{{ __('documents.viewer.fit_page') }}"><x-icon name="arrow-autofit-height" /></button>
+                            <button type="button" class="icon-button button-small" data-fs-zoom="actual" aria-label="{{ __('documents.viewer.actual') }}" data-tooltip="{{ __('documents.viewer.actual') }}"><x-icon name="zoom-reset" /></button>
+                        </div>
+                        @if ($isPdf)
+                            <div class="doc-pages" data-doc-pages data-label="{{ __('documents.page_of') }}" hidden>
+                                <div class="button-group" role="group" aria-label="{{ __('documents.pages') }}">
+                                    <button type="button" class="icon-button button-small" data-page-step="-1" aria-label="{{ __('documents.page_prev') }}" data-tooltip="{{ __('documents.page_prev') }}"><x-icon name="chevron-left" /></button>
+                                    <button type="button" class="icon-button button-small" data-page-step="1" aria-label="{{ __('documents.page_next') }}" data-tooltip="{{ __('documents.page_next') }}"><x-icon name="chevron-right" /></button>
+                                </div>
+                                <output data-page-label></output>
+                            </div>
+                        @endif
+                        <a class="icon-button button-small" href="{{ route('documents.download', $file->id) }}" aria-label="{{ __('documents.download') }}" data-tooltip="{{ __('documents.download') }}"><x-icon name="download" /></a>
+                    </div>
+                </div>
+            </div>
+        </template>
     @endif
 
     {{-- Eigenschaften (points 122.4, A252): the values of this document, editable in place. --}}
