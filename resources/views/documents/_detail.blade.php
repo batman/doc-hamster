@@ -158,15 +158,22 @@
     @include('documents._girocode')
 
     @can('documents.edit')
-        <form method="post" action="{{ route('documents.update', $document->id) }}">
+        {{-- Point 170.1: no save button – each value saves on its own (FRAMEWORK.md "Properties module"): the name with the ✓ in
+             the field (Enter or ✓), every tag tick at once; the folder select moves the document at once (bulk move route, toast
+             with "Rückgängig", documents-forms.js). The select belongs to the move form below (form=…), so the autosave never
+             sends it. Without JavaScript both forms post with their noscript buttons. --}}
+        <form method="post" action="{{ route('documents.update', $document->id) }}" data-autosave data-doc-detail="{{ $document->id }}">
             @csrf
             <section class="detail-section">
                 <h3><label for="title-{{ $document->id }}">{{ __('documents.name') }}</label></h3>
-                <input id="title-{{ $document->id }}" name="title" value="{{ old('title', $document->title) }}" maxlength="250" required>
+                <div class="field-addon">
+                    <input id="title-{{ $document->id }}" name="title" value="{{ old('title', $document->title) }}" maxlength="250" required>
+                    <span class="addon-end"><button type="button" class="control-button addon-button" data-field-save aria-label="{{ __('documents.save') }}" data-tooltip="{{ __('documents.save') }}" hidden><x-icon name="check" /></button></span>
+                </div>
             </section>
             <section class="detail-section">
                 <h3><label for="folder-{{ $document->id }}">{{ __('folders.folder') }}</label></h3>
-                <select id="folder-{{ $document->id }}" name="folder">
+                <select id="folder-{{ $document->id }}" name="folder" form="move-form-{{ $document->id }}" data-doc-move="{{ $document->id }}" data-current="{{ $document->folder_id }}">
                     @foreach ($folders as $row)
                         <option value="{{ $row['folder']->id }}" @selected(old('folder', $document->folder_id) === $row['folder']->id)>{{ str_repeat('– ', $row['depth']) }}{{ $row['folder']->name }}</option>
                     @endforeach
@@ -182,7 +189,11 @@
                     </div>
                 </x-fold-card>
             @endif
-            <button type="submit">{{ __('documents.save') }}</button>
+            <noscript><button type="submit">{{ __('documents.save') }}</button></noscript>
+        </form>
+        <form id="move-form-{{ $document->id }}" method="post" action="{{ route('documents.move', $document->id) }}">
+            @csrf
+            <noscript><button type="submit">{{ __('documents.move') }}</button></noscript>
         </form>
         {{-- Note and recognised text are edited in place and save on their own (points 27/28). --}}
         <section class="detail-section">

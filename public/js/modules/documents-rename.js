@@ -107,6 +107,28 @@
         if (data.moved) refresh();
     };
     DocHamster.on('properties:saved', ({ json }) => applyFolder(json.folder));
+    // Point 170.1: the detail window saved a document's name or tags – its window heads, its other detail forms and the
+    // folder windows (rows, tags) follow. Point 170.2: a tag's name or colour – the pills and the colour classes follow.
+    DocHamster.on('properties:saved', ({ form, json }) => {
+        const doc = json.document;
+        if (doc?.id) {
+            retitle(url => url.pathname.replace(/\/$/, '').endsWith('/documents/' + doc.id), doc.title);
+            document.querySelectorAll(`form[data-doc-detail="${CSS.escape(doc.id)}"] input[name="title"]`).forEach(input => {
+                if (input.form !== form) {
+                    input.value = doc.title;
+                    input.defaultValue = doc.title;
+                }
+            });
+            refresh();
+        }
+        const tag = json.tag;
+        if (tag?.id) {
+            document.querySelectorAll(`.tag.tag-${CSS.escape(tag.id)}`).forEach(pill => { pill.textContent = tag.name; });
+            retitle(url => /\/tags\/?$/.test(url.pathname) && url.searchParams.get('tag') === tag.id, tag.name);
+            document.querySelectorAll(`[data-tag-name] > .tag-${CSS.escape(tag.id)}`).forEach(pill => { pill.parentElement.dataset.tagName = tag.name.toLowerCase(); });
+            tagCss();
+        }
+    });
     document.addEventListener('submit', event => {
         const form = event.target.closest('[data-folder-rename-form]');
         if (!form) {

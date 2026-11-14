@@ -60,7 +60,7 @@ final class DocumentController
     }
 
     /** Title, note and tags from the receipt view. */
-    public function update(Request $request, string $id, AuditLog $audit, CurrentOrg $org): RedirectResponse
+    public function update(Request $request, string $id, AuditLog $audit, CurrentOrg $org): RedirectResponse|JsonResponse
     {
         $data = $request->validate([
             'title' => ['sometimes', 'required', 'string', 'max:250'],
@@ -79,6 +79,10 @@ final class DocumentController
         ]);
         $document->tags()->sync($data['tags'] ?? []);
         $audit->record('document.changed', orgId: $org->id(), userId: $this->userId($request), subject: $document, ip: $request->ip());
+        // Point 170.1: the detail window saves title and tags on their own (form[data-autosave]) and updates its rows.
+        if ($request->wantsJson()) {
+            return response()->json(['message' => __('documents.changed'), 'document' => ['id' => $document->id, 'title' => $document->title]]);
+        }
 
         return back()->with('status', __('documents.changed'));
     }

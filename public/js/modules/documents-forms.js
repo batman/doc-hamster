@@ -42,7 +42,8 @@
     document.addEventListener('change', event => {
         const el = event.target;
         const form = el.closest?.('form[data-autosave]');
-        if (!form || (!el.name && !el.matches('[data-color-picker]')) || savedByButton(el)) {
+        // A field that belongs to another form (form="…", e.g. the document's folder select, point 170.1) is not ours.
+        if (!form || (!el.name && !el.matches('[data-color-picker]')) || savedByButton(el) || (el.form && el.form !== form)) {
             return;
         }
         if (el.matches('[data-color-hex]') && el.value !== '' && !/^#[0-9a-f]{6}$/i.test(el.value)) {
@@ -86,6 +87,37 @@
             event.preventDefault();
             autosave(event.target);
         }
+    });
+
+    // --- Folder of a document saves on change (point 170.1) --------------------------------------------------------
+    // select[data-doc-move] in the detail window: moves the document at once (bulk move route, like a drop), toast with
+    // "Rückgängig"; every select of that document follows, the folder windows reload.
+    document.addEventListener('change', event => {
+        const select = event.target.closest?.('select[data-doc-move]');
+        const cfg = docs.config();
+        if (!select || !cfg.move) {
+            return;
+        }
+        const id = select.dataset.docMove;
+        const before = select.dataset.current ?? '';
+        const show = folder => document.querySelectorAll(`select[data-doc-move="${CSS.escape(id)}"]`).forEach(each => {
+            each.value = folder;
+            each.dataset.current = folder;
+        });
+        post(cfg.move, { ids: [id], folder: select.value }).then(json => {
+            show(select.value);
+            toast(json.message, {
+                undo: before ? () => post(cfg.move, { ids: [id], folder: before }).then(() => {
+                    show(before);
+                    toast(cfg.undone);
+                    docs.refresh();
+                }).catch(fail) : null,
+            });
+            docs.refresh();
+        }).catch(error => {
+            select.value = before;
+            fail(error);
+        });
     });
 
     // --- Field with symbol ("Feld mit Symbol", A195-A199): X clears, the eye shows the password ---------------------
