@@ -166,7 +166,7 @@ final class RecognizeText implements ShouldQueue
                 // ocrmypdf picks its own resolution: no smaller retry there.
                 [$text, $event, $pages, $words] = self::withRetry(
                     static fn (Deadline $d): array => $reader->read($path, $document->id, $d),
-                    $system ? null : static fn (Deadline $d): array => $reader->read($path, $document->id, $d, PdfReader::RETRY_DPI),
+                    $system && $ocr->renderTool() === null ? null : static fn (Deadline $d): array => $reader->read($path, $document->id, $d, PdfReader::RETRY_DPI),
                 );
             }
         } catch (OcrTimeout $e) {

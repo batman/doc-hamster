@@ -8,12 +8,14 @@ use App\Domain\Ocr\OcrWords;
 use App\Infrastructure\Environment\LocalOcr;
 use App\Infrastructure\Environment\OcrProgress;
 use Illuminate\Support\Facades\File;
+use RuntimeException;
 use Throwable;
 
 /**
- * Reads a PDF on the server (point 69). A114 first: a text layer on every page is taken as it is. Otherwise ocrmypdf
- * (system) or, A113, each page without text as a temporary image through Tesseract (app), at most 50 pages, deleted
- * right after.
+ * Reads a PDF on the server (point 69). A114 first: a text layer on every page is taken as it is. Otherwise, A113,
+ * each page without text as a temporary image through Tesseract (app pdftopng, or 186.5 a system pdftoppm), at most 50
+ * pages, deleted right after – with the same steps as the browser (OcrTools::tesseract). ocrmypdf only when the
+ * system has no page renderer.
  *
  * Word positions (point 119): text-layer pages from `pdftotext -bbox-layout` (poppler); the app-owned Xpdf pdftotext
  * has no bbox output, so there a text-layer page is rendered and read by Tesseract for its positions only (its text
@@ -47,7 +49,8 @@ final class PdfReader
         if ($allLayer && ($layerWords !== null || $this->system)) {
             return [implode("\n\n", array_map('trim', $layer)), 'text_layer', $pages, OcrWords::make('layer', $layerWords ?? [])];
         }
-        if ($this->system) {
+        // 186.5: ocrmypdf only when no tool turns pages into images – it has no line removal and no safety net.
+        if ($this->system && $this->tools->ocr()->renderTool() === null) {
             [$text, $words] = $this->tools->ocrmypdf($path, $deadline);
 
             return [$text, 'recognized', $pages, $words];
@@ -109,7 +112,8 @@ final class PdfReader
             $fromLayer = false;
             $root = $dir.'/p';
             try {
-                $this->tools->run($ocr->niced([$ocr->pdfTool('pdftopng'), '-f', (string) $n, '-l', (string) $n, '-r', (string) $dpi, '-gray', $path, $root]), [], $deadline);
+                [$tool, $kind] = $ocr->renderTool() ?? throw new RuntimeException('pdftopng: fehlt');
+                $this->tools->run($ocr->niced([$tool, '-f', (string) $n, '-l', (string) $n, '-r', (string) $dpi, '-gray', ...($kind === 'pdftoppm' ? ['-png'] : []), $path, $root]), [], $deadline);
             } catch (Throwable $e) {
                 if (! $isLayer) {
                     throw $e;
@@ -132,7 +136,7 @@ final class PdfReader
             }
             try {
                 try {
-                    [$read, $page] = $this->tools->tesseract($images[0], $n, $deadline, true);
+                    [$read, $page] = $this->tools->tesseract($images[0], $n, $deadline);
                 } catch (Throwable $e) {
                     if (! $isLayer) {
                         throw $e;

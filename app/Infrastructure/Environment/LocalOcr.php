@@ -139,6 +139,23 @@ final class LocalOcr
         return $this->systemAvailable() ? (new ExecutableFinder)->find('pdftotext') : null;
     }
 
+    /**
+     * Point 186.5: what turns PDF pages into images for the server's own steps (line removal, PSM 11 safety net) –
+     * the app-owned pdftopng, else a system pdftoppm (poppler-utils) next to the system Tesseract. Null: the system
+     * path falls back to ocrmypdf without those steps.
+     *
+     * @return array{0: string, 1: 'pdftopng'|'pdftoppm'}|null
+     */
+    public function renderTool(): ?array
+    {
+        if ($this->pdfAvailable()) {
+            return [$this->pdfTool('pdftopng'), 'pdftopng'];
+        }
+        $poppler = $this->systemAvailable() ? (new ExecutableFinder)->find('pdftoppm') : null;
+
+        return $poppler !== null ? [$poppler, 'pdftoppm'] : null;
+    }
+
     /** Full path of an app-owned Xpdf tool (pdftopng, pdftotext). */
     public function pdfTool(string $name): string
     {

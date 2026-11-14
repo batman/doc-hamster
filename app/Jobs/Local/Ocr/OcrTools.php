@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Jobs\Local\Ocr;
 
+use App\Domain\Ocr\OcrWordMerge;
 use App\Domain\Ocr\OcrWords;
+use App\Domain\Ocr\PageInk;
 use App\Infrastructure\Environment\LocalOcr;
 use RuntimeException;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
@@ -27,20 +29,66 @@ final class OcrTools
     }
 
     /**
-     * One image through Tesseract in one run: the plain text and the TSV with the word boxes.
+     * One page image read the way the browser reads it (point 184/186.5): ruling lines removed first, then Tesseract
+     * (PSM 3), then the ink it left without words once more with PSM 11, merged by position. An image GD can't load
+     * or that is too big for the memory goes to Tesseract as it is.
      *
      * @return array{0: string, 1: array{n: int, words: list<array<string, mixed>>}|null} text, the page's words
      */
     public function tesseract(string $image, int $n, Deadline $deadline, ?bool $app = null): array
     {
         $app ??= $this->app;
+        $ink = PageInk::load($image);
+        if ($ink === null) {
+            return $this->read($image, $n, $deadline, $app);
+        }
+        $temp = [];
+        try {
+            $input = $image;
+            if ($ink->removeLines() > 0) {
+                $input = $temp[] = self::tempPng();
+                $ink->save($input);
+            }
+            [$text, $page] = $this->read($input, $n, $deadline, $app);
+            try {
+                $missing = $ink->uncovered($page);
+                if ($missing !== [] && ! $deadline->passed(30)) {
+                    $ink->keepOnly($missing);
+                    $sparse = $temp[] = self::tempPng();
+                    $ink->save($sparse);
+                    unset($ink);
+                    [, $extra] = $this->read($sparse, $n, $deadline, $app, 11);
+                    [$merged, $added] = OcrWordMerge::merge($page, $extra);
+                    if ($added > 0 && $merged !== null) {
+                        $page = $merged;
+                        $text = OcrWords::plainText(['pages' => [$merged]])."\n";
+                    }
+                }
+            } catch (Throwable) {
+                // Only the safety net: the first read stands.
+            }
+
+            return [$text, $page];
+        } finally {
+            self::unlink($temp);
+        }
+    }
+
+    /**
+     * One image through Tesseract in one run: the plain text and the TSV with the word boxes.
+     *
+     * @return array{0: string, 1: array{n: int, words: list<array<string, mixed>>}|null} text, the page's words
+     */
+    private function read(string $image, int $n, Deadline $deadline, bool $app, ?int $psm = null): array
+    {
         $base = tempnam(sys_get_temp_dir(), 'tes');
         if ($base === false) {
             throw new RuntimeException('tempnam');
         }
         try {
             [$languages, $appData] = $this->ocr->serverLanguages($this->languages, $app);
-            $this->run($this->ocr->command([$image, $base, '-l', implode('+', $languages), '-c', 'tessedit_create_txt=1', '-c', 'tessedit_create_tsv=1'], $app, $appData), $this->ocr->env($app, $appData), $deadline);
+            $args = [$image, $base, '-l', implode('+', $languages), ...($psm !== null ? ['--psm', (string) $psm] : []), '-c', 'tessedit_create_txt=1', '-c', 'tessedit_create_tsv=1'];
+            $this->run($this->ocr->command($args, $app, $appData), $this->ocr->env($app, $appData), $deadline);
             $text = is_file($base.'.txt') ? file_get_contents($base.'.txt') : false;
             if ($text === false) {
                 throw new RuntimeException('tesseract: keine Textdatei');
@@ -165,6 +213,18 @@ final class OcrTools
         $text = count($lines) > 1 && $prefix !== '' && ! str_starts_with($last, $prefix) ? $prefix.$last : $last;
 
         return mb_substr($text, 0, 160);
+    }
+
+    /** An empty temporary path ending in .png (Tesseract goes by the extension for some formats). */
+    public static function tempPng(): string
+    {
+        $file = tempnam(sys_get_temp_dir(), 'ink');
+        if ($file === false) {
+            throw new RuntimeException('tempnam');
+        }
+        self::unlink([$file]);
+
+        return $file.'.png';
     }
 
     /** @param list<string> $files */

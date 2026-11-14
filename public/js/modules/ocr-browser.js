@@ -8,7 +8,8 @@
 // down to 2000 px. Point 58/A63: the server counts failures (three → failed).
 // A61: an engine that does not start is reported and retried after 5 minutes
 // instead of spinning. Point 61: results carry their duration; engine start
-// goes to the OCR log.
+// goes to the OCR log. Point 184: ruling lines go before the read, ink left without words gets a PSM 11 read
+// (modules/ocr-ink.js, the same steps as the server).
 (() => {
   const startOcr = () => {
     const base = document.body?.dataset.ocrBrowser;
@@ -104,6 +105,8 @@
         create.then(w => { if (late) w.terminate().catch(() => {}); }, () => {});
         try {
             lane.engine = await within(create, ENGINE_MS, 'timeout 60 s');
+            // Point 184/186.5: page layout analysis like the server's Tesseract (PSM 3; tesseract.js reads one block by default).
+            await lane.engine.setParameters({ tessedit_pageseg_mode: PSM_AUTO });
             lane.langs = want.langs;
         } catch (e) {
             late = true;
@@ -139,6 +142,10 @@
     const r4 = v => Math.round(Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0)) * 1e4) / 1e4;
     const word = (t, x, y, w, h, c, l, b) => ({ t, x: r4(x), y: r4(y), w: r4(w), h: r4(h), c: Math.round(Math.min(100, Math.max(0, c ?? 0))), l, b });
     const READ_OUTPUT = { text: true, blocks: true, hocr: false, tsv: false };
+    const PSM_AUTO = '3';
+    const PSM_SPARSE = '11';
+    // Point 184: line removal and the PSM 11 safety net up to this size (canvas, its pixels and the mask in memory).
+    const INK_PIXELS = 16e6;
     // tesseract.js 5: blocks → paragraphs → lines → words with bbox in px of the image it read.
     const ocrWords = (data, width, height, n) => {
         const words = [];
@@ -183,6 +190,43 @@
         });
         return { n, words };
     };
+    // Point 184 (same steps as the server, modules/ocr-ink.js): ruling lines painted white, then PSM 3; the ink it left
+    // without words is read once more with PSM 11 and merged by position. Gives { text, page }.
+    const readCanvas = async (lane, canvas, n, run) => {
+        const ink = window.DocHamster?.ocrInk;
+        const ctx = canvas.getContext('2d');
+        let prepared = null;
+        if (ink && canvas.width * canvas.height <= INK_PIXELS) {
+            try { prepared = ink.prepare(ctx, canvas.width, canvas.height); } catch { prepared = null; }
+        }
+        const engine = await getEngine(lane);
+        const { data } = await engine.recognize(canvas, {}, READ_OUTPUT);
+        let page = ocrWords(data, canvas.width, canvas.height, n);
+        let text = (data?.text ?? '').trim();
+        if (!prepared) return { text, page };
+        try {
+            check(run);
+            const missing = ink.uncovered(prepared, page.words);
+            if (missing.length) {
+                ink.keepOnly(ctx, prepared, missing);
+                await engine.setParameters({ tessedit_pageseg_mode: PSM_SPARSE });
+                try {
+                    const { data: sparse } = await engine.recognize(canvas, {}, READ_OUTPUT);
+                    const [merged, added] = ink.merge(page, ocrWords(sparse, canvas.width, canvas.height, n));
+                    if (added > 0) {
+                        page = merged;
+                        text = ink.plainText(merged);
+                    }
+                } finally {
+                    await engine.setParameters({ tessedit_pageseg_mode: PSM_AUTO });
+                }
+            }
+        } catch (e) {
+            if (e?.message === 'stopped') throw e;
+            // Only the safety net: the first read stands.
+        }
+        return { text, page };
+    };
     // Point 124: the Live card follows the main lane page by page (DocHamster events; only this tab sees them).
     const pageStart = (lane, info, n) => { if (lane.main) window.DocHamster?.emit('ocr:page-start', { id: info.id, n, pages: info.pages ?? 1 }); };
     const pageDone = (lane, info, page) => { if (lane.main) window.DocHamster?.emit('ocr:page', { id: info.id, n: page.n, pages: info.pages ?? 1, words: page.words }); };
@@ -203,14 +247,21 @@
         const bitmap = await createImageBitmap(blob);
         try {
             check(run);
-            const factor = Math.min(side > 0 ? side / Math.max(bitmap.width, bitmap.height) : 1, Math.sqrt(MAX_PIXELS / (bitmap.width * bitmap.height)));
-            if (factor >= 1) return await read(blob, bitmap.width, bitmap.height);
+            const factor = Math.min(side > 0 ? side / Math.max(bitmap.width, bitmap.height) : 1, Math.sqrt(MAX_PIXELS / (bitmap.width * bitmap.height)), 1);
+            // Point 184: on a canvas the lines can go first; very big images are read as they are.
+            if (factor >= 1 && bitmap.width * bitmap.height > INK_PIXELS) return await read(blob, bitmap.width, bitmap.height);
             const canvas = document.createElement('canvas');
             canvas.width = Math.max(1, Math.round(bitmap.width * factor));
             canvas.height = Math.max(1, Math.round(bitmap.height * factor));
-            canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
             try {
-                return await read(canvas, canvas.width, canvas.height);
+                const { text, page } = await readCanvas(lane, canvas, 1, run);
+                info.words = { source: 'browser', pages: [page] };
+                pageDone(lane, info, page);
+                return text;
             } finally {
                 canvas.width = canvas.height = 0;
             }
@@ -249,10 +300,10 @@
                     const canvas = document.createElement('canvas');
                     canvas.width = Math.floor(viewport.width);
                     canvas.height = Math.floor(viewport.height);
-                    await page.render({ canvas, canvasContext: canvas.getContext('2d'), viewport }).promise;
-                    const { data } = await (await getEngine(lane)).recognize(canvas, {}, READ_OUTPUT);
-                    texts.push((data?.text ?? '').trim());
-                    pages.push(ocrWords(data, canvas.width, canvas.height, n));
+                    await page.render({ canvas, canvasContext: canvas.getContext('2d', { willReadFrequently: true }), viewport }).promise;
+                    const read = await readCanvas(lane, canvas, n, run);
+                    texts.push(read.text);
+                    pages.push(read.page);
                     pageDone(lane, info, pages[pages.length - 1]);
                     canvas.width = canvas.height = 0;
                 }
