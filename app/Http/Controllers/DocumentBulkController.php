@@ -7,18 +7,18 @@ namespace App\Http\Controllers;
 use App\Domain\Audit\AuditLog;
 use App\Domain\Auth\User;
 use App\Domain\Documents\Document;
-use App\Domain\Documents\DocumentFile;
+use App\Domain\Documents\DocumentPurger;
 use App\Domain\Documents\Folder;
+use App\Domain\Documents\TrashSettings;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 /**
@@ -110,38 +110,35 @@ final class DocumentBulkController
     }
 
     /** Deleting inside the Papierkorb (point 77, A137): gone for good, files included; asked first in a dialog. */
-    public function purge(Request $request, AuditLog $audit, CurrentOrg $org): JsonResponse|RedirectResponse
+    public function purge(Request $request, DocumentPurger $purger): JsonResponse|RedirectResponse
     {
         $data = $request->validate($this->idRules());
-        $count = $this->destroy($this->visible($request, true)->onlyTrashed()->whereKey($data['ids'])->with('files')->get(), $request, $audit, $org);
-
-        return $this->answer($request, trans_choice('documents.bulk.purged', $count, ['count' => $count]));
-    }
-
-    /** "Papierkorb leeren" (A136): everything in the Papierkorb this person may see, gone for good. */
-    public function empty(Request $request, AuditLog $audit, CurrentOrg $org): JsonResponse|RedirectResponse
-    {
-        $count = $this->destroy($this->visible($request, true)->onlyTrashed()->with('files')->get(), $request, $audit, $org);
+        $documents = $this->visible($request, true)->onlyTrashed()->whereKey($data['ids'])->get();
+        $count = $purger->purge($documents, $this->user($request)->id, $request->ip());
 
         return $this->answer($request, trans_choice('documents.bulk.purged', $count, ['count' => $count]));
     }
 
     /**
-     * @param  Collection<int, Document>  $documents
+     * "Papierkorb leeren" (A136, point 207): everything in the Papierkorb this person may see leaves it at once, but is
+     * only deleted for good after the undo period – until then "Leerung rückgängig machen" brings it back.
      */
-    private function destroy(Collection $documents, Request $request, AuditLog $audit, CurrentOrg $org): int
+    public function empty(Request $request, AuditLog $audit, CurrentOrg $org): JsonResponse|RedirectResponse
     {
-        $userId = $this->user($request)->id;
-        $disk = Storage::disk('local');
-        foreach ($documents as $document) {
-            $paths = $document->files->flatMap(static fn (DocumentFile $file): array => array_filter([$file->path, $file->thumb_path]))->all();
-            // Logged before it goes: the audit keeps the id and title, the rows cascade away with the document.
-            $audit->record('document.purged', orgId: $org->id(), userId: $userId, subject: $document, meta: ['title' => $document->title, 'files' => count($paths)], ip: $request->ip());
-            $document->forceDelete();
-            $disk->delete($paths);
-        }
+        $days = TrashSettings::of($org->organization())['undo'];
+        $until = Carbon::now()->addDays($days)->startOfSecond();
+        $count = $this->visible($request, true)->onlyTrashed()->update(['purge_after' => $until]);
+        $audit->record('document.trash_emptied', orgId: $org->id(), userId: $this->user($request)->id, meta: ['count' => $count, 'until' => $until->toDateTimeString()], ip: $request->ip());
+        $message = trans_choice('documents.bulk.emptied', $count, ['count' => $count, 'days' => $days]);
 
-        return $documents->count();
+        return $request->wantsJson()
+            ? response()->json([
+                'message' => $message,
+                'undo' => route('documents.trash.unempty'),
+                'batch' => $until->toDateTimeString(),
+                'undoLabel' => __('documents.bulk.unempty_short'),
+            ])
+            : redirect()->route('documents.trash')->with('status', $message);
     }
 
     private function answer(Request $request, string $message): JsonResponse|RedirectResponse
@@ -168,7 +165,8 @@ final class DocumentBulkController
     {
         $query = Document::query()->withPrintTray()->visibleTo($this->user($request)->id, Gate::allows(Permission::ViewAllDocuments->value));
 
-        return $withTrashed ? $query->withTrashed() : $query;
+        // Emptied ones (point 207) are out of reach here: only "Leerung rückgängig machen" brings them back.
+        return $withTrashed ? $query->withTrashed()->whereNull('purge_after') : $query;
     }
 
     private function user(Request $request): User

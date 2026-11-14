@@ -117,10 +117,12 @@ it('empties the Papierkorb after a confirm that names the count', function (): v
         $this->postJson('/documents/bulk/trash', ['ids' => [dndUpload($this, $name)->id]]);
     }
 
-    $this->get('/documents/trash')->assertOk()->assertSee('2 Dokumente endgültig löschen? Das lässt sich nicht rückgängig machen.');
+    $this->get('/documents/trash')->assertOk()->assertSee('2 Dokumente aus dem Papierkorb entfernen? Sie werden in 14 Tagen endgültig gelöscht');
     $this->post('/documents/trash/empty')->assertRedirect('/documents/trash');
 
-    expect(Document::query()->withoutGlobalScope(OrgScope::class)->onlyTrashed()->count())->toBe(0);
+    // Point 207: out of the Papierkorb at once, deleted for good only after the undo period.
+    expect(Document::query()->withoutGlobalScope(OrgScope::class)->inTrash()->count())->toBe(0)
+        ->and(Document::query()->withoutGlobalScope(OrgScope::class)->emptied()->count())->toBe(2);
 });
 
 it('moves a folder into another one, never into itself, below itself or too deep; "Dokumente allgemein" stays', function (): void {

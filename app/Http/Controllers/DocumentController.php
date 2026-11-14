@@ -144,15 +144,17 @@ final class DocumentController
     public function trash(Request $request): View
     {
         return view('documents.trash', [
-            'documents' => $this->visible($request)->withPrintTray()->onlyTrashed()->with('files')->latest('deleted_at')->limit(200)->get(),
-            'count' => $this->visible($request)->withPrintTray()->onlyTrashed()->count(),
+            'documents' => $this->visible($request)->withPrintTray()->inTrash()->with('files')->latest('deleted_at')->limit(200)->get(),
+            'count' => $this->visible($request)->withPrintTray()->inTrash()->count(),
             'name' => Folder::trashName($this->organization()),
+            // Point 207: emptyings that can still be undone, for the ⋯ menu.
+            'emptied' => TrashController::batches($request),
         ]);
     }
 
     public function restore(Request $request, string $id, AuditLog $audit, CurrentOrg $org): RedirectResponse|JsonResponse
     {
-        $document = $this->visible($request)->withPrintTray()->onlyTrashed()->whereKey($id)->firstOrFail();
+        $document = $this->visible($request)->withPrintTray()->inTrash()->whereKey($id)->firstOrFail();
         $document->restore();
         $audit->record('document.restored', orgId: $org->id(), userId: $this->userId($request), subject: $document, ip: $request->ip());
         if ($request->wantsJson()) {

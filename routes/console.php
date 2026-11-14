@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domain\Documents\TrashSweeper;
 use App\Domain\Log\LogEntry;
 use App\Domain\Ocr\OcrLog;
 use App\Infrastructure\Environment\NativeSystemProbe;
@@ -35,4 +36,9 @@ Schedule::call(static fn () => OcrLog::prune())
 // A228: the logbooks "Allgemein" and "Updates" keep 12 months (writing also prunes now and then).
 Schedule::call(static fn () => LogEntry::prune())
     ->name('log-prune')
+    ->daily();
+
+// Point 207: the Papierkorb empties itself – emptied documents after their undo period, the rest after the organisation's setting.
+Schedule::call(static fn () => app(TrashSweeper::class)->run())
+    ->name('trash-sweep')
     ->daily();

@@ -185,7 +185,11 @@ return [
         'purge_text' => '{1} „:title“ endgültig löschen? Das lässt sich nicht rückgängig machen.|[2,*] :count Dokumente endgültig löschen? Das lässt sich nicht rückgängig machen.',
         'empty' => 'Papierkorb leeren',
         'empty_title' => 'Papierkorb leeren?',
-        'empty_text' => '{1} :count Dokument endgültig löschen? Das lässt sich nicht rückgängig machen.|[2,*] :count Dokumente endgültig löschen? Das lässt sich nicht rückgängig machen.',
+        // Point 207: "Leeren" keeps a safety net – deleted for good only after the undo period.
+        'empty_text' => '{1} :count Dokument aus dem Papierkorb entfernen? Es wird in :days Tagen endgültig gelöscht – bis dahin können Sie das rückgängig machen.|[2,*] :count Dokumente aus dem Papierkorb entfernen? Sie werden in :days Tagen endgültig gelöscht – bis dahin können Sie das rückgängig machen.',
+        'emptied' => '{0} Der Papierkorb war schon leer.|{1} Das Dokument wird in :days Tagen endgültig gelöscht.|[2,*] Die Dokumente werden in :days Tagen endgültig gelöscht.',
+        'unempty' => '{1} Leerung rückgängig machen (:count Dokument, bis :date)|[2,*] Leerung rückgängig machen (:count Dokumente, bis :date)',
+        'unempty_short' => 'Rückgängig machen',
         'cancel' => 'Abbrechen',
     ],
     // Points 4-7: the advanced search.
@@ -245,5 +249,24 @@ return [
         'copy_all' => 'Alles kopieren',
         'copied' => 'Kopiert.',
         'copy_failed' => 'Kopieren nicht möglich.',
+    ],
+    // Point 207: the Papierkorb's settings (its properties window), per organisation.
+    'trash_settings' => [
+        'keep' => 'Automatisch leeren nach',
+        'keep_options' => [
+            7 => ['title' => '7 Tagen', 'text' => 'Gelöschte Dokumente sind nach einer Woche endgültig weg.'],
+            30 => ['title' => '30 Tagen', 'text' => 'Empfohlen.'],
+            90 => ['title' => '90 Tagen', 'text' => 'Etwa ein Quartal Zeit zum Wiederherstellen.'],
+            365 => ['title' => '1 Jahr', 'text' => 'Viel Zeit, der Papierkorb belegt dafür länger Speicherplatz.'],
+            0 => ['title' => 'Nie automatisch leeren', 'text' => 'Dokumente bleiben, bis Sie den Papierkorb selbst leeren.'],
+        ],
+        'undo' => '„Papierkorb leeren“ rückgängig machen bis',
+        'undo_options' => [
+            7 => ['title' => '7 Tage danach', 'text' => 'Danach endgültig gelöscht.'],
+            14 => ['title' => '14 Tage danach', 'text' => 'Empfohlen.'],
+            30 => ['title' => '30 Tage danach', 'text' => 'Danach endgültig gelöscht.'],
+        ],
+        'hint' => 'Gesetzliche Aufbewahrungsfristen (z. B. 6, 8 oder 10 Jahre) liegen in Ihrer Verantwortung.',
+        'saved' => 'Gespeichert.',
     ],
 ];

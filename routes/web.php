@@ -49,6 +49,7 @@ use App\Http\Controllers\SpeedController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TextDocumentController;
 use App\Http\Controllers\TranslationController;
+use App\Http\Controllers\TrashController;
 use App\Http\Controllers\UpdateController;
 use Illuminate\Support\Facades\Route;
 
@@ -84,6 +85,9 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('documents/bulk/restore', [DocumentBulkController::class, 'restore'])->middleware('can:documents.trash')->name('documents.bulk.restore');
     Route::post('documents/bulk/purge', [DocumentBulkController::class, 'purge'])->middleware('can:documents.trash')->name('documents.bulk.purge');
     Route::post('documents/trash/empty', [DocumentBulkController::class, 'empty'])->middleware('can:documents.trash')->name('documents.trash.empty');
+    // Point 207: undo an emptying; the Papierkorb's settings (organisation-wide, Admins).
+    Route::post('documents/trash/unempty', [TrashController::class, 'unempty'])->middleware('can:documents.trash')->name('documents.trash.unempty');
+    Route::post('documents/trash/settings', [TrashController::class, 'settings'])->middleware('can:settings.manage')->name('documents.trash.settings');
     Route::post('documents/{id}/restore', [DocumentController::class, 'restore'])->middleware('can:documents.trash')->name('documents.restore');
     Route::post('documents/{id}/share-link', [ShareController::class, 'store'])->middleware('can:exports.create')->name('documents.share');
     Route::post('documents', [DocumentUploadController::class, 'store'])->middleware('can:documents.upload')->name('documents.store');

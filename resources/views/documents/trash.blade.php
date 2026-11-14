@@ -1,6 +1,7 @@
 {{-- The Papierkorb as a window (window system): it opens on the right from its row among the folders in Dokumente.
      It behaves like a folder (point 77): rows drag onto a folder row to come back there (A135), the restore button puts one back
-     where it was, deleting here is for good after a confirm (A137), "Papierkorb leeren" names the count (A136). --}}
+     where it was, deleting here is for good after a confirm (A137), "Papierkorb leeren" names the count (A136) and can be
+     undone for a while (point 207, ⋯ menu). --}}
 @extends('layouts.app')
 
 @section('title', $name)
@@ -16,6 +17,20 @@
                     <button type="button" class="icon-button" data-dialog-open="trash-empty" aria-label="{{ __('documents.bulk.empty') }}" data-tooltip="{{ __('documents.bulk.empty') }}"><x-icon name="trash-x" /></button>
                 </div>
             </x-slot:actions>
+        @endif
+        @if ($emptied !== [])
+            {{-- Point 207: each emptying can be undone until its period ends – here in the ⋯ menu, also after a reload. --}}
+            <x-slot:menu>
+                @foreach ($emptied as $batch)
+                    <button type="submit" class="menu-item" form="trash-unempty-{{ $loop->index }}"><x-icon name="arrow-back-up" /><span>{{ trans_choice('documents.bulk.unempty', $batch['count'], ['count' => $batch['count'], 'date' => $batch['until']->format('d.m.')]) }}</span></button>
+                @endforeach
+            </x-slot:menu>
+            @foreach ($emptied as $batch)
+                <form id="trash-unempty-{{ $loop->index }}" method="post" action="{{ route('documents.trash.unempty') }}" data-bulk-form hidden>
+                    @csrf
+                    <input type="hidden" name="batch" value="{{ $batch['batch'] }}">
+                </form>
+            @endforeach
         @endif
         @if (session('status'))
             <p class="check-ok" role="status">{{ session('status') }}</p>

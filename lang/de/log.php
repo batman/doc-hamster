@@ -39,6 +39,7 @@ return [
             'purged' => 'Endgültig gelöscht', 'tags_changed' => 'Tags geändert', 'taken_over' => 'Dokument übernommen',
             'printed' => 'Gedruckt', 'shared' => 'Link erstellt', 'share_revoked' => 'Link zurückgezogen', 'share_opened' => 'Link geöffnet',
             'paid' => 'Als bezahlt markiert',
+            'trash_emptied' => 'Papierkorb geleert', 'trash_unemptied' => 'Leerung rückgängig gemacht', 'trash_swept' => 'Papierkorb aufgeräumt',
         ],
         'folder' => ['deleted' => 'Ordner gelöscht', 'imported' => 'Ordner importiert', 'trash_changed' => 'Papierkorb geändert'],
         'bank' => ['imported' => 'Kontoauszug importiert', 'matched' => 'Buchung zugeordnet', 'confirmed' => 'Zuordnung bestätigt', 'unmatched' => 'Zuordnung gelöst', 'account_deleted' => 'Konto gelöscht'],
@@ -47,4 +48,6 @@ return [
         'update' => ['started' => 'Update gestartet'],
     ],
     'new' => 'Neu',
+    // Point 207: one line per organisation when the daily Papierkorb job deleted something.
+    'trash_swept' => 'Papierkorb aufgeräumt: :undo nach Ablauf der Rückgängig-Frist, :kept nach :days Tagen im Papierkorb endgültig gelöscht',
 ];

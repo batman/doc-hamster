@@ -36,6 +36,26 @@
                     @endif
                 </div>
             </form>
+            @can('settings.manage')
+                {{-- Point 207: organisation-wide, each choice saves at once (Optionskarten). --}}
+                <form method="post" action="{{ route('documents.trash.settings') }}" data-autosave>
+                    @csrf
+                    @foreach (['keep' => \App\Domain\Documents\TrashSettings::KEEP, 'undo' => \App\Domain\Documents\TrashSettings::UNDO] as $setting => $choices)
+                        <fieldset class="pick-list option-cards">
+                            <legend>{{ __('documents.trash_settings.'.$setting) }}</legend>
+                            @foreach ($choices as $choice)
+                                <label class="pick-row">
+                                    <input type="radio" class="visually-hidden" name="{{ $setting }}" value="{{ $choice }}" @checked($trashSettings[$setting] === $choice)>
+                                    <span><strong>{{ __('documents.trash_settings.'.$setting.'_options.'.$choice.'.title') }}</strong><small>{{ __('documents.trash_settings.'.$setting.'_options.'.$choice.'.text') }}</small></span>
+                                    <span class="pick-mark"><x-icon name="check" /></span>
+                                </label>
+                            @endforeach
+                        </fieldset>
+                    @endforeach
+                    <p class="field-hint">{{ __('documents.trash_settings.hint') }}</p>
+                    <noscript><button type="submit">{{ __('folders.save') }}</button></noscript>
+                </form>
+            @endcan
             @if ($count > 0)
                 @include('documents._trash-empty')
             @endif

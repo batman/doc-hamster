@@ -39,6 +39,7 @@ return [
             'purged' => 'Deleted for good', 'tags_changed' => 'Tags changed', 'taken_over' => 'Document taken over',
             'printed' => 'Printed', 'shared' => 'Link created', 'share_revoked' => 'Link revoked', 'share_opened' => 'Link opened',
             'paid' => 'Marked as paid',
+            'trash_emptied' => 'Bin emptied', 'trash_unemptied' => 'Emptying undone', 'trash_swept' => 'Bin cleaned up',
         ],
         'folder' => ['deleted' => 'Folder deleted', 'imported' => 'Folder imported', 'trash_changed' => 'Bin changed'],
         'bank' => ['imported' => 'Statement imported', 'matched' => 'Transaction matched', 'confirmed' => 'Match confirmed', 'unmatched' => 'Match removed', 'account_deleted' => 'Account deleted'],
@@ -47,4 +48,6 @@ return [
         'update' => ['started' => 'Update started'],
     ],
     'new' => 'New',
+    // Point 207: one line per organisation when the daily Papierkorb job deleted something.
+    'trash_swept' => 'Bin cleaned up: :undo deleted for good after the undo period, :kept after :days days in the bin',
 ];

@@ -35,6 +35,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $last_downloaded_at
  * @property string|null $ocr_engine browser|server: who read the text (point 186.4)
  * @property Carbon|null $ocr_read_at when the text was read (point 186.4)
+ * @property Carbon|null $deleted_at
+ * @property Carbon|null $purge_after emptied from the Papierkorb: deleted for good after this (point 207)
  */
 final class Document extends Model
 {
@@ -49,7 +51,7 @@ final class Document extends Model
      */
     protected function casts(): array
     {
-        return ['doc_date' => 'date', 'last_opened_at' => 'datetime', 'last_downloaded_at' => 'datetime', 'in_print_tray' => 'boolean', 'inbox_done_at' => 'datetime', 'ocr_read_at' => 'datetime'];
+        return ['doc_date' => 'date', 'last_opened_at' => 'datetime', 'last_downloaded_at' => 'datetime', 'in_print_tray' => 'boolean', 'inbox_done_at' => 'datetime', 'ocr_read_at' => 'datetime', 'purge_after' => 'datetime'];
     }
 
     /**
@@ -73,6 +75,28 @@ final class Document extends Model
     public function scopeWithPrintTray(Builder $query): Builder
     {
         return $query;
+    }
+
+    /**
+     * What the Papierkorb shows (point 207): deleted, but not emptied yet.
+     *
+     * @param  Builder<Document>  $query
+     * @return Builder<Document>
+     */
+    public function scopeInTrash(Builder $query): Builder
+    {
+        return $query->onlyTrashed()->whereNull($query->qualifyColumn('purge_after'));
+    }
+
+    /**
+     * Emptied from the Papierkorb (point 207): still there until purge_after, only "Leerung rückgängig machen" sees them.
+     *
+     * @param  Builder<Document>  $query
+     * @return Builder<Document>
+     */
+    public function scopeEmptied(Builder $query): Builder
+    {
+        return $query->onlyTrashed()->whereNotNull($query->qualifyColumn('purge_after'));
     }
 
     /**

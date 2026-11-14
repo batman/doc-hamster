@@ -166,7 +166,7 @@ final class DocumentListing
             'range' => $range,
             'month' => $month,
             'complete' => $complete,
-            'trashed' => Gate::allows(Permission::TrashDocuments->value) ? Document::query()->visibleTo($user->id, $seesAll)->withPrintTray()->onlyTrashed()->count() : 0,
+            'trashed' => Gate::allows(Permission::TrashDocuments->value) ? Document::query()->visibleTo($user->id, $seesAll)->withPrintTray()->inTrash()->count() : 0,
             'tree' => Folder::tree($folders),
             'trashName' => Folder::trashName($organization),
             'trashColor' => Folder::trashColor($organization),

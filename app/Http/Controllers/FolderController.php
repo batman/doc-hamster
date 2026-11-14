@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Domain\Audit\AuditLog;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\Folder;
+use App\Domain\Documents\TrashSettings;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
 use Closure;
@@ -43,7 +44,8 @@ final class FolderController
             return view('folders.trash', [
                 'name' => Folder::trashName($org->organization()),
                 'color' => Folder::trashColor($org->organization()),
-                'count' => Document::query()->withPrintTray()->onlyTrashed()->visibleTo($org->membership()->user_id, Gate::allows(Permission::ViewAllDocuments->value))->count(),
+                'trashSettings' => TrashSettings::of($org->organization()),
+                'count' => Document::query()->withPrintTray()->inTrash()->visibleTo($org->membership()->user_id, Gate::allows(Permission::ViewAllDocuments->value))->count(),
             ]);
         }
         $current = collect($rows)->first(static fn (array $row): bool => $row['folder']->id === $wanted);

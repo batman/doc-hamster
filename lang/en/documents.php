@@ -185,7 +185,11 @@ return [
         'purge_text' => '{1} Permanently delete “:title”? This cannot be undone.|[2,*] Permanently delete :count documents? This cannot be undone.',
         'empty' => 'Empty trash',
         'empty_title' => 'Empty trash?',
-        'empty_text' => '{1} Permanently delete :count document? This cannot be undone.|[2,*] Permanently delete :count documents? This cannot be undone.',
+        // Point 207: "Empty" keeps a safety net – deleted for good only after the undo period.
+        'empty_text' => '{1} Remove :count document from the bin? It will be deleted for good in :days days – until then you can undo this.|[2,*] Remove :count documents from the bin? They will be deleted for good in :days days – until then you can undo this.',
+        'emptied' => '{0} The bin was already empty.|{1} The document will be deleted for good in :days days.|[2,*] The documents will be deleted for good in :days days.',
+        'unempty' => '{1} Undo emptying (:count document, until :date)|[2,*] Undo emptying (:count documents, until :date)',
+        'unempty_short' => 'Undo',
         'cancel' => 'Cancel',
     ],
     // Points 4-7: the advanced search.
@@ -245,5 +249,24 @@ return [
         'copy_all' => 'Copy all',
         'copied' => 'Copied.',
         'copy_failed' => 'Copying is not possible.',
+    ],
+    // Point 207: the bin's settings (its properties window), per organisation.
+    'trash_settings' => [
+        'keep' => 'Empty automatically after',
+        'keep_options' => [
+            7 => ['title' => '7 days', 'text' => 'Deleted documents are gone for good after a week.'],
+            30 => ['title' => '30 days', 'text' => 'Recommended.'],
+            90 => ['title' => '90 days', 'text' => 'About a quarter to restore them.'],
+            365 => ['title' => '1 year', 'text' => 'Plenty of time; the bin takes storage for longer.'],
+            0 => ['title' => 'Never empty automatically', 'text' => 'Documents stay until you empty the bin yourself.'],
+        ],
+        'undo' => 'Undo "Empty bin" for',
+        'undo_options' => [
+            7 => ['title' => '7 days', 'text' => 'Then deleted for good.'],
+            14 => ['title' => '14 days', 'text' => 'Recommended.'],
+            30 => ['title' => '30 days', 'text' => 'Then deleted for good.'],
+        ],
+        'hint' => 'Statutory retention periods (e.g. 6, 8 or 10 years) are your responsibility.',
+        'saved' => 'Saved.',
     ],
 ];

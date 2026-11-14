@@ -28,7 +28,7 @@
     const still = matchMedia('(prefers-reduced-motion: reduce)');
 
     // --- Toast with an optional "Rückgängig" (A133) -------------------------------------------------------------
-    const toast = (message, { error = false, undo = null } = {}) => {
+    const toast = (message, { error = false, undo = null, undoLabel = null } = {}) => {
         const el = document.createElement('div');
         el.className = error ? 'toast toast-error' : 'toast';
         el.setAttribute('role', error ? 'alert' : 'status');
@@ -43,7 +43,7 @@
             const button = document.createElement('button');
             button.type = 'button';
             button.className = 'button-quiet button-small toast-action';
-            button.textContent = config().undo ?? 'Undo';
+            button.textContent = undoLabel ?? config().undo ?? 'Undo';
             button.addEventListener('click', event => {
                 event.stopPropagation();
                 leave();
