@@ -25,6 +25,6 @@ return [
         'modules/documents-rename', 'modules/documents-trash', 'modules/documents-select', 'modules/documents-dnd', 'modules/documents-upload', 'modules/documents-search',
         'modules/updates',
         'modules/text-editor', 'core/edit-in-place', 'modules/ocr-progress', 'modules/ocr-live', 'modules/note-options',
-        'modules/properties', 'modules/girocode', 'modules/bank', 'core/window-edge', 'core/top-layer', 'core/layout-debug',
+        'modules/properties', 'modules/girocode', 'modules/bank', 'modules/inbox', 'core/window-edge', 'core/top-layer', 'core/layout-debug',
     ],
 ];

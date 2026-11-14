@@ -27,7 +27,7 @@
                 @foreach ($documents as $document)
                     <li data-doc="{{ $document->id }}" data-trashed>
                         @include('documents._type-icon')
-                        <span class="trash-title"><span data-doc-title>{{ $document->title }}</span>@if ($document->in_print_tray) <span class="muted">({{ __('print_tray.title') }})</span>@endif</span>
+                        <span class="trash-title"><span data-doc-title>{{ $document->title }}</span></span>
                         <span class="muted">{{ __('documents.deleted_at', ['date' => $document->deleted_at?->format('d.m.Y H:i')]) }}</span>
                         <span class="row-actions">
                             <form method="post" action="{{ route('documents.restore', $document->id) }}" data-bulk-form>

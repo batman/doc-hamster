@@ -19,6 +19,7 @@ use App\Http\Controllers\FolderController;
 use App\Http\Controllers\FolderImportController;
 use App\Http\Controllers\GiroCodeController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\InboxController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\NoteColumnController;
@@ -28,7 +29,6 @@ use App\Http\Controllers\OcrStatusController;
 use App\Http\Controllers\PaletteController;
 use App\Http\Controllers\PhoneCheckController;
 use App\Http\Controllers\PrinterSettingsController;
-use App\Http\Controllers\PrintTrayController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\QueueTickController;
 use App\Http\Controllers\RoleController;
@@ -131,8 +131,11 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('{id}/delete', [PropertyController::class, 'destroy'])->name('destroy');
     });
 
-    // Einstellungen → Drucker (point 127; before settings/{group}): each person's own computers with the printer "Hamster".
-    Route::middleware('can:documents.upload')->prefix('settings/printer')->name('printers.')->group(function (): void {
+    // Einstellungen → Eingang (point 153.5; before settings/{group}): the sources of the Posteingang.
+    // Drucker (point 127): each person's own computers with the printer "Hamster"; the old address redirects.
+    Route::redirect('settings/printer', '/settings/eingang/printer');
+    Route::view('settings/eingang/mail', 'settings.mail')->middleware('can:documents.upload')->name('inbox.mail');
+    Route::middleware('can:documents.upload')->prefix('settings/eingang/printer')->name('printers.')->group(function (): void {
         Route::get('/', [PrinterSettingsController::class, 'index'])->name('index');
         Route::post('setup', [PrinterSettingsController::class, 'setup'])->name('setup');
         Route::post('{id}/delete', [PrinterSettingsController::class, 'destroy'])->name('destroy');
@@ -144,13 +147,13 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::get('files/{id}', [DocumentFileController::class, 'file'])->name('documents.file');
     Route::get('phone-check/qr', [PhoneCheckController::class, 'qr'])->name('phone-check.qr');
 
-    // Druckerablage: what was printed on "Hamster" (print tray).
-    // E-Mail-Ablage (point 30): placeholder until the function comes.
-    Route::view('mail-tray', 'mail_tray.index')->middleware('can:documents.upload')->name('mail-tray.index');
-    Route::middleware('can:documents.upload')->prefix('print-tray')->name('print-tray.')->group(function (): void {
-        Route::get('/', [PrintTrayController::class, 'index'])->name('index');
-        Route::post('{id}/accept', [PrintTrayController::class, 'accept'])->name('accept');
-        Route::post('{id}/delete', [PrintTrayController::class, 'destroy'])->middleware('can:documents.trash')->name('destroy');
+    // Posteingang (point 153): everything that came in; the old Druckerablage and E-Mail-Ablage redirect to its tabs.
+    Route::middleware('can:documents.upload')->group(function (): void {
+        Route::get('inbox', [InboxController::class, 'index'])->name('inbox.index');
+        Route::post('inbox/done', [InboxController::class, 'doneAll'])->name('inbox.done-all');
+        Route::post('inbox/{id}/done', [InboxController::class, 'done'])->name('inbox.done');
+        Route::redirect('print-tray', '/inbox?source=printer');
+        Route::redirect('mail-tray', '/inbox?source=mail');
     });
 
     Route::middleware('can:members.manage')->group(function (): void {

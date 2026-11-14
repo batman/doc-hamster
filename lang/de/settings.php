@@ -17,7 +17,7 @@ return [
         'ocr' => 'Texterkennung',
         'export' => 'Export',
         'update' => 'Update',
-        'printer' => 'Drucker',
+        'eingang' => 'Eingang',
         'log' => 'Log',
     ],
     'links' => [
@@ -35,6 +35,8 @@ return [
         'update' => ['title' => 'Update', 'text' => 'Neue Version suchen und installieren'],
         'phone' => ['title' => 'Handy-Test', 'text' => 'Prüfen, ob dein Handy alles kann'],
         'printer' => ['title' => 'Drucker', 'text' => 'Drucker „Hamster“ einrichten, verbundene Computer'],
+        'mail' => ['title' => 'E-Mail', 'text' => 'Dokumente per E-Mail in den Posteingang (kommt bald)'],
+        'devices' => ['title' => 'Geräte', 'text' => 'Handys, die Dokumente in den Posteingang teilen'],
         'log' => ['title' => 'Alle Logbücher', 'text' => 'Ereignisse und Fehler aller Logbücher'],
         'log_general' => ['title' => 'Allgemein', 'text' => 'Anmelden, Hochladen, Ändern, Fehler'],
         'log_ocr' => ['title' => 'Texterkennung', 'text' => 'Was die Texterkennung gelesen hat'],

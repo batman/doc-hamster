@@ -6,6 +6,7 @@ namespace App\Http;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 
 /**
  * Einstellungen as a column menu (design points 21 to 23): groups, their
@@ -36,9 +37,12 @@ final class SettingsMenu
         'ocr' => ['text-scan-2', [
             ['ocr', 'ocr.show', 'text-scan-2', 'settings.manage', ['ocr.show']],
         ], true],
-        'printer' => ['printer', [
+        // Point 153.5: the sources of the Posteingang. Geräte comes with the Android share target (only once its route exists).
+        'eingang' => ['inbox', [
             ['printer', 'printers.index', 'printer', 'documents.upload', ['printers.*']],
-        ], true],
+            ['mail', 'inbox.mail', 'mail', 'documents.upload', ['inbox.mail']],
+            ['devices', 'devices.index', 'device-mobile', 'documents.upload', ['devices.*']],
+        ], false],
         'log' => ['list-details', [
             ['log', 'log.index', 'list-details', 'settings.manage', ['log.index']],
             ['log_general', 'log.general', 'note', 'settings.manage', ['log.general']],
@@ -66,7 +70,7 @@ final class SettingsMenu
         foreach (self::GROUPS as $key => [$icon, $entries, $leaf]) {
             $items = [];
             foreach ($entries as [$item, $route, $itemIcon, $ability]) {
-                if ($ability === null || Gate::allows($ability)) {
+                if (Route::has($route) && ($ability === null || Gate::allows($ability))) {
                     $items[] = ['key' => $item, 'route' => $route, 'icon' => $itemIcon];
                 }
             }

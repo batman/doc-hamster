@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http;
 
 use App\Domain\Banking\Transaction;
-use App\Domain\Documents\Document;
+use App\Domain\Documents\Inbox;
 use App\Domain\Ocr\OcrLog;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
@@ -19,7 +19,8 @@ use Illuminate\Support\Facades\Gate;
  */
 final class Badges
 {
-    public const PRINT_TRAY = 'print-tray';
+    /** Point 153: new in the Posteingang (sum of all sources); each tab has its own key INBOX.'-'.source. */
+    public const INBOX = 'inbox';
 
     /** A234: new errors in Einstellungen → Log since the last visit. */
     public const LOG = 'log';
@@ -37,11 +38,15 @@ final class Badges
         }
         $counts = [];
         if (Gate::allows(Permission::UploadDocuments->value)) {
-            $seen = self::seen($org, self::PRINT_TRAY);
-            $counts[self::PRINT_TRAY] = Document::query()->inPrintTray()
-                ->visibleTo($org->membership()->user_id, Gate::allows(Permission::ViewAllDocuments->value))
-                ->when($seen !== null, fn ($query) => $query->where('created_at', '>', $seen))
-                ->count();
+            $seen = [];
+            foreach (Inbox::SOURCES as $source) {
+                $seen[$source] = self::seen($org, self::inbox($source));
+            }
+            $perSource = Inbox::newCounts($org->membership()->user_id, Gate::allows(Permission::ViewAllDocuments->value), $seen);
+            $counts[self::INBOX] = array_sum($perSource);
+            foreach ($perSource as $source => $count) {
+                $counts[self::inbox($source)] = $count;
+            }
         }
 
         // A274: open bookings without a document – a plain count, not "new since the last visit": they stay until handled.
@@ -62,12 +67,20 @@ final class Badges
     /** Point 3: the badge of a settings group or entry, so the count leads down to its place (key => area). */
     public const array SETTINGS = ['log' => self::LOG];
 
-    /** The person opened the area: its badge starts again from zero. */
-    public static function markSeen(CurrentOrg $org, string $area): void
+    /** The badge key (and seen area) of one Posteingang source, e.g. "inbox-printer". */
+    public static function inbox(string $source): string
+    {
+        return self::INBOX.'-'.$source;
+    }
+
+    /** The person opened the area(s): their badges start again from zero. */
+    public static function markSeen(CurrentOrg $org, string ...$areas): void
     {
         $membership = $org->membership();
         $seen = $membership->seen_at ?? [];
-        $seen[$area] = now()->toIso8601String();
+        foreach ($areas as $area) {
+            $seen[$area] = now()->toIso8601String();
+        }
         $membership->forceFill(['seen_at' => $seen])->save();
     }
 

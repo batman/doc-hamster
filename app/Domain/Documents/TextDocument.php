@@ -44,6 +44,8 @@ final class TextDocument
                 'folder_id' => $folderId ?? Folder::defaultIdFor($orgId),
                 'uploaded_by' => $userId,
                 'title' => $title,
+                // Written here, not arrived: never waits in the Posteingang (point 153).
+                'inbox_done_at' => now(),
             ]);
             $path = $orgId.'/'.now()->format('Y/m').'/'.Str::lower((string) Str::ulid()).'.'.$extension;
             Storage::disk('local')->put($path, '');

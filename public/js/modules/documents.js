@@ -80,7 +80,7 @@
 
     // Every Dokumente, folder and Papierkorb window loads its body again: counts, rows and names follow.
     const refresh = () => document.querySelectorAll('[data-windows] > section[data-window]').forEach(win => {
-        if (['folder', 'trash'].includes(win.dataset.windowKind) && win.querySelector('.win-body')) {
+        if (['folder', 'trash', 'inbox'].includes(win.dataset.windowKind) && win.querySelector('.win-body')) {
             DocHamster.reloadWindow(win, new URL(win.dataset.windowUrl ?? location.href, location.href), '.win-body').catch(() => {});
         }
     });

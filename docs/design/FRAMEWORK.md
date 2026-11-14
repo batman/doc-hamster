@@ -227,6 +227,8 @@ Belege (`resources/views/documents/index.blade.php`, `_detail.blade.php`): the l
 
 Bank (`resources/views/bank/index.blade.php`, points 129, A267–A274): the Bank window lists the accounts (row with `badge badge-alert` = open bookings, A274), an account opens as a window (`kind="bank-account"`, search + status filter in the search panel), a booking as a window (`kind="bank-transaction"`) with Eigenschaften rows, linked documents (suggested: `pill pill-new` + "Bestätigen" + X), the sums of an n:m link (difference as `pill pill-warning`, balanced `pill pill-ok`) and "Dokument zuordnen". Its forms carry `data-bank-action` (sent in the background by `modules/bank.js`, toast, Bank windows reload; without JavaScript they post and redirect).
 
+Posteingang (`resources/views/inbox/index.blade.php`, `kind="inbox"`, `modules/inbox.js`, point 153): one window with everything that came in, newest first. A tab bar per source (Alle · Upload · Drucker · E-Mail · Handy) whose tabs carry the red `badge badge-alert` of that source (`data-badge="inbox-<source>"`, main menu `inbox` = the sum; viewing a tab marks it seen); tabs, ✓ "Erledigt" (row action via `documents/_row-actions` with `inboxDone`), "Alle erledigt" and the head's upload reload only this window (`.win-frame`). Rows are the ordinary document rows (`data-doc`: drag onto folders, rename, details) plus the source icon (`type-icon` with tooltip). Sources are set up under Einstellungen → Eingang.
+
 ### Not yet on the window system
 
 The settings columns (`.cols`, `layouts/settings.blade.php`) still run on their own column logic (fold to strip, drag walls, icons only). They move onto the window system in the next round; until then don't copy that logic into new modules.

@@ -26,7 +26,8 @@ use Illuminate\Support\Carbon;
  * @property string $title
  * @property Carbon|null $doc_date
  * @property string|null $note
- * @property bool $in_print_tray
+ * @property bool $in_print_tray came from the printer "Hamster" (the source before the source column)
+ * @property Carbon|null $inbox_done_at marked "Erledigt" in the Posteingang (point 153)
  * @property Carbon $created_at
  * @property Carbon|null $last_opened_at
  * @property Carbon|null $last_downloaded_at
@@ -37,46 +38,37 @@ final class Document extends Model
     use HasUlids;
     use SoftDeletes;
 
-    /** Global scope: printed documents are not receipts until someone takes them over. */
-    public const OUTSIDE_PRINT_TRAY = 'outside_print_tray';
-
-    protected $fillable = ['org_id', 'folder_id', 'uploaded_by', 'title', 'doc_date', 'note', 'in_print_tray'];
-
-    protected static function booted(): void
-    {
-        self::addGlobalScope(self::OUTSIDE_PRINT_TRAY, static function (Builder $query): void {
-            $query->where($query->qualifyColumn('in_print_tray'), false);
-        });
-    }
+    protected $fillable = ['org_id', 'folder_id', 'uploaded_by', 'title', 'doc_date', 'note', 'in_print_tray', 'inbox_done_at'];
 
     /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
-        return ['doc_date' => 'date', 'last_opened_at' => 'datetime', 'last_downloaded_at' => 'datetime', 'in_print_tray' => 'boolean'];
+        return ['doc_date' => 'date', 'last_opened_at' => 'datetime', 'last_downloaded_at' => 'datetime', 'in_print_tray' => 'boolean', 'inbox_done_at' => 'datetime'];
     }
 
     /**
-     * Only what waits in the print tray (Druckerablage).
+     * Only what came from the printer "Hamster".
      *
      * @param  Builder<Document>  $query
      * @return Builder<Document>
      */
     public function scopeInPrintTray(Builder $query): Builder
     {
-        return $query->withoutGlobalScope(self::OUTSIDE_PRINT_TRAY)->where($query->qualifyColumn('in_print_tray'), true);
+        return $query->where($query->qualifyColumn('in_print_tray'), true);
     }
 
     /**
-     * Receipts and print tray together (trash, file delivery).
+     * Kept for callers: printed documents are ordinary documents now (point 153, the Posteingang replaced the
+     * Druckerablage), so this no longer widens anything.
      *
      * @param  Builder<Document>  $query
      * @return Builder<Document>
      */
     public function scopeWithPrintTray(Builder $query): Builder
     {
-        return $query->withoutGlobalScope(self::OUTSIDE_PRINT_TRAY);
+        return $query;
     }
 
     /**
