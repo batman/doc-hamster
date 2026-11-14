@@ -330,14 +330,14 @@ final class BankImportController
     }
 
     /**
-     * @param  array{account: string|null, name: string|null, currency: string, columns: array<string, int|list<int>|null>|null}  $pending
+     * @param  array{account: string|null, name: string|null, currency: string, iban?: string|null, columns: array<string, int|list<int>|null>|null}  $pending
      * @return array{groups: list<array{key: string, account: BankAccount|null, name: string, currency: string, sub: string|null, plan: array<int, array{line: array<string, mixed>, action: string, existing: string|null, fills: array<string, mixed>, diffs: array<string, array{0: mixed, 1: mixed}>}>}>, unreadable: int, lines: int}
      */
     private function prepare(CsvStatement $statement, array $pending): array
     {
         $account = $pending['account'] === null ? null : BankAccount::query()->whereKey($pending['account'])->first();
 
-        return StatementImporter::prepare($statement, $pending['columns'] ?? [], $account, $pending['name'], $pending['currency']);
+        return StatementImporter::prepare($statement, $pending['columns'] ?? [], $account, $pending['name'], $pending['currency'], $pending['iban'] ?? null);
     }
 
     /**

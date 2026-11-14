@@ -17,20 +17,48 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property array<string, string>|null $import_profile Column names of the last import, by field.
  * @property string|null $source_key Where its bookings come from in a file with several accounts (A299): source, sub-account and currency.
  * @property string|null $iban The account's own IBAN: never proposed as the payee of an invoice (point 120.1).
+ * @property string $kind business | private | cash (points 189, 190).
+ * @property int $opening_balance_minor A cash account's opening balance (Anfangsbestand, point 190).
  */
 final class BankAccount extends Model
 {
     use BelongsToOrg;
     use HasUlids;
 
-    protected $fillable = ['org_id', 'name', 'currency', 'import_profile', 'iban', 'source_key'];
+    public const BUSINESS = 'business';
+
+    public const PRIVATE = 'private';
+
+    /** Point 190: a cash box – no bank, no IBAN, bookings typed in by hand. */
+    public const CASH = 'cash';
+
+    public const KINDS = [self::BUSINESS, self::PRIVATE, self::CASH];
+
+    protected $fillable = ['org_id', 'name', 'currency', 'import_profile', 'iban', 'source_key', 'kind', 'opening_balance_minor'];
 
     /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
-        return ['import_profile' => 'array'];
+        return ['import_profile' => 'array', 'opening_balance_minor' => 'integer'];
+    }
+
+    public function isCash(): bool
+    {
+        return $this->kind === self::CASH;
+    }
+
+    /** The row and window icon: a cash box shows Tabler "cash". */
+    public function icon(): string
+    {
+        return $this->isCash() ? 'cash' : 'building-bank';
+    }
+
+    /** Point 189: the account a statement belongs to by its own IBAN (cash boxes have none). */
+    public static function byIban(?string $iban): ?self
+    {
+        return $iban === null || $iban === '' ? null : self::query()->where('iban', $iban)->where('kind', '!=', self::CASH)->first();
     }
 
     /**

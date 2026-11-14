@@ -209,6 +209,12 @@ html.is-carrying, html.is-carrying * { cursor: grabbing !important; }
 .amount-summary { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; margin: 0 0 .5rem; color: var(--muted); font-size: .95rem; }
 .amount-summary .row-amount { margin-left: .35rem; color: var(--text); }
 .amount-summary .row-amount.is-income { color: color-mix(in srgb, var(--ok) 70%, var(--text)); }
+/* Eintragszeile (point 190): a small create form above a list – its fields side by side, wrapping in a narrow window,
+   the button at the bottom line; the text field takes the remaining room. */
+.cash-entry { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem .75rem; margin: 0 0 1rem; }
+.cash-entry > :is(.field, fieldset) { flex: 0 1 auto; min-width: 0; margin: 0; }
+.cash-entry > .cash-entry-text { flex: 1 1 12rem; }
+.cash-entry input[name="amount"] { width: 8rem; }
 /* The account window's filters (point 150): labels never wrap; when the groups do not fit, modules/bank.js marks the
    window is-filters-tight and the dropdowns take their place (beside the narrow-window rule of windows.css). */
 .bank-filters { display: flex; align-items: center; gap: .4rem; min-width: 0; }

@@ -52,6 +52,7 @@ use Illuminate\Support\Carbon;
  * @property array<string, string>|null $raw The row as the file had it (143).
  * @property string|null $parent_id The original of a refund or reversal (A298).
  * @property string|null $note A person's note on the booking (point 147).
+ * @property string $source import | manual (a cash entry typed in by hand, point 190).
  * @property-read BankAccount $account
  * @property-read Transaction|null $parent
  */
@@ -70,12 +71,15 @@ final class Transaction extends Model
 
     public const STATUSES = [self::OPEN, self::SUGGESTED, self::LINKED, self::NO_RECEIPT];
 
+    /** Point 190: typed in by hand (a cash entry) – may be edited and deleted, imported ones not. */
+    public const MANUAL = 'manual';
+
     /** Bank states that are not final: marked, never linked automatically (A293). */
     public const UNSETTLED = ['pending', 'reverted', 'declined', 'failed', 'pdng'];
 
     protected $fillable = ['org_id', 'bank_account_id', 'booking_date', 'amount_minor', 'currency', 'counterparty', 'counterparty_iban', 'purpose', 'fingerprint', 'no_receipt', 'no_receipt_reason',
         'no_receipt_reason_id', 'suggested_reason_id', 'booking_id', 'value_date', 'purpose2', 'kind', 'reference', 'creditor_id', 'counterparty_bic', 'orig_amount_minor', 'orig_currency',
-        'fee_minor', 'fee_currency', 'balance_minor', 'category', 'card_last4', 'bank_state', 'sub_account', 'related_id', 'mcc', 'extra', 'raw', 'parent_id', 'note'];
+        'fee_minor', 'fee_currency', 'balance_minor', 'category', 'card_last4', 'bank_state', 'sub_account', 'related_id', 'mcc', 'extra', 'raw', 'parent_id', 'note', 'source'];
 
     /**
      * @return array<string, string>
@@ -94,6 +98,11 @@ final class Transaction extends Model
         return $this->belongsTo(self::class, 'parent_id');
     }
 
+    public function isManual(): bool
+    {
+        return $this->source === self::MANUAL;
+    }
+
     /** A293: pending, reverted … – never linked automatically. */
     public function isUnsettled(): bool
     {
@@ -106,6 +115,9 @@ final class Transaction extends Model
      */
     public function nature(): string
     {
+        if ($this->isManual()) {
+            return 'cash';
+        }
         $kind = mb_strtolower((string) $this->kind);
         $text = mb_strtolower($kind.' '.$this->purpose.' '.$this->purpose2.' '.$this->counterparty);
 

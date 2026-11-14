@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BadgeController;
+use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\BankImportController;
 use App\Http\Controllers\BankSettingsController;
@@ -279,6 +280,12 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::get('import/preview', [BankImportController::class, 'preview'])->name('import.preview');
         Route::post('import/preview', [BankImportController::class, 'confirm'])->name('import.confirm');
         Route::post('accounts/{id}/rename', [BankImportController::class, 'rename'])->name('accounts.rename');
+        // Points 189, 190: accounts set up by hand, the kind, cash entries.
+        Route::post('accounts', [BankAccountController::class, 'store'])->name('accounts.store');
+        Route::post('accounts/{id}/kind', [BankAccountController::class, 'kind'])->name('accounts.kind');
+        Route::post('accounts/{id}/entries', [BankAccountController::class, 'storeEntry'])->name('cash.store');
+        Route::post('entries/{id}', [BankAccountController::class, 'updateEntry'])->name('cash.update');
+        Route::post('entries/{id}/delete', [BankAccountController::class, 'destroyEntry'])->name('cash.destroy');
         // Einstellungen → Bank: reasons for "kein Beleg nötig" (A286) and MCC → tag (A300).
         Route::get('reasons', [BankSettingsController::class, 'reasons'])->name('reasons');
         Route::post('reasons', [BankSettingsController::class, 'storeReason'])->name('reasons.store');

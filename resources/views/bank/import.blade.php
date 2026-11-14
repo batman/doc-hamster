@@ -33,6 +33,7 @@
             <select id="account" name="account">
                 <option value="">{{ __('bank.new_account') }}</option>
                 @foreach ($accounts as $account)
+                    @continue($account->isCash())
                     <option value="{{ $account->id }}" @selected(old('account') === $account->id)>{{ $account->name }}</option>
                 @endforeach
             </select>
@@ -67,6 +68,23 @@
                             <span class="addon-end"><button type="submit" class="control-button addon-button" aria-label="{{ __('bank.rename') }}" data-tooltip="{{ __('bank.rename') }}"><x-icon name="check" /></button></span>
                         </div>
                     </form>
+                    {{-- Point 189: Geschäft | Privat, saved at once; a cash box stays one. --}}
+                    @if ($account->isCash())
+                        <span class="pill">{{ __('bank.kinds.cash') }}</span>
+                    @else
+                        <form method="post" action="{{ route('bank.accounts.kind', $account->id) }}" data-autosave>
+                            @csrf
+                            <span class="button-choice" data-choice>
+                                <input type="hidden" name="kind" value="{{ $account->kind }}">
+                                <span class="switcher" role="group" aria-label="{{ __('bank.kind') }}">
+                                    @foreach ([\App\Domain\Banking\BankAccount::BUSINESS, \App\Domain\Banking\BankAccount::PRIVATE] as $kindValue)
+                                        <button type="button" data-value="{{ $kindValue }}" aria-pressed="{{ $account->kind === $kindValue ? 'true' : 'false' }}">{{ __('bank.kinds.'.$kindValue) }}</button>
+                                    @endforeach
+                                </span>
+                            </span>
+                            <noscript><button type="submit">{{ __('bank.cash_save') }}</button></noscript>
+                        </form>
+                    @endif
                     <span class="muted">{{ $account->currency }}@if ($account->iban) · {{ trim(chunk_split($account->iban, 4, ' ')) }}@endif · {{ trans_choice('bank.transactions_count', $account->transactions_count, ['count' => $account->transactions_count]) }}</span>
                     <form method="post" action="{{ route('bank.accounts.destroy', $account->id) }}">
                         @csrf

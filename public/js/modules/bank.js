@@ -123,6 +123,15 @@
                 }
                 toast(json.message, json.undo ? { undo: () => undoLink(json.undo) } : undefined);
                 reloadAll();
+                // Points 189, 190: a new account opens as a window; its dialog starts empty again.
+                if (json.open) {
+                    openBeside(form.closest('section[data-window]'), json.open);
+                }
+                if (form.matches('[data-account-create]')) {
+                    form.reset();
+                    DocHamster.syncChoices?.(form);
+                    showKindFields(form);
+                }
             })
             .catch(error => toast(error.message, { error: true }))
             .finally(() => {
@@ -131,6 +140,19 @@
                     button.classList.remove('is-busy');
                 }
             });
+    });
+    // Points 189, 190: "Neues Konto" shows the IBAN for a bank account, the opening balance for a cash box.
+    const showKindFields = form => {
+        const cash = form.querySelector('input[name="kind"]')?.value === 'cash';
+        form.querySelectorAll('[data-account-kind-only]').forEach(field => {
+            field.hidden = (field.dataset.accountKindOnly === 'cash') !== cash;
+        });
+    };
+    document.addEventListener('change', event => {
+        const form = event.target.closest?.('form[data-account-create]');
+        if (form && event.target.name === 'kind') {
+            showKindFields(form);
+        }
     });
     // A339: "Rückgängig" after a link removes only the links it made.
     const undoLink = ({ url, ids }) => {

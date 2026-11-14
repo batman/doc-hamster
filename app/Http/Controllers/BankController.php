@@ -8,6 +8,7 @@ use App\Domain\Audit\AuditLog;
 use App\Domain\Banking\BankAccount;
 use App\Domain\Banking\BankCalendar;
 use App\Domain\Banking\BankImport;
+use App\Domain\Banking\CashBook;
 use App\Domain\Banking\CsvStatement;
 use App\Domain\Banking\Links;
 use App\Domain\Banking\Matcher;
@@ -277,6 +278,8 @@ final class BankController
         $accounts = BankAccount::query()
             ->withCount(['transactions', 'transactions as open_count' => static fn (Builder $t) => Transaction::constrainStatus($t, Transaction::OPEN)])
             ->withMax('transactions', 'created_at')
+            // Point 190: a cash box shows its balance.
+            ->withSum('transactions', 'amount_minor')
             ->orderBy('name')->get();
 
         return [
@@ -344,6 +347,7 @@ final class BankController
             'accountSearch' => $search,
             'totals' => ['in' => $in, 'out' => $out, 'sum' => $in + $out],
             'periods' => BankImport::periods($account),
+            'cashBalance' => $account->isCash() ? CashBook::balance($account) : null,
             'accountView' => $view,
             'calendar' => $calendar,
             'transactions' => $view === 'calendar' ? null : $listed()->orderByDesc('booking_date')->orderByDesc('id')

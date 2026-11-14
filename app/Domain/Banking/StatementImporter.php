@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\DB;
  * One import from start to end: the lines of a statement, split by account (a Revolut file with several "Account"
  * values or currencies goes into several accounts, missing ones are created, A299), each with its dedupe plan
  * (StatementImport::plan, A294/A295) – and then storing it: accounts with a speaking name (142), the bookings, the
- * imported period (A296), refunds hung on their original (A298).
+ * imported period (A296), refunds hung on their original (A298). A file without a chosen account goes into the
+ * account with its own IBAN, also one set up by hand before any import (point 189).
  */
 final class StatementImporter
 {
@@ -20,8 +21,10 @@ final class StatementImporter
      * @param  array<string, int|list<int>|null>  $columns
      * @return array{groups: list<array{key: string, account: BankAccount|null, name: string, currency: string, sub: string|null, plan: array<int, array{line: array<string, mixed>, action: string, existing: string|null, fills: array<string, mixed>, diffs: array<string, array{0: mixed, 1: mixed}>}>}>, unreadable: int, lines: int}
      */
-    public static function prepare(CsvStatement $statement, array $columns, ?BankAccount $target, ?string $name, string $currency): array
+    public static function prepare(CsvStatement $statement, array $columns, ?BankAccount $target, ?string $name, string $currency, ?string $iban = null): array
     {
+        // Point 189: an account set up by hand (or imported before) with this IBAN takes the file instead of a new one.
+        $target ??= BankAccount::byIban($iban ?? self::ownIban($statement));
         $source = StatementColumns::source($statement->header);
         $read = StatementImport::read($statement, $columns);
 

@@ -11,21 +11,27 @@
     <div class="windows" data-windows>
         <x-window :title="__('bank.title')" icon="building-bank" kind="bank" :url="route('bank.index')" :close="route('home')"
                   data-statement-drop="{{ route('bank.import.upload') }}" data-drop-label="{{ __('bank.drop_here') }}">
+            <x-slot:actions>
+                {{-- Points 189, 190: an account by hand, also before any import (bank._add-account). --}}
+                <button type="button" class="icon-button" data-dialog-open="add-account" aria-label="{{ __('bank.add_account') }}" data-tooltip="{{ __('bank.add_account') }}"><x-icon name="plus" /></button>
+            </x-slot:actions>
             <x-slot:menu>
                 <a class="menu-item" href="{{ route('bank.import') }}"><x-icon name="settings" /><span>{{ __('bank.manage') }}</span></a>
             </x-slot:menu>
+            @include('bank._add-account')
             @if (session('status') && ! $account)
                 <p class="check-ok" role="status">{{ session('status') }}</p>
             @endif
             <ul class="pick-list">
                 @forelse ($accounts as $entry)
                     @php $open = (int) $entry->open_count; $last = $entry->transactions_max_created_at; @endphp
-                    <li class="pick-row is-static @if ($account?->id === $entry->id) is-marked @endif" data-statement-drop="{{ route('bank.import.upload') }}" data-account="{{ $entry->id }}"
-                        data-upload-label="{{ __('bank.drop_into', ['name' => $entry->name]) }}">
-                        <span class="row-icon"><x-icon name="building-bank" /></span>
+                    <li class="pick-row is-static @if ($account?->id === $entry->id) is-marked @endif" @unless ($entry->isCash()) data-statement-drop="{{ route('bank.import.upload') }}" data-account="{{ $entry->id }}"
+                        data-upload-label="{{ __('bank.drop_into', ['name' => $entry->name]) }}" @endunless>
+                        <span class="row-icon" data-tooltip="{{ __('bank.kinds.'.$entry->kind) }}"><x-icon :name="$entry->icon()" /></span>
                         <span>
                             <strong><a href="{{ route('bank.account', $open > 0 ? [$entry->id, 'status' => 'open'] : [$entry->id]) }}" data-window>{{ $entry->name }}</a></strong>
                             <small>
+                                @if ($entry->isCash()){{ __('bank.cash_balance') }} {{ \App\Domain\Banking\Transaction::signed($entry->opening_balance_minor + (int) $entry->transactions_sum_amount_minor, $entry->currency) }} · @endif
                                 @if ($entry->iban){{ trim(chunk_split($entry->iban, 4, ' ')) }} · @endif
                                 @if ($last){{ __('bank.last_import', ['date' => \Illuminate\Support\Carbon::parse($last)->format('d.m.Y')]) }} · @endif
                                 {{ trans_choice('bank.transactions_count', $entry->transactions_count, ['count' => $entry->transactions_count]) }}

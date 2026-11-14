@@ -31,10 +31,10 @@
         default => null,
     };
 @endphp
-<x-window :title="$account->name" icon="building-bank" kind="bank-account" min="24rem" optimal="38rem" max="56rem"
+<x-window :title="$account->name" :icon="$account->icon()" kind="bank-account" min="24rem" optimal="38rem" max="56rem"
           :url="$accountUrl" :close="route('bank.index')"
           :search="__('bank.search')" search-params="from to" :search-count="($from ? 1 : 0) + ($to ? 1 : 0)"
-          data-statement-drop="{{ route('bank.import.upload') }}" data-account="{{ $account->id }}" data-drop-label="{{ __('bank.drop_into', ['name' => $account->name]) }}">
+          :data-statement-drop="$account->isCash() ? null : route('bank.import.upload')" data-account="{{ $account->id }}" data-drop-label="{{ __('bank.drop_into', ['name' => $account->name]) }}">
     <x-slot:actions>
         @include('bank._filters')
     </x-slot:actions>
@@ -77,11 +77,23 @@
     @endif
     {{-- Fresh filters with counts for the toolbar after a reload of only the body (search, point 149, A326). --}}
     <template data-bank-filters-fresh>@include('bank._filters')</template>
+    @if ($account->isCash())
+        {{-- Point 190: a cash entry, saved at once; the window reloads with it. --}}
+        <form class="cash-entry" method="post" action="{{ route('bank.cash.store', $account->id) }}" data-bank-action>
+            @csrf
+            @include('bank._cash-fields', ['prefix' => 'cash-new-'.$account->id])
+            <button type="submit"><x-icon name="plus" />{{ __('bank.cash_add') }}</button>
+        </form>
+    @endif
     {{-- A310: the sums of what is shown. --}}
     <p class="amount-summary">
         <span>{{ __('bank.totals_in') }} <span class="row-amount is-income">{{ $money($totals['in']) }}</span></span>
         <span>{{ __('bank.totals_out') }} <span class="row-amount">{{ $money($totals['out']) }}</span></span>
         <span>{{ __('bank.totals_sum') }} <span class="row-amount @if ($totals['sum'] > 0) is-income @endif">{{ $money($totals['sum']) }}</span></span>
+        @if ($account->isCash())
+            {{-- Point 190: the running balance like a bank's saldo (opening balance plus every entry). --}}
+            <span>{{ __('bank.cash_balance') }} <span class="row-amount @if ($cashBalance > 0) is-income @endif">{{ $money($cashBalance) }}</span></span>
+        @endif
     </p>
     @if ($periods !== [])
         <p class="card-note">{{ __('bank.imported_periods') }}: {{ collect($periods)->map(static fn (array $p): string => $day($p['from'], $p['to']))->implode(' · ') }}</p>
@@ -114,6 +126,9 @@
                     <span class="pill {{ $statusClass[$state] }}">{{ __('bank.status.'.$state) }}</span>
                 @endif
                 <span class="row-amount @if ($entry->amount_minor > 0) is-income @endif">{{ $entry->signedAmount() }}</span>
+                @if ($entry->isManual())
+                    @include('bank._cash-entry')
+                @endif
             </li>
         @empty
             <li class="list-empty">{{ $status || $flow || $from || $to || $accountSearch !== '' ? __('bank.empty_filtered') : __('bank.empty') }}</li>
