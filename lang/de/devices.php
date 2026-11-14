@@ -97,4 +97,22 @@ return [
         ['text' => 'Header „Authorization“ hinzufügen und den Wert unten einfügen. Er beginnt mit „Bearer “.', 'wrong' => 'dhk_…', 'right' => 'Bearer dhk_…'],
         ['text' => 'Nicht mit ▶ testen – dann fehlt die Datei. Ein Foto öffnen → Teilen → nach rechts wischen → „Mehr“ → docHamster, und gleich zu den Favoriten hinzufügen.', 'wrong' => '▶ im Kurzbefehl', 'right' => 'Foto → Teilen → docHamster'],
     ],
+    // Point 208: Angemeldete Geräte.
+    'sessions' => [
+        'title' => 'Angemeldete Geräte',
+        'note' => 'Hier sind Sie gerade angemeldet. Ein fremdes Gerät? Abmelden – und am besten das Passwort ändern lassen.',
+        'name' => ':browser auf :system',
+        'unknown' => 'Unbekanntes Gerät',
+        'current' => 'Dieses Gerät',
+        'last_active' => 'zuletzt aktiv :ago (:at)',
+        'ip' => 'IP :ip',
+        'end' => 'Abmelden',
+        'ended' => 'Das Gerät ist abgemeldet.',
+        'end_others' => 'Alle anderen abmelden',
+        'end_others_title' => 'Alle anderen Geräte abmelden?',
+        'end_others_text' => 'Alle anderen Geräte werden sofort abgemeldet, auch die mit „Angemeldet bleiben“. Dieses Gerät bleibt angemeldet.',
+        'password' => 'Ihr Passwort',
+        'others_ended' => '{0} Kein anderes Gerät war angemeldet.|{1} Ein anderes Gerät ist abgemeldet.|[2,*] :count andere Geräte sind abgemeldet.',
+        'empty' => 'Keine Anmeldung gefunden.',
+    ],
 ];

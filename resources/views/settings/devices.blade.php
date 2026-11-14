@@ -110,7 +110,9 @@
         </div>
     @endforeach
 
-    {{-- Point 202: the ready-made shortcut (QR + link) and its four steps. --}}
+    @include('settings._sessions')
+
+    {{-- Point 202:the ready-made shortcut (QR + link) and its four steps. --}}
     <x-fold-card fold="devices.shortcut" :title="__('devices.shortcut_title')" icon="device-mobile">
         <div class="device-shortcut">
             <img class="phone-qr" src="{{ $shortcutQr }}" width="180" height="180" alt="{{ __('devices.shortcut_qr') }}">

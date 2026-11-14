@@ -31,7 +31,7 @@ return [
     'browser' => 'Browser: :message',
     'columns' => ['time' => 'Zeit', 'book' => 'Logbuch', 'level' => 'Art', 'message' => 'Meldung', 'person' => 'Person', 'document' => 'Dokument'],
     'actions' => [
-        'auth' => ['login' => 'Angemeldet', 'logout' => 'Abgemeldet', 'failed' => 'Anmeldung fehlgeschlagen (:name)'],
+        'auth' => ['login' => 'Angemeldet', 'logout' => 'Abgemeldet', 'failed' => 'Anmeldung fehlgeschlagen (:name)', 'session_ended' => 'Gerät abgemeldet', 'sessions_ended' => 'Alle anderen Geräte abgemeldet'],
         'log' => ['cleared' => 'Logbücher geleert: :books'],
         'document' => [
             'uploaded' => 'Dokument hochgeladen', 'created' => 'Dokument angelegt', 'changed' => 'Dokument geändert',

@@ -40,6 +40,7 @@ use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\PwaController;
 use App\Http\Controllers\QueueTickController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SessionSettingsController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SetupController;
 use App\Http\Controllers\ShareController;
@@ -177,6 +178,11 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('/', [DeviceSettingsController::class, 'store'])->name('store');
         Route::post('{id}/delete', [DeviceSettingsController::class, 'destroy'])->name('destroy');
         Route::post('{id}/rekey', [DeviceSettingsController::class, 'rekey'])->name('rekey');
+    });
+    // Point 208: Angemeldete Geräte – end one sign-in or all others (the person's own sessions only).
+    Route::middleware('can:documents.upload')->prefix('settings/devices/sessions')->name('sessions.')->group(function (): void {
+        Route::post('others', [SessionSettingsController::class, 'destroyOthers'])->middleware('throttle:10,1')->name('others');
+        Route::post('{id}/end', [SessionSettingsController::class, 'destroy'])->name('end');
     });
 
     // "Teilen → DocHamster" (points 151, A328): the service worker keeps the share, this page sends it (also after login).

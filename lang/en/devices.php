@@ -93,4 +93,22 @@ return [
         ['text' => 'Add the header "Authorization" and paste the value below. It starts with "Bearer ".', 'wrong' => 'dhk_…', 'right' => 'Bearer dhk_…'],
         ['text' => 'Do not test with ▶ – then there is no file. Open a photo → Share → swipe right → "More" → docHamster, and add it to the favourites.', 'wrong' => '▶ in the shortcut', 'right' => 'Photo → Share → docHamster'],
     ],
+    // Point 208: signed-in devices.
+    'sessions' => [
+        'title' => 'Signed-in devices',
+        'note' => 'You are signed in here. A device you do not know? Sign it out – and best have the password changed.',
+        'name' => ':browser on :system',
+        'unknown' => 'Unknown device',
+        'current' => 'This device',
+        'last_active' => 'last active :ago (:at)',
+        'ip' => 'IP :ip',
+        'end' => 'Sign out',
+        'ended' => 'The device is signed out.',
+        'end_others' => 'Sign out all others',
+        'end_others_title' => 'Sign out all other devices?',
+        'end_others_text' => 'All other devices are signed out at once, also those with "Stay signed in". This device stays signed in.',
+        'password' => 'Your password',
+        'others_ended' => '{0} No other device was signed in.|{1} One other device is signed out.|[2,*] :count other devices are signed out.',
+        'empty' => 'No sign-in found.',
+    ],
 ];

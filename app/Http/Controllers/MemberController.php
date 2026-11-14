@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Audit\AuditLog;
 use App\Domain\Auth\User;
+use App\Domain\Auth\UserSessions;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Membership;
 use App\Domain\Org\OrgRole;
@@ -81,7 +82,9 @@ final class MemberController
 
         $password = self::newPassword();
         $user->update(['password_hash' => $password]);
-        DB::table('sessions')->where('user_id', $user->id)->delete();
+        // A375: a new password ends every sign-in of that person, "Angemeldet bleiben" included.
+        UserSessions::endOthers($user->id, null);
+        UserSessions::rotateRememberToken($user);
         $this->log($audit, $request, $org, 'org.member_password_reset', $membership);
 
         return redirect()->route('members.index')->with('new_password', [

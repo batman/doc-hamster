@@ -31,7 +31,7 @@ return [
     'browser' => 'Browser: :message',
     'columns' => ['time' => 'Time', 'book' => 'Logbook', 'level' => 'Kind', 'message' => 'Message', 'person' => 'Person', 'document' => 'Document'],
     'actions' => [
-        'auth' => ['login' => 'Signed in', 'logout' => 'Signed out', 'failed' => 'Sign-in failed (:name)'],
+        'auth' => ['login' => 'Signed in', 'logout' => 'Signed out', 'failed' => 'Sign-in failed (:name)', 'session_ended' => 'Device signed out', 'sessions_ended' => 'All other devices signed out'],
         'log' => ['cleared' => 'Logbooks emptied: :books'],
         'document' => [
             'uploaded' => 'Document uploaded', 'created' => 'Document created', 'changed' => 'Document changed',
