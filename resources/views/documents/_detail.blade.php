@@ -223,6 +223,7 @@
                         </form>
                     @endif
                 @endunless
+                @include('documents._translate')
                 @include('documents._ocr_copy')
             </div>
             @include('documents._ocr_read')
@@ -232,6 +233,7 @@
             @else
                 <p class="muted">{{ __('documents.ocr_placeholder') }}</p>
             @endif
+            @include('documents._translations')
         </section>
     @else
         <x-fold-card fold="detail.tags" :title="__('documents.tags')" icon="tags" :summary="$tagSummary">
@@ -249,6 +251,7 @@
                 </div>
                 @include('documents._ocr_read')
                 @if ($document->ocr_text)<p class="edit-in-place-small is-plain">{{ $document->ocr_text }}</p>@endif
+                @include('documents._translations')
             </section>
         @endif
     @endcan

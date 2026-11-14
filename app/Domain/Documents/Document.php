@@ -7,6 +7,7 @@ namespace App\Domain\Documents;
 use App\Domain\Banking\TransactionMatch;
 use App\Domain\Org\BelongsToOrg;
 use App\Domain\Properties\DocumentProperty;
+use App\Domain\Translate\DocumentTranslation;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -131,6 +132,16 @@ final class Document extends Model
     public function properties(): HasMany
     {
         return $this->hasMany(DocumentProperty::class);
+    }
+
+    /**
+     * Translations of the recognised text (point 172.2), one per target language.
+     *
+     * @return HasMany<DocumentTranslation, $this>
+     */
+    public function translations(): HasMany
+    {
+        return $this->hasMany(DocumentTranslation::class);
     }
 
     /**

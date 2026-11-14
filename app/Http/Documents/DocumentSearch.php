@@ -100,7 +100,9 @@ final class DocumentSearch
             $query->where(static fn ($w) => $w->where('title', 'like', $like)
                 ->orWhere('note', 'like', $like)
                 ->orWhereHas('tags', static fn ($tag) => $tag->where('name', 'like', $like))
-                ->when($ocr, static fn ($w) => $w->orWhere('ocr_text', 'like', $like)));
+                ->when($ocr, static fn ($w) => $w->orWhere('ocr_text', 'like', $like)
+                    // 172.2: the stored translations of the recognised text count as recognised text.
+                    ->orWhereHas('translations', static fn ($t) => $t->where('text', 'like', $like))));
         }
         $periodSql = Document::dateSql($this->by);
         if (isset($this->period['from'])) {

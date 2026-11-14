@@ -42,6 +42,7 @@ use App\Http\Controllers\ShareTargetController;
 use App\Http\Controllers\SpeedController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TextDocumentController;
+use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\UpdateController;
 use Illuminate\Support\Facades\Route;
 
@@ -88,6 +89,8 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('documents/{id}/properties/preview', [DocumentPropertyController::class, 'preview'])->name('documents.properties.preview');
         Route::post('documents/{id}/properties/{property}/confirm', [DocumentPropertyController::class, 'confirm'])->name('documents.properties.confirm');
         Route::post('documents/{id}/properties/{property}/delete', [DocumentPropertyController::class, 'destroy'])->name('documents.properties.delete');
+        // Point 172: the browser's translation of the recognised text, one per target language.
+        Route::post('documents/{id}/translations', [TranslationController::class, 'store'])->name('documents.translations.store');
     });
     Route::get('documents/{id}', [DocumentController::class, 'show'])->name('documents.show');
     Route::get('documents/{id}/words', DocumentWordsController::class)->name('documents.words');
@@ -125,6 +128,8 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     // 171.1: tesseract.js loads "<langPath>/<code>.traineddata" for every chosen language.
     Route::get('ocr/lang/{code}.traineddata', [OcrBrowserController::class, 'lang'])->where('code', '[a-z_]{3,10}')->name('ocr.lang');
     Route::post('ocr/{id}', [OcrBrowserController::class, 'store'])->name('ocr.store');
+    // 172.1: runtime and model files of the installed translation packs for the browser (catalogue names only).
+    Route::get('translate/files/{key}/{name}', [TranslationController::class, 'file'])->where(['key' => '[a-z0-9-]+', 'name' => '[A-Za-z0-9._-]+'])->name('translate.file');
     Route::post('ocr-engine', [OcrStatusController::class, 'engineError'])->name('ocr.engine');
     Route::post('ocr-log', [OcrStatusController::class, 'log'])->name('ocr.log');
     // A69/A74: without cron the open browser works off the queue, one job per call.
