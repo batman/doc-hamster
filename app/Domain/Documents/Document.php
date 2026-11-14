@@ -28,6 +28,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $note
  * @property bool $in_print_tray came from the printer "Hamster" (the source before the source column)
  * @property Carbon|null $inbox_done_at marked "Erledigt" in the Posteingang (point 153)
+ * @property string|null $source upload|printer|mail|phone|api, null = upload (points 151/152)
  * @property Carbon $created_at
  * @property Carbon|null $last_opened_at
  * @property Carbon|null $last_downloaded_at
@@ -38,7 +39,7 @@ final class Document extends Model
     use HasUlids;
     use SoftDeletes;
 
-    protected $fillable = ['org_id', 'folder_id', 'uploaded_by', 'title', 'doc_date', 'note', 'in_print_tray', 'inbox_done_at'];
+    protected $fillable = ['org_id', 'folder_id', 'uploaded_by', 'title', 'doc_date', 'note', 'in_print_tray', 'inbox_done_at', 'source'];
 
     /**
      * @return array<string, string>
