@@ -7,6 +7,7 @@ use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\BankImportController;
 use App\Http\Controllers\BankSettingsController;
+use App\Http\Controllers\BankSuggestionsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardPhotoController;
 use App\Http\Controllers\DeviceSettingsController;
@@ -291,6 +292,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::get('accounts/{id}', [BankController::class, 'account'])->name('account');
         Route::get('receipts', [BankController::class, 'receipts'])->name('receipts');
         Route::get('transactions/{id}', [BankController::class, 'show'])->name('show');
+        Route::get('transactions/{id}/suggestions', [BankSuggestionsController::class, 'show'])->name('suggestions');
         Route::post('transactions/{id}/match', [BankController::class, 'match'])->name('match');
         Route::post('transactions/{id}/link', [BankController::class, 'link'])->name('link');
         Route::post('transactions/{id}/confirm', [BankController::class, 'confirm'])->name('confirm');

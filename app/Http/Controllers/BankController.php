@@ -21,8 +21,6 @@ use App\Domain\Documents\Document;
 use App\Domain\Documents\Tag;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
-use App\Domain\Properties\DocumentProperty;
-use App\Domain\Properties\Property;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -33,7 +31,8 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * The Bank module (points 129, A267–A274): the Bank window lists the accounts, an account opens as a window with its
- * bookings, a booking as a window with its documents, the matcher's suggestions and "Dokument zuordnen". A person
+ * bookings, a booking as a window with its documents and the matcher's suggestions to confirm; "Belegvorschläge" open
+ * beside it (BankSuggestionsController, point 193). A person
  * links only documents they may see; someone else's stay a plain count. Actions answer JSON to the module's script
  * (toast, windows reload) and redirect to the booking without JavaScript.
  */
@@ -65,13 +64,13 @@ final class BankController
         return view('bank.index', [...$this->base($org), 'receipts' => $documents]);
     }
 
-    public function show(Request $request, string $id, CurrentOrg $org, Matcher $matcher): View
+    public function show(Request $request, string $id, CurrentOrg $org): View
     {
         $transaction = Transaction::query()->with('account')->withStatusCounts()->whereKey($id)->firstOrFail();
 
         $matches = $transaction->matches()->get();
         $linked = $this->visible($org)->with('files')->whereIn('id', $matches->pluck('document_id'))->get()->keyBy('id');
-        $amounts = $this->amounts($linked->map(static fn (Document $d): string => $d->id)->values()->all());
+        $amounts = Matcher::invoiceAmounts($linked->map(static fn (Document $d): string => $d->id)->values()->all());
 
         // n:m (A271): what each linked document got from all its confirmed bookings.
         $paid = TransactionMatch::query()->whereIn('document_id', $linked->pluck('id'))->where('state', TransactionMatch::CONFIRMED)
@@ -79,8 +78,6 @@ final class BankController
             ->map(static fn ($list): array => ['sum' => (int) $list->sum(static fn (TransactionMatch $m): int => abs($m->transaction->amount_minor)), 'count' => $list->count()]);
 
         $documentsTotal = (int) $linked->sum(static fn (Document $d): int => abs($amounts[$d->id] ?? 0));
-        $search = trim((string) $request->query('q'));
-        $withLinked = $request->boolean('linked');
         $rows = [];
         foreach ($matches as $match) {
             $document = $linked->get($match->document_id);
@@ -103,11 +100,6 @@ final class BankController
                 'difference' => abs($transaction->amount_minor) - $documentsTotal,
                 'missing' => $linked->contains(static fn (Document $d): bool => ! isset($amounts[$d->id])),
             ],
-            'candidates' => $candidates = $matcher->candidates($transaction, $this->visible($org), $search, withLinked: $withLinked),
-            'candidateAmounts' => $this->amounts(array_map(static fn (array $c): string => $c['document']->id, $candidates)),
-            'candidateLinks' => $withLinked ? $this->linkedElsewhere(array_map(static fn (array $c): string => $c['document']->id, $candidates)) : [],
-            'search' => $search,
-            'withLinked' => $withLinked,
             'reasons' => NoReceiptReason::ordered(true),
             'suggestedReason' => $transaction->suggested_reason_id === null ? null : NoReceiptReason::query()->whereKey($transaction->suggested_reason_id)->first(),
             // A298: a refund hangs on its original; the original lists its refunds.
@@ -118,7 +110,7 @@ final class BankController
     }
 
     /**
-     * "Zuordnen" in the list of candidates: linked and confirmed at once. With "Für alle gleichen Buchungen übernehmen"
+     * The link button in "Belegvorschläge" (point 193): linked and confirmed at once. With "Für alle gleichen Buchungen übernehmen"
      * (A322) the document becomes a Dauerbeleg of the counterparty and amount.
      */
     public function match(Request $request, string $id, AuditLog $audit, CurrentOrg $org, Links $links, StandingDocuments $standing): JsonResponse|RedirectResponse
@@ -373,43 +365,6 @@ final class BankController
             ->when($to !== null, static fn (Builder $q) => $q->whereDate('booking_date', '<=', (string) $to))
             ->when($search !== '', static fn (Builder $q) => $q->where(static fn (Builder $w) => $w->where('counterparty', 'like', $like)->orWhere('purpose', 'like', $like)
                 ->orWhere('purpose2', 'like', $like)->orWhere('reference', 'like', $like)->orWhere('kind', 'like', $like)->orWhere('extra', 'like', $like)->orWhere('note', 'like', $like)));
-    }
-
-    /**
-     * A318: what the documents already got from other bookings - when and from whom, and the sum of their confirmed links.
-     *
-     * @param  array<string>  $ids
-     * @return array<string, array{names: string, sum: int}>
-     */
-    private function linkedElsewhere(array $ids): array
-    {
-        if ($ids === []) {
-            return [];
-        }
-
-        return TransactionMatch::query()->whereIn('document_id', $ids)->where('state', TransactionMatch::CONFIRMED)->with('transaction')->get()
-            ->groupBy('document_id')
-            ->map(static fn ($list): array => [
-                'names' => $list->map(static fn (TransactionMatch $m): string => $m->transaction->booking_date->format('d.m.Y').' '.($m->transaction->counterparty ?? $m->transaction->purpose ?? '–'))->unique()->take(3)->implode(', '),
-                'sum' => (int) $list->sum(static fn (TransactionMatch $m): int => abs($m->transaction->amount_minor)),
-            ])->all();
-    }
-
-    /**
-     * The invoice amounts of documents (minor units, confirmed or suggested).
-     *
-     * @param  array<string>  $ids
-     * @return array<string, int>
-     */
-    private function amounts(array $ids): array
-    {
-        if ($ids === []) {
-            return [];
-        }
-
-        return DocumentProperty::query()->whereIn('document_id', $ids)
-            ->whereIn('property_id', Property::query()->where('key', 'invoice_amount')->select('id'))
-            ->whereNotNull('value_int')->pluck('value_int', 'document_id')->map(static fn ($v): int => (int) $v)->all();
     }
 
     /**

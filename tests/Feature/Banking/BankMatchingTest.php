@@ -156,7 +156,8 @@ it('suggests the matching document after an import, confirm sets paid_at, unlink
         ->and($payment->status())->toBe('suggested')
         ->and($this->values->get($doc, 'paid_at'))->toBeNull();
 
-    $this->get('/bank/transactions/'.$payment->id)->assertOk()->assertSee('rechnung.pdf')->assertSee('Bestätigen')->assertSee('kaffee.jpg');
+    $this->get('/bank/transactions/'.$payment->id)->assertOk()->assertSee('rechnung.pdf')->assertSee('Bestätigen');
+    $this->get('/bank/transactions/'.$payment->id.'/suggestions?q=kaffee')->assertOk()->assertSee('kaffee.jpg');
 
     $this->postJson('/bank/transactions/'.$payment->id.'/confirm', ['document_id' => $doc->id])->assertOk()->assertJson(['message' => 'Zuordnung bestätigt.']);
     expect($match->fresh()->state)->toBe('confirmed')

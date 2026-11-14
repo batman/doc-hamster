@@ -5,7 +5,8 @@
 // - a statement (CSV or Excel) dropped onto the Bank window, an account row or an account window ([data-statement-drop])
 //   is imported: an account that knows its columns imports at once (toast), otherwise the column window opens;
 // - forms with data-bank-action (confirm, reject, link, unlink, "kein Beleg nötig") are sent in the background; a link
-//   answers with "Rückgängig" (A339); a candidate opens its menu "Mit dieser Buchung verknüpfen" on tap/Enter (A341);
+//   answers with "Rückgängig" (A339); a row of "Belegvorschläge" (point 193) drags onto the booking as a whole or links
+//   with its link button (point 192: no grip, no menu);
 // - afterwards, and after documents were dropped onto a booking (documents.js emits 'bank:changed'), every Bank window
 //   reloads its body. Several Bank windows side by side work: nothing is looked up by id.
 (() => {
@@ -15,7 +16,7 @@
     }
     const token = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     const toast = (text, options) => DocHamster.toast?.(text, options);
-    const KINDS = ['bank', 'bank-account', 'bank-transaction', 'bank-receipts'];
+    const KINDS = ['bank', 'bank-account', 'bank-transaction', 'bank-receipts', 'bank-suggestions'];
 
     const send = (url, body) => fetch(url, { method: 'POST', body, credentials: 'same-origin', headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' } })
         .then(async response => {
@@ -90,6 +91,12 @@
         link.remove();
     };
 
+    const standingTick = win => {
+        const from = win?.dataset.windowFrom;
+        const booking = from ? document.querySelector(`section[data-window][data-window-id="${CSS.escape(from)}"]`) : null;
+        return win?.querySelector('input[data-bank-standing]') ?? booking?.querySelector('input[data-bank-standing]');
+    };
+
     // --- Forms --------------------------------------------------------------------------------------------------
     document.addEventListener('submit', event => {
         const form = event.target.closest?.('form[data-bank-action]');
@@ -103,8 +110,9 @@
             button.classList.add('is-busy');
         }
         const body = new FormData(form);
-        // A322: "Für alle gleichen Buchungen übernehmen" above the candidates goes along with "Zuordnen".
-        if (form.matches('[data-bank-match]') && form.closest('section[data-window]')?.querySelector('input[data-bank-standing]')?.checked) {
+        // A322: "Für alle gleichen Buchungen übernehmen" in the booking window goes along with the link button of the
+        // "Belegvorschläge" window beside it (its opener, data-window-from).
+        if (form.matches('[data-bank-match]') && standingTick(form.closest('section[data-window]'))?.checked) {
             body.append('standing', '1');
         }
         send(form.action, body)
@@ -133,28 +141,6 @@
             reloadAll();
         }).catch(error => toast(error.message, { error: true }));
     };
-
-    // --- A341: a candidate without drag (finger, keyboard): a tap, click or Enter opens its menu ---------------
-    // "Mit dieser Buchung verknüpfen" behind the grip; dragging the row onto the booking does the same (point 160).
-    const openMenu = (row, focus) => setTimeout(() => {
-        row.querySelector('.drag-grip')?.click();
-        if (focus) {
-            row.querySelector('.dropdown-panel .menu-item')?.focus();
-        }
-    }, 0); // after the click that closes other dropdowns
-    document.addEventListener('click', event => {
-        const row = event.target.closest?.('[data-bank-candidate]');
-        if (row && !event.target.closest('a, button, input, label, .dropdown')) {
-            openMenu(row, false);
-        }
-    });
-    document.addEventListener('keydown', event => {
-        const row = event.target.closest?.('[data-bank-candidate]');
-        if (row && event.target === row && (event.key === 'Enter' || event.key === ' ')) {
-            event.preventDefault();
-            openMenu(row, true);
-        }
-    });
 
     // --- Filters in the account window's toolbar (A304, A311): a click reloads only this window ----------------
     document.addEventListener('click', event => {

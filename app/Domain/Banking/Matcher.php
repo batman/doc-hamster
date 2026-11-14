@@ -19,7 +19,7 @@ use Throwable;
  * recognition (the document against the open bookings). Runs in jobs too, so it never relies on the active
  * organisation: every query names the org. A pair scoring MatchScore::AUTO or more with no close second, on either
  * side, is linked as "vorgeschlagen"; a person confirms it with one click or rejects it (never suggested again).
- * Lower scores are only offered in the booking's "Dokument zuordnen" list (candidates()).
+ * Lower scores are only offered in the booking's "Belegvorschläge" window (candidates(), point 193).
  */
 final class Matcher
 {
@@ -58,7 +58,7 @@ final class Matcher
     }
 
     /**
-     * "Dokument zuordnen" (A269): the documents the person may link, best score first, then nearest to the booking day.
+     * "Belegvorschläge" (A269, point 193): the documents the person may link, best score first, then nearest to the booking day.
      * Without a search only documents near in time or amount are looked at; with one, everything that matches it.
      * Documents with a confirmed link to another booking only with $withLinked (point 145, A318).
      *
@@ -101,6 +101,23 @@ final class Matcher
             <=> [$a['score'], abs($b['document']->created_at->diffInSeconds($day))]);
 
         return array_slice($scored, 0, $limit);
+    }
+
+    /**
+     * The invoice amounts of documents (minor units).
+     *
+     * @param  array<string>  $ids
+     * @return array<string, int>
+     */
+    public static function invoiceAmounts(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        return DocumentProperty::query()->whereIn('document_id', $ids)
+            ->whereIn('property_id', Property::query()->where('key', 'invoice_amount')->select('id'))
+            ->whereNotNull('value_int')->pluck('value_int', 'document_id')->map(static fn ($v): int => (int) $v)->all();
     }
 
     /**

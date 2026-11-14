@@ -1,6 +1,7 @@
 {{-- One booking as a window: its values, status (A270), the linked documents with the matcher's suggestions to confirm or
-     reject (A268), the sums of an n:m link (A271) and "Dokument zuordnen" with the best candidates first plus the search
-     in the toolbar (A269). Forms with data-bank-action are sent by modules/bank.js (toast, bank windows reload). --}}
+     reject (A268) and the sums of an n:m link (A271). "Belegvorschläge" (point 193) and "Ordner daneben öffnen" (point
+     198) open the one window beside it – a data-window link replaces whatever stood right of the booking (A371); from
+     there documents are dragged onto the booking card. Forms with data-bank-action are sent by modules/bank.js. --}}
 @php
     $state = $transaction->status();
     $statusClass = ['open' => 'pill-warning', 'suggested' => 'pill-new', 'linked' => 'pill-ok', 'none' => ''];
@@ -9,8 +10,7 @@
 @endphp
 <x-window :title="$transaction->formattedAmount().' · '.($transaction->counterparty ?? __('bank.transaction'))" icon="receipt" kind="bank-transaction"
           min="28rem" optimal="38rem" max="56rem" priority="2"
-          :url="route('bank.show', array_filter([$transaction->id, 'q' => $search !== '' ? $search : null, 'linked' => $withLinked ? 1 : null]))" :close="route('bank.account', $transaction->bank_account_id)"
-          :search="__('bank.candidates_search')">
+          :url="route('bank.show', $transaction->id)" :close="route('bank.account', $transaction->bank_account_id)">
     @if (session('status'))
         <p class="check-ok" role="status">{{ session('status') }}</p>
     @endif
@@ -91,7 +91,10 @@
                 </form>
             </div>
         @endif
+        {{-- Points 193, 198: the documents to link open beside the booking; A322: the next link (drop or link button) makes a Dauerbeleg. --}}
         <div class="actions">
+            <a class="button button-small" href="{{ route('bank.suggestions', $transaction->id) }}" data-window><x-icon name="file-invoice" /><span>{{ __('bank.suggestions') }}</span></a>
+            <a class="icon-button" href="{{ route('documents.index') }}" data-window aria-label="{{ __('bank.open_folders') }}" data-tooltip="{{ __('bank.open_folders') }}"><x-icon name="layout-columns" /></a>
             @if ($transaction->no_receipt)
                 <form method="post" action="{{ route('bank.no-receipt', $transaction->id) }}" data-bank-action>
                     @csrf
@@ -101,6 +104,9 @@
             @else
                 <button type="button" class="button-quiet button-small" data-dialog-open="no-receipt-{{ $transaction->id }}">{{ __('bank.no_receipt') }}</button>
             @endif
+        </div>
+        <div class="bank-ticks">
+            <label class="check" data-tooltip="{{ __('bank.standing_hint') }}"><input type="checkbox" data-bank-standing> {{ __('bank.standing_tick') }}</label>
         </div>
     </section>
 
@@ -231,50 +237,4 @@
             @endif
         </section>
     @endif
-
-    <section class="card">
-        <h2 class="card-head"><x-icon name="file-text" />{{ __('bank.candidates') }}</h2>
-        <p class="card-note">{{ __('bank.candidates_hint') }}</p>
-        {{-- A318: documents with a booking already stay out unless asked for; A322: the next link (drop or menu) makes a Dauerbeleg. --}}
-        <div class="bank-ticks">
-            <label class="check"><input type="checkbox" data-bank-reload="{{ route('bank.show', array_filter([$transaction->id, 'q' => $search !== '' ? $search : null, 'linked' => $withLinked ? null : 1])) }}" @checked($withLinked)> {{ __('bank.show_linked') }}</label>
-            <label class="check" data-tooltip="{{ __('bank.standing_hint') }}"><input type="checkbox" data-bank-standing> {{ __('bank.standing_tick') }}</label>
-        </div>
-        <ul class="pick-list">
-            @forelse ($candidates as $candidate)
-                @php $document = $candidate['document']; $amount = $candidateAmounts[$document->id] ?? null; $elsewhere = $candidateLinks[$document->id] ?? null; @endphp
-                {{-- 160.5, A341: no button – the row drags onto the booking (card above or a row of the account window);
-                     a tap, click or Enter opens the small menu "Mit dieser Buchung verknüpfen" behind the grip. --}}
-                <li class="pick-row is-static drag-row" data-doc-drag="{{ $document->id }}" data-doc-file="{{ $document->dragFile() }}" data-bank-candidate tabindex="0">
-                    <div class="dropdown">
-                        <button type="button" class="icon-button drag-grip" aria-haspopup="true" aria-expanded="false" aria-label="{{ __('bank.drag_grip', ['name' => $document->title]) }}"><x-icon name="grip-vertical" /></button>
-                        <div class="dropdown-panel" role="menu" hidden>
-                            <form method="post" action="{{ route('bank.match', $transaction->id) }}" data-bank-action data-bank-match>
-                                @csrf
-                                <input type="hidden" name="document_id" value="{{ $document->id }}">
-                                <button type="submit" class="menu-item" role="menuitem"><x-icon name="link" /><span>{{ __('bank.link_here') }}</span></button>
-                            </form>
-                        </div>
-                    </div>
-                    <span class="row-icon"><x-icon name="file-text" /></span>
-                    <span>
-                        <strong><a href="{{ route('documents.show', $document->id) }}" data-window><span data-doc-title>{{ $document->title }}</span></a></strong>
-                        <small>
-                            {{ $document->created_at->format('d.m.Y') }}
-                            @if ($amount !== null) · {{ $money(abs($amount)) }}@endif
-                            @if ($candidate['reasons'] !== []) · {{ $why($candidate['reasons']) }}@endif
-                            @if ($elsewhere)
-                                <br>{{ __('bank.linked_with', ['names' => $elsewhere['names']]) }}@if ($amount !== null) · {{ __('bank.remaining', ['amount' => $money(abs($amount) - $elsewhere['sum'])]) }}@endif
-                            @endif
-                        </small>
-                    </span>
-                    @if ($candidate['score'] >= \App\Domain\Banking\MatchScore::SUGGEST)
-                        <span class="pill pill-new">{{ __('bank.score', ['score' => $candidate['score']]) }}</span>
-                    @endif
-                </li>
-            @empty
-                <li class="list-empty">{{ __('bank.no_candidates') }}</li>
-            @endforelse
-        </ul>
-    </section>
 </x-window>

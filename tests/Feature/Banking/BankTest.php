@@ -153,7 +153,8 @@ it('links a receipt, moves it between the views and can undo it', function (): v
     $this->get('/bank')->assertSee('Girokonto');
     $this->get($account)->assertSee('Muster GmbH');
     $this->get('/bank/receipts')->assertSee('bon.jpg');
-    $this->get('/bank/transactions/'.$transaction->id)->assertOk()->assertSee('bon.jpg');
+    $this->get('/bank/transactions/'.$transaction->id)->assertOk()->assertSee('Belegvorschläge');
+    $this->get('/bank/transactions/'.$transaction->id.'/suggestions?q=bon')->assertOk()->assertSee('bon.jpg');
 
     $this->post('/bank/transactions/'.$transaction->id.'/match', ['document_id' => $document->id])->assertRedirect(route('bank.show', $transaction->id));
     $this->post('/bank/transactions/'.$transaction->id.'/match', ['document_id' => $document->id])->assertRedirect();
@@ -205,7 +206,7 @@ it('needs the checkbox, and without "Alle Belege sehen" only own receipts can be
     $own = receipt($this->orgId, $clerk->user_id, 'meins.jpg');
 
     $second = transactions()->whereKeyNot($transaction->id)->firstOrFail();
-    $this->actingAs($clerk->user)->get('/bank/transactions/'.$second->id)->assertSee('meins.jpg')->assertDontSee('chef.jpg');
+    $this->actingAs($clerk->user)->get('/bank/transactions/'.$second->id.'/suggestions?q=jpg')->assertSee('meins.jpg')->assertDontSee('chef.jpg');
     $this->get('/bank/receipts')->assertSee('meins.jpg');
     $this->get('/bank/transactions/'.$transaction->id)->assertDontSee('chef.jpg')->assertSee('1 Dokument, das Sie nicht sehen');
 

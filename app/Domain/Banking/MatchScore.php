@@ -19,13 +19,17 @@ use DateTimeImmutable;
  * - Invoice number (25): stands in the purpose.
  * - Sender (20): the sender's name words stand in counterparty or purpose.
  *
- * At most 100. AUTO and above, with no close second, links as "vorgeschlagen"; SUGGEST and above is offered.
+ * At most 100. AUTO and above, with no close second, links as "vorgeschlagen"; SUGGEST and above is offered; SHOW and
+ * above appears in the booking's "Belegvorschläge" window (A367).
  */
 final class MatchScore
 {
     public const AUTO = 80;
 
     public const SUGGEST = 40;
+
+    /** Below this a document is no "Belegvorschlag" (A367). */
+    public const SHOW = 20;
 
     /** The best must lead the second by this much to be linked on its own (PLAN §9.2). */
     public const UNIQUE_GAP = 15;
