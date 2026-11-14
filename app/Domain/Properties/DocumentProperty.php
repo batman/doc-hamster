@@ -25,6 +25,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $value_int
  * @property Carbon|null $value_date
  * @property string|null $currency
+ * @property string|null $date_order dmy|mdy|ymd when the date read two ways (point 165.6), else null
  * @property string $state confirmed|suggested
  * @property int|null $page
  * @property array{x: float, y: float, w: float, h: float}|null $box
@@ -41,7 +42,7 @@ final class DocumentProperty extends Model
 
     protected $table = 'document_properties';
 
-    protected $fillable = ['org_id', 'document_id', 'property_id', 'value_text', 'value_int', 'value_date', 'currency', 'state', 'page', 'box'];
+    protected $fillable = ['org_id', 'document_id', 'property_id', 'value_text', 'value_int', 'value_date', 'currency', 'date_order', 'state', 'page', 'box'];
 
     /**
      * @return array<string, string>

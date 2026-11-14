@@ -33,6 +33,14 @@ button .icon, .button .icon { width: 1.25rem; height: 1.25rem; }
 :is(button, .button).button-danger { background: var(--danger); color: #fff; }
 :is(button, .button).button-danger:hover { background: var(--danger-hover); }
 
+/* Link button (point 165.6): an action inside running text or a subline - orange text with a small symbol, no frame */
+:is(button, .button).button-link {
+    display: inline-flex; gap: .2rem; min-height: 0; padding: 0; border: 0; border-radius: 4px; background: none; box-shadow: none;
+    color: var(--primary-ink); font-size: inherit; font-weight: 600; line-height: inherit; vertical-align: baseline;
+}
+:is(button, .button).button-link:hover { background: none; box-shadow: none; text-decoration: underline; }
+:is(button, .button).button-link .icon { width: 1em; height: 1em; }
+
 /* Sizes: 48 px, small 40 px; icon buttons are square */
 :is(button, .button).button-small { min-height: 40px; padding: 0 .9rem; font-size: .95rem; }
 .icon-button { width: 48px; padding: 0; }

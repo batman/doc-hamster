@@ -172,7 +172,7 @@
                      data-title="{{ __('properties.mark.title') }}" data-property="{{ __('properties.mark.property') }}" data-value="{{ __('properties.mark.value') }}"
                      data-save="{{ __('properties.mark.save') }}" data-cancel="{{ __('properties.cancel') }}" data-none="{{ __('properties.mark.none') }}"
                      data-pick="{{ __('properties.mark.pick') }}" data-preview-text="{{ __('properties.mark.preview', ['value' => ':value']) }}"
-                     data-replaces="{{ __('properties.mark.replaces', ['value' => ':value']) }}" data-failed="{{ __('app.edit_in_place.failed') }}"></div>
+                     data-replaces="{{ __('properties.mark.replaces', ['value' => ':value']) }}" data-read-as="{{ __('properties.mark.read_as') }}" data-read-other="{{ __('properties.mark.read_other') }}" data-failed="{{ __('app.edit_in_place.failed') }}"></div>
             @endif
         @else
             <aside class="side side-plain">

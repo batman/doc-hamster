@@ -75,6 +75,8 @@ return [
         'pick' => 'Bitte eine Eigenschaft wählen.',
         'preview' => 'Wird gespeichert als: :value',
         'replaces' => 'ersetzt :value',
+        'read_as' => 'lesen als',
+        'read_other' => 'Andere Reihenfolge',
     ],
     'errors' => [
         'empty' => 'Bitte einen Wert eingeben.',
@@ -100,4 +102,7 @@ return [
     ],
     'columns' => 'Spalten',
     'sort' => 'Sortieren nach :name',
+    // Point 165.6: how an ambiguous numeric date was read; the long form of a date.
+    'orders' => ['dmy' => 'Tag, Monat, Jahr', 'mdy' => 'Monat, Tag, Jahr', 'ymd' => 'Jahr, Monat, Tag'],
+    'date_long' => 'j. F Y',
 ];

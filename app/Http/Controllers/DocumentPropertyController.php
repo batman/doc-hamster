@@ -51,26 +51,40 @@ final class DocumentPropertyController
             return $this->answer($request, __('properties.card.removed'), ['value' => '', 'property' => $property->id]);
         }
 
-        $value = $this->values->set($document, $property, $data['value'], DocumentProperty::CONFIRMED, $data['page'], $data['box']);
+        $value = $this->values->set($document, $property, $data['value'], DocumentProperty::CONFIRMED, $data['page'], $data['box'], $data['order']);
         $audit->record('document.changed', orgId: $org->id(), userId: $this->user($request)->id, subject: $document, ip: $request->ip());
 
         return $this->answer($request, __('properties.saved'), ['value' => $this->values->display($value), 'property' => $property->id]);
     }
 
-    /** The live preview of the popup: how the value would be stored, or why not (422). */
+    /**
+     * The live preview of the popup: how the value would be stored, or why not (422). A date that reads two ways
+     * (165.6) also answers the order used (`order`, the sender's learned one by default, A343) and every reading
+     * (`orders`: order, label "Tag, Monat, Jahr", text "3. April 2021") for the link that switches between them.
+     */
     public function preview(Request $request, string $id): JsonResponse
     {
         $document = $this->document($request, $id);
         $data = $this->input($request);
         $property = $this->allowed($document, $data['property']);
+        $order = $property->type === 'date' ? ($data['order'] ?? $this->values->senderOrder($document)) : null;
 
-        $value = new DocumentProperty($this->values->parse($property, $data['value']));
+        $parsed = $this->values->parse($property, $data['value'], $order);
+        $value = new DocumentProperty($parsed);
         $value->setRelation('property', $property);
         $current = $document->properties()->with('property')->where('property_id', $property->id)->first();
+        $orders = [];
+        if ($parsed['date_order'] !== null) {
+            foreach (PropertyValues::dateReadings($data['value']) as $key => $date) {
+                $orders[] = ['order' => $key, 'label' => __('properties.orders.'.$key), 'text' => PropertyValues::formatDateLong($date)];
+            }
+        }
 
         return response()->json([
             'value' => $this->values->display($value),
             'current' => $current !== null ? $this->values->display($current) : null,
+            'order' => $parsed['date_order'],
+            'orders' => $orders,
         ]);
     }
 
@@ -112,7 +126,7 @@ final class DocumentPropertyController
     }
 
     /**
-     * @return array{property: string, value: string, page: ?int, box: ?array<string, mixed>}
+     * @return array{property: string, value: string, page: ?int, box: ?array<string, mixed>, order: ?string}
      */
     private function input(Request $request): array
     {
@@ -125,6 +139,7 @@ final class DocumentPropertyController
             'page' => ['nullable', 'integer', 'min:1', 'max:10000'],
             'box' => ['nullable', 'array'],
             'box.*' => ['numeric'],
+            'order' => ['nullable', 'string', 'in:'.implode(',', PropertyValues::ORDERS)],
         ]);
 
         return [
@@ -132,6 +147,7 @@ final class DocumentPropertyController
             'value' => (string) ($data['value'] ?? ''),
             'page' => isset($data['page']) ? (int) $data['page'] : null,
             'box' => is_array($data['box'] ?? null) ? $data['box'] : null,
+            'order' => isset($data['order']) ? (string) $data['order'] : null,
         ];
     }
 

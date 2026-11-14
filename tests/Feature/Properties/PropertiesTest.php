@@ -139,3 +139,21 @@ it('manages properties in the settings; default ones only switch off', function 
     expect(Property::query()->withoutGlobalScope(OrgScope::class)->whereKey($own->id)->exists())->toBeFalse()
         ->and(Property::query()->withoutGlobalScope(OrgScope::class)->whereKey($default->id)->exists())->toBeTrue();
 });
+
+it('previews an ambiguous date with its readings and remembers the picked order per sender (165.6, A343)', function (): void {
+    $doc = ($this->doc)('invoice.pdf');
+    $values = app(PropertyValues::class);
+    $values->set($doc, 'sender', 'Example Ltd');
+
+    $this->postJson("/documents/{$doc->id}/properties/preview", ['property' => 'invoice_date', 'value' => '03/04/2021'])
+        ->assertOk()->assertJson(['value' => '03.04.2021', 'order' => 'dmy', 'orders' => [['order' => 'dmy', 'text' => '3. April 2021'], ['order' => 'mdy', 'text' => '4. März 2021']]]);
+    $this->postJson("/documents/{$doc->id}/properties", ['property' => 'invoice_date', 'value' => '03/04/2021', 'order' => 'mdy'])
+        ->assertOk()->assertJson(['value' => '04.03.2021']);
+    expect($values->get($doc, 'invoice_date')?->date_order)->toBe('mdy');
+
+    $next = ($this->doc)('invoice-2.pdf');
+    $values->set($next, 'sender', 'Example Ltd.');
+    $this->postJson("/documents/{$next->id}/properties/preview", ['property' => 'invoice_date', 'value' => '05/06/2021'])->assertOk()->assertJson(['order' => 'mdy', 'value' => '06.05.2021']);
+    expect($values->set($next, 'due_date', '05/06/2021', 'suggested')->value_date?->format('Y-m-d'))->toBe('2021-05-06')
+        ->and($values->set($next, 'paid_at', '17 Oct 2025')->date_order)->toBeNull();
+});

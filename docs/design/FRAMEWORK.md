@@ -38,6 +38,7 @@ Every `<button>` and `.button` is a button by default. Do not reuse its look for
 | Delete | `<button class="button-danger">` | Delete only |
 | Small | add `button-small` | 40 px instead of 48 px, e.g. in list rows |
 | Icon | `<button class="icon-button" aria-label="…" data-tooltip="…">` | Square, icon only, always with tooltip |
+| Link | `<button type="button" class="button-link" data-tooltip="…">` + small symbol + text | An action inside running text or a subline (point 165.6: "lesen als Tag, Monat, Jahr"); orange text, no frame, underlined on hover |
 | Group | `<div class="button-group" role="group" aria-label="…">` around buttons | Buttons side by side (e.g. view choice); rounded only outside, the chosen one `aria-pressed="true"` |
 | Control | `<button type="button" class="control-button" aria-label="…" data-tooltip="…">` | Window controls only (minimise ‹ – one term, A218 –, unfold ›, maximise, close): **no frame**, icon in text colour, orange on hover; 36 px in window heads. The menu arrow is its 48 px flavour (points 70, A116) |
 

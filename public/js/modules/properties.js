@@ -29,6 +29,7 @@
         }
         return el;
     };
+    const SWITCH_ICON = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 17l-18 0"/><path d="M6 10l-3 -3l3 -3"/><path d="M3 7l18 0"/><path d="M18 20l3 -3l-3 -3"/></svg>';
     const X_ICON = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>';
     let counter = 0;
 
@@ -52,6 +53,7 @@
         }
         const properties = offered.properties ?? [];
         const types = JSON.parse(cfg.types || '{}');
+        const subline = property => [types[property.type] ?? property.type, property.value].filter(Boolean).join(' · ');
         const name = `mark-as-${Date.now().toString(36)}-${++counter}`;
 
         const backdrop = make('div', 'dialog-backdrop');
@@ -90,7 +92,7 @@
             radio.value = property.id;
             const label = make('span');
             label.append(make('strong', '', property.name));
-            label.append(make('small', '', [types[property.type] ?? property.type, property.value].filter(Boolean).join(' · ')));
+            label.append(make('small', '', subline(property)));
             row.append(radio, label);
             list.append(row);
         });
@@ -126,6 +128,11 @@
             dialog.append(form);
         }
 
+        // 165.4: what the person typed (or marked) – the field may show the normalised value meanwhile.
+        let raw = input.value;
+        // 165.6: the order an ambiguous date is read in (null = the server's default: the sender's, else day first).
+        let order = null;
+        let orders = [];
         const chosen = () => properties.find(property => property.id === form.querySelector('input[name="property"]:checked')?.value) ?? null;
         const valueOf = () => (select.disabled ? input.value : select.value);
         const show = (ok, message) => {
@@ -136,9 +143,37 @@
             state.setAttribute('aria-label', message);
             hint.textContent = message;
         };
+        // The subline of the chosen date reads "Datum, lesen als <Tag, Monat, Jahr> = 3. April 2021" while the date reads
+        // two ways; the orange link switches to the next reading (and round again).
+        const showReading = () => {
+            const property = chosen();
+            list.querySelectorAll('.pick-row').forEach(row => {
+                const own = properties.find(p => p.id === row.querySelector('input')?.value);
+                const small = row.querySelector('small');
+                if (!own || !small) return;
+                if (own !== property || orders.length < 2) {
+                    small.textContent = subline(own);
+                    return;
+                }
+                const reading = orders.find(o => o.order === order) ?? orders[0];
+                const link = make('button', 'button-link');
+                link.type = 'button';
+                link.dataset.tooltip = cfg.readOther;
+                link.setAttribute('aria-label', `${cfg.readAs} ${reading.label} – ${cfg.readOther}`);
+                link.innerHTML = SWITCH_ICON;
+                link.append(reading.label);
+                link.addEventListener('click', event => {
+                    event.preventDefault();
+                    const at = orders.findIndex(o => o.order === reading.order);
+                    order = orders[(at + 1) % orders.length].order;
+                    preview(0);
+                });
+                small.replaceChildren(`${types[own.type] ?? own.type}, ${cfg.readAs} `, link, ` = ${reading.text}`);
+            });
+        };
         let timer = 0;
         let run = 0;
-        const preview = () => {
+        const preview = (wait = 200) => {
             clearTimeout(timer);
             const property = chosen();
             if (!property) {
@@ -150,18 +185,32 @@
                 const body = new FormData();
                 body.append('property', property.id);
                 body.append('value', valueOf());
+                if (order && property.type === 'date') body.append('order', order);
                 post(fill(cfg.preview, documentId), body).then(json => {
                     if (mine !== run) return;
+                    orders = json.orders ?? [];
+                    order = json.order ?? null;
+                    showReading();
+                    // 165.4: a valid value shows normalised (17.10.2025, 1.234,56 €) – not while typing, not for a
+                    // date that reads two ways (its subline says how it is read).
+                    if (!input.disabled && orders.length < 2 && document.activeElement !== input && json.value) {
+                        input.value = json.value;
+                    }
                     const replaces = json.current && json.current !== json.value ? ` · ${cfg.replaces.replace(':value', json.current)}` : '';
                     show(true, cfg.previewText.replace(':value', json.value) + replaces);
                 }).catch(error => {
-                    if (mine === run) show(false, error.message);
+                    if (mine !== run) return;
+                    orders = [];
+                    showReading();
+                    show(false, error.message);
                 });
-            }, 200);
+            }, wait);
         };
         // A choice offers its values as a list; the clicked word preselects the matching one.
         const switchField = () => {
             const property = chosen();
+            input.value = raw;
+            order = null;
             const isChoice = property?.type === 'choice';
             select.hidden = !isChoice;
             select.disabled = !isChoice;
@@ -182,7 +231,11 @@
             if (event.target.name === 'property') switchField();
             else preview();
         });
-        input.addEventListener('input', preview);
+        input.addEventListener('input', () => {
+            raw = input.value;
+            order = null;
+            preview();
+        });
 
         return new Promise(resolve => {
             let result = null;
@@ -197,6 +250,7 @@
                 const body = new FormData();
                 body.append('property', property.id);
                 body.append('value', valueOf());
+                if (order && property.type === 'date') body.append('order', order);
                 if (page !== null && page !== undefined) {
                     body.append('page', String(page));
                 }
