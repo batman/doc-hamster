@@ -8,6 +8,8 @@ return [
     'books' => ['general' => 'Allgemein', 'ocr' => 'Texterkennung', 'updates' => 'Updates'],
     'levels' => ['event' => 'Ereignis', 'warning' => 'Warnung', 'error' => 'Fehler'],
     'level_filter' => ['' => 'Alle', 'problems' => 'Fehler und Warnungen', 'errors' => 'Nur Fehler'],
+    'engine_label' => 'Erkannt von',
+    'engine_filter' => ['' => 'Alle', 'server' => 'Server', 'browser' => 'Browser'],
     'books_label' => 'Logbücher',
     'level_label' => 'Art',
     'from' => 'Von',

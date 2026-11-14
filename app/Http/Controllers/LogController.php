@@ -114,7 +114,7 @@ final class LogController
     }
 
     /**
-     * @return array{books: list<string>, level: string, from: string, to: string, q: string, doc: string}
+     * @return array{books: list<string>, level: string, from: string, to: string, q: string, doc: string, engine: string}
      */
     private function filters(Request $request, ?string $book): array
     {
@@ -129,13 +129,15 @@ final class LogController
             'to' => $date($request->query('to')),
             'q' => is_string($request->query('q')) ? mb_substr(trim((string) $request->query('q')), 0, 100) : '',
             'doc' => is_string($request->query('doc')) ? mb_substr((string) $request->query('doc'), 0, 26) : '',
+            // 186.4: who read it (only the OCR log; set, the other logbooks drop out).
+            'engine' => is_string($request->query('engine')) && isset(OcrLog::ENGINES[$request->query('engine')]) ? (string) $request->query('engine') : '',
         ];
     }
 
     /**
      * One query over both stores with the same columns: id, created_at, book, level, kind (log|ocr).
      *
-     * @param  array{books: list<string>, level: string, from: string, to: string, q: string, doc: string}  $filters
+     * @param  array{books: list<string>, level: string, from: string, to: string, q: string, doc: string, engine: string}  $filters
      */
     private function query(string $orgId, array $filters): Builder
     {
@@ -146,7 +148,7 @@ final class LogController
         };
         $like = '%'.addcslashes($filters['q'], '\\%_').'%';
         $parts = [];
-        $own = array_values(array_diff($filters['books'], ['ocr']));
+        $own = $filters['engine'] === '' ? array_values(array_diff($filters['books'], ['ocr'])) : [];
         if ($own !== []) {
             $parts[] = DB::table('log_entries')
                 ->select(['id', 'created_at', 'book', 'level', DB::raw("'log' as kind")])
@@ -164,6 +166,7 @@ final class LogController
             $parts[] = DB::table('ocr_log')
                 ->select(['id', 'created_at', DB::raw("'ocr' as book"), DB::raw("$level as level"), DB::raw("'ocr' as kind")])
                 ->where('org_id', $orgId)
+                ->when($filters['engine'] !== '', static fn (Builder $q) => $q->whereIn('source', OcrLog::ENGINES[$filters['engine']]))
                 ->when($levels !== LogEntry::LEVELS, static fn (Builder $q) => $q->whereIn('event', [
                     ...OcrLog::ERRORS, ...(in_array('warning', $levels, true) ? self::OCR_WARNINGS : []),
                 ]))

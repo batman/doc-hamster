@@ -71,7 +71,7 @@
                     @endif
                 </span>
             </li>
-            @if ($mode === 'app' && ! $pdfReady && $state !== 'running')
+            @if ($server['engine'] === 'app' && ! $pdfReady && $state !== 'running')
                 {{-- Point 69/A113: adds the PDF converter to a working app-owned Tesseract. --}}
                 <li class="pick-row is-static">
                     <x-icon name="download" />
@@ -85,7 +85,7 @@
                     </form>
                 </li>
             @endif
-            @if (! in_array($mode, ['system', 'app'], true) && $state !== 'running')
+            @if ($server['engine'] === null && $state !== 'running')
                 {{-- A65/A68: runs in the request; JS shows the progress dialog, without JS the page just waits. --}}
                 <li class="pick-row is-static">
                     <x-icon name="download" />
@@ -100,6 +100,65 @@
                 </li>
             @endif
         </ul>
+    </x-fold-card>
+
+    {{-- Point 186.1/186.2: the server's own recognition – installed, version, languages, on/off (saves at once) and
+         "Server testen" (the server reads a built-in sample page; result inline, modules/ocr-server.js). --}}
+    <x-fold-card fold="ocr.server" :title="__('ocr.server.title')" icon="server" :folded="$server['engine'] === null"
+        :summary="__($server['engine'] === null ? 'ocr.server.summary_none' : ($server['on'] ? 'ocr.server.summary_on' : 'ocr.server.summary_off'))"
+        :summary-tone="$server['engine'] !== null && $server['on'] ? 'ok' : null">
+        <ul class="pick-list">
+            <li class="pick-row is-static">
+                <x-icon :name="$server['engine'] !== null ? 'circle-check' : 'circle-x'" />
+                <span>
+                    <strong>{{ __('ocr.server.installed') }}: {{ __($server['engine'] !== null ? 'ocr.server.yes' : 'ocr.server.no') }}</strong>
+                    @if ($server['engine'] !== null)
+                        <small>{{ __('ocr.server.engine.'.$server['engine']) }} · {{ __('ocr.server.version') }}: {{ $server['version'] ?? __('ocr.server.unknown') }}</small>
+                        <small>{{ __('ocr.server.languages') }}: {{ implode(', ', $server['languages']) }}</small>
+                        <small>{{ __('ocr.server.pdf') }}: {{ __($server['pdf'] ? 'ocr.server.pdf_yes' : 'ocr.server.pdf_no') }}</small>
+                    @else
+                        <small>{{ __('ocr.server.none_hint') }}</small>
+                    @endif
+                </span>
+            </li>
+        </ul>
+        @if ($server['engine'] !== null)
+            <form method="post" action="{{ route('ocr.server') }}" data-autosave>
+                @csrf
+                <fieldset class="pick-list">
+                    <legend>{{ __('ocr.server.use') }}</legend>
+                    @foreach ([1 => 'on', 0 => 'off'] as $value => $key)
+                        <label class="pick-row">
+                            <input type="radio" class="visually-hidden" name="server" value="{{ $value }}" @checked($server['on'] === (bool) $value)>
+                            <span><strong>{{ __('ocr.server.choice.'.$key.'.title') }}</strong><small>{{ __('ocr.server.choice.'.$key.'.text') }}</small></span>
+                            <span class="pick-mark"><x-icon name="check" /></span>
+                        </label>
+                    @endforeach
+                </fieldset>
+                <noscript><button type="submit">{{ __('ocr.server.save') }}</button></noscript>
+            </form>
+            <div data-ocr-server-test="{{ route('ocr.test') }}" data-running="{{ __('ocr.server.test_running') }}"
+                data-result="{{ __('ocr.server.test_result', ['found' => ':found', 'total' => ':total', 'words' => ':words', 'seconds' => ':seconds']) }}">
+                <p class="muted">{{ __('ocr.server.test_hint') }}</p>
+                <button type="button" class="button-small" data-ocr-server-run><x-icon name="player-play" /><span>{{ __('ocr.server.test') }}</span></button>
+                <ul class="pick-list" data-ocr-server-out hidden>
+                    <li class="pick-row is-static" data-ocr-server-row>
+                        <x-icon name="text-scan-2" />
+                        <span><strong data-ocr-server-summary></strong></span>
+                    </li>
+                    <li class="pick-row is-static">
+                        <x-icon name="file-text" />
+                        <span><strong>{{ __('ocr.server.expected') }}</strong><span data-ocr-server-expected></span></span>
+                    </li>
+                    <li class="pick-row is-static">
+                        <x-icon name="text-scan-2" />
+                        <span><strong>{{ __('ocr.server.recognized') }}</strong><span data-ocr-server-text></span></span>
+                    </li>
+                </ul>
+                <template data-ocr-server-ok><x-icon name="circle-check" /></template>
+                <template data-ocr-server-warn><x-icon name="alert-triangle" /></template>
+            </div>
+        @endif
     </x-fold-card>
 
     {{-- A67/A71/A75: is cron running? Without it the open app works off the queue. --}}

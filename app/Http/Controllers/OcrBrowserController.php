@@ -163,6 +163,8 @@ final class OcrBrowserController extends Controller
             $document->forceFill([
                 'ocr_text' => OcrFixes::reapply($document, $text, $words), 'ocr_words' => OcrWords::encode($words), 'ocr_status' => 'done',
                 'ocr_pass' => OcrProgress::FULL, 'ocr_failures' => 0, 'ocr_rescan' => false,
+                // 186.4: who read it and when (the detail's Verlauf).
+                'ocr_engine' => 'browser', 'ocr_read_at' => now(),
             ])->save();
             $ocr->clearBrowserError();
             TextRecognized::dispatch($document->id);

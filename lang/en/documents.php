@@ -58,6 +58,8 @@ return [
         'downloaded' => 'Last downloaded',
         'type' => 'File type',
         'booking' => 'Booking',
+        'recognized' => 'Text recognised',
+        'engines' => ['browser' => 'browser', 'server' => 'server'],
     ],
     'never' => 'never',
     'open_file' => 'Open file',

@@ -33,6 +33,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon $created_at
  * @property Carbon|null $last_opened_at
  * @property Carbon|null $last_downloaded_at
+ * @property string|null $ocr_engine browser|server: who read the text (point 186.4)
+ * @property Carbon|null $ocr_read_at when the text was read (point 186.4)
  */
 final class Document extends Model
 {
@@ -47,7 +49,7 @@ final class Document extends Model
      */
     protected function casts(): array
     {
-        return ['doc_date' => 'date', 'last_opened_at' => 'datetime', 'last_downloaded_at' => 'datetime', 'in_print_tray' => 'boolean', 'inbox_done_at' => 'datetime'];
+        return ['doc_date' => 'date', 'last_opened_at' => 'datetime', 'last_downloaded_at' => 'datetime', 'in_print_tray' => 'boolean', 'inbox_done_at' => 'datetime', 'ocr_read_at' => 'datetime'];
     }
 
     /**

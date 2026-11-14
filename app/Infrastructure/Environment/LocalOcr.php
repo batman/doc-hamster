@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Environment;
 
+use App\Domain\Documents\DocumentFile;
+use App\Domain\Ocr\OcrServerSwitch;
+use App\Domain\Org\CurrentOrg;
 use App\Infrastructure\Extensions\Catalogue;
 use App\Infrastructure\Extensions\Extension;
 use App\Infrastructure\Extensions\Extensions;
@@ -122,9 +125,9 @@ final class LocalOcr
      * Point 69: the browser loop runs in mode browser, and in mode app while the server cannot read PDFs
      * (the browser then reads only the PDFs). Cached with the mode.
      */
-    public function browserLoop(): bool
+    public function browserLoop(?string $orgId = null): bool
     {
-        $mode = $this->mode();
+        $mode = $this->mode($orgId);
 
         return $mode === 'browser' || ($mode === 'app' && $this->browserReady() && ! $this->pdfAvailable());
     }
@@ -162,18 +165,88 @@ final class LocalOcr
         return $this->dir().'/xpdf/'.$name;
     }
 
-    /** system | app | browser | none – cached, it is read on every page. */
-    public function mode(): string
+    /**
+     * system | app | browser | none – cached, it is read on every page. 186.1: with the organisation's server
+     * recognition switched off (the given one, else the current one) a server engine counts as browser.
+     */
+    public function mode(?string $orgId = null): string
     {
         // Cache::memo(): read once per request (the layout preloads it with the other keys, point 164.4).
-        return Cache::memo()->remember(self::MODE_KEY, 300, function (): string {
-            return match (true) {
-                $this->systemAvailable() => 'system',
-                $this->appAvailable() => 'app',
-                $this->browserReady() => 'browser',
-                default => 'none',
-            };
+        $mode = Cache::memo()->remember(self::MODE_KEY, 300, fn (): string => $this->engineMode());
+        if (! in_array($mode, ['system', 'app'], true)) {
+            return $mode;
+        }
+        $current = app(CurrentOrg::class);
+        $orgId ??= $current->isSet() ? $current->id() : null;
+        if ($orgId === null || OcrServerSwitch::enabled($orgId)) {
+            return $mode;
+        }
+
+        return $this->browserReady() ? 'browser' : 'none';
+    }
+
+    /** 186.1: the server engine there is, whatever the switch says: system | app | null. */
+    public function serverEngine(): ?string
+    {
+        return match (true) {
+            $this->systemAvailable() => 'system',
+            $this->appAvailable() => 'app',
+            default => null,
+        };
+    }
+
+    /** 186.3: the server can read this file (an image, or a PDF when it has a PDF tool). */
+    public function serverReads(?DocumentFile $file): bool
+    {
+        if ($file === null || in_array($file->mime, self::BROWSER_SKIP_MIMES, true)) {
+            return false;
+        }
+
+        return match (true) {
+            $file->isImage() => $this->serverEngine() !== null,
+            $file->mime === 'application/pdf' => $this->serverReadsPdf(),
+            default => false,
+        };
+    }
+
+    /**
+     * 186.1: "tesseract --version" of the server engine (first line, e.g. "tesseract 5.3.0"), cached for a day; null
+     * without an engine or when it does not answer.
+     */
+    public function version(): ?string
+    {
+        $engine = $this->serverEngine();
+        if ($engine === null) {
+            return null;
+        }
+        $version = Cache::remember('ocr.version.'.$engine, 86400, function () use ($engine): string {
+            try {
+                $process = new Process($this->command(['--version'], $engine === 'app'), null, $this->env($engine === 'app'), null, 20);
+                $process->run();
+                $lines = preg_split('/\R/', trim($process->getOutput()."\n".$process->getErrorOutput())) ?: [];
+                foreach ($lines as $line) {
+                    if (stripos($line, 'tesseract') !== false) {
+                        return mb_substr(trim($line), 0, 60);
+                    }
+                }
+            } catch (Throwable) {
+                // No answer: shown as unknown.
+            }
+
+            return '';
         });
+
+        return $version !== '' ? $version : null;
+    }
+
+    private function engineMode(): string
+    {
+        return match (true) {
+            $this->systemAvailable() => 'system',
+            $this->appAvailable() => 'app',
+            $this->browserReady() => 'browser',
+            default => 'none',
+        };
     }
 
     /**

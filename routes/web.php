@@ -29,6 +29,7 @@ use App\Http\Controllers\MemberController;
 use App\Http\Controllers\NoteColumnController;
 use App\Http\Controllers\OcrBrowserController;
 use App\Http\Controllers\OcrController;
+use App\Http\Controllers\OcrServerController;
 use App\Http\Controllers\OcrStatusController;
 use App\Http\Controllers\PaletteController;
 use App\Http\Controllers\PhoneCheckController;
@@ -130,6 +131,10 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('settings/ocr', [OcrController::class, 'setup'])->middleware('can:settings.manage')->name('ocr.setup');
     Route::post('settings/ocr/rerun', [OcrController::class, 'rerun'])->middleware('can:settings.manage')->name('ocr.rerun');
     Route::post('documents/{id}/ocr', [OcrController::class, 'redo'])->middleware('can:documents.edit')->name('ocr.redo');
+    // Point 186: server recognition on/off, "Server testen", "Mit Server neu erkennen".
+    Route::post('settings/ocr/server', [OcrServerController::class, 'toggle'])->middleware('can:settings.manage')->name('ocr.server');
+    Route::post('settings/ocr/test', [OcrServerController::class, 'test'])->middleware(['can:settings.manage', 'throttle:10,1'])->name('ocr.test');
+    Route::post('documents/{id}/ocr/server', [OcrServerController::class, 'redo'])->middleware('can:documents.edit')->name('ocr.redo-server');
     // Point 123: the same page as a module of its own (the OCR widget below Abmelden), without the settings columns.
     Route::get('ocr', [OcrController::class, 'show'])->middleware('can:settings.manage')->name('ocr.live');
     Route::get('ocr/status', [OcrStatusController::class, 'status'])->name('ocr.status');

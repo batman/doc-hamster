@@ -45,7 +45,10 @@ final class OcrLog extends Model
     public const array SOURCES = ['browser', 'app', 'system', 'server-setup'];
 
     /** Events shown as errors (red). */
-    public const array ERRORS = ['timeout', 'failed', 'engine_failed', 'setup_failed', 'cron_missing'];
+    public const array ERRORS = ['timeout', 'failed', 'engine_failed', 'setup_failed', 'cron_missing', 'server_test_failed'];
+
+    /** 186.4: the engine filter of the OCR log and the sources behind each choice. */
+    public const array ENGINES = ['server' => ['app', 'system'], 'browser' => ['browser']];
 
     /** A110: the result filter and the events behind each choice. */
     public const array RESULTS = [

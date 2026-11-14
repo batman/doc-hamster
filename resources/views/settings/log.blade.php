@@ -8,7 +8,7 @@
 @section('page')
     @php
         $query = array_filter(['books' => $filters['books'] === $books ? null : $filters['books'], 'level' => $filters['level'],
-            'from' => $filters['from'], 'to' => $filters['to'], 'q' => $filters['q'], 'doc' => $filters['doc']], static fn ($v) => $v !== null && $v !== '' && $v !== []);
+            'from' => $filters['from'], 'to' => $filters['to'], 'q' => $filters['q'], 'doc' => $filters['doc'], 'engine' => $filters['engine']], static fn ($v) => $v !== null && $v !== '' && $v !== []);
         $bookNames = implode(', ', array_map(static fn (string $b): string => __('log.books.'.$b), $filters['books']));
     @endphp
 
@@ -49,6 +49,9 @@
         <form method="get" action="{{ route('log.index') }}" class="log-filter">
             {{-- Enter in a field keeps the chosen kind (the first submit button is the default one). --}}
             <button type="submit" class="visually-hidden" tabindex="-1" aria-hidden="true" name="level" value="{{ $filters['level'] }}"></button>
+            {{-- 186.4: kind and engine stay when the other group is clicked (the pressed button comes later and wins). --}}
+            <input type="hidden" name="level" value="{{ $filters['level'] }}">
+            <input type="hidden" name="engine" value="{{ $filters['engine'] }}">
             @if ($filters['doc'] !== '')
                 <input type="hidden" name="doc" value="{{ $filters['doc'] }}">
             @endif
@@ -63,6 +66,14 @@
                     <button type="submit" name="level" value="{{ $value }}" aria-pressed="{{ $filters['level'] === $value ? 'true' : 'false' }}">{{ $label }}</button>
                 @endforeach
             </div>
+            @if (in_array('ocr', $filters['books'], true))
+                {{-- 186.4: who read it – server or browser (only the Texterkennung logbook). --}}
+                <div class="button-group" role="group" aria-label="{{ __('log.engine_label') }}">
+                    @foreach (__('log.engine_filter') as $value => $label)
+                        <button type="submit" name="engine" value="{{ $value }}" class="button-small button-quiet" aria-pressed="{{ $filters['engine'] === $value ? 'true' : 'false' }}">{{ $label }}</button>
+                    @endforeach
+                </div>
+            @endif
             <label class="log-date"><span>{{ __('log.from') }}</span><input type="date" class="input-small" name="from" value="{{ $filters['from'] }}"></label>
             <label class="log-date"><span>{{ __('log.to') }}</span><input type="date" class="input-small" name="to" value="{{ $filters['to'] }}"></label>
             <input type="search" class="input-small" name="q" value="{{ $filters['q'] }}" placeholder="{{ __('log.search') }}" aria-label="{{ __('log.search') }}">

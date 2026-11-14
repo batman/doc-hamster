@@ -11,6 +11,7 @@
             \App\Infrastructure\Environment\NativeSystemProbe::HEARTBEAT_CACHE_KEY, \App\Http\TagsCss::KEY,
             $layoutOrg->isSet() ? \App\Infrastructure\Environment\OcrProgress::waitingKey($layoutOrg->id()) : null,
             $layoutOrg->isSet() ? \App\Domain\Org\SpeedOptions::prefetchKey($layoutOrg->id()) : null,
+            $layoutOrg->isSet() ? \App\Domain\Ocr\OcrServerSwitch::key($layoutOrg->id()) : null,
         ])));
     }
 @endphp

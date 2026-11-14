@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Documents\Document;
 use App\Domain\Ocr\OcrLog;
+use App\Domain\Ocr\OcrServerSwitch;
 use App\Domain\Org\CurrentOrg;
 use App\Http\OcrAccess;
 use App\Infrastructure\Environment\LocalOcr;
@@ -45,7 +46,26 @@ final class OcrController extends Controller
             'cronRunning' => CronClock::running(),
             'cronLine' => '* * * * * '.CronLine::command(PHP_BINARY, base_path('artisan')),
             'live' => OcrStatusController::live($request, $org->id()),
+            'server' => self::server($ocr, $org->id()),
         ]);
+    }
+
+    /**
+     * 186.1: the "Server-Texterkennung" card – engine (system | app | null), version, languages, PDF tool, switch.
+     *
+     * @return array{engine: ?string, version: ?string, languages: list<string>, pdf: bool, on: bool}
+     */
+    private static function server(LocalOcr $ocr, string $orgId): array
+    {
+        $engine = $ocr->serverEngine();
+
+        return [
+            'engine' => $engine,
+            'version' => $ocr->version(),
+            'languages' => $engine !== null ? $ocr->serverLanguages($ocr->languages(), $engine === 'app')[0] : [],
+            'pdf' => $ocr->serverReadsPdf(),
+            'on' => OcrServerSwitch::enabled($orgId),
+        ];
     }
 
     /**

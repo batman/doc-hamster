@@ -45,6 +45,13 @@
             {{-- Points 185.3, A363: moving is drag and drop; this entry is the touch/keyboard way (dialog with the Ordner-Menü). --}}
             <button type="button" class="menu-item" data-dialog-open="move-document-{{ $document->id }}"><x-icon name="arrows-move" /><span>{{ __('documents.move_menu') }}</span></button>
         @endif
+        @if ($canEdit && ! $isText && app(\App\Infrastructure\Environment\LocalOcr::class)->serverReads($file))
+            {{-- Point 186.3: the server reads this document again (also with server recognition off); modules/ocr-server.js. --}}
+            <form method="post" action="{{ route('ocr.redo-server', $document->id) }}" data-ocr-server-redo>
+                @csrf
+                <button type="submit" class="menu-item"><x-icon name="server" /><span>{{ __('ocr.server.redo') }}</span></button>
+            </form>
+        @endif
         @if ($canTrash)
             <hr class="menu-separator">
             <button type="button" class="menu-item menu-danger" data-dialog-open="delete-document-{{ $document->id }}"><x-icon name="trash" /><span>{{ __('documents.delete') }}</span></button>
@@ -240,6 +247,10 @@
             <dt>{{ __('documents.facts.created') }}</dt><dd>{{ $document->doc_date?->format('d.m.Y') ?? '–' }}</dd>
             <dt>{{ __('documents.facts.opened') }}</dt><dd>{{ $when($document->last_opened_at) }}</dd>
             <dt>{{ __('documents.facts.downloaded') }}</dt><dd>{{ $when($document->last_downloaded_at) }}</dd>
+            @if ($document->ocr_read_at)
+                {{-- Point 186.4: when and by whom the text was read. --}}
+                <dt>{{ __('documents.facts.recognized') }}</dt><dd>{{ $when($document->ocr_read_at) }}@if ($document->ocr_engine) ({{ __('documents.facts.engines.'.$document->ocr_engine) }})@endif</dd>
+            @endif
             <dt>{{ __('documents.facts.type') }}</dt><dd>{{ $file?->mime ?? '–' }}</dd>
             <dt>{{ __('documents.facts.booking') }}</dt><dd>{{ $booking !== '' ? $booking : '–' }}</dd>
         </dl>

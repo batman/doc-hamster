@@ -10,6 +10,7 @@ use App\Domain\Documents\RichText;
 use App\Domain\Documents\TextDocument;
 use App\Domain\Ocr\OcrFixes;
 use App\Domain\Ocr\OcrLog;
+use App\Domain\Ocr\OcrServerSwitch;
 use App\Domain\Ocr\OcrWords;
 use App\Domain\Org\OrgScope;
 use App\Events\TextRecognized;
@@ -62,8 +63,11 @@ final class RecognizeText implements ShouldQueue
     /** Both reads plus a margin; below the queue's retry_after (config/queue.php). */
     public int $timeout = 2 * self::DOCUMENT_SECONDS + 60;
 
-    /** @param  bool  $rescan  F17: a re-read for word positions, on the low queue behind new uploads */
-    public function __construct(public readonly string $documentId, public readonly bool $rescan = false)
+    /**
+     * @param  bool  $rescan  F17: a re-read for word positions, on the low queue behind new uploads
+     * @param  bool  $server  186.3: "Mit Server neu erkennen" – the server reads it even with server recognition off
+     */
+    public function __construct(public readonly string $documentId, public readonly bool $rescan = false, public readonly bool $server = false)
     {
         $this->onQueue(($rescan ? QueueName::LocalLow : QueueName::Local)->value);
     }
@@ -108,23 +112,26 @@ final class RecognizeText implements ShouldQueue
             return;
         }
         // A re-read keeps the text it has until a new one replaces it (search keeps working).
-        $hasText = $rescan && $document->getAttribute('ocr_status') === 'done';
+        // 186.3: "Mit Server neu erkennen" keeps the text it has as well.
+        $hasText = ($rescan || $this->server) && $document->getAttribute('ocr_status') === 'done';
         $file = DocumentFile::query()->withoutGlobalScope(OrgScope::class)
             ->where('document_id', $document->id)->orderBy('page_no')->first();
         // A text document written in the app: its text is known, nothing to read.
         if ($file !== null && TextDocument::isText($file)) {
             $display = TextDocument::display($file);
             $plain = TextDocument::isRich($file) ? RichText::toPlainText($display) : $display;
-            self::finish($document, ['ocr_text' => $plain, 'ocr_words' => null, 'ocr_status' => 'done', 'ocr_pass' => OcrProgress::FULL, 'ocr_rescan' => false]);
+            self::finish($document, ['ocr_text' => $plain, 'ocr_words' => null, 'ocr_status' => 'done', 'ocr_pass' => OcrProgress::FULL, 'ocr_rescan' => false, 'ocr_engine' => null, 'ocr_read_at' => null]);
             TextRecognized::dispatch($document->id);
 
             return;
         }
 
-        $system = $ocr->systemAvailable();
-        $app = ! $system && $ocr->appAvailable();
+        // 186.1: with server recognition switched off the browser reads, unless this document was sent to the server (186.3).
+        $serverOn = $this->server || OcrServerSwitch::enabled($document->org_id);
+        $system = $serverOn && $ocr->systemAvailable();
+        $app = $serverOn && ! $system && $ocr->appAvailable();
         $source = $system ? 'system' : 'app';
-        $route = self::route($file, $ocr, $system, $app);
+        $route = self::route($file, $ocr, $system, $app, $document->org_id);
         if ($route === 'browser') {
             // The browser picks the document up itself (images in mode browser, PDFs whenever the server can't read them);
             // a re-read stays "done" with its flag, the browser hands it out after the new documents.
@@ -198,6 +205,8 @@ final class RecognizeText implements ShouldQueue
             'ocr_status' => $text !== null ? 'done' : 'failed',
             // Point 130: one read at full resolution.
             'ocr_pass' => $text !== null ? OcrProgress::FULL : null,
+            // 186.4: who read it and when (the detail's Verlauf).
+            ...($text !== null ? ['ocr_engine' => 'server', 'ocr_read_at' => now()] : []),
             'ocr_rescan' => false,
         ]);
         if ($text !== null) {
@@ -209,7 +218,7 @@ final class RecognizeText implements ShouldQueue
      * Who reads the file: "image" or "pdf" (the server), "browser" (it waits for the browser), or the plain reason
      * why nobody can (A107).
      */
-    private static function route(?DocumentFile $file, LocalOcr $ocr, bool $system, bool $app): string
+    private static function route(?DocumentFile $file, LocalOcr $ocr, bool $system, bool $app, string $orgId): string
     {
         if ($file === null) {
             return OcrLog::text('ocr.reason.no_file');
@@ -220,14 +229,14 @@ final class RecognizeText implements ShouldQueue
         if ($file->isImage()) {
             return match (true) {
                 $system || $app => 'image',
-                $ocr->mode() === 'browser' => 'browser',
+                $ocr->mode($orgId) === 'browser' => 'browser',
                 default => OcrLog::text('ocr.reason.none'),
             };
         }
         if ($file->mime === 'application/pdf') {
             return match (true) {
                 $system, $app && $ocr->pdfAvailable() => 'pdf',
-                $ocr->browserLoop() => 'browser',
+                $ocr->browserLoop($orgId) => 'browser',
                 $app => OcrLog::text('ocr.reason.pdf_no_tool'),
                 default => OcrLog::text('ocr.reason.none'),
             };
