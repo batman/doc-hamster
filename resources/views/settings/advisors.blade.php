@@ -105,7 +105,7 @@
         <div class="dialog-backdrop" data-dialog="advisor-edit-{{ $access->id }}" hidden>
             <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="advisor-edit-{{ $access->id }}-title">
                 <h2 id="advisor-edit-{{ $access->id }}-title">{{ __('advisor.edit_title', ['name' => $access->user->username]) }}</h2>
-                <form method="post" action="{{ route('advisors.update', $access->id) }}">
+                <form method="post" action="{{ route('advisors.update', $access->id) }}" data-confirm-sudo>
                     @csrf
                     @include('settings._advisor-scope', ['access' => $access, 'key' => $access->id])
                     <div class="dialog-actions">
@@ -134,7 +134,7 @@
                 <p>{{ __('advisor.revoke_text', ['name' => $access->user->username]) }}</p>
                 <div class="dialog-actions">
                     <button type="button" class="button-quiet" data-dialog-close>{{ __('advisor.cancel') }}</button>
-                    <form method="post" action="{{ route('advisors.revoke', $access->id) }}">
+                    <form method="post" action="{{ route('advisors.revoke', $access->id) }}" data-confirm-sudo>
                         @csrf
                         <button type="submit" class="button-danger">{{ __('advisor.revoke') }}</button>
                     </form>

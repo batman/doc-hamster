@@ -383,9 +383,9 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::middleware('can:members.manage')->prefix('advisors')->name('advisors.')->controller(AdvisorAccessController::class)->group(function (): void {
         Route::get('/', 'index')->name('index');
         Route::post('/', 'store')->middleware('confirmed')->name('store');
-        Route::post('{id}', 'update')->name('update');
+        Route::post('{id}', 'update')->middleware('confirmed')->name('update');
         Route::post('{id}/reset', 'reset')->middleware('confirmed')->name('reset');
-        Route::post('{id}/revoke', 'revoke')->name('revoke');
+        Route::post('{id}/revoke', 'revoke')->middleware('confirmed')->name('revoke');
     });
     Route::middleware(['can:exports.create', 'can:documents.view_all'])->prefix('export/packs')->name('packs.')->controller(ReceiptPackController::class)->group(function (): void {
         Route::get('/', 'index')->name('index');
