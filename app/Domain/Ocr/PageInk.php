@@ -6,7 +6,6 @@ namespace App\Domain\Ocr;
 
 use Closure;
 use GdImage;
-use RuntimeException;
 
 /**
  * The ink of one page image before and after Tesseract (point 184, the same steps as public/js/modules/ocr-ink.js):
@@ -287,10 +286,19 @@ final class PageInk
         // per pixel – so the pixels are the last width × height bytes.
         $raw = (string) ob_get_clean();
         $size = $this->width * $this->height;
-        if (strlen($raw) < $size + 11) {
-            throw new RuntimeException('gd: raw size');
+        if (strlen($raw) >= $size + 11) {
+            $pixels = substr($raw, -$size);
+        } else {
+            // Some GD builds write no (or a compressed) .gd: read the palette index pixel by pixel – slower, same result.
+            $pixels = '';
+            for ($y = 0; $y < $this->height; $y++) {
+                $row = '';
+                for ($x = 0; $x < $this->width; $x++) {
+                    $row .= chr(imagecolorat($this->image, $x, $y) & 0xFF);
+                }
+                $pixels .= $row;
+            }
         }
-        $pixels = substr($raw, -$size);
         $this->rows = str_split(strtr($pixels, $from, $to), $this->width);
     }
 
