@@ -17,6 +17,7 @@ return [
         'eingang' => 'Eingang',
         'log' => 'Log',
         'speed' => 'Geschwindigkeit',
+        'backup' => 'Backup',
     ],
     // Point 156: the short description of each group on its tile.
     'group_texts' => [
@@ -32,6 +33,7 @@ return [
         'eingang' => 'Drucker, E-Mail, Geräte und Handy-Test',
         'log' => 'Ereignisse und Fehler',
         'speed' => 'Messwerte, Prüfungen und Vorladen',
+        'backup' => 'Alle Daten als ZIP herunterladen',
     ],
     'links' => [
         'properties' => ['title' => 'Eigenschaften', 'text' => 'Felder wie Rechnungsbetrag, Datum oder IBAN'],
@@ -56,5 +58,6 @@ return [
         'log_ocr' => ['title' => 'Texterkennung', 'text' => 'Was die Texterkennung gelesen hat'],
         'log_updates' => ['title' => 'Updates', 'text' => 'Installationen und Wechsel'],
         'speed' => ['title' => 'Geschwindigkeit', 'text' => 'Messwerte, Prüfungen und Vorladen'],
+        'backup' => ['title' => 'Backup', 'text' => 'Alle Daten als ZIP herunterladen'],
     ],
 ];

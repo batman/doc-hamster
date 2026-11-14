@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http;
 
+use App\Domain\Backup\Backup;
 use App\Domain\Banking\Transaction;
 use App\Domain\Documents\Inbox;
 use App\Domain\Ocr\OcrLog;
@@ -94,11 +95,23 @@ final class Badges
                 + DB::table('ocr_log')->where('org_id', $org->id())->whereIn('event', OcrLog::ERRORS)->where('created_at', '>', $seen)->count();
         }
 
+        // Point 206: finished background backups of this person that wait for their download.
+        if (Gate::allows(Permission::CreateBackup->value)) {
+            $counts[self::BACKUP] = Backup::waiting($org->id(), $org->membership()->user_id);
+        }
+        $counts[self::SETTINGS_ALL] = ($counts[self::LOG] ?? 0) + ($counts[self::BACKUP] ?? 0);
+
         return $counts;
     }
 
+    /** Point 206: a finished backup waits for its download (Einstellungen → Backup). */
+    public const BACKUP = 'backup';
+
+    /** The main menu's Einstellungen: everything in it that waits (log errors + ready backups). */
+    public const SETTINGS_ALL = 'settings';
+
     /** Point 3: the badge of a settings group or entry, so the count leads down to its place (key => area). */
-    public const array SETTINGS = ['log' => self::LOG];
+    public const array SETTINGS = ['log' => self::LOG, 'backup' => self::BACKUP];
 
     /** The badge key (and seen area) of one Posteingang source, e.g. "inbox-printer". */
     public static function inbox(string $source): string

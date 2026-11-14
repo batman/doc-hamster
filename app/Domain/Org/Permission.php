@@ -28,6 +28,9 @@ enum Permission: string
     case InstallPreviews = 'system.update_preview';
     case ViewAuditLog = 'audit.view';
 
+    /** Point 206 (F23): "Backup herunterladen" – Admins (owners) only, like the other org-wide settings. */
+    case CreateBackup = 'backup.create';
+
     /**
      * The checkbox that grants this permission; null means Admins only.
      * Editing and trashing act on what the person can see, so resource checks
@@ -46,7 +49,7 @@ enum Permission: string
             self::ShareNotes => RoleRight::Notes,
             self::UpdateSystem => RoleRight::Update,
             self::InstallPreviews => RoleRight::UpdatePreview,
-            self::DeleteDocumentsForever, self::ManageMembers, self::ManageSettings, self::ViewAuditLog => null,
+            self::DeleteDocumentsForever, self::ManageMembers, self::ManageSettings, self::ViewAuditLog, self::CreateBackup => null,
         };
     }
 
@@ -55,6 +58,6 @@ enum Permission: string
      */
     public function needsStepUp(): bool
     {
-        return in_array($this, [self::DeleteDocumentsForever, self::Export, self::ManageMembers], true);
+        return in_array($this, [self::DeleteDocumentsForever, self::Export, self::ManageMembers, self::CreateBackup], true);
     }
 }

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BankController;
@@ -360,3 +361,11 @@ Route::middleware('guest')->group(function (): void {
     Route::post('login', [LoginController::class, 'login'])->middleware('throttle:login')->name('login.attempt');
 });
 Route::post('logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
+
+// Point 206 (D-023): Einstellungen → Backup – Admins only; start and download ask for the password again.
+Route::middleware(['auth', 'org', 'can:backup.create'])->prefix('backup')->name('backup.')->controller(BackupController::class)->group(function (): void {
+    Route::get('/', 'index')->name('index');
+    Route::get('estimate', 'estimate')->name('estimate');
+    Route::post('/', 'store')->middleware('throttle:10,1')->name('store');
+    Route::post('{id}/download', 'download')->middleware('throttle:10,1')->name('download');
+});

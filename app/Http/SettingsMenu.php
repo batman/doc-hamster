@@ -67,6 +67,10 @@ final class SettingsMenu
         'update' => ['cloud-download', [
             ['update', 'updates.show', 'cloud-download', 'system.update', ['updates.*']],
         ], true],
+        // Point 206 (F23): "Backup herunterladen", owners and admins.
+        'backup' => ['archive', [
+            ['backup', 'backup.index', 'archive', 'backup.create', ['backup.*']],
+        ], true],
     ];
 
     /**

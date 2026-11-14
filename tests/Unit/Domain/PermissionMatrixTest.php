@@ -26,6 +26,7 @@ dataset('rights', [
     'System aktualisieren' => [Permission::UpdateSystem, RoleRight::Update],
     'Vorschau-Branches' => [Permission::InstallPreviews, RoleRight::UpdatePreview],
     'Audit-Log' => [Permission::ViewAuditLog, null],
+    'Backup' => [Permission::CreateBackup, null],
 ]);
 
 it('maps every permission to its checkbox', function (Permission $permission, ?RoleRight $right): void {
@@ -33,7 +34,7 @@ it('maps every permission to its checkbox', function (Permission $permission, ?R
 })->with('rights');
 
 it('covers every permission', function (): void {
-    expect(Permission::cases())->toHaveCount(16);
+    expect(Permission::cases())->toHaveCount(17);
 });
 
 it('has the agreed defaults for the pre-installed roles', function (): void {
@@ -44,5 +45,5 @@ it('has the agreed defaults for the pre-installed roles', function (): void {
 it('requires a step-up exactly where the matrix says "mit Bestätigung"', function (): void {
     $stepUp = array_values(array_filter(Permission::cases(), fn (Permission $p): bool => $p->needsStepUp()));
 
-    expect($stepUp)->toBe([Permission::DeleteDocumentsForever, Permission::Export, Permission::ManageMembers]);
+    expect($stepUp)->toBe([Permission::DeleteDocumentsForever, Permission::Export, Permission::ManageMembers, Permission::CreateBackup]);
 });

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domain\Backup\Backup;
 use App\Domain\Documents\TrashSweeper;
 use App\Domain\Log\LogEntry;
 use App\Domain\Ocr\OcrLog;
@@ -42,3 +43,8 @@ Schedule::call(static fn () => LogEntry::prune())
 Schedule::call(static fn () => app(TrashSweeper::class)->run())
     ->name('trash-sweep')
     ->daily();
+
+// Point 206 (D-023): finished backups stay 24 hours, then their files go (the backup page also prunes).
+Schedule::call(static fn () => Backup::prune())
+    ->name('backup-prune')
+    ->hourly();

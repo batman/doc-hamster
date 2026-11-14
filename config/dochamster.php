@@ -30,4 +30,16 @@ return [
     */
     'photo_shortcut' => '',
 
+    /*
+    | Point 206 (D-023): "Backup herunterladen". Up to stream_limit bytes the ZIP streams at once; larger ones are
+    | built in the background and kept keep_hours. Restore limits guard against zip bombs (untrusted ZIP).
+    */
+    'backup' => [
+        'stream_limit' => (int) env('DOCHAMSTER_BACKUP_STREAM_LIMIT', 500 * 1024 * 1024),
+        'keep_hours' => 24,
+        'restore_max_entries' => 200_000,
+        'restore_max_bytes' => (int) env('DOCHAMSTER_RESTORE_MAX_BYTES', 50 * 1024 * 1024 * 1024),
+        'restore_max_ratio' => 200,
+    ],
+
 ];

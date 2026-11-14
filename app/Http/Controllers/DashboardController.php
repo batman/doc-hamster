@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Domain\Backup\Backup;
 use App\Domain\Dashboard\DashboardLayout;
 use App\Domain\Dashboard\DashboardWidgets;
 use App\Domain\Dashboard\UserDashboard;
@@ -39,7 +40,23 @@ final class DashboardController
             'widgets' => array_map(fn (array $w): array => $w + ['data' => $this->data($w['type'], $org, $dashboard)], $widgets),
             'available' => $available,
             'addable' => array_values(array_diff($available, array_column($widgets, 'type'))),
+            'backupHint' => $this->backupHint($org),
         ]);
+    }
+
+    /** A372: "Letztes Backup vor N Tagen" for those who may make one, after 90 days or never (-1 = never). */
+    private function backupHint(CurrentOrg $org): ?int
+    {
+        if (! Gate::allows(Permission::CreateBackup->value)) {
+            return null;
+        }
+        $last = Backup::lastAt($org->id());
+        if ($last === null) {
+            return -1;
+        }
+        $days = (int) $last->diffInDays(now());
+
+        return $days > 90 ? $days : null;
     }
 
     /** A350: order, sizes and removals – the whole list of widgets as the person sees it now. */

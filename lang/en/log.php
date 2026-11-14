@@ -44,6 +44,7 @@ return [
         'folder' => ['deleted' => 'Folder deleted', 'imported' => 'Folder imported', 'trash_changed' => 'Bin changed'],
         'bank' => ['imported' => 'Statement imported', 'matched' => 'Transaction matched', 'confirmed' => 'Match confirmed', 'unmatched' => 'Match removed', 'account_deleted' => 'Account deleted'],
         'export' => ['created' => 'Export created'],
+        'backup' => ['started' => 'Backup started', 'downloaded' => 'Backup downloaded'],
         'printer' => ['paired' => 'Printer paired', 'revoked' => 'Printer removed', 'setup_started' => 'Printer set-up started'],
         'update' => ['started' => 'Update started'],
     ],

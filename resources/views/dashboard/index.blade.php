@@ -37,6 +37,11 @@
             @if ($errors->any())
                 <p class="error" role="alert">{{ $errors->first() }}</p>
             @endif
+            @if (($backupHint ?? null) !== null)
+                {{-- A372: a quiet reminder for those who may make a backup, after 90 days or never. --}}
+                <p class="card-note"><x-icon name="archive" /> {{ $backupHint < 0 ? __('backup.home_never') : __('backup.home_days', ['days' => $backupHint]) }}
+                    <a href="{{ route('backup.index') }}">{{ __('backup.home_link') }}</a></p>
+            @endif
             <ul class="dash-grid" data-dash-grid>
                 @foreach ($widgets as $widget)
                     @include('dashboard._widget', ['widget' => $widget])

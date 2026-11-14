@@ -44,6 +44,7 @@ return [
         'folder' => ['deleted' => 'Ordner gelöscht', 'imported' => 'Ordner importiert', 'trash_changed' => 'Papierkorb geändert'],
         'bank' => ['imported' => 'Kontoauszug importiert', 'matched' => 'Buchung zugeordnet', 'confirmed' => 'Zuordnung bestätigt', 'unmatched' => 'Zuordnung gelöst', 'account_deleted' => 'Konto gelöscht'],
         'export' => ['created' => 'Export erstellt'],
+        'backup' => ['started' => 'Backup gestartet', 'downloaded' => 'Backup heruntergeladen'],
         'printer' => ['paired' => 'Drucker verbunden', 'revoked' => 'Drucker getrennt', 'setup_started' => 'Drucker-Einrichtung gestartet'],
         'update' => ['started' => 'Update gestartet'],
     ],
