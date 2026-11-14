@@ -42,6 +42,7 @@
                     $match !== '' ? __('documents.adv.match').': '.__('documents.adv.'.$match) : null,
                     $read !== '' ? __('documents.adv.read').': '.__('documents.adv.'.$read) : null,
                     $type !== '' ? ($type === 'pdf' ? 'PDF' : __('documents.adv.image')) : null,
+                    $noDate ? __('receipt_date.chip') : null,
                 ]));
                 $propSummary = $properties->filter(fn ($p) => isset($propFilters[$p->id]))->pluck('name')->implode(', ');
             @endphp
@@ -101,7 +102,7 @@
                         </div>
                     </x-fold-card>
                 @endif
-                <x-fold-card fold="documents.search.status" :remember="false" compact :folded="$match === '' && $read === '' && $type === ''" :title="__('documents.adv.status')" icon="circle-check" :summary="$statusSummary" data-search-section="status">
+                <x-fold-card fold="documents.search.status" :remember="false" compact :folded="$match === '' && $read === '' && $type === '' && ! $noDate" :title="__('documents.adv.status')" icon="circle-check" :summary="$statusSummary" data-search-section="status">
                     @foreach (['match' => $match, 'read' => $read] as $field => $value)
                         <div class="search-line">
                             <span>{{ __('documents.adv.'.$field) }}</span>
@@ -111,6 +112,11 @@
                     <div class="search-line">
                         <span>{{ __('documents.adv.type') }}</span>
                         {!! $choice('type', $type, ['' => __('documents.adv.any'), 'pdf' => 'PDF', 'image' => __('documents.adv.image')]) !!}
+                    </div>
+                    {{-- Point 214: documents that only have their upload day ("Belegdatum fehlt"). --}}
+                    <div class="search-line">
+                        <span>{{ __('receipt_date.filter') }}</span>
+                        {!! $choice('nodate', $noDate ? '1' : '', ['' => __('documents.adv.any'), '1' => __('receipt_date.filter_missing')], __('receipt_date.filter')) !!}
                     </div>
                 </x-fold-card>
                 @if ($properties->isNotEmpty())
@@ -342,7 +348,7 @@
             {{-- The result list (point 105): documents only, each with its folder; X closes it (point 106). --}}
             <div class="search-head" data-search-count="{{ count($filters) }}">
                 <h2>{{ trans_choice('documents.search_found', $documents->count(), ['count' => $documents->count()]) }}</h2>
-                <a class="control-button" href="{{ route('documents.index', request()->except(['q', 'in', 'ocr', 'all', 'tags', 'any', 'by', 'from', 'to', 'match', 'read', 'type', 'page', ...$propParams])) }}" data-window-search-clear aria-label="{{ __('app.window.search_reset') }}" data-tooltip="{{ __('app.window.search_reset') }}"><x-icon name="x" /></a>
+                <a class="control-button" href="{{ route('documents.index', request()->except(['q', 'in', 'ocr', 'all', 'tags', 'any', 'by', 'from', 'to', 'match', 'read', 'type', 'nodate', 'page', ...$propParams])) }}" data-window-search-clear aria-label="{{ __('app.window.search_reset') }}" data-tooltip="{{ __('app.window.search_reset') }}"><x-icon name="x" /></a>
             </div>
             {{-- Point 6: every active filter as a chip; its X removes just that one. --}}
             @php
@@ -354,6 +360,7 @@
                 if ($match !== '') { $chips[] = ['match', null, __('documents.adv.match').': '.__('documents.adv.'.$match)]; }
                 if ($read !== '') { $chips[] = ['read', null, __('documents.adv.read').': '.__('documents.adv.'.$read)]; }
                 if ($type !== '') { $chips[] = ['type', null, $type === 'pdf' ? 'PDF' : __('documents.adv.image')]; }
+                if ($noDate) { $chips[] = ['nodate', null, __('receipt_date.chip')]; }
                 foreach (\App\Domain\Properties\PropertySearch::chips($propFilters, $properties) as [$chipName, $chipLabel]) { $chips[] = [$chipName, null, $chipLabel]; }
             @endphp
             @if ($chips !== [])

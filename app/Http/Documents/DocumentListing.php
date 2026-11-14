@@ -174,7 +174,7 @@ final class DocumentListing
     }
 
     /**
-     * The order of the folder views: newest first, or by the clicked column head (A244).
+     * The order of the folder views: newest Belegdatum first (point 214), or by the clicked column head (A244).
      *
      * @param  Builder<Document>  $query
      * @param  'asc'|'desc'  $dir
@@ -184,8 +184,8 @@ final class DocumentListing
         match (true) {
             $property !== null => PropertySearch::orderBy($query, $property, $dir),
             $sort === 'name' => $query->orderBy('title', $dir),
-            $sort === 'date' => $query->orderBy('created_at', $dir),
-            default => $query->latest(),
+            $sort === 'date' => $query->orderByRaw(Document::dateSql('doc').' '.$dir)->orderBy('created_at', $dir),
+            default => $query->orderByRaw(Document::dateSql('doc').' desc')->latest(),
         };
         if ($sort !== null) {
             $query->orderBy('id');

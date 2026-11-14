@@ -73,6 +73,8 @@ final class DocumentIntake
         // Once, at upload: lists show only this small copy (design point 14).
         $file = $document->files()->firstOrFail();
         $file->update(['thumb_path' => Thumbnail::make($file)]);
+        // Point 214: until the text names a date, the photo's or PDF's own date (else the upload day).
+        app(ReceiptDate::class)->sync($document);
 
         // Text for the search, in the background (cron worker, local queue).
         $document->forceFill(['ocr_status' => 'pending'])->save();

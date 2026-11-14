@@ -9,7 +9,7 @@
                     <span class="thumb-frame"><x-icon :name="$document->files->first()?->typeIcon() ?? 'file-text'" /></span>
                 @endif
                 <span class="name">{{ $document->title }}</span>
-                <span class="muted">{{ $document->created_at->format('d.m.Y') }}</span>
+                <span class="muted">{{ $document->dateBy('doc')->format('d.m.Y') }}</span>
             </a>
             @if ($searching)
                 @include('documents._folder-link')

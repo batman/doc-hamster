@@ -50,8 +50,9 @@ final class ExportController
         $documents = Document::query()
             ->visibleTo($user->id, Gate::allows(Permission::ViewAllDocuments->value))
             ->with(['files', 'tags', 'matches.transaction', 'properties'])
-            ->whereBetween('created_at', [$from, $to])
-            ->oldest()
+            // Point 214: the period goes by the Belegdatum (the upload day when it has none).
+            ->whereRaw(Document::dateSql('doc').' between ? and ?', [$from->toDateString(), $to->toDateString()])
+            ->orderByRaw(Document::dateSql('doc').' asc')->oldest()
             ->get();
 
         if ($documents->isEmpty()) {

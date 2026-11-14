@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Documents;
 
 use App\Domain\Documents\Document;
+use App\Domain\Documents\ReceiptDate;
 use App\Domain\Documents\Tag;
 use App\Domain\Properties\Property;
 use App\Domain\Properties\PropertySearch;
@@ -20,7 +21,7 @@ use Illuminate\Http\Request;
 final class DocumentSearch
 {
     /** The panel's own query fields (besides q and the property fields). */
-    public const PARAMS = ['in[]', 'ocr', 'all', 'tags[]', 'any', 'by', 'from', 'to', 'match', 'read', 'type'];
+    public const PARAMS = ['in[]', 'ocr', 'all', 'tags[]', 'any', 'by', 'from', 'to', 'match', 'read', 'type', 'nodate'];
 
     /** Where the text is looked for ("Suchen in", point 187.1), in the order of the chips. */
     public const IN = ['name', 'ocr', 'note', 'tags', 'props'];
@@ -53,6 +54,8 @@ final class DocumentSearch
         public readonly string $type,
         public readonly Collection $properties,
         public readonly array $propFilters,
+        /** Point 214: only documents without a Belegdatum of their own ("ohne Belegdatum"). */
+        public readonly bool $noDate = false,
     ) {}
 
     public static function read(Request $request): self
@@ -83,6 +86,7 @@ final class DocumentSearch
             type: $pick('type', ['pdf', 'image']),
             properties: $properties,
             propFilters: PropertySearch::read($request, $properties),
+            noDate: $request->query('nodate') === '1',
         );
     }
 
@@ -158,6 +162,9 @@ final class DocumentSearch
         if ($this->read !== '') {
             $this->read === 'yes' ? $query->where('ocr_status', 'done') : $query->where(static fn ($w) => $w->whereNull('ocr_status')->orWhere('ocr_status', '!=', 'done'));
         }
+        if ($this->noDate) {
+            $query->where(static fn ($w) => $w->whereNull('doc_date_source')->orWhere('doc_date_source', ReceiptDate::UPLOAD));
+        }
         if ($this->type !== '') {
             $pdf = $this->type === 'pdf';
             $query->whereHas('files', static fn ($file) => $pdf ? $file->where('mime', 'application/pdf') : $file->where('mime', 'like', 'image/%'));
@@ -173,7 +180,7 @@ final class DocumentSearch
     public function filters(): array
     {
         $filters = array_filter(['tags' => $this->selected !== [], 'from' => isset($this->period['from']), 'to' => isset($this->period['to']),
-            'match' => $this->match !== '', 'read' => $this->read !== '', 'type' => $this->type !== '']);
+            'match' => $this->match !== '', 'read' => $this->read !== '', 'type' => $this->type !== '', 'nodate' => $this->noDate]);
         foreach (array_keys($this->propFilters) as $propertyId) {
             $filters['prop_'.$propertyId] = true;
         }
@@ -250,6 +257,7 @@ final class DocumentSearch
             'match' => $this->match,
             'read' => $this->read,
             'type' => $this->type,
+            'noDate' => $this->noDate,
             'filters' => $this->filters(),
             'properties' => $this->properties,
             'propFilters' => $this->propFilters,

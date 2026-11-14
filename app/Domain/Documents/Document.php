@@ -25,7 +25,8 @@ use Illuminate\Support\Carbon;
  * @property string|null $folder_id
  * @property string|null $uploaded_by
  * @property string $title
- * @property Carbon|null $doc_date
+ * @property Carbon|null $doc_date the Belegdatum (point 214, ReceiptDate)
+ * @property string|null $doc_date_source confirmed|recognised|exif|pdf|upload, null = not worked out yet
  * @property string|null $note
  * @property bool $in_print_tray came from the printer "Hamster" (the source before the source column)
  * @property Carbon|null $inbox_done_at marked "Erledigt" in the Posteingang (point 153)
@@ -179,8 +180,8 @@ final class Document extends Model
     }
 
     /**
-     * The date timeline and calendar go by (point 108): "doc" = the receipt date, the upload date when it has none;
-     * "upload" = the upload date.
+     * The date timeline and calendar go by (point 108): "doc" = the Belegdatum (point 214: the default everywhere), the
+     * upload date when it has none; "upload" = the upload date.
      */
     public function dateBy(string $basis): Carbon
     {

@@ -9,7 +9,7 @@
                 <span class="row-icon"><x-icon name="file-text" /></span>
                 <span>
                     <strong><a href="{{ route('documents.show', $document->id) }}" data-window><span data-doc-title>{{ $document->title }}</span></a></strong>
-                    <small>{{ $document->created_at->format('d.m.Y') }}</small>
+                    <small>{{ $document->dateBy('doc')->format('d.m.Y') }}</small>
                 </span>
             </li>
         @empty

@@ -58,6 +58,7 @@
         @endif
     </x-slot:menu>
 
+    @include('documents._doc-date')
     @php
         // Points 168.1/168.2: the viewer (picture or PDF + zoom bar) sits in a pane whose height the edge below
         // changes (remembered per kind 'detail'); the fullscreen viewer is cloned from the template at the end.
@@ -244,7 +245,7 @@
         :summary="__('documents.facts.uploaded').' '.$when($document->created_at)">
         <dl class="detail-facts">
             <dt>{{ __('documents.facts.uploaded') }}</dt><dd>{{ $when($document->created_at) }}</dd>
-            <dt>{{ __('documents.facts.created') }}</dt><dd>{{ $document->doc_date?->format('d.m.Y') ?? '–' }}</dd>
+            <dt>{{ __('receipt_date.label') }}</dt><dd>{{ \App\Domain\Documents\ReceiptDate::missing($document) ? '–' : $document->dateBy('doc')->format('d.m.Y') }}</dd>
             <dt>{{ __('documents.facts.opened') }}</dt><dd>{{ $when($document->last_opened_at) }}</dd>
             <dt>{{ __('documents.facts.downloaded') }}</dt><dd>{{ $when($document->last_downloaded_at) }}</dd>
             @if ($document->ocr_read_at)

@@ -33,6 +33,8 @@ final class DocumentPropertyController
 
         return response()->json([
             'html' => view('documents._properties', ['document' => $document])->render(),
+            // Point 214: the Belegdatum line under the title reloads with the card.
+            'date_html' => view('documents._doc-date', ['document' => $document])->render(),
             'properties' => $this->offered($document),
         ]);
     }
@@ -45,7 +47,8 @@ final class DocumentPropertyController
         $property = $this->allowed($document, $data['property']);
 
         if (trim($data['value']) === '') {
-            $document->properties()->where('property_id', $property->id)->delete();
+            // One by one, so the model events run (point 214: the Belegdatum follows the invoice date).
+            $document->properties()->where('property_id', $property->id)->get()->each->delete();
             $audit->record('document.changed', orgId: $org->id(), userId: $this->user($request)->id, subject: $document, ip: $request->ip());
 
             return $this->answer($request, __('properties.card.removed'), ['value' => '', 'property' => $property->id]);

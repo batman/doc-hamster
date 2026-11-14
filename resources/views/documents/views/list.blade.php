@@ -19,7 +19,7 @@
             <span class="doc-row-text">
                 <strong><a href="{{ route('documents.show', [$document->id, ...request()->query()]) }}" data-window tabindex="-1"><span data-doc-title>{{ $document->title }}</span></a></strong>
                 <small class="row-stats">
-                    <span>{{ $document->created_at->format('d.m.Y') }}</span>
+                    <span @if (\App\Domain\Documents\ReceiptDate::missing($document)) class="muted" data-tooltip="{{ __('receipt_date.missing') }}" @endif>{{ $document->dateBy('doc')->format('d.m.Y') }}</span>
                     @if ($bytes > 0)
                         <span class="row-stat-sep" aria-hidden="true">·</span><span>{{ $size }}</span>
                     @endif

@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Domain\Auth\User;
 use App\Domain\Banking\MatchAfterRecognition;
+use App\Domain\Documents\ReceiptDate;
 use App\Domain\Log\LogEntry;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Membership;
@@ -148,6 +149,8 @@ class AppServiceProvider extends ServiceProvider
                 report($e);
             }
         });
+        // Point 214: the Belegdatum follows the invoice date.
+        ReceiptDate::watch();
     }
 
     /** Point 115: signing in and out are events of the logbook "Allgemein", a failed sign-in is a warning. */

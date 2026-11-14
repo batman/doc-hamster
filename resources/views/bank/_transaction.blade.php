@@ -176,7 +176,7 @@
                         <span>
                             <strong><a href="{{ route('documents.show', $document->id) }}" data-window>{{ $document->title }}</a></strong>
                             <small>
-                                {{ $document->created_at->format('d.m.Y') }}
+                                {{ $document->dateBy('doc')->format('d.m.Y') }}
                                 @if ($row['amount'] !== null) · {{ $money(abs($row['amount'])) }}@endif
                                 @if ($row['paid']['count'] > 1) · {{ trans_choice('bank.paid_by', $row['paid']['count'], ['count' => $row['paid']['count'], 'sum' => $money($row['paid']['sum'])]) }}@endif
                                 @if ($match->isSuggested() && $match->reasons) · {{ $why($match->reasons) }}@endif

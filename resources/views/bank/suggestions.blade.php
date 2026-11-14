@@ -29,7 +29,7 @@
                         <span>
                             <strong><a href="{{ route('documents.show', $document->id) }}" data-window><span data-doc-title>{{ $document->title }}</span></a></strong>
                             <small>
-                                {{ $document->created_at->format('d.m.Y') }}
+                                {{ $document->dateBy('doc')->format('d.m.Y') }}
                                 @if ($amount !== null) · {{ $money(abs($amount)) }}@endif
                                 @if ($suggestion['reasons'] !== []) · {{ $why($suggestion['reasons']) }}@endif
                                 @if ($other)

@@ -37,7 +37,8 @@
     // markAs({ win, documentId, text, page, box, anchor }) lists the active properties this document may carry (A246),
     // shows live how the value would be stored (or why not), saves it as confirmed and emits properties:changed.
     // Resolves with the server's answer, or null when closed. A word click in the reading view calls it with text/page/box.
-    DocHamster.markAs = async ({ win = null, documentId, text = '', page = null, box = null, anchor = null } = {}) => {
+    // `property` (a key or id) picks that property at once (point 214: the Belegdatum line opens it with the Rechnungsdatum).
+    DocHamster.markAs = async ({ win = null, documentId, text = '', page = null, box = null, anchor = null, property: wanted = null } = {}) => {
         const cfg = api();
         if (!cfg || !documentId) {
             return null;
@@ -71,7 +72,7 @@
         const title = make('h2', '', cfg.title);
         title.id = `${name}-title`;
         dialog.append(close, title);
-        if (text.trim() !== '') {
+        if (text.trim() !== '' && !wanted) {
             dialog.append(make('p', 'mark-as-text', text.trim()));
         }
         backdrop.append(dialog);
@@ -275,7 +276,16 @@
             }).observe(backdrop, { attributes: true, attributeFilter: ['hidden'] });
             (host ?? document.body).append(backdrop);
             backdrop.hidden = false;
-            (list.querySelector('input') ?? close).focus();
+            const preset = wanted ? properties.find(p => p.key === wanted || p.id === wanted) : null;
+            const radio = preset ? list.querySelector(`input[value="${CSS.escape(preset.id)}"]`) : null;
+            if (radio) {
+                radio.checked = true;
+                switchField();
+                input.focus();
+                input.select();
+            } else {
+                (list.querySelector('input') ?? close).focus();
+            }
         });
     };
 
@@ -283,7 +293,10 @@
     document.addEventListener('click', event => {
         const button = event.target.closest('[data-mark-as]');
         if (button) {
-            DocHamster.markAs({ win: button.closest('section[data-window]'), documentId: button.dataset.markAs, anchor: button });
+            DocHamster.markAs({
+                win: button.closest('section[data-window]'), documentId: button.dataset.markAs, anchor: button,
+                text: button.dataset.markText ?? '', property: button.dataset.markProperty ?? null,
+            });
         }
     });
 
@@ -300,6 +313,20 @@
                     }
                 })
                 .catch(() => { /* the card stays as it was */ });
+        });
+    });
+    // Point 214: the Belegdatum line under the title follows (same JSON, `date_html`).
+    DocHamster.on('properties:changed', ({ documentId } = {}) => {
+        document.querySelectorAll(`[data-doc-date][data-document="${CSS.escape(String(documentId ?? ''))}"]`).forEach(line => {
+            fetch(line.dataset.docDate, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+                .then(response => (response.ok ? response.json() : Promise.reject(new Error(String(response.status)))))
+                .then(json => {
+                    const next = json.date_html ? document.createRange().createContextualFragment(json.date_html).firstElementChild : null;
+                    if (next && line.isConnected) {
+                        line.replaceWith(next);
+                    }
+                })
+                .catch(() => { /* the line stays as it was */ });
         });
     });
     const cardOf = el => el?.closest?.('[data-doc-properties]');

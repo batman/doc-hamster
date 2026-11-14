@@ -79,7 +79,7 @@ return [
     ],
     'dates' => [
         'label' => 'Datum',
-        'doc' => 'Dokumentdatum',
+        'doc' => 'Belegdatum',
         'upload' => 'Hochladedatum',
     ],
     'name' => 'Name',

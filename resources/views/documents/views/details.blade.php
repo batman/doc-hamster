@@ -19,7 +19,7 @@
                 @if ($canPick ?? false)
                     <th scope="col" class="col-pick"><input type="checkbox" data-pick-all aria-label="{{ __('documents.pick.all') }}"></th>
                 @endif
-                @foreach ([['name', __('documents.name'), ''], ['date', __('documents.date'), 'col-date']] as [$key, $label, $class])
+                @foreach ([['name', __('documents.name'), ''], ['date', __('receipt_date.label'), 'col-date']] as [$key, $label, $class])
                     @if ($key === 'date' && $searching)
                         <th scope="col" class="col-folder">{{ __('documents.folder') }}</th>
                     @endif
@@ -52,7 +52,12 @@
                     @if ($searching)
                         <td>@include('documents._folder-link')</td>
                     @endif
-                    <td class="col-date">{{ $document->created_at->format('d.m.Y') }}<span class="col-time"> {{ $document->created_at->format('H:i') }}</span></td>
+                    {{-- Point 214: the Belegdatum; without one the upload day, muted, with its time. --}}
+                    @if (\App\Domain\Documents\ReceiptDate::missing($document))
+                        <td class="col-date muted" data-tooltip="{{ __('receipt_date.missing') }}">{{ $document->created_at->format('d.m.Y') }}<span class="col-time"> {{ $document->created_at->format('H:i') }}</span></td>
+                    @else
+                        <td class="col-date">{{ $document->dateBy('doc')->format('d.m.Y') }}</td>
+                    @endif
                     @foreach ($columns as $column)
                         @php $cell = $document->properties->firstWhere('property_id', $column->id)?->setRelation('property', $column); @endphp
                         <td class="col-prop @if (in_array($column->type, ['amount', 'number'], true)) col-prop-num @endif">{{ $cell ? $propertyFormat->display($cell) : '' }}</td>

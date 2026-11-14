@@ -6,6 +6,7 @@ namespace App\Domain\Banking;
 
 use App\Domain\Documents\Document;
 use App\Domain\Documents\Folder;
+use App\Domain\Documents\ReceiptDate;
 use App\Domain\Org\OrgScope;
 use App\Domain\Payments\InvoiceSuggestions;
 use App\Domain\Properties\DocumentProperty;
@@ -83,7 +84,9 @@ final class Matcher
             $amount = abs($transaction->amount_minor);
             $base = clone $query;
             $documents = $query->where(static fn (Builder $q) => $q
-                ->whereBetween('created_at', [$day->copy()->subDays(60)->startOfDay(), $day->copy()->addDays(60)->endOfDay()])
+                // Point 214: near by Belegdatum or upload day.
+                ->whereBetween('doc_date', [$day->copy()->subDays(60)->toDateString(), $day->copy()->addDays(60)->toDateString()])
+                ->orWhereBetween('created_at', [$day->copy()->subDays(60)->startOfDay(), $day->copy()->addDays(60)->endOfDay()])
                 ->orWhereHas('properties', static fn (Builder $p) => $p->whereBetween('value_int', [$amount - max(1, intdiv($amount, 100)), $amount + max(1, intdiv($amount, 100))])
                     ->whereIn('property_id', Property::query()->where('key', 'invoice_amount')->select('id'))))
                 ->latest()->limit(400)->get();
@@ -97,8 +100,8 @@ final class Matcher
         $tx = self::transactionFacts($transaction);
         $scored = $documents->map(static fn (Document $d): array => ['document' => $d, ...MatchScore::score($tx, $facts[$d->id])])->all();
         $day = $transaction->booking_date;
-        usort($scored, static fn (array $a, array $b): int => [$b['score'], abs($a['document']->created_at->diffInSeconds($day))]
-            <=> [$a['score'], abs($b['document']->created_at->diffInSeconds($day))]);
+        usort($scored, static fn (array $a, array $b): int => [$b['score'], abs($a['document']->dateBy('doc')->diffInSeconds($day))]
+            <=> [$a['score'], abs($b['document']->dateBy('doc')->diffInSeconds($day))]);
 
         return array_slice($scored, 0, $limit);
     }
@@ -167,7 +170,13 @@ final class Matcher
             $fact = [
                 'amount' => isset($own['invoice_amount']) ? $own['invoice_amount']->value_int : null,
                 'amounts' => [],
-                'invoice_date' => (isset($own['invoice_date']) ? $own['invoice_date']->value_date?->format('Y-m-d') : null) ?? $document->doc_date?->format('Y-m-d'),
+                // Point 214: the Belegdatum (confirmed or plausible recognised invoice date, else the file's own date);
+                // a document with only its upload day counts by 'uploaded'. Not worked out yet: the invoice date as before.
+                'invoice_date' => match (true) {
+                    $document->doc_date_source === null => isset($own['invoice_date']) ? $own['invoice_date']->value_date?->format('Y-m-d') : null,
+                    ReceiptDate::missing($document) => null,
+                    default => $document->doc_date?->format('Y-m-d'),
+                },
                 'due_date' => isset($own['due_date']) ? $own['due_date']->value_date?->format('Y-m-d') : null,
                 'uploaded' => $document->created_at->format('Y-m-d'),
                 'iban' => isset($own['iban']) ? $own['iban']->value_text : null,

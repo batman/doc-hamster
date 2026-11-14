@@ -41,7 +41,7 @@ final class ReceiptArchive
             throw new RuntimeException('Could not create the index.');
         }
         fwrite($index, "\xEF\xBB\xBF");
-        fputcsv($index, ['Datum', 'Titel', 'Datei', 'Typ', 'Größe (Bytes)', 'SHA-256', 'Tags', 'Buchung', 'Buchungsnotiz', ...$properties->map(static fn (Property $p): string => self::safeCell($p->name))->all()], ';', '"', '');
+        fputcsv($index, ['Belegdatum', 'Titel', 'Datei', 'Typ', 'Größe (Bytes)', 'SHA-256', 'Tags', 'Buchung', 'Buchungsnotiz', ...$properties->map(static fn (Property $p): string => self::safeCell($p->name))->all()], ';', '"', '');
 
         foreach ($documents as $document) {
             $values = $document->properties->keyBy('property_id');
@@ -62,7 +62,7 @@ final class ReceiptArchive
                 }
 
                 fputcsv($index, [
-                    $document->created_at->format('d.m.Y'),
+                    $document->dateBy('doc')->format('d.m.Y'),
                     self::safeCell($document->title),
                     $found ? $name : 'Datei fehlt',
                     $file->mime,
@@ -111,7 +111,9 @@ final class ReceiptArchive
         $safe = Str::limit((string) preg_replace('/[^A-Za-z0-9._-]+/', '_', Str::ascii($title)), 60, '');
         $extension = pathinfo($file->path, PATHINFO_EXTENSION);
 
-        return sprintf('belege/%s/%s_%s_%s.%s', $document->created_at->format('Y-m'), $document->created_at->format('Y-m-d'), $safe, Str::lower(substr($file->id, -6)), $extension);
+        $date = $document->dateBy('doc');
+
+        return sprintf('belege/%s/%s_%s_%s.%s', $date->format('Y-m'), $date->format('Y-m-d'), $safe, Str::lower(substr($file->id, -6)), $extension);
     }
 
     /** File names come from users; a leading = + - @ would run as a formula in Excel. */

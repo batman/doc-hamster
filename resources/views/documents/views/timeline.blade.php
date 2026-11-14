@@ -5,7 +5,7 @@
             <h2>{{ $group->first()->dateBy($dates)->locale(app()->getLocale())->translatedFormat('F Y') }}</h2>
             <ul>
                 @foreach ($group as $document)
-                    @php($exact = $dates === 'upload' || $document->doc_date === null)
+                    @php($exact = $dates === 'upload' || \App\Domain\Documents\ReceiptDate::missing($document))
                     <li data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" data-doc-row tabindex="0" @if ($open?->id === $document->id) class="is-open" @endif>
                         <span class="when muted">{{ $document->dateBy($dates)->format($exact ? 'd.m. H:i' : 'd.m.') }}</span>
                         @include('documents._thumb')
