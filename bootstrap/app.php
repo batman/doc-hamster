@@ -7,6 +7,7 @@ use App\Http\CardFolds;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\PrinterApiController;
 use App\Http\Controllers\UploadApiController;
+use App\Http\MenuViews;
 use App\Http\Middleware\RedirectToSetup;
 use App\Http\Middleware\RequireSameOriginApi;
 use App\Http\Middleware\ResolveCurrentOrg;
@@ -39,8 +40,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(SecurityHeaders::class);
         $middleware->web(prepend: [RedirectToSetup::class], append: [SetLocale::class]);
-        // Point 125: the folded cards (CardFolds) are written by JavaScript and hold nothing secret.
-        $middleware->encryptCookies(except: [CardFolds::COOKIE]);
+        // Point 125, A331: the folded cards (CardFolds) and menu window displays (MenuViews) are written by JavaScript and hold nothing secret.
+        $middleware->encryptCookies(except: [CardFolds::COOKIE, MenuViews::COOKIE]);
         // Point 151: the share sheet posts to /share without a token when no service worker caught it;
         // the session cookie is SameSite=Lax, so another site's POST arrives logged out anyway.
         $middleware->validateCsrfTokens(except: ['share']);

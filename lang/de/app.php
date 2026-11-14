@@ -20,6 +20,11 @@ return [
         'saved' => 'Gespeichert.',
         'failed' => 'Speichern fehlgeschlagen.',
     ],
+    'menu_window' => [
+        'display' => 'Anzeige',
+        'list' => 'Liste',
+        'tiles' => 'Kacheln',
+    ],
     'window' => [
         'open' => 'Öffnen: :title',
         'remove' => ':title aus dem Verlauf entfernen',

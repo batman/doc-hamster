@@ -20,6 +20,11 @@ return [
         'saved' => 'Saved.',
         'failed' => 'Saving failed.',
     ],
+    'menu_window' => [
+        'display' => 'Display',
+        'list' => 'List',
+        'tiles' => 'Tiles',
+    ],
     'window' => [
         'open' => 'Open: :title',
         'remove' => 'Remove :title from the history',

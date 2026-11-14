@@ -156,119 +156,6 @@ function mountReceipts(root) {
   render();
 }
 
-/* ---------- Einstellungen: columns that fold like an accordion ---------- */
-const GROUPS = [
-  { id: 'people', icon: 'users', name: 'Personen & Rollen', items: [
-    { id: 'persons', icon: 'users', name: 'Personen', text: 'Wer Zugang hat.', fields: [['Name', 'Max Mustermann'], ['E-Mail', 'max@example.com']] },
-    { id: 'roles', icon: 'user-shield', name: 'Rollen', text: 'Was eine Rolle darf.', fields: [['Rolle', 'Steuerberater']] } ] },
-  { id: 'bank', icon: 'building-bank', name: 'Bank', items: [
-    { id: 'conn', icon: 'plug', name: 'Bankverbindung', text: 'Konto, von dem die Buchungen kommen.', fields: [['Bezeichnung', 'Geschäftskonto'], ['IBAN', 'DE00 0000 0000 0000 0000 00']] },
-    { id: 'csv', icon: 'upload', name: 'CSV-Import', text: 'Kontoauszug als Datei einlesen.', fields: [['Datei', '']] } ] },
-  { id: 'tags', icon: 'tags', name: 'Tags', leaf: true },
-  { id: 'export', icon: 'file-export', name: 'Export', items: [
-    { id: 'pack', icon: 'file-text', name: 'Belegpaket (PDF)', text: 'Alle Belege eines Zeitraums als ein PDF.', fields: [['Von', '01.10.2026'], ['Bis', '31.10.2026']] },
-    { id: 'advisor', icon: 'user-shield', name: 'Zugang Steuerberater', text: 'Nur lesen, ohne Änderungen.', fields: [['E-Mail', 'beratung@example.com']] } ] },
-  { id: 'update', icon: 'refresh', name: 'Update', items: [
-    { id: 'ver', icon: 'refresh', name: 'Version und Update', text: 'Installiert ist Version 0.1.2.', fields: [] },
-    { id: 'phone', icon: 'device-mobile', name: 'Handy-Test', text: 'Prüfen, ob dein Handy alles kann.', fields: [] } ] },
-];
-
-function mountSettings(root, startTags) {
-  let g = null, it = null, tagSel = 'new', query = '', confirmTag = null;
-  let open = [0];
-  const grp = () => GROUPS.find(x => x.id === g);
-  const item = () => grp() && !grp().leaf && grp().items.find(x => x.id === it);
-  const hasPane = i => i === 0 || (i === 1 && g) || (i === 2 && g && (grp().leaf || it));
-  const openPane = i => {   // at most two panes open; the page (right) always stays
-    if (!open.includes(i)) open.push(i);
-    while (open.length > 2) {
-      const right = open.filter(x => x > i && x !== 2).sort()[0];
-      const drop = right !== undefined ? right : Math.min(...open.filter(x => x !== i));
-      open = open.filter(x => x !== drop);
-    }
-    open.sort();
-  };
-  const closePane = i => { open = open.filter(x => x !== i); if (!open.length) open = [i]; };
-  const strip = (i, label) => `<button type="button" class="col-strip" data-expand="${i}" aria-label="${esc(label.text)} aufklappen">${ICONS['chevron-right']}<span class="strip-label">${label.html}</span></button>`;
-  const lab = (icon, name) => `${ICONS[icon]}<span>${esc(name)}</span>`;
-  const listTags = () => TAGS.filter(t => t.name.toLowerCase().includes(query.toLowerCase()));
-
-  function pane0() {
-    return `<nav class="col col-nav" aria-label="Einstellungen"><div class="col-head"><h2>Einstellungen</h2>${g ? btn('chevron-left', 'Zuklappen', 'data-collapse="0"') : ''}</div><ul class="col-list">` +
-      GROUPS.map(x => `<li><button type="button" class="col-item" data-group="${x.id}"${x.id === g ? ' aria-current="true"' : ''}>${ICONS[x.icon]}<span>${esc(x.name)}</span>${ICONS['chevron-right'].replace('class="icon', 'class="go icon')}</button></li>`).join('') + '</ul></nav>';
-  }
-  function pane1() {
-    const x = grp();
-    if (x.leaf) {
-      return `<section class="col col-nav" aria-label="Tags" style="width:22rem"><div class="col-head"><h2>Tags</h2>${btn('chevron-left', 'Zuklappen', 'data-collapse="1"')}</div>` +
-        `<label for="tag-search" class="visually-hidden" style="position:absolute;left:-9999px">Tags suchen</label><input id="tag-search" class="col-search" type="search" placeholder="Tags suchen" value="${esc(query)}" data-search>` +
-        `<div class="tags" data-taglist>${tagButtons()}</div></section>`;
-    }
-    return `<nav class="col col-nav" aria-label="${esc(x.name)}"><div class="col-head"><h2>${esc(x.name)}</h2>${btn('chevron-left', 'Zuklappen', 'data-collapse="1"')}</div><ul class="col-list">` +
-      x.items.map(i => `<li><button type="button" class="col-item" data-item="${i.id}"${i.id === it ? ' aria-current="true"' : ''}>${ICONS[i.icon]}<span>${esc(i.name)}</span>${ICONS['chevron-right'].replace('class="icon', 'class="go icon')}</button></li>`).join('') + '</ul></nav>';
-  }
-  const tagButtons = () => listTags().map(t => `<button type="button" class="tag tag-c${t.c}" data-tag="${t.id}" aria-pressed="${tagSel === t.id}">${esc(t.name)}</button>`).join('') || '<span class="muted">Kein Tag gefunden.</span>';
-  function pane2() {
-    const x = grp();
-    if (x.leaf) {
-      const t = TAGS.find(y => y.id === tagSel);
-      const colors = (cur) => `<fieldset style="border:0;padding:0;margin:1rem 0 0"><legend>Farbe</legend><div class="tag-colors">${[1, 2, 3, 4, 5, 6].map(c => `<label class="tag-color tag-c${c}"><input type="radio" name="tagcolor" value="${c}"${c === cur ? ' checked' : ''} aria-label="Farbe ${c}"><span></span></label>`).join('')}</div></fieldset>`;
-      if (!t) {
-        return `<section class="col col-page"><div class="col-head"><h1>Neuen Tag anlegen</h1></div><label for="tag-name">Name des Tags</label><input id="tag-name" value="" placeholder="z. B. Reise">${colors(1)}<div class="actions"><button type="button" data-create>Anlegen</button></div></section>`;
-      }
-      const count = t.total >= 100
-        ? `<details class="count-details"><summary>${t.total} Belege</summary><ul>${Object.entries(t.types).map(([k, v]) => `<li><a href="#">${v} ${k}</a></li>`).join('')}</ul></details>`
-        : (t.total ? `<p><a href="#">${t.total} ${t.total === 1 ? 'Beleg' : 'Belege'} ansehen</a></p>` : '<p class="muted">An keinem Beleg.</p>');
-      return `<section class="col col-page"><div class="col-head"><h1><span class="tag tag-c${t.c} is-selected">${esc(t.name)}</span></h1>${btn('x', 'Schließen', 'data-tag-close')}</div>${count}<label for="tag-name">Name des Tags</label><input id="tag-name" value="${esc(t.name)}">${colors(t.c)}<div class="actions"><button type="button" data-save-tag>Speichern</button><button type="button" class="button-danger" data-del-tag>Tag löschen</button></div></section>`;
-    }
-    const i = item();
-    return `<section class="col col-page"><div class="col-head"><h1>${esc(i.name)}</h1>${btn('x', 'Schließen', 'data-page-close')}</div><p class="muted">${esc(i.text)}</p>` +
-      i.fields.map(([l, v], n) => `<label for="f${n}">${esc(l)}</label><input id="f${n}" value="${esc(v)}">`).join('') + (i.fields.length ? '<div class="actions"><button type="button">Speichern</button></div>' : '') + '</section>';
-  }
-
-  function render() {
-    const x = grp(), i = item();
-    const panes = [0, 1, 2].filter(hasPane);
-    const lastOpen = Math.max(...open);
-    let html = '';
-    panes.forEach(p => {
-      if (open.includes(p)) {
-        let h = p === 0 ? pane0() : p === 1 ? pane1() : pane2();
-        if (p === lastOpen && p !== 2) h = h.replace('class="col ', 'class="col is-last ');
-        html += h;
-      } else if (p === 0) {
-        html += strip(0, { text: 'Einstellungen', html: lab('settings', 'Einstellungen') + '<span>–</span>' + (x ? lab(x.icon, x.name) : '') });
-      } else if (p === 1) {
-        html += strip(1, x.leaf ? { text: 'Tags', html: lab('tags', 'Tags') } : { text: i ? i.name : x.name, html: i ? lab(i.icon, i.name) : lab(x.icon, x.name) });
-      }
-    });
-    html += confirmTag ? `<div class="dialog-backdrop"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-tag"><h2 id="dlg-tag">Tag löschen?</h2><p>„#${esc(TAGS.find(t => t.id === confirmTag).name)}“ wird von allen Belegen entfernt.</p><div class="dialog-actions"><button type="button" class="button-quiet" data-cancel>Abbrechen</button><button type="button" class="button-danger" data-confirm>Löschen</button></div></div></div>` : '';
-    root.innerHTML = `<div class="cols">${html}</div>`;
-  }
-
-  root.addEventListener('click', e => {
-    const t = e.target;
-    let el;
-    if ((el = t.closest('[data-group]'))) { g = el.dataset.group; it = null; tagSel = 'new'; open = grp().leaf ? [1, 2] : [0, 1]; render(); return; }
-    if ((el = t.closest('[data-item]'))) { it = el.dataset.item; openPane(2); render(); return; }
-    if ((el = t.closest('[data-expand]'))) { openPane(Number(el.dataset.expand)); render(); return; }
-    if ((el = t.closest('[data-collapse]'))) { closePane(Number(el.dataset.collapse)); render(); return; }
-    if (t.closest('[data-page-close]')) { it = null; open = [0, 1]; render(); return; }
-    if ((el = t.closest('[data-tag]'))) { tagSel = Number(el.dataset.tag); render(); return; }
-    if (t.closest('[data-tag-close]')) { tagSel = 'new'; render(); return; }
-    if (t.closest('[data-create]')) { const n = root.querySelector('#tag-name').value.trim(); if (n) { TAGS.push({ id: nextId++, name: n, c: Number(root.querySelector('[name=tagcolor]:checked').value), total: 0, types: { Bilder: 0, PDFs: 0, Texte: 0 } }); } render(); return; }
-    if (t.closest('[data-save-tag]')) { const tg = TAGS.find(y => y.id === tagSel); tg.name = root.querySelector('#tag-name').value.trim() || tg.name; tg.c = Number(root.querySelector('[name=tagcolor]:checked').value); render(); return; }
-    if (t.closest('[data-del-tag]')) { confirmTag = tagSel; render(); return; }
-    if (t.closest('[data-cancel]')) { confirmTag = null; render(); return; }
-    if (t.closest('[data-confirm]')) { TAGS.splice(TAGS.findIndex(y => y.id === confirmTag), 1); confirmTag = null; tagSel = 'new'; render(); return; }
-  });
-  root.addEventListener('input', e => {
-    if (e.target.matches('[data-search]')) { query = e.target.value; root.querySelector('[data-taglist]').innerHTML = tagButtons(); }
-  });
-  if (startTags) { g = 'tags'; open = [1, 2]; }
-  render();
-}
-
 /* ---------- Page frames, demos, colour tokens ---------- */
 document.querySelectorAll('.sg-screen').forEach(el => {
   const main = el.querySelector(':scope > main');
@@ -288,10 +175,6 @@ document.querySelectorAll('.sg-screen').forEach(el => {
 });
 const demoR = document.getElementById('belege-demo');
 if (demoR) mountReceipts(demoR);
-const demoS = document.getElementById('settings-demo');
-if (demoS) mountSettings(demoS, false);
-const demoT = document.getElementById('tags-demo');
-if (demoT) mountSettings(demoT, true);
 
 const tokens = ['--primary', '--primary-text', '--primary-ink', '--secondary', '--secondary-text',
   '--bg', '--surface', '--text', '--muted', '--border', '--error', '--ok', '--warning'];

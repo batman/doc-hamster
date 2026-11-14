@@ -1,0 +1,48 @@
+/* Menu window ("Menü-Fenster", point 156, A331; components/menu-window.blade.php, docs/design/FRAMEWORK.md).
+   The entries of a menu (icon, name, short description, red count, chevron); each opens the next window on the right.
+   .is-list: rows, the description small under the name. .is-tiles: a grid that follows the window width (container
+   "win" on .win-frame). In a very narrow window only the icons stay, the name comes as tooltip. The entry that opened
+   the window on the right is the opener row (is-opener on the li, windows.js). */
+.menu-entries { display: grid; gap: .25rem; margin: 0; padding: 0; list-style: none; }
+.menu-entries > li { min-width: 0; border-radius: var(--row-radius); }
+.menu-entry {
+    position: relative; display: flex; align-items: center; gap: .85rem; min-width: 0; min-height: 48px; padding: .4rem .85rem;
+    border-radius: var(--row-radius); color: var(--text); text-decoration: none;
+}
+.menu-entry:hover { background: var(--surface); }
+.menu-entries > li.is-opener > .menu-entry:hover { background: none; }
+.menu-entry > .icon { flex: none; width: 1.5rem; height: 1.5rem; color: var(--primary); }
+.menu-entry-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.menu-entry-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menu-entry-desc { overflow: hidden; color: var(--muted); font-size: .8rem; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
+.menu-entry > .badge { flex: none; }
+.menu-entry > .go { display: flex; flex: none; color: var(--muted); }
+.menu-entry > .go .icon, .menu-entries > li.is-opener .go .icon { width: 1.125rem; height: 1.125rem; color: var(--muted); }
+
+/* Tiles: icon on top, name, description (two lines), the count in the top right corner; no chevron. */
+.menu-entries.is-tiles { grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: .75rem; }
+.menu-entries.is-tiles .menu-entry {
+    flex-direction: column; align-items: flex-start; gap: .5rem; height: 100%; box-sizing: border-box; padding: 1rem;
+    border: 1px solid var(--border); border-radius: var(--radius);
+}
+.menu-entries.is-tiles > li { border-radius: var(--radius); }
+.menu-entries.is-tiles .menu-entry > .icon { width: 2rem; height: 2rem; }
+.menu-entries.is-tiles .menu-entry-name { font-weight: 600; }
+.menu-entries.is-tiles .menu-entry-desc { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; }
+.menu-entries.is-tiles .menu-entry > .badge { position: absolute; top: .75rem; right: .75rem; }
+.menu-entries.is-tiles .menu-entry > .go { display: none; }
+
+/* The name shows as tooltip only where it is hidden (icons only, below). */
+.menu-entry[data-tooltip]::before, .menu-entry[data-tooltip]::after { display: none; }
+
+/* A very narrow menu window: icons only, the count on the icon, the name as tooltip; tiles become the same column. */
+@container win (width < 13rem) {
+    .win-menu-window .win-head { padding-inline: .75rem; }
+    .win-menu-window .win-tools, .win-menu-window .win-body { padding-inline: .5rem; }
+    .menu-entries, .menu-entries.is-tiles { grid-template-columns: minmax(0, 1fr); gap: .25rem; }
+    .menu-entries .menu-entry, .menu-entries.is-tiles .menu-entry { flex-direction: row; justify-content: center; height: auto; padding: 0; border: 0; }
+    .menu-entries.is-tiles .menu-entry > .icon { width: 1.5rem; height: 1.5rem; }
+    .menu-entry > :is(.menu-entry-text, .go) { display: none !important; }
+    .menu-entries .menu-entry > .badge { position: absolute; top: .2rem; right: calc(50% - 1.5rem); }
+    .menu-entry[data-tooltip]::before, .menu-entry[data-tooltip]::after { display: block; }
+}
