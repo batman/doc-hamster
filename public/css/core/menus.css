@@ -5,8 +5,6 @@
 .view-details tbody td:last-child { border-top-right-radius: var(--row-radius); border-bottom-right-radius: var(--row-radius); }
 .view-details .thumb { width: 2.5rem; height: 3rem; margin-right: .75rem; vertical-align: middle; }
 .view-list { margin: 1rem 0 0; padding: 0; list-style: none; }
-.view-list li { display: flex; align-items: center; gap: .75rem; padding: .35rem .5rem; border-bottom: 1px solid var(--border); }
-.view-list li:hover { background: var(--surface); }
 .view-list .icon { color: var(--muted); }
 .view-list .muted { margin-left: auto; white-space: nowrap; }
 .view-tiles { display: grid; gap: 1rem; margin: 1rem 0 0; padding: 0; list-style: none; }
@@ -36,4 +34,3 @@ li:has(> .dropdown > .dropdown-panel:not([hidden])), tr:has(.dropdown-panel:not(
 .more-menu .menu-item { white-space: nowrap; }
 .menu-separator { margin: .25rem .5rem; border: 0; border-top: 1px solid var(--border); }
 .menu-item.menu-danger, .menu-item.menu-danger .icon { color: var(--danger); }
-.menu-item:disabled { opacity: .45; cursor: default; background: none; }

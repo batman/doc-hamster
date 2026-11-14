@@ -1,29 +1,69 @@
-/* Point 22: every list row's hover background has rounded corners (framework rule for all lists) */
-:root { --row-radius: 8px; }
-.view-list li, .pick-row, .settings-link, .col-item, .menu-item, .nav-item, .folder-link { border-radius: var(--row-radius); }
+/* Listeneintrag (point 163) ----------------------------------------------------------------------------------------
+   ONE row building block for every clickable entry: main menu (.nav-item), dropdown and "⋯" entries (.menu-item), menu-
+   window entries (.menu-entry – also the Einstellungen), window list rows (.pick-row, .view-list li) and .list-entry for
+   anything new. The flavours keep their class names (layout, icon sizes); their states are defined only here:
+   - rest: no fill; in a filled list (pick rows) the fill is the row's surface (--surface, a coloured row its colour)
+   - hover: one hover colour on every surface – the text colour at 7 % laid over the fill (--row-tint as a background
+     image, so it never fights a fill); only entries that do something hover
+   - focus-visible: a 2 px orange ring inside the entry
+   - marked: the look of point 155 – white surface, light shadow, orange symbol; the hover does not change it
+   - disabled: faded, no hover, no hand
+   - sizes: normal at least 48 px high, .85rem side padding; compact (.is-compact, .view-list rows) 36 px, .35rem .6rem */
+:root { --row-radius: 8px; --row-tint: color-mix(in srgb, currentColor 7%, transparent); }
+:is(.list-entry, .nav-item, .menu-item, .menu-entry, .pick-row), .view-list li { border-radius: var(--row-radius); }
+:is(.list-entry, .nav-item, .menu-item) {
+    display: flex; align-items: center; justify-content: flex-start; gap: .75rem;
+    width: 100%; min-height: 48px; margin: 0; padding: 0 .85rem;
+    background: none; color: var(--text);
+    font: inherit; font-weight: 500; letter-spacing: normal; text-align: left; text-decoration: none; cursor: pointer;
+}
+:is(.list-entry, .nav-item, .menu-item) .icon { width: 1.4rem; height: 1.4rem; }
+.view-list li { display: flex; align-items: center; gap: .75rem; min-height: 36px; padding: .35rem .6rem; border-bottom: 1px solid var(--border); }
+.is-compact:is(.list-entry, .nav-item, .menu-item, .menu-entry, .pick-row) { min-height: 36px; padding: .35rem .6rem; }
 
-/* A list of rows to pick one from: the whole row is the choice, the picked one gets the orange bar (A20) */
+/* Hover */
+:is(.list-entry, .nav-item, .menu-item, .menu-entry):hover, .view-list li:hover,
+.pick-list label.pick-row:hover, .pick-row.is-static:has(> span a):hover { background-image: linear-gradient(var(--row-tint), var(--row-tint)); box-shadow: none; }
+
+/* Focus (keyboard) */
+:is(.list-entry, .nav-item, .menu-item, .menu-entry):focus-visible, .view-list li:has(a:focus-visible),
+.pick-row:has(input:focus-visible), .pick-row.is-static:has(> span a:focus-visible) { outline: 2px solid var(--primary); outline-offset: -2px; }
+.pick-row.is-static > span a:focus-visible, .view-list li a:focus-visible { outline: none; }
+
+/* Disabled */
+:is(.list-entry, .nav-item, .menu-item, .menu-entry):is(:disabled, [aria-disabled="true"], .is-disabled), .pick-row:has(input:disabled) {
+    opacity: .45; cursor: default; background-image: none;
+}
+
+/* A list of rows to pick one from: the whole row is the choice, the picked one is marked (A20) */
 .pick-list { margin: 1rem 0; padding: 0; border: 0; display: grid; gap: .4rem; min-width: 0; }
-.pick-list label.pick-row { display: flex; align-items: flex-start; gap: .75rem; margin: 0; padding: .7rem .9rem; border-radius: calc(var(--radius) / 2); background: var(--surface); color: var(--text); font-weight: 400; cursor: pointer; }
+.pick-list > li { list-style: none; }
+ul.pick-list { margin: .75rem 0; }
+.pick-list label.pick-row { display: flex; align-items: flex-start; gap: .75rem; margin: 0; padding: .7rem .85rem; background: var(--surface); color: var(--text); font-weight: 400; cursor: pointer; }
+.pick-row.is-static { display: flex; align-items: center; gap: .75rem; padding: .7rem .85rem; background: var(--surface); cursor: default; }
+.pick-row.is-static > .icon { flex: none; width: 1.25rem; height: 1.25rem; color: var(--primary); }
+.pick-row.is-static > span:has(> strong) { flex: 1 1 auto; min-width: 0; }
+.pick-row.is-static button { margin: 0 0 0 auto; }
 .pick-row > .icon { flex: none; width: 1.25rem; height: 1.25rem; margin-top: .1rem; color: var(--muted); }
 .pick-row strong { display: block; font-weight: 600; }
 .pick-row small { display: block; color: var(--muted); }
-.pick-row:hover { background: var(--bg); }
 .pick-row:has(input:checked) > .icon, .pick-mark { color: var(--primary); }
-.pick-row:has(input:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
 .pick-mark { display: none; margin-left: auto; }
 .pick-row:has(input:checked) .pick-mark { display: flex; }
+.list-empty { margin: 0; padding: .7rem .9rem; border: 1px dashed var(--border); border-radius: var(--row-radius); color: var(--muted); }
+.list-error { color: var(--error); border-color: currentColor; }
 
-/* Marked row (task 110, look point 155 / variant A3): one look for the current menu entry, the chosen settings entry,
-   the picked choice, a marked list row and the opener row – a raised white surface with a light shadow and the orange
-   symbol. No bar, no border, no bold text; it reads on the menu, in windows, in cards and in the folded rail. */
+/* Marked (task 110, look point 155 / variant A3): the current menu entry, a checked menu entry, the picked choice, a
+   marked list row and the opener row (below) – a raised white surface with a light shadow and the orange symbol. No bar,
+   no border, no bold text; it reads on the menu, in windows, in cards and in the folded rail. */
 :root { --mark-surface: #fff; --mark-shadow: 0 1px 3px rgb(60 40 20 / .18), 0 4px 10px rgb(60 40 20 / .08); }
 @media (prefers-color-scheme: dark) { :root { --mark-surface: color-mix(in srgb, var(--text) 13%, var(--bg)); --mark-shadow: 0 1px 3px rgb(0 0 0 / .45), 0 4px 10px rgb(0 0 0 / .25); } }
-:is(.nav-item[aria-current="page"], .menu-item[aria-checked="true"], .col-item[aria-current="true"], .pick-row:has(input:checked), .pick-row.is-marked),
-:is(.nav-item[aria-current="page"], .menu-item[aria-checked="true"], .col-item[aria-current="true"], .pick-row:has(input:checked), .pick-row.is-marked):hover {
+:is(.nav-item[aria-current="page"], .menu-item[aria-checked="true"], .list-entry.is-marked, .pick-row:has(input:checked), .pick-row.is-marked, .pick-row.is-static.is-marked:has(> span a)),
+:is(.nav-item[aria-current="page"], .menu-item[aria-checked="true"], .list-entry.is-marked, .pick-row:has(input:checked), .pick-row.is-marked, .pick-row.is-static.is-marked:has(> span a)):hover {
     background: var(--mark-surface); box-shadow: var(--mark-shadow); font-weight: inherit;
 }
-:is(.nav-item[aria-current="page"], .menu-item[aria-checked="true"], .col-item[aria-current="true"], .pick-row:has(input:checked), .pick-row.is-marked, .is-opener) .icon { color: var(--primary); }
+:is(.nav-item[aria-current="page"], .menu-item[aria-checked="true"], .list-entry.is-marked, .pick-row:has(input:checked), .pick-row.is-marked, .is-opener) .icon { color: var(--primary); }
+.is-opener > :is(.menu-entry, .list-entry):hover { background-image: none; }
 
 /* Opener row (point 141, A306, A307, 162): the row / tile / link in a window whose click opened the window on its right
    keeps the marked-row look for good – white surface, light shadow, orange symbol, like the current main-menu entry; the
@@ -54,16 +94,13 @@ a { text-decoration: none; }
 .pick-row a:not(.button, .icon-button, .menu-item, .tag), .documents a, .view-list a, .view-details td a, .timeline a { color: inherit; text-decoration: none; }
 .pick-row.is-static:has(> span a) { position: relative; cursor: pointer; transition: background-color .12s; }
 .pick-row.is-static > span a::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
-.pick-row.is-static:has(> span a):hover { background: color-mix(in srgb, var(--surface) 88%, var(--text)); }
-.pick-row.is-static > span a:focus-visible { outline: none; }
-.pick-row.is-static:has(> span a:focus-visible) { outline: 2px solid var(--primary); outline-offset: 2px; }
 .pick-row.is-static > :is(button, form, .dropdown, .pill, .row-actions) { position: relative; z-index: 1; }
 
 /* A92: drag to sort – the whole row is the grip, a dashed placeholder keeps its place, an orange bar shows the target */
 [data-sortable] { position: relative; }
 [data-sortable] > [data-id] { cursor: grab; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 [data-sortable] .pick-handle { touch-action: none; }
-.pick-placeholder { list-style: none; border: 2px dashed var(--border); border-radius: calc(var(--radius) / 2); background: transparent; }
+.pick-placeholder { list-style: none; border: 2px dashed var(--border); border-radius: var(--row-radius); background: transparent; }
 .pick-row.is-lifted, .pick-row.is-static.is-lifted { position: fixed; z-index: 60; margin: 0; box-shadow: var(--shadow); background: var(--bg); pointer-events: none; transform: scale(1.02); }
 .pick-row.is-gliding { transition: transform .18s ease-out, box-shadow .18s ease-out; }
 .pick-drop { position: absolute; left: 0; right: 0; height: 3px; margin-top: -1.5px; border-radius: 2px; background: var(--primary); pointer-events: none; }
@@ -87,7 +124,6 @@ html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
 .pick-row.row-color { background: var(--row-bg); color: var(--row-ink); }
 .pick-row.row-color small { color: var(--row-sub); }
 .pick-row.row-color > .row-icon { color: var(--row-icon); }
-.pick-row.row-color.is-static:has(> span a):hover { background: color-mix(in srgb, var(--row-bg) 90%, var(--row-ink)); }
 
 /* Row actions ("Zeilen-Aktionen", A161-A166, A174, A177): frameless control buttons at the right end of a row (pencil,
    gear …); shown while the row is hovered or has focus, always on touch screens; orange on hover; tooltips. */

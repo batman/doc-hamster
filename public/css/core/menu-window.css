@@ -7,10 +7,9 @@
 .menu-entries > li { min-width: 0; border-radius: var(--row-radius); }
 .menu-entry {
     position: relative; display: flex; align-items: center; gap: .85rem; min-width: 0; min-height: 48px; padding: .4rem .85rem;
-    border-radius: var(--row-radius); color: var(--text); text-decoration: none;
+    color: var(--text); text-decoration: none;
 }
-.menu-entry:hover { background: var(--surface); }
-.menu-entries > li.is-opener > .menu-entry:hover { background: none; }
+/* Hover, focus and the opener mark: the Listeneintrag states in lists.css (point 163). */
 .menu-entry > .icon { flex: none; width: 1.5rem; height: 1.5rem; color: var(--primary); }
 .menu-entry-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .menu-entry-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

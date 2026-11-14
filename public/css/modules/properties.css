@@ -7,7 +7,7 @@
 .doc-properties .list-empty { margin: 0; color: var(--muted); font-size: .9rem; }
 .prop-list { display: grid; gap: .1rem; margin: 0; padding: 0; list-style: none; }
 .prop-row { display: flex; align-items: center; gap: .5rem; min-height: 2.5rem; padding: 0 .25rem 0 .5rem; border-radius: var(--row-radius); }
-.prop-row:hover { background: var(--surface); }
+.prop-row:hover { background-image: linear-gradient(var(--row-tint), var(--row-tint)); } /* the Listeneintrag hover, point 163 */
 .prop-row form { display: contents; }
 .prop-name { flex: 0 0 9.5rem; min-width: 0; overflow: hidden; color: var(--muted); font-size: .85rem; text-overflow: ellipsis; white-space: nowrap; }
 .prop-value { display: flex; flex: 1 1 auto; align-items: center; gap: .5rem; min-width: 0; }
