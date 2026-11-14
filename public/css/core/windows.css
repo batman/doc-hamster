@@ -238,12 +238,13 @@
 
 /* A308: window path – under the title the titles of the windows on the left in small grey; each brings its window back.
    One line with ellipsis; on phones (one window) it is the way back. */
-.win-path { margin: -.5rem 0 0; padding: 0 1.5rem .75rem; overflow: hidden; color: var(--muted); font-size: .8rem; line-height: 1.3; white-space: nowrap; text-overflow: ellipsis; }
+/* Point 146: the path starts where the title text starts (head padding + symbol 1.5rem + gap .6rem), with air above. */
+.win-path { margin: -.25rem 0 0; padding: 0 1.5rem .75rem 3.6rem; overflow: hidden; color: var(--muted); font-size: .8rem; line-height: 1.3; white-space: nowrap; text-overflow: ellipsis; }
 .win-path[hidden] { display: none; }
 .win-path a { color: inherit; text-decoration: none; }
 .win-path a:hover { color: var(--primary-ink); text-decoration: underline; }
 .win-path-sep { margin: 0 .35rem; }
 .win-head:has(+ .win-path:not([hidden])) { padding-bottom: .75rem; }
 .win-head:has(+ .win-path[hidden] + .win-tools) { padding-bottom: .75rem; }
-@media (max-width: 63.99rem) { .win-path { padding-inline: 4rem var(--space); } }
+@media (max-width: 63.99rem) { .win-path { padding-inline: 6.1rem var(--space); } }
 
