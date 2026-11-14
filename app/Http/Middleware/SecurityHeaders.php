@@ -16,7 +16,8 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class SecurityHeaders
 {
-    private const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; "
+    // 'inline-speculation-rules' (point 164.8): only the JSON of speculation rules (main-menu prefetch), never script code.
+    private const CSP = "default-src 'self'; script-src 'self' 'inline-speculation-rules'; style-src 'self'; img-src 'self' data: blob:; "
         ."media-src 'self' blob:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; "
         ."form-action 'self'; frame-ancestors 'none'";
 

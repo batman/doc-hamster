@@ -242,3 +242,14 @@
 .win-page .actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.5rem; }
 .win-page .actions button { margin: 0; }
 .win-page .tag-colors { margin-bottom: 1rem; }
+
+/* Point 164.8d: a window on its way – the clicked row looks pressed at once; after 150 ms a thin bar runs along the
+   top of the row of windows (windows.js busy()). A window from the cache (core/window-cache.js) needs neither. */
+.is-pressed { opacity: .6; transition: opacity .1s; }
+.windows.is-loading { position: relative; }
+.windows.is-loading::before {
+    content: ""; position: absolute; z-index: 20; top: 0; left: 0; width: 100%; height: 2px; background: var(--primary);
+    transform-origin: left; animation: win-loading 1.2s ease-in-out infinite; pointer-events: none;
+}
+@keyframes win-loading { 0% { transform: translateX(0) scaleX(0); } 50% { transform: translateX(20%) scaleX(.5); } 100% { transform: translateX(100%) scaleX(.1); } }
+@media (prefers-reduced-motion: reduce) { .windows.is-loading::before { animation: none; opacity: .6; } }

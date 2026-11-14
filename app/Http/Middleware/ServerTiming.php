@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Http\Speed\Prefetch;
 use App\Http\Speed\RequestTiming;
 use App\Http\Speed\SpeedLog;
 use Closure;
@@ -43,11 +44,11 @@ final class ServerTiming
     {
         $route = $request->route();
         $name = $route instanceof Route ? $route->getName() : null;
-        if (app()->runningUnitTests() || ! is_string($name) || $request->routeIs(...self::UNRECORDED) || $request->header('X-DocHamster-Prefetch') === '1') {
+        if (app()->runningUnitTests() || ! is_string($name) || $request->routeIs(...self::UNRECORDED) || Prefetch::is($request)) {
             return;
         }
         try {
-            $label = ($request->isMethod('GET') ? '' : $request->method().' ').$name.($request->header('X-DocHamster-Window') === '1' ? ' ▫' : '');
+            $label = ($request->isMethod('GET') ? '' : $request->method().' ').$name.($request->header('X-DocHamster-Window') === '1' ? '|w' : '');
             app(SpeedLog::class)->record($label, $this->timing->totalMs(), $this->timing->dbMs(), $this->timing->queries());
         } catch (Throwable) {
             // Measuring must never break a request.

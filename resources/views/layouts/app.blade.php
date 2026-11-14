@@ -2,6 +2,18 @@
 @if (request()->header('X-DocHamster-Window') === '1')
 @yield('content')
 @else
+@php
+    // Point 164.4: the cache values this layout reads, in one query (the database cache store would ask once per key).
+    if (auth()->check()) {
+        $layoutOrg = app(\App\Domain\Org\CurrentOrg::class);
+        \Illuminate\Support\Facades\Cache::memo()->many(array_values(array_filter([
+            \App\Infrastructure\Environment\LocalOcr::MODE_KEY, \App\Infrastructure\Environment\LocalOcr::STATUS_KEY, \App\Infrastructure\Environment\LocalOcr::BROWSER_ERROR_KEY,
+            \App\Infrastructure\Environment\NativeSystemProbe::HEARTBEAT_CACHE_KEY, \App\Http\TagsCss::KEY,
+            $layoutOrg->isSet() ? \App\Infrastructure\Environment\OcrProgress::waitingKey($layoutOrg->id()) : null,
+            $layoutOrg->isSet() ? \App\Domain\Org\SpeedOptions::prefetchKey($layoutOrg->id()) : null,
+        ])));
+    }
+@endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
@@ -37,20 +49,26 @@
 </head>
 {{-- Browser OCR fallback (point 18): only when the server can't read text itself (in mode app: the PDFs, point 69). Without cron the open app works off the queue (A69/A74). --}}
 @php
-    // Point 164.4: the cache values this layout reads, in one query (the database cache store would ask once per key).
-    if (auth()->check()) {
-        $layoutOrg = app(\App\Domain\Org\CurrentOrg::class);
-        \Illuminate\Support\Facades\Cache::memo()->many(array_values(array_filter([
-            \App\Infrastructure\Environment\LocalOcr::MODE_KEY, \App\Infrastructure\Environment\LocalOcr::STATUS_KEY, \App\Infrastructure\Environment\LocalOcr::BROWSER_ERROR_KEY,
-            \App\Infrastructure\Environment\NativeSystemProbe::HEARTBEAT_CACHE_KEY, \App\Http\TagsCss::KEY,
-            $layoutOrg->isSet() ? \App\Infrastructure\Environment\OcrProgress::waitingKey($layoutOrg->id()) : null,
-        ])));
-    }
     $ocrBrowser = auth()->check() && app(\App\Infrastructure\Environment\LocalOcr::class)->browserLoop();
     $ocrEngineError = $ocrBrowser ? app(\App\Infrastructure\Environment\LocalOcr::class)->browserError() : null;
     $queueTick = auth()->check() && ! \App\Queue\CronClock::running();
+    // Point 164.8g: the small windows the browser loads once after sign-in (menu windows, Dokumente, Bank).
+    $prefetchSmall = [];
+    if (auth()->check() && isset($layoutOrg) && $layoutOrg->isSet()) {
+        $prefetchSmall[] = route('settings.index');
+        foreach (\App\Http\SettingsMenu::groups() as $key => $each) {
+            if (! $each['leaf'] && count($each['items']) > 1) {
+                $prefetchSmall[] = route('settings.group', $key);
+            }
+        }
+        $prefetchSmall[] = route('documents.index');
+        if (Gate::allows('banking.import')) {
+            $prefetchSmall[] = route('bank.index');
+        }
+    }
 @endphp
-<body data-pdfjs="{{ asset('vendor/pdfjs') }}" @if ($ocrBrowser) data-ocr-browser="{{ asset('vendor/tesseract') }}" data-ocr-next="{{ route('ocr.next') }}" data-ocr-engine="{{ route('ocr.engine') }}" data-ocr-log="{{ route('ocr.log') }}" @endif @if ($queueTick) data-queue-tick="{{ route('queue.tick') }}" @endif>
+{{-- Point 164.8: data-prefetch = Einstellungen → Geschwindigkeit → Vorladen (core/window-cache.js). --}}
+<body data-pdfjs="{{ asset('vendor/pdfjs') }}" @auth data-prefetch="{{ isset($layoutOrg) && $layoutOrg->isSet() ? \App\Domain\Org\SpeedOptions::prefetch($layoutOrg->id()) : 'normal' }}" data-user="{{ auth()->id() }}" data-prefetch-small="{{ implode(' ', $prefetchSmall ?? []) }}" @endauth @if ($ocrBrowser) data-ocr-browser="{{ asset('vendor/tesseract') }}" data-ocr-next="{{ route('ocr.next') }}" data-ocr-engine="{{ route('ocr.engine') }}" data-ocr-log="{{ route('ocr.log') }}" @endif @if ($queueTick) data-queue-tick="{{ route('queue.tick') }}" @endif>
     <a class="skip-link" href="#main">{{ __('app.skip_to_content') }}</a>
     <div class="shell">
         @auth
@@ -89,7 +107,7 @@
                             ['settings.index', 'settings', 'settings.title', null, ['settings.*', 'members.*', 'roles.*', 'tags.*', 'exports.*', 'updates.*', 'ocr.show', 'palette.*', 'bank.import', 'bank.accounts.*', 'phone-check*', 'log.*', 'printers.*', 'inbox.mail'], \App\Http\Badges::LOG],
                         ] as [$route, $icon, $label, $ability, $active, $badge])
                             @if ($ability === null || Gate::allows($ability))
-                                <li><a class="nav-item tooltip-right" href="{{ route($route) }}" data-tooltip="{{ __($label) }}" @if (request()->routeIs(...$active) || ($route === 'settings.index' && \App\Http\SettingsMenu::owns(request()))) aria-current="page" @endif><x-icon :name="$icon" /><span class="nav-text">{{ __($label) }}</span> @if ($badge !== null) @php $count = $badges[$badge] ?? 0; @endphp <span class="badge badge-alert" data-badge="{{ $badge }}" @if ($count === 0) hidden @endif>{{ $count > 9 ? '9+' : $count }}</span> @endif</a></li>
+                                <li><a class="nav-item tooltip-right" href="{{ route($route) }}" data-tooltip="{{ __($label) }}" @if ($route === 'inbox.index') data-no-prefetch @endif @if (request()->routeIs(...$active) || ($route === 'settings.index' && \App\Http\SettingsMenu::owns(request()))) aria-current="page" @endif><x-icon :name="$icon" /><span class="nav-text">{{ __($label) }}</span> @if ($badge !== null) @php $count = $badges[$badge] ?? 0; @endphp <span class="badge badge-alert" data-badge="{{ $badge }}" @if ($count === 0) hidden @endif>{{ $count > 9 ? '9+' : $count }}</span> @endif</a></li>
                             @endif
                         @endforeach
                     </ul>

@@ -522,12 +522,39 @@
             document.dispatchEvent(new Event('dh:cols'));
         };
 
-        const load = url => fetch(url, { credentials: 'same-origin', headers: { 'X-DocHamster-Window': '1', Accept: 'text/html' } })
+        // Point 164.8: through the window cache (core/window-cache.js) – a kept window comes at once and is marked
+        // data-window-cached; after it opened, refreshed() fetches it again quietly.
+        const plain = url => fetch(url, { credentials: 'same-origin', headers: { 'X-DocHamster-Window': '1', Accept: 'text/html' } })
             .then(response => (response.ok ? response.text() : Promise.reject(response)))
-            .then(html => {
+            .then(html => ({ html, cached: false }));
+        const load = url => (DocHamster.windowCache?.take(url) ?? plain(url))
+            .then(({ html, cached }) => {
                 const found = [...new DOMParser().parseFromString(html, 'text/html').querySelectorAll('section[data-window]')].pop();
-                return found ? document.importNode(found, true) : Promise.reject(new Error('no window'));
+                if (!found) {
+                    return Promise.reject(new Error('no window'));
+                }
+                const win = document.importNode(found, true);
+                win.toggleAttribute('data-window-cached', cached);
+                return win;
             });
+        const refreshed = win => {
+            if (win.hasAttribute('data-window-cached')) {
+                win.removeAttribute('data-window-cached');
+                DocHamster.windowCache?.refresh(win, win.dataset.windowUrl);
+            }
+            DocHamster.windowCache?.afterOpen(win.dataset.windowUrl);
+        };
+        // Pressed state at once, a thin progress bar after 150 ms (point 164.8d).
+        const busy = link => {
+            const row = link ? rowOf(link) : null;
+            row?.classList.add('is-pressed');
+            const timer = setTimeout(() => box.classList.add('is-loading'), 150);
+            return () => {
+                clearTimeout(timer);
+                row?.classList.remove('is-pressed');
+                box.classList.remove('is-loading');
+            };
+        };
 
         // A strip from the stored history, filled when it is opened
         const placeholder = item => {
@@ -589,6 +616,7 @@
                     }
                     win.replaceWith(full);
                     DocHamster.emit('window:open', full);
+                    refreshed(full);
                     return full;
                 }));
             }
@@ -609,7 +637,13 @@
         // same record is open already (Explorer-like instances, point 40).
         // Only a window that can't be loaded falls back to a full page load (that would drop the windows on the
         // left, point 114); an error after that is logged and the row stays.
-        const open = (url, from, link = null) => load(url).catch(() => { location.href = url; return null; }).then(win => {
+        const open = (url, from, link = null) => {
+            const done = busy(link);
+            // A342: the window cache learns which window this person opens after which.
+            DocHamster.windowCache?.learn(from?.dataset.windowUrl, url);
+            return openLoaded(url, from, link).finally(done);
+        };
+        const openLoaded = (url, from, link) => load(url).catch(() => { location.href = url; return null; }).then(win => {
             if (!win) {
                 return null;
             }
@@ -644,6 +678,7 @@
             }).then(() => {
                 DocHamster.emit('window:open', win);
                 reveal(win);
+                refreshed(win);
             });
         }).catch(error => console.error('DocHamster window:', error));
 
@@ -779,6 +814,7 @@
         focus(current, false);
         history.replaceState(stateOf(current), '', location.href);
         reveal(current);
+        DocHamster.windowCache?.afterOpen(current.dataset.windowUrl);
 
         box.addEventListener('click', event => {
             const win = event.target.closest('section[data-window]');

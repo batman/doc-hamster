@@ -9,6 +9,7 @@ use App\Domain\Documents\Inbox;
 use App\Domain\Ocr\OcrLog;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
+use App\Http\Speed\Prefetch;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -108,6 +109,10 @@ final class Badges
     /** The person opened the area(s): their badges start again from zero. */
     public static function markSeen(CurrentOrg $org, string ...$areas): void
     {
+        // Point 164.8: loaded ahead of a click is not opened; the real request after it marks.
+        if (Prefetch::is()) {
+            return;
+        }
         $membership = $org->membership();
         $seen = $membership->seen_at ?? [];
         foreach ($areas as $area) {

@@ -18,7 +18,7 @@ return [
     ],
     'js' => [
         'core/bus', 'core/error-report', 'core/menu', 'core/dropdowns', 'core/card-fold', 'core/button-choice', 'modules/documents-filter', 'core/sortable', 'core/tabs',
-        'core/tooltips', 'core/dialogs', 'core/windows', 'core/window-search', 'core/menu-window', 'core/scroll-hint',
+        'core/tooltips', 'core/dialogs', 'core/window-cache', 'core/windows', 'core/window-search', 'core/menu-window', 'core/scroll-hint',
         'core/badges', 'modules/notes', 'modules/tags-search', 'core/toasts', 'core/selection-bar', 'core/ajax-forms',
         'modules/updates-preview-pick', 'core/color-field', 'modules/folder-import', 'core/start',
         'modules/document-viewer', 'modules/ocr-text', 'modules/palette', 'modules/ocr-browser', 'modules/documents', 'modules/documents-rows', 'modules/documents-forms',
@@ -26,6 +26,6 @@ return [
         'modules/updates',
         'modules/text-editor', 'core/edit-in-place', 'modules/ocr-progress', 'modules/ocr-live', 'modules/note-options',
         'modules/properties', 'modules/girocode', 'modules/bank', 'modules/inbox', 'core/window-edge', 'core/top-layer', 'core/layout-debug',
-        'core/pwa', 'modules/share',
+        'core/pwa', 'modules/share', 'modules/speed',
     ],
 ];
