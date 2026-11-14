@@ -117,6 +117,7 @@ return [
         'doc_next' => 'Next document',
     ],
     // Text documents written in the app (point 21).
+    'new_group' => 'Create new',
     'text' => [
         'new' => 'New document',
         'new_title' => 'New document',

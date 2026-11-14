@@ -87,6 +87,9 @@ tr.is-opener > td { background: var(--mark-surface); }
 .pick-handle:hover { background: rgb(127 127 127 / .14); color: var(--text); box-shadow: none; }
 .pick-row.is-dragging { box-shadow: var(--shadow); background: var(--bg); position: relative; z-index: 2; }
 .pick-row.is-dragging .pick-handle { cursor: grabbing; color: var(--primary); }
+/* Point 192: no visible grip – the whole row drags (a long press on touch). The handle stays for the keyboard only
+   (Tab, Space, arrows) and shows while it has the keyboard focus. */
+.pick-handle:not(:focus-visible) { position: absolute; width: 1px; min-height: 0; height: 1px; overflow: hidden; clip-path: inset(50%); }
 
 /* A row takes its record's colour for the icon: --row-color, else --folder, else orange (A81) */
 .pick-row.is-static > .icon:not(.pick-handle .icon) { color: var(--row-color, var(--folder, var(--primary))); }

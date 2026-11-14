@@ -107,6 +107,30 @@
             </div>
             <p class="sg-note">Oben rechts in 15rem: passt nicht – das Auswahlfeld steht an seiner Stelle.</p>
 
+            <h3 class="sg-pad" id="action-group">Knopfgruppe</h3>
+            <p class="sg-note">Punkt 200: <strong>Aktionen</strong> in der Fensterleiste stehen wie der Umschalter in der grauen Schiene, <strong>ohne Rahmen</strong>; Hover etwas dunkleres Grau, nie der weiße/orange „gewählt“-Look. Ein einzelner Knopf ist seine eigene Schiene (<code>.icon-button</code> in <code>.win-tools</code>); was zusammengehört, teilt eine: <code>&lt;span class="switcher is-actions" role="group" aria-label="…"&gt;</code> um Knöpfe ohne Knopfklassen. Rechts daneben für sich das ⋯-Menü. Der Umschalter selbst bleibt unverändert.</p>
+            <div class="win-tools" style="display: flex; align-items: center; gap: .4rem; flex-wrap: wrap;">
+                <span class="switcher" data-switch-static role="group" aria-label="Ansicht"><button type="button" aria-pressed="false" aria-label="Details"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 5h8" />
+  <path d="M13 9h5" />
+  <path d="M13 15h8" />
+  <path d="M13 19h5" />
+  <path d="M3 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+  <path d="M3 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" /></svg></button><button type="button" aria-pressed="true" aria-label="Liste"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l11 0" />
+  <path d="M9 12l11 0" />
+  <path d="M9 18l11 0" />
+  <path d="M5 6l0 .01" />
+  <path d="M5 12l0 .01" />
+  <path d="M5 18l0 .01" /></svg></button><button type="button" aria-pressed="false" aria-label="Kacheln"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+  <path d="M14 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+  <path d="M4 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+  <path d="M14 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" /></svg></button></span>
+                <span class="switcher is-actions" role="group" aria-label="Neu anlegen"><button type="button" aria-label="Neues Dokument" data-tooltip="Neues Dokument"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4" />
+  <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+  <path d="M12 11l0 6" />
+  <path d="M9 14l6 0" /></svg></button><button type="button" aria-label="Neuer Ordner" data-tooltip="Neuer Ordner"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19h-7a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2h4l3 3h7a2 2 0 0 1 2 2v3.5" /><path d="M16 19h6" /><path d="M19 16v6" /></svg></button></span>
+                <button type="button" class="icon-button" aria-label="Mehr" data-tooltip="Mehr"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M18 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /></svg></button>
+            </div>
+
             <h3 class="sg-pad" id="option-cards">Optionskarten</h3>
             <p class="sg-note">Die <strong>senkrechte</strong> Standard-Auswahl (Punkt 188.1, Quelle: Einstellungen → Geschwindigkeit): graue Zeilen mit Titel und Beschreibung, die gewählte weiß mit leichtem Schatten (markierter Look) und oranger Haken. <code>&lt;fieldset class="pick-list option-cards"&gt;</code> mit <code>&lt;label class="pick-row"&gt;</code> (verstecktes Radio, <code>&lt;strong&gt;</code> + <code>&lt;small&gt;</code>, <code>.pick-mark</code>).</p>
             <form onsubmit="return false" style="max-width: 32rem;">
@@ -924,7 +948,7 @@
             <h3 class="sg-pad" id="dashboard">Dashboard-Baustein</h3>
             <p class="sg-note">Punkt 176, A349–A353: Home ist ein Raster aus Karten (<code>ul.dash-grid</code> &gt; <code>li.card.dash-widget.is-s|is-m|is-l</code>), das der Fensterbreite folgt (1, 2 oder 6 Spalten). Der Stift schaltet den Bearbeiten-Modus (<code>.dash.is-editing</code>): Werkzeugzeile mit Griff, Name, Größe S/M/L und X; Schnellzugriff-Kacheln (<code>.dash-tile</code>), leere Bausteine mit Hinweis (<code>.dash-empty</code>), Ablagefeld (<code>.dash-drop</code>).</p>
             <div class="dash is-editing" style="max-width:40rem"><ul class="dash-grid">
-                <li class="card dash-widget is-m"><div class="dash-tools"><button type="button" class="icon-button button-small dash-grip" aria-label="Verschieben"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M8 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M8 19a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M14 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M14 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M14 19a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/></svg></button><span class="dash-tools-name">Schnellzugriff</span><span class="switcher" data-switch-static role="group" aria-label="Größe"><button type="button" aria-pressed="false">S</button><button type="button" aria-pressed="true">M</button><button type="button" aria-pressed="false">L</button></span></div>
+                <li class="card dash-widget is-m"><div class="dash-tools dash-grip" tabindex="0" aria-label="Verschieben"><span class="dash-tools-name">Schnellzugriff</span><span class="switcher" data-switch-static role="group" aria-label="Größe"><button type="button" aria-pressed="false">S</button><button type="button" aria-pressed="true">M</button><button type="button" aria-pressed="false">L</button></span></div>
                     <ul class="dash-tiles"><li class="dash-tile-item"><a class="dash-tile" href="#dashboard"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2"/></svg><span>Belege 2026</span></a></li></ul></li>
                 <li class="card dash-widget is-s"><div class="dash-drop"><strong>Dateien hier ablegen</strong><small>Sie landen im Posteingang.</small></div></li>
             </ul></div>

@@ -186,13 +186,18 @@
                     $addLabel = $openFolder ? __('folders.add_sub_short') : __('folders.add');
                     $addUrl = route('folders.index', $openFolder ? ['parent' => $openFolder->id] : ['new' => 1]);
                 @endphp
-                @if ($canUpload)
-                    {{-- A text document written in the app, in this folder (point 21). --}}
-                    <button type="button" class="icon-button win-wide-only" data-dialog-open="new-text-{{ $openFolder?->id ?? 'top' }}" aria-label="{{ __('documents.text.new') }}" data-tooltip="{{ __('documents.text.new') }}"><x-icon name="file-plus" /></button>
-                @endif
-                @if ($canFolder)
-                    {{-- Folders are managed where they are shown, like an explorer (points 10-12). --}}
-                    <a class="icon-button win-wide-only" href="{{ $addUrl }}" data-window aria-label="{{ $addLabel }}" data-tooltip="{{ $addLabel }}"><x-icon name="folder-plus" /></a>
+                @if ($canUpload || $canFolder)
+                    {{-- Point 200: the two "new" actions share one Knopfgruppe (grey rail, no frame). --}}
+                    <span class="switcher is-actions win-wide-only" role="group" aria-label="{{ __('documents.new_group') }}">
+                        @if ($canUpload)
+                            {{-- A text document written in the app, in this folder (point 21). --}}
+                            <button type="button" data-dialog-open="new-text-{{ $openFolder?->id ?? 'top' }}" aria-label="{{ __('documents.text.new') }}" data-tooltip="{{ __('documents.text.new') }}"><x-icon name="file-plus" /></button>
+                        @endif
+                        @if ($canFolder)
+                            {{-- Folders are managed where they are shown, like an explorer (points 10-12). --}}
+                            <a href="{{ $addUrl }}" data-window aria-label="{{ $addLabel }}" data-tooltip="{{ $addLabel }}"><x-icon name="folder-plus" /></a>
+                        @endif
+                    </span>
                 @endif
             </div>
         </x-slot:actions>

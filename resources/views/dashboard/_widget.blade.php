@@ -1,4 +1,4 @@
-{{-- One Home widget (A349, A350): a card; in edit mode its tool line (grip, name, size S/M/L, X) shows on top.
+{{-- One Home widget (A349, A350): a card; in edit mode its tool line (drag handle itself: name, size S/M/L, X) shows on top.
      $widget = ['type', 'size', 'data']. The body is dashboard/widgets/<type>. --}}
 @php
     $type = $widget['type'];
@@ -6,8 +6,8 @@
     $name = __('dashboard.widgets.'.$type);
 @endphp
 <li class="card dash-widget dash-{{ $type }} is-{{ $widget['size'] }}" data-widget="{{ $type }}" data-size="{{ $widget['size'] }}" aria-label="{{ $name }}">
-    <div class="dash-tools">
-        <button type="button" class="icon-button button-small dash-grip" data-dash-grip aria-label="{{ __('dashboard.move') }}" data-tooltip="{{ __('dashboard.move') }}"><x-icon name="grip-vertical" /></button>
+    {{-- Point 192: no grip – the whole tool line drags (and takes the arrow keys when focused). --}}
+    <div class="dash-tools dash-grip" data-dash-grip tabindex="0" aria-label="{{ __('dashboard.move') }}">
         <span class="dash-tools-name">{{ $name }}</span>
         <span class="switcher" data-switch-static role="group" aria-label="{{ __('dashboard.size') }}">
             @foreach (\App\Domain\Dashboard\DashboardLayout::SIZES as $size)

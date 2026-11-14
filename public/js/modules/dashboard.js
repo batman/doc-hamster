@@ -259,10 +259,10 @@
         }
     }, true);
 
-    // --- Reorder: drag the grip, or arrow keys on it -------------------------------------------------------------
+    // --- Reorder: drag the tool line (point 192), or arrow keys on it -------------------------------------------------------------
     document.addEventListener('pointerdown', event => {
         const grip = event.target instanceof Element ? event.target.closest('[data-dash-grip]') : null;
-        if (!grip || event.button !== 0) {
+        if (!grip || event.button !== 0 || event.target.closest('button, a, input')) {
             return;
         }
         const item = grip.closest('[data-widget]');
@@ -312,7 +312,7 @@
         window.addEventListener('keydown', key, true);
     });
     document.addEventListener('keydown', event => {
-        const grip = event.target instanceof Element ? event.target.closest('[data-dash-grip]') : null;
+        const grip = event.target instanceof Element && event.target.matches('[data-dash-grip]') ? event.target : null;
         if (!grip || !['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown'].includes(event.key)) {
             return;
         }
