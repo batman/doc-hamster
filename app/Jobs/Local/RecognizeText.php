@@ -75,6 +75,14 @@ final class RecognizeText implements ShouldQueue
             ->select('id')->eachById(static fn (Document $d) => self::dispatch($d->id, true));
     }
 
+    /** A345: the languages picked for this document under "Text neu erkennen" (e.g. "ell"), or null for all chosen ones. */
+    public static function choice(Document $document): ?string
+    {
+        $choice = $document->getAttribute('ocr_langs');
+
+        return is_string($choice) && $choice !== '' ? $choice : null;
+    }
+
     /**
      * @return list<object>
      */
@@ -145,7 +153,8 @@ final class RecognizeText implements ShouldQueue
             if (! is_file($path)) {
                 throw new RuntimeException(OcrLog::text('ocr.reason.file_missing'));
             }
-            $tools = new OcrTools($ocr, $app);
+            // 171.2 / A345: all chosen languages together, or the languages picked for this document.
+            $tools = new OcrTools($ocr, $app, $ocr->languages(self::choice($document)));
             if ($route === 'image') {
                 $reader = new ImageReader($tools);
                 [$text, $words] = self::withRetry(

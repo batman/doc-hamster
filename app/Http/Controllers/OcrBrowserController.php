@@ -12,11 +12,13 @@ use App\Events\TextRecognized;
 use App\Http\OcrAccess;
 use App\Infrastructure\Environment\LocalOcr;
 use App\Infrastructure\Environment\OcrProgress;
+use App\Jobs\Local\RecognizeText;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -71,7 +73,19 @@ final class OcrBrowserController extends Controller
             'type' => $file->mime,
             'save' => route('ocr.store', $document->id),
             'progress' => route('ocr.progress', $document->id),
+            // 171.1/171.2: all chosen languages (A345: or this document's own), loaded by tesseract.js from ocr/lang.
+            'langs' => implode('+', $ocr->languages(RecognizeText::choice($document))),
+            'langPath' => url('ocr/lang'),
         ]);
+    }
+
+    /** 171.1: an installed language's traineddata for tesseract.js (deu/eng from the shipped files, others from storage). */
+    public function lang(LocalOcr $ocr, string $code): BinaryFileResponse
+    {
+        $file = $ocr->languageFile($code);
+        abort_if($file === null, 404);
+
+        return response()->file($file, ['Content-Type' => 'application/octet-stream', 'Cache-Control' => 'private, max-age=86400']);
     }
 
     /** Serves the image or PDF without touching last_opened_at (unlike documents.file). */

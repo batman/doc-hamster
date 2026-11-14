@@ -77,16 +77,20 @@
             .catch(() => { /* only a hint */ });
     };
     // A61: the engine start has 60 s; a worker that comes up later is closed again.
+    // 171.2: the engine reads with all chosen languages (job.langs, e.g. deu+eng+ell; A345: a document's own choice);
+    // another language set closes the engine and starts a new one. 171.1: the language files come from job.langPath.
     const getEngine = async lane => {
-        if (lane.engine) return lane.engine;
+        const want = lane.want ?? { langs: 'deu+eng', langPath: base + '/lang' };
+        if (lane.engine && lane.langs === want.langs) return lane.engine;
+        if (lane.engine) await stop(lane);
         let late = false;
         const began = performance.now();
         const create = (async () => {
             await loadLib();
-            return window.Tesseract.createWorker('deu+eng', 1, {
+            return window.Tesseract.createWorker(want.langs, 1, {
                 workerPath: base + '/worker.min.js',
                 corePath: base + '/core',
-                langPath: base + '/lang',
+                langPath: want.langPath,
                 gzip: false,
                 workerBlobURL: false,
                 // Only the main lane feeds the progress in the menu.
@@ -100,6 +104,7 @@
         create.then(w => { if (late) w.terminate().catch(() => {}); }, () => {});
         try {
             lane.engine = await within(create, ENGINE_MS, 'timeout 60 s');
+            lane.langs = want.langs;
         } catch (e) {
             late = true;
             throw e;
@@ -273,6 +278,7 @@
         const res = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
         if (res.status !== 200) return null;
         const job = await res.json();
+        if (job.langs && job.langPath) lane.want = { langs: job.langs, langPath: job.langPath };
         // A61: no engine, no document – the reason goes to the server, the next try comes in 5 minutes.
         try {
             await getEngine(lane);

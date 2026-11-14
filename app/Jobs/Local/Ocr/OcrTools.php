@@ -18,7 +18,8 @@ use Throwable;
  */
 final class OcrTools
 {
-    public function __construct(private readonly LocalOcr $ocr, private readonly bool $app) {}
+    /** @param  list<string>  $languages  171.2: all chosen languages together (A345: or the document's own choice) */
+    public function __construct(private readonly LocalOcr $ocr, private readonly bool $app, private readonly array $languages = LocalOcr::CORE_LANGUAGES) {}
 
     public function ocr(): LocalOcr
     {
@@ -38,7 +39,8 @@ final class OcrTools
             throw new RuntimeException('tempnam');
         }
         try {
-            $this->run($this->ocr->command([...($app ? [] : ['tesseract']), $image, $base, '-l', 'deu+eng', '-c', 'tessedit_create_txt=1', '-c', 'tessedit_create_tsv=1'], $app), $this->ocr->env($app), $deadline);
+            [$languages, $appData] = $this->ocr->serverLanguages($this->languages, $app);
+            $this->run($this->ocr->command([$image, $base, '-l', implode('+', $languages), '-c', 'tessedit_create_txt=1', '-c', 'tessedit_create_tsv=1'], $app, $appData), $this->ocr->env($app, $appData), $deadline);
             $text = is_file($base.'.txt') ? file_get_contents($base.'.txt') : false;
             if ($text === false) {
                 throw new RuntimeException('tesseract: keine Textdatei');
@@ -67,7 +69,9 @@ final class OcrTools
         $out = $base.'.pdf';
 
         try {
-            $this->run($this->ocr->niced(['ocrmypdf', '--jobs', '1', '--sidecar', $sidecar, '--skip-text', '-l', 'deu+eng', '--quiet', $path, $out]), $this->ocr->env(false), $deadline);
+            // 171.1: ocrmypdf calls the system tesseract, which finds extra languages through TESSDATA_PREFIX.
+            [$languages, $appData] = $this->ocr->serverLanguages($this->languages, false);
+            $this->run($this->ocr->niced(['ocrmypdf', '--jobs', '1', '--sidecar', $sidecar, '--skip-text', '-l', implode('+', $languages), '--quiet', $path, $out]), $this->ocr->env(false, $appData), $deadline);
             $text = is_file($sidecar) ? file_get_contents($sidecar) : false;
             if ($text === false) {
                 throw new RuntimeException('ocrmypdf: keine Textdatei');

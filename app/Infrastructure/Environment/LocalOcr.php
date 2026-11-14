@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Environment;
 
+use App\Infrastructure\Extensions\Catalogue;
+use App\Infrastructure\Extensions\Extension;
+use App\Infrastructure\Extensions\Extensions;
 use Closure;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
@@ -20,6 +23,8 @@ use Throwable;
  * Every download is pinned and checked against a hard-coded SHA-256.
  * Point 69 (A113): next to the portable Tesseract, the Xpdf command line tools
  * (pdftopng, pdftotext) let the server read PDFs without ocrmypdf.
+ * Point 171: more languages come as data packs (Einstellungen → Erweiterungen, Catalogue group 'ocr') into
+ * storage/app/ocr/tessdata; OCR runs with all installed and enabled ones together (deu+eng+…), server and browser.
  */
 final class LocalOcr
 {
@@ -60,6 +65,9 @@ final class LocalOcr
         '940c137cbd1856e45813da1a25c12e8dd3dc8997b8ea735feb858684603031e3',
         'xpdf-tools-linux-4.06/bin64/',
     ];
+
+    /** 173.4: the languages the core ships; everything else is an extension (171). */
+    public const array CORE_LANGUAGES = ['deu', 'eng'];
 
     /** A113: PDFs longer than this are read up to this page. */
     public const int PDF_MAX_PAGES = 50;
@@ -196,14 +204,16 @@ final class LocalOcr
 
     /**
      * Tesseract command with resource limits: `nice -n 19` when present.
-     * $app uses the portable binary and its tessdata.
+     * $app uses the portable binary and its tessdata; $appData makes the system tesseract read the app's tessdata
+     * (171.1: the extra languages live there).
      *
      * @param  list<string>  $args
      * @return list<string>
      */
-    public function command(array $args, bool $app): array
+    public function command(array $args, bool $app, bool $appData = false): array
     {
-        $base = $app ? [$this->binary(), '--tessdata-dir', $this->tessdataDir()] : [];
+        $base = $app ? [$this->binary(), '--tessdata-dir', $this->tessdataDir()]
+            : ['tesseract', ...($appData ? ['--tessdata-dir', $this->tessdataDir()] : [])];
 
         return [...$this->nice(), ...$base, ...$args];
     }
@@ -222,9 +232,107 @@ final class LocalOcr
     /**
      * @return array<string, string>
      */
-    public function env(bool $app): array
+    public function env(bool $app, bool $appData = false): array
     {
-        return $app ? ['OMP_THREAD_LIMIT' => '1', 'TESSDATA_PREFIX' => $this->tessdataDir()] : ['OMP_THREAD_LIMIT' => '1'];
+        return $app || $appData ? ['OMP_THREAD_LIMIT' => '1', 'TESSDATA_PREFIX' => $this->tessdataDir()] : ['OMP_THREAD_LIMIT' => '1'];
+    }
+
+    /**
+     * 171.2: the languages OCR runs with – deu+eng plus every installed and enabled OCR language pack. A345: a
+     * document's own choice ("ell" or "deu+ell") replaces them when all its languages are installed.
+     *
+     * @return list<string>
+     */
+    public function languages(?string $choice = null): array
+    {
+        return self::pickLanguages($this->installedLanguages(), $choice, $this->installedLanguages(false));
+    }
+
+    /**
+     * deu+eng plus the installed OCR language packs (only the switched-on ones when $enabledOnly).
+     *
+     * @return list<string>
+     */
+    public function installedLanguages(bool $enabledOnly = true): array
+    {
+        $extensions = app(Extensions::class);
+        $packs = $enabledOnly ? $extensions->enabled('ocr')
+            : array_filter(Catalogue::group('ocr'), static fn (Extension $e): bool => $extensions->isInstalled($e->key));
+        $codes = array_map(static fn (Extension $e): string => $e->meta['lang'] ?? '', $packs);
+
+        return array_values(array_unique([...self::CORE_LANGUAGES, ...array_filter($codes, static fn (string $c): bool => preg_match('/^[a-z_]{3,10}$/', $c) === 1)]));
+    }
+
+    /**
+     * The document's choice when every language of it is installed, else the enabled ones.
+     *
+     * @param  list<string>  $enabled
+     * @param  list<string>  $installed
+     * @return list<string>
+     */
+    public static function pickLanguages(array $enabled, ?string $choice, array $installed): array
+    {
+        if ($choice !== null && $choice !== '') {
+            $parts = array_values(array_unique(explode('+', $choice)));
+            if (array_diff($parts, $installed) === []) {
+                return $parts;
+            }
+        }
+
+        return $enabled;
+    }
+
+    /**
+     * 171.1: the languages the server tesseract can really use and whether it must read the app's tessdata. The
+     * app binary always does; a system tesseract only for extra languages, when the app dir holds all of them
+     * (deu/eng are copied there with the first pack, ensureCoreTessdata()) – otherwise it falls back to deu+eng.
+     *
+     * @param  list<string>  $languages
+     * @return array{0: list<string>, 1: bool} languages, read the app's tessdata
+     */
+    public function serverLanguages(array $languages, bool $app): array
+    {
+        $present = array_values(array_filter($languages, fn (string $l): bool => is_file($this->tessdataDir().'/'.$l.'.traineddata')));
+        if ($app) {
+            return [$present !== [] ? $present : self::CORE_LANGUAGES, false];
+        }
+        if (array_diff($languages, self::CORE_LANGUAGES) === []) {
+            return [$languages, false];
+        }
+        if (count($present) === count($languages)) {
+            return [$languages, true];
+        }
+        $core = array_values(array_intersect($languages, self::CORE_LANGUAGES));
+
+        return [$core !== [] ? $core : self::CORE_LANGUAGES, false];
+    }
+
+    /** 171.1: the traineddata file of an installed language (served to tesseract.js), or null. */
+    public function languageFile(string $code): ?string
+    {
+        if (! in_array($code, $this->installedLanguages(false), true)) {
+            return null;
+        }
+        foreach ([$this->browserDir().'/lang/'.$code.'.traineddata', $this->tessdataDir().'/'.$code.'.traineddata'] as $file) {
+            if (is_file($file)) {
+                return $file;
+            }
+        }
+
+        return null;
+    }
+
+    /** 171.1: the shipped deu/eng next to the extra languages, so a system tesseract reads them all from one dir. */
+    public function ensureCoreTessdata(): void
+    {
+        File::ensureDirectoryExists($this->tessdataDir());
+        foreach (self::TESSDATA as $file => [, $sha]) {
+            $shipped = $this->browserDir().'/lang/'.$file;
+            $target = $this->tessdataDir().'/'.$file;
+            if (! is_file($target) && is_file($shipped) && hash_equals($sha, (string) hash_file('sha256', $shipped))) {
+                File::copy($shipped, $target);
+            }
+        }
     }
 
     /**
@@ -368,7 +476,7 @@ final class LocalOcr
         return $this->dir().'/squashfs-root/AppRun';
     }
 
-    private function tessdataDir(): string
+    public function tessdataDir(): string
     {
         return $this->dir().'/tessdata';
     }
