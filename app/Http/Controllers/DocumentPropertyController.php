@@ -52,7 +52,8 @@ final class DocumentPropertyController
         }
 
         $value = $this->values->set($document, $property, $data['value'], DocumentProperty::CONFIRMED, $data['page'], $data['box'], $data['order']);
-        $audit->record('document.changed', orgId: $org->id(), userId: $this->user($request)->id, subject: $document, ip: $request->ip());
+        // A349: "bezahlt" is an event of its own (Home → Letzte Aktivitäten).
+        $audit->record($property->key === 'paid_at' ? 'document.paid' : 'document.changed', orgId: $org->id(), userId: $this->user($request)->id, subject: $document, ip: $request->ip());
 
         return $this->answer($request, __('properties.saved'), ['value' => $this->values->display($value), 'property' => $property->id]);
     }
