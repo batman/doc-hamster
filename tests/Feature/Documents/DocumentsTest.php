@@ -28,7 +28,7 @@ it('lets an owner upload a receipt, see it and open the file', function (): void
 
     $this->actingAs($owner->user)
         ->post('/documents', ['file' => UploadedFile::fake()->image('bon.jpg')])
-        ->assertRedirect('/documents');
+        ->assertRedirect('/inbox');
 
     $file = DocumentFile::withoutGlobalScope(OrgScope::class)->firstOrFail();
 
@@ -36,8 +36,9 @@ it('lets an owner upload a receipt, see it and open the file', function (): void
         ->and($file->mime)->toBe('image/jpeg');
     Storage::disk('local')->assertExists($file->path);
 
-    // Without a chosen folder it lands in "Dokumente allgemein".
-    $this->get('/documents?folder='.Folder::defaultIdFor($owner->org_id))->assertOk()->assertSee('bon.jpg');
+    // A358: without a chosen folder it waits in the Posteingang, not in "Dokumente allgemein".
+    $this->get('/inbox')->assertOk()->assertSee('bon.jpg');
+    $this->get('/documents?folder='.Folder::defaultIdFor($owner->org_id))->assertOk()->assertDontSee('bon.jpg');
     $this->get('/files/'.$file->id)->assertOk()->assertHeader('Content-Type', 'image/jpeg');
 });
 
@@ -48,7 +49,7 @@ it('takes several receipts in one upload', function (): void {
         ->post('/documents', ['files' => [UploadedFile::fake()->image('a.jpg'), UploadedFile::fake()->createWithContent('b.jpg', '<?php echo 1;')]])
         ->assertSessionHasErrors('file');
     $this->post('/documents', ['files' => [UploadedFile::fake()->image('a.jpg'), UploadedFile::fake()->image('b.png')]])
-        ->assertRedirect('/documents');
+        ->assertRedirect('/inbox');
 
     expect(Document::withoutGlobalScope(OrgScope::class)->count())->toBe(2);
 });

@@ -34,3 +34,19 @@ li:has(> .dropdown > .dropdown-panel:not([hidden])), tr:has(.dropdown-panel:not(
 .more-menu .menu-item { white-space: nowrap; }
 .menu-separator { margin: .25rem .5rem; border: 0; border-top: 1px solid var(--border); }
 .menu-item.menu-danger, .menu-item.menu-danger .icon { color: var(--danger); }
+
+/* Ordner-Menü (folder menu, A360): a dropdown that picks a folder – "Zuletzt benutzt" on top, below the whole tree.
+   <ul class="menu-tree"> of <li><div class="menu-tree-row"> [chevron .menu-tree-toggle] <button class="menu-item"></div>
+   <ul class="menu-tree" hidden>…</ul></li>: a branch opens with its chevron (down = "Aufklappen", turned up while open,
+   point 131); a click on the name picks it. Long trees scroll inside the panel. */
+.folder-menu { min-width: 16rem; max-height: min(70vh, 32rem); overflow-y: auto; }
+.menu-tree { margin: 0; padding: 0; list-style: none; }
+.menu-tree .menu-tree { padding-left: 1.25rem; }
+.menu-tree-row { display: flex; align-items: center; gap: .1rem; }
+.menu-tree-row > .menu-item { flex: 1; min-width: 0; }
+.menu-tree-toggle { flex: none; width: 2rem; height: 2rem; }
+.menu-tree-toggle .icon { transition: rotate .12s; }
+.menu-tree-toggle[aria-expanded="true"] .icon { rotate: 180deg; }
+/* A dropdown in the row actions (A360) keeps them visible while its panel is open. */
+.row-actions:has(.dropdown-panel:not([hidden])) { opacity: 1; }
+.row-actions .dropdown > .control-button[aria-expanded="true"] { color: var(--primary-ink); }

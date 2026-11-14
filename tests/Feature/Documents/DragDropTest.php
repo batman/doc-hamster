@@ -184,7 +184,7 @@ it('answers a dropped upload with the folder it went into', function (): void {
     $this->postJson('/documents', ['files' => [UploadedFile::fake()->image('1.jpg'), UploadedFile::fake()->image('2.jpg')], 'folder' => $folder->id])->assertOk()
         ->assertJson(['message' => '2 Dokumente in „Belege 2026“ hochgeladen', 'folder' => $folder->id]);
     $this->postJson('/documents', ['files' => [UploadedFile::fake()->image('3.jpg')]])->assertOk()
-        ->assertJson(['message' => '1 Dokument in „Dokumente allgemein“ hochgeladen']);
+        ->assertJson(['message' => '1 Dokument in „Posteingang“ hochgeladen', 'folder' => null]);
     $this->postJson('/documents', ['files' => [UploadedFile::fake()->create('x.txt', 1, 'text/plain')]])->assertUnprocessable();
 });
 

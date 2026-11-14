@@ -75,7 +75,8 @@ final class DocumentController
         $document->update([
             ...($request->has('note') ? ['note' => $data['note'] ?? null] : []),
             ...(isset($data['title']) ? ['title' => $data['title']] : []),
-            ...($request->has('folder') ? ['folder_id' => $data['folder'] ?? Folder::defaultIdFor($org->id())] : []),
+            // An empty folder = "Posteingang (nicht abgelegt)" (A358).
+            ...($request->has('folder') ? ['folder_id' => $data['folder'] ?? null] : []),
         ]);
         $document->tags()->sync($data['tags'] ?? []);
         $audit->record('document.changed', orgId: $org->id(), userId: $this->userId($request), subject: $document, ip: $request->ip());

@@ -103,7 +103,7 @@ it('filters the search by properties and sorts the details view by a property co
 
     $this->postJson('/documents/columns', ['toggle' => $amount->id])->assertOk();
     expect($this->admin->user->fresh()->document_columns)->toBe([$amount->id]);
-    $this->get("/documents?view=details&sort=prop:{$amount->id}&dir=desc")
+    $this->get("/documents?view=details&q=pdf&sort=prop:{$amount->id}&dir=desc")
         ->assertSeeInOrder(['teuer.pdf', 'billig.pdf', 'ohne.pdf'])->assertSee('50,00 €');
 });
 

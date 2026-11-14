@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Documents;
 
+use App\Domain\Audit\AuditLogEntry;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
@@ -11,8 +12,10 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Posteingang (point 153): everything that came in and nobody handled yet, from every source.
  *
- * A document waits here while it is still in "Dokumente allgemein", was never opened and not marked "Erledigt".
- * It leaves when someone opens it, moves it into another folder, or marks it (row ✓, "Alle erledigt").
+ * A358: what comes in has no folder (folder_id null) and waits here until it is filed – filed = has a folder = done.
+ * It leaves when someone drops it on a folder, picks one with "Ablegen in …" (A360), or marks it (row ✓ and
+ * "Alle erledigt" file it into "Dokumente allgemein"). Opening it changes nothing. Unfiled documents show nowhere else
+ * in Dokumente: only here and in searches, timeline and calendar (the Dokumente top level lists folders only).
  * The source is the column documents.source (upload|printer|mail|phone|api, null = upload); before that column
  * exists, printed documents are known by in_print_tray and everything else counts as upload.
  */
@@ -36,11 +39,7 @@ final class Inbox
      */
     public static function query(string $userId, bool $seesAll, ?string $source = null): Builder
     {
-        $query = Document::query()->visibleTo($userId, $seesAll)
-            ->whereNull('documents.inbox_done_at')
-            ->whereNull('documents.last_opened_at')
-            ->where(static fn (Builder $inner): Builder => $inner->whereNull('documents.folder_id')
-                ->orWhereIn('documents.folder_id', Folder::query()->where('is_default', true)->select('id')));
+        $query = Document::query()->visibleTo($userId, $seesAll)->whereNull('documents.folder_id');
 
         return $source !== null ? self::ofSource($query, $source) : $query;
     }
@@ -109,6 +108,31 @@ final class Inbox
         }
 
         return $counts;
+    }
+
+    /**
+     * The folders this person filed into last (A360: on top of "Ablegen in …"), newest first. Read from the audit
+     * trail's moves, so nothing new is stored.
+     *
+     * @return list<string> folder ids
+     */
+    public static function recentFolders(string $orgId, string $userId, int $limit = 5): array
+    {
+        $existing = Folder::query()->pluck('id')->all();
+        $recent = [];
+        $moves = AuditLogEntry::query()->where('org_id', $orgId)->where('user_id', $userId)->where('action', 'document.moved')
+            ->latest('created_at')->latest('id')->limit(200)->pluck('meta_json');
+        foreach ($moves as $meta) {
+            $to = is_array($meta) ? ($meta['to'] ?? null) : null;
+            if (is_string($to) && in_array($to, $existing, true) && ! in_array($to, $recent, true)) {
+                $recent[] = $to;
+                if (count($recent) >= $limit) {
+                    break;
+                }
+            }
+        }
+
+        return $recent;
     }
 
     /** The column documents.source comes with the Android share target; until then the queries go without it. */

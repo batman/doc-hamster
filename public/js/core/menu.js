@@ -98,38 +98,9 @@
         mobile.addEventListener('change', closeDrawer);
         sync();
 
-        // Upload starts right after choosing; files dropped anywhere on the page go the same way.
-        const form = nav.querySelector('.nav-upload');
-        if (!form) {
-            return;
-        }
-        const input = form.querySelector('input[type="file"]');
-        // The active window says where an upload belongs (data-window-upload="folder=…", A79).
-        const target = () => {
-            form.querySelectorAll('[data-upload-target]').forEach(field => field.remove());
-            const win = document.querySelector('[data-windows] > section.is-active') ?? [...document.querySelectorAll('section[data-window]')].pop();
-            new URLSearchParams(win?.dataset.windowUpload ?? '').forEach((value, key) => {
-                const field = document.createElement('input');
-                field.type = 'hidden';
-                field.name = key;
-                field.value = value;
-                field.dataset.uploadTarget = '';
-                form.append(field);
-            });
-        };
-        const send = () => {
-            if (input.files.length === 0) {
-                return;
-            }
-            target();
-            form.querySelector('.nav-text').textContent = form.dataset.busy;
-            form.classList.add('is-busy');
-            form.submit();
-        };
-        input.addEventListener('change', send);
-
-        // Files dragged from the computer are handled by the documents module below (point 85: folder rows, folder
-        // windows, the menu's drop field). Never turn a dragged document preview into a fresh upload, even if a
+        // Point 180: the menu has no upload button any more – the Posteingang has "Hochladen" (182).
+        // Files dragged from the computer are handled by the documents module below (point 181: folder rows and folder
+        // windows, anything else into the Posteingang). Never turn a dragged document preview into a fresh upload, even if a
         // browser still starts a native drag despite the non-draggable image and CSS rules.
         document.addEventListener('dragstart', event => {
             if (!(event.target instanceof Element) || !event.target.closest('.thumb-frame img') || !event.dataTransfer) {

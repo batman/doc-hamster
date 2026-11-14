@@ -51,8 +51,8 @@ it('stores the tags picked at upload, which are optional', function (): void {
     $this->actingAs($this->admin->user)->post('/documents', [
         'file' => UploadedFile::fake()->image('mit.jpg'),
         'tags' => [$invoice->id, $contract->id],
-    ])->assertRedirect('/documents');
-    $this->post('/documents', ['file' => UploadedFile::fake()->image('ohne.jpg')])->assertRedirect('/documents');
+    ])->assertRedirect('/inbox');
+    $this->post('/documents', ['file' => UploadedFile::fake()->image('ohne.jpg')])->assertRedirect('/inbox');
 
     expect(DB::table('document_tags')->where('document_id', documentNamed('mit.jpg')->id)->pluck('source')->all())->toBe(['user', 'user'])
         ->and(DB::table('document_tags')->where('document_id', documentNamed('ohne.jpg')->id)->count())->toBe(0);
@@ -79,17 +79,17 @@ it('filters the list, and several tags must all match', function (): void {
     $contract = tagNamed($this->orgId, 'Vertrag');
 
     $this->actingAs($this->admin->user);
-    $this->post('/documents', ['file' => UploadedFile::fake()->image('beide.jpg'), 'tags' => [$invoice->id, $contract->id]]);
-    $this->post('/documents', ['file' => UploadedFile::fake()->image('eins.jpg'), 'tags' => [$invoice->id]]);
-
     $folder = Folder::defaultIdFor($this->orgId);
+    $this->post('/documents', ['file' => UploadedFile::fake()->image('beide.jpg'), 'tags' => [$invoice->id, $contract->id], 'folder' => $folder]);
+    $this->post('/documents', ['file' => UploadedFile::fake()->image('eins.jpg'), 'tags' => [$invoice->id], 'folder' => $folder]);
+
     $this->get('/documents?'.http_build_query(['folder' => $folder, 'tags' => [$invoice->id]]))->assertSee('beide.jpg')->assertSee('eins.jpg');
     $this->get('/documents?'.http_build_query(['folder' => $folder, 'tags' => [$invoice->id, $contract->id]]))->assertSee('beide.jpg')->assertDontSee('eins.jpg');
 });
 
 it('lets those who may edit a receipt change its tags, limited to what they can see', function (): void {
     $invoice = tagNamed($this->orgId, 'Rechnung');
-    $this->actingAs($this->admin->user)->post('/documents', ['file' => UploadedFile::fake()->image('bon.jpg')]);
+    $this->actingAs($this->admin->user)->post('/documents', ['file' => UploadedFile::fake()->image('bon.jpg'), 'folder' => Folder::defaultIdFor($this->orgId)]);
     $document = documentNamed('bon.jpg');
 
     $this->post('/documents/'.$document->id.'/tags', ['tags' => [$invoice->id]])->assertRedirect();

@@ -110,13 +110,15 @@
     const undoMoves = moves => {
         const cfg = config();
         const groups = new Map();
-        moves.filter(m => m.folder).forEach(m => groups.set(m.folder, [...(groups.get(m.folder) ?? []), m.id]));
+        // No folder = back into the Posteingang (A358, A361): sent as an empty folder.
+        moves.forEach(m =>groups.set(m.folder ?? '', [...(groups.get(m.folder ?? '') ?? []), m.id]));
         const back = [...groups].reduce((chain, [folder, ids]) => chain.then(() => post(cfg.move, { ids, folder })), Promise.resolve());
         const trashed = moves.filter(m => m.trashed).map(m => m.id);
         back.then(() => (trashed.length && cfg.trash ? post(cfg.trash, { ids: trashed }) : null))
             .then(() => {
                 toast(cfg.undone);
                 refresh();
+                DocHamster.refreshBadges?.();
             })
             .catch(fail);
     };
@@ -140,9 +142,12 @@
             const standing = carry.kind === 'docs' && docIds.length === 1 && target.el.closest('section[data-window]')?.querySelector('input[data-bank-standing]')?.checked ? 1 : null;
             post(target.url, { ids: docIds, standing }).then(linked).catch(fail);
         } else if (target.type === 'move') {
-            post(cfg.move, { ids, folder: target.folder }).then(json => {
+            // A361: rows from the Posteingang are filed ("Abgelegt in „X“"); the inbox window reloads with the others.
+            const filed = carry.items.some(item => winOf(item)?.dataset.windowKind === 'inbox') ? 1 : null;
+            post(cfg.move, { ids, folder: target.folder, filed }).then(json => {
                 toast(json.message, { undo: () => undoMoves(json.moves ?? []) });
                 refresh();
+                DocHamster.refreshBadges?.();
             }).catch(fail);
         } else if (target.type === 'trash') {
             post(cfg.trash, { ids }).then(json => {
@@ -381,5 +386,5 @@
             timer = setTimeout(begin, 350); // a finger on the name waits for the long press instead (A190)
         }
     });
-    Object.assign(docs, { winOf, folderOfWindow, setTarget, aim, land, carryOf, ghostOf, showTargets, edgeScroll, sourceAt });
+    Object.assign(docs, { winOf, folderOfWindow, setTarget, aim, land, carryOf, ghostOf, showTargets, edgeScroll, sourceAt, undoMoves });
 })();

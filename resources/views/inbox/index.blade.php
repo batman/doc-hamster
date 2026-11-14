@@ -1,5 +1,6 @@
 {{-- Posteingang (point 153, A327): one window with everything that came in, newest first, each row with its source.
-     Tabs per source with their own red count (Badges inbox-<source>); a row leaves when it is opened, moved or marked ✓.
+     Tabs per source with their own red count (Badges inbox-<source>); a row leaves when it is filed (A358-A361): dragged onto
+     a folder, "Ablegen in …" (folder menu per row, also for several picked rows) or ✓ (into "Dokumente allgemein").
      Rows are the document rows of Dokumente (data-doc: drag onto folders, rename, details). JS: modules/inbox.js. --}}
 @extends('layouts.app')
 
@@ -12,15 +13,8 @@
     <x-window :title="__('inbox.title')" icon="inbox" kind="inbox" :url="route('inbox.index', $source !== null ? ['source' => $source] : [])" :close="route('home')">
         <x-slot:actions>
             <div class="toolbar">
-                {{-- 153.4: the same upload as the main menu's button (into "Dokumente allgemein"). --}}
-                <form method="post" action="{{ route('documents.store') }}" enctype="multipart/form-data" data-inbox-upload data-failed="{{ __('documents.bulk.failed') }}">
-                    @csrf
-                    <label class="icon-button" data-tooltip="{{ __('documents.upload') }}">
-                        <input class="visually-hidden" type="file" name="files[]" multiple accept="image/*,application/pdf" aria-label="{{ __('documents.upload') }}">
-                        <x-icon name="upload" />
-                    </label>
-                    <noscript><button type="submit" class="button-small">{{ __('documents.upload') }}</button></noscript>
-                </form>
+                {{-- A359: Dokumente as the next window on the right; rows dragged onto its folder rows are filed there. --}}
+                <a class="icon-button" href="{{ route('documents.index') }}" data-window aria-label="{{ __('inbox.open_folders') }}" data-tooltip="{{ __('inbox.open_folders') }}"><x-icon name="layout-columns" /></a>
                 @if ($documents->isNotEmpty())
                     <form method="post" action="{{ route('inbox.done-all') }}" data-inbox-action>
                         @csrf
@@ -28,6 +22,15 @@
                         <button type="submit" class="icon-button" aria-label="{{ __('inbox.done_all') }}" data-tooltip="{{ __('inbox.done_all') }}"><x-icon name="checks" /></button>
                     </form>
                 @endif
+                {{-- Point 182: the upload lives here now (file button "Hochladen"); new files have no folder (A358). --}}
+                <form method="post" action="{{ route('documents.store') }}" enctype="multipart/form-data" data-inbox-upload data-failed="{{ __('documents.bulk.failed') }}">
+                    @csrf
+                    <label class="button button-small file-button" data-tooltip="{{ __('inbox.upload_hint') }}">
+                        <input class="visually-hidden" type="file" name="files[]" multiple accept="image/*,application/pdf">
+                        <x-icon name="upload" />{{ __('inbox.upload') }}
+                    </label>
+                    <noscript><button type="submit" class="button-small">{{ __('inbox.upload') }}</button></noscript>
+                </form>
             </div>
         </x-slot:actions>
 
@@ -69,6 +72,9 @@
                     </li>
                 @endforeach
             </ul>
+            @can('documents.edit')
+                @include('inbox._folder-menu')
+            @endcan
         @endif
     </x-window>
     </div>

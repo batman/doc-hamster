@@ -51,14 +51,14 @@ final class DocumentUploadController
             $audit->record('document.uploaded', orgId: $org->id(), userId: $userId, subject: $document, ip: $request->ip());
         }
 
-        // Files dropped onto a folder row, a folder window or the main menu (point 85): the page stays, a toast names the folder.
+        // Files dropped onto a folder row or window go there; anywhere else (main menu, other windows, the Posteingang)
+        // they have no folder and wait in the Posteingang (point 181, A358). The page stays, a toast names the place.
+        $folderId = $data['folder'] ?? null;
+        $name = $folderId !== null ? (string) Folder::query()->whereKey($folderId)->value('name') : __('inbox.title');
         if ($request->wantsJson()) {
-            $folderId = $data['folder'] ?? Folder::defaultIdFor($org->id());
-            $name = (string) Folder::query()->whereKey($folderId)->value('name');
-
             return response()->json(['message' => trans_choice('documents.bulk.uploaded', count($checked), ['count' => count($checked), 'name' => $name]), 'folder' => $folderId]);
         }
 
-        return redirect()->route('documents.index')->with('status', trans_choice('documents.saved', count($checked)));
+        return redirect()->route($folderId !== null ? 'documents.index' : 'inbox.index')->with('status', trans_choice('documents.saved', count($checked)));
     }
 }

@@ -40,6 +40,8 @@ final class DocumentIntake
     }
 
     /**
+     * Without a folder the document waits in the Posteingang until it is filed (A358).
+     *
      * @param  list<string>  $tagIds
      */
     public static function store(UploadedFile $upload, string $mime, string $extension, string $orgId, string $userId, string $title, array $tagIds = [], bool $inPrintTray = false, ?string $folderId = null, ?string $source = null): Document
@@ -47,7 +49,7 @@ final class DocumentIntake
         $document = DB::transaction(static function () use ($upload, $mime, $extension, $orgId, $userId, $title, $tagIds, $inPrintTray, $folderId, $source): Document {
             $document = Document::query()->create([
                 'org_id' => $orgId,
-                'folder_id' => $folderId ?? Folder::defaultIdFor($orgId),
+                'folder_id' => $folderId,
                 'uploaded_by' => $userId,
                 'title' => Str::limit($title, 250, ''),
                 'in_print_tray' => $inPrintTray,

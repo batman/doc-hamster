@@ -174,6 +174,8 @@
             <section class="detail-section">
                 <h3><label for="folder-{{ $document->id }}">{{ __('folders.folder') }}</label></h3>
                 <select id="folder-{{ $document->id }}" name="folder" form="move-form-{{ $document->id }}" data-doc-move="{{ $document->id }}" data-current="{{ $document->folder_id }}">
+                    {{-- A358: not filed yet = waits in the Posteingang; choosing it takes a document back there. --}}
+                    <option value="" @selected($document->folder_id === null)>{{ __('inbox.not_filed') }}</option>
                     @foreach ($folders as $row)
                         <option value="{{ $row['folder']->id }}" @selected(old('folder', $document->folder_id) === $row['folder']->id)>{{ str_repeat('– ', $row['depth']) }}{{ $row['folder']->name }}</option>
                     @endforeach

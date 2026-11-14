@@ -86,16 +86,9 @@
                 </header>
                 <nav id="nav" class="sidebar" aria-label="{{ __('app.nav.label') }}">
                     @can('documents.upload')
-                        <form class="nav-upload" method="post" action="{{ route('documents.store') }}" enctype="multipart/form-data" data-busy="{{ __('documents.uploading') }}">
-                            @csrf
-                            <label class="nav-item nav-action tooltip-right" data-tooltip="{{ __('documents.upload') }}">
-                                <input class="visually-hidden" type="file" name="files[]" multiple accept="image/*,application/pdf">
-                                <x-icon name="upload" /><span class="nav-text">{{ __('documents.upload') }}</span>
-                            </label>
-                            <noscript><button type="submit">{{ __('documents.upload') }}</button></noscript>
-                        </form>
-                        {{-- Drop field over the main menu while files are dragged (A169): they go into "Dokumente allgemein". --}}
-                        <div class="nav-drop" data-nav-drop hidden><x-icon name="upload" /><span class="nav-text">{{ __('documents.drop') }}</span></div>
+                        {{-- Point 180: no upload button here any more (the Posteingang has "Hochladen"). Drop field while files
+                             are dragged (A169, point 181): they go into the Posteingang. --}}
+                        <div class="nav-drop" data-nav-drop hidden><x-icon name="inbox" /><span class="nav-text">{{ __('inbox.drop') }}</span></div>
                     @endcan
                     <ul class="nav-list">
                         {{-- Everything else (people, roles, tags, bank import, export, update, phone test) sits under Einstellungen. --}}
@@ -141,21 +134,15 @@
             <div class="nav-backdrop"></div>
             @if ($currentOrg->isSet() && Gate::any(['documents.upload', 'documents.edit', 'banking.import']))
                 {{-- Drag and drop of documents, folders and files (points 75-87): addresses and texts for app.js. No overlay any more:
-                     files land on a folder row, a folder window or the main menu's drop field (A169-A175).
+                     files land on a folder row or a folder window, anywhere else in the Posteingang (point 181).
                      Point 160: data-org marks drags between browser tabs (same organisation only), data-doc-url builds
                      the document address for text/uri-list, data-bank allows links to bookings. --}}
-                @php
-                    // Point 164.4: id and name in one query.
-                    $defaultRow = \App\Domain\Documents\Folder::query()->where('is_default', true)->first(['id', 'name']);
-                    $defaultFolder = $defaultRow?->id ?? \App\Domain\Documents\Folder::defaultIdFor($currentOrg->id());
-                    $defaultName = $defaultRow?->name ?? \App\Domain\Documents\Folder::query()->whereKey($defaultFolder)->value('name');
-                @endphp
                 <div hidden data-dnd data-org="{{ $currentOrg->id() }}" data-doc-url="{{ route('documents.show', '__ID__') }}"
                      @can('banking.import') data-bank="1" @endcan
                      @can('documents.upload') data-upload="{{ route('documents.store') }}" @endcan
                      @can('documents.edit') data-move="{{ route('documents.bulk.move') }}" data-folder-move="{{ route('folders.move', '__ID__') }}" @endcan
                      @can('documents.trash') data-trash="{{ route('documents.bulk.trash') }}" data-restore="{{ route('documents.bulk.restore') }}" data-folder-destroy="{{ route('folders.destroy', '__ID__') }}" @endcan
-                     data-default-folder="{{ $defaultFolder }}" data-default-name="{{ $defaultName }}"
+                     data-inbox-name="{{ __('inbox.title') }}"
                      data-drop-upload="{{ __('documents.bulk.drop_upload', ['name' => ':name']) }}"
                      data-max-depth="{{ \App\Domain\Documents\Folder::MAX_DEPTH }}"
                      data-docs-one="{{ trans_choice('documents.bulk.count', 1, ['count' => ':count']) }}" data-docs-many="{{ trans_choice('documents.bulk.count', 2, ['count' => ':count']) }}"

@@ -1,7 +1,13 @@
 /* A busy button (Ajax running): its icon spins. */
-button.is-busy > .icon { animation: spin 1s linear infinite; }
+:is(button, .file-button).is-busy > .icon { animation: spin 1s linear infinite; }
 @keyframes spin { to { rotate: 360deg; } }
-@media (prefers-reduced-motion: reduce) { button.is-busy > .icon { animation: none; opacity: .5; } }
+@media (prefers-reduced-motion: reduce) { :is(button, .file-button).is-busy > .icon { animation: none; opacity: .5; } }
+
+/* File button (point 182): <label class="button button-small file-button"> around a hidden file field, symbol + text;
+   picking files starts at once. The keyboard focus of the hidden field shows on the label; busy while sending. */
+label.button.file-button { margin: 0; color: var(--primary-text); }
+.file-button:has(> input:focus-visible) { outline: 3px solid var(--primary); outline-offset: 3px; }
+.file-button.is-busy { opacity: .7; cursor: progress; pointer-events: none; }
 
 /* One button for the whole app (Go 2026-11-07, point 14, A46-A52). Every button is clearly a button:
    orange = the main action (one per area), outlined = side actions, red = delete, square = icon only.
@@ -65,9 +71,6 @@ button .icon, .button .icon { width: 1.25rem; height: 1.25rem; }
 .card-head .icon-button, .icon-button.button-small { width: 40px; min-height: 40px; }
 .icon-button[aria-expanded="true"] { border-color: var(--primary); color: var(--primary-ink); }
 
-/* The upload in the menu keeps its layout, with the button corner and shadow */
-.sidebar .nav-action { border-radius: 10px; box-shadow: var(--button-shadow); }
-.sidebar .nav-action:hover { background: var(--primary-hover); }
 input[type="file"]::file-selector-button { border-radius: 10px; font-size: 1rem; letter-spacing: 0; box-shadow: var(--button-shadow); }
 
 /* Cursor (A192, one rule for the framework): everything clickable shows the hand – buttons, control and icon buttons,

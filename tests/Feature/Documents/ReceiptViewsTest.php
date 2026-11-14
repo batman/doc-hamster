@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domain\Documents\Document;
+use App\Domain\Documents\Folder;
 use App\Domain\Documents\Tag;
 use App\Domain\Org\Membership;
 use App\Domain\Org\OrgScope;
@@ -17,14 +18,16 @@ uses(RefreshDatabase::class)->group('db');
 
 beforeEach(function (): void {
     $this->admin = Membership::factory()->owner()->create();
-    Document::query()->withoutGlobalScope(OrgScope::class)->create(['org_id' => $this->admin->org_id, 'uploaded_by' => $this->admin->user_id, 'title' => 'bon.jpg']);
+    // A358: the Dokumente top level lists folders only, so the receipt lies in a folder.
+    $this->folder = Folder::defaultIdFor($this->admin->org_id);
+    Document::query()->withoutGlobalScope(OrgScope::class)->create(['org_id' => $this->admin->org_id, 'folder_id' => $this->folder, 'uploaded_by' => $this->admin->user_id, 'title' => 'bon.jpg']);
 });
 
 it('keeps the chosen view per person and shows the receipt in every view', function (string $view, string $marker): void {
     $this->actingAs($this->admin->user)->from('/documents')->post('/documents/view', ['view' => $view])->assertRedirect('/documents?view='.$view);
 
     expect($this->admin->user->fresh()->receipt_view)->toBe($view);
-    $this->get('/documents')->assertOk()->assertSee($marker, false)->assertSee('bon.jpg');
+    $this->get('/documents?folder='.$this->folder)->assertOk()->assertSee($marker, false)->assertSee('bon.jpg');
 })->with([
     ['details', 'class="view-details"'],
     ['list', 'class="pick-list doc-rows"'],
@@ -40,7 +43,7 @@ it('keeps the view per window in its address; a window without one starts with t
     $this->post('/documents/view', ['view' => 'list', 'back' => 'https://evil.example.com/'])->assertRedirect(route('documents.index').'?view=list');
 
     $this->get('/documents?view=timeline')->assertOk()->assertSee('class="timeline"', false);
-    $this->get('/documents')->assertOk()->assertSee('class="pick-list doc-rows"', false);
+    $this->get('/documents?folder='.$this->folder)->assertOk()->assertSee('class="pick-list doc-rows"', false);
     expect($this->admin->user->fresh()->receipt_view)->toBe('list');
 });
 

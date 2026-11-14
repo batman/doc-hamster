@@ -31,6 +31,7 @@
                     <div class="field">
                         <label for="share-folder">{{ __('share.folder') }}</label>
                         <select id="share-folder" name="folder">
+                            <option value="" @selected($folderId === null)>{{ __('inbox.not_filed') }}</option>
                             @foreach ($folders as $row)
                                 <option value="{{ $row['folder']->id }}" @selected($folderId === $row['folder']->id)>{{ str_repeat('– ', $row['depth']) }}{{ $row['folder']->name }}</option>
                             @endforeach

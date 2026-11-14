@@ -107,13 +107,16 @@
         post(cfg.move, { ids: [id], folder: select.value }).then(json => {
             show(select.value);
             toast(json.message, {
-                undo: before ? () => post(cfg.move, { ids: [id], folder: before }).then(() => {
+                // An empty folder = back into the Posteingang (A358).
+                undo: () => post(cfg.move, { ids: [id], folder: before }).then(() => {
                     show(before);
                     toast(cfg.undone);
                     docs.refresh();
-                }).catch(fail) : null,
+                    DocHamster.refreshBadges?.();
+                }).catch(fail),
             });
             docs.refresh();
+            DocHamster.refreshBadges?.();
         }).catch(error => {
             select.value = before;
             fail(error);

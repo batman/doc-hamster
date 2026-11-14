@@ -97,7 +97,8 @@ final class ShareTargetController
     {
         $data = $request->validate([...self::folderRule(), ...self::tagRules()]);
         $userId = $this->userId($request);
-        $folderId = $data['folder'] ?? Folder::defaultIdFor($org->id());
+        // No folder = stays in the Posteingang until it is filed (A358).
+        $folderId = $data['folder'] ?? null;
 
         foreach ($this->lastDocuments($request) as $document) {
             $document->update(['folder_id' => $folderId]);

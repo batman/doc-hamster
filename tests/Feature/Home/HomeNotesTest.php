@@ -78,7 +78,7 @@ it('brings a receipt back from the trash', function (): void {
     $this->get('/documents/trash')->assertOk()->assertSee('bon.jpg');
 
     $this->post('/documents/'.$this->doc->id.'/restore')->assertRedirect(route('documents.trash'));
-    $this->get('/documents')->assertSee('bon.jpg');
+    $this->get('/inbox')->assertSee('bon.jpg'); // A358: unfiled, it waits in the Posteingang
 });
 
 it('names the download after the title, without slashes and with the file type', function (): void {

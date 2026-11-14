@@ -34,13 +34,15 @@ final class DocumentBulkController
 
     /**
      * Into a folder. Documents from the Papierkorb come back into it (A135) – only for people who may use the Papierkorb.
-     * The answer lists where each one was, so the toast's "Rückgängig" can put them back.
+     * The answer lists where each one was, so the toast's "Rückgängig" can put them back. An empty folder takes them
+     * back into the Posteingang (the undo of filing, A358, A361); "filed" (Posteingang → "Ablegen in …") says
+     * "Abgelegt in „X“".
      */
     public function move(Request $request, AuditLog $audit, CurrentOrg $org): JsonResponse
     {
         $data = $request->validate([
             ...$this->idRules(),
-            'folder' => ['required', 'string', Rule::in(Folder::query()->pluck('id')->all())],
+            'folder' => ['present', 'nullable', 'string', Rule::in(Folder::query()->pluck('id')->all())],
         ]);
         $mayTrash = Gate::allows(Permission::TrashDocuments->value);
         $documents = $this->visible($request, $mayTrash)->whereKey($data['ids'])->get();
@@ -61,11 +63,15 @@ final class DocumentBulkController
             }
         });
 
-        $name = (string) Folder::query()->whereKey($data['folder'])->value('name');
+        $folder = $data['folder'] ?? null;
+        $name = $folder !== null ? (string) Folder::query()->whereKey($folder)->value('name') : __('inbox.title');
         $count = count($moves);
-        $message = $restored > 0 && $restored === $count
-            ? trans_choice('documents.bulk.restored_into', $count, ['count' => $count, 'name' => $name])
-            : trans_choice('documents.bulk.moved', $count, ['count' => $count, 'name' => $name]);
+        $message = match (true) {
+            $restored > 0 && $restored === $count => trans_choice('documents.bulk.restored_into', $count, ['count' => $count, 'name' => $name]),
+            $folder === null => trans_choice('inbox.unfiled', $count, ['count' => $count]),
+            $request->boolean('filed') => trans_choice('inbox.filed', $count, ['count' => $count, 'name' => $name]),
+            default => trans_choice('documents.bulk.moved', $count, ['count' => $count, 'name' => $name]),
+        };
 
         return response()->json(['message' => $message, 'moves' => $moves]);
     }

@@ -1,6 +1,6 @@
-/* Posteingang (point 153, inbox/index.blade.php): the source tabs, ✓ "Erledigt", "Alle erledigt" and the upload in the
-   head work in the background and reload only this window; the menu badges follow at once. Without JavaScript they are
-   plain links and forms. */
+/* Posteingang (point 153, inbox/index.blade.php): the source tabs, ✓ "Erledigt", "Alle erledigt", "Ablegen in …" (A360)
+   and the upload in the head work in the background and reload only this window; the menu badges follow at once.
+   Without JavaScript they are plain links and forms. */
 (() => {
     const DocHamster = window.DocHamster;
     if (!DocHamster) {
@@ -39,7 +39,60 @@
             .catch(() => form.submit());
     });
 
-    // 153.4: the head's upload, like the main menu's button; the window shows the new rows right away.
+    // --- "Ablegen in …" (A360, A361) ------------------------------------------------------------------------------
+    // Each row's folder button opens a dropdown; its content (recent folders, the tree) comes from the window's template
+    // the first time. A pick files this row – or every picked row of the window when this one is picked too – then the
+    // toast "Abgelegt in „X“" offers "Rückgängig" and the window reloads without them.
+    document.addEventListener('click', event => {
+        const opener = event.target.closest?.('[data-folder-menu]');
+        const panel = opener?.parentElement.querySelector(':scope > .dropdown-panel');
+        if (!panel || panel.childElementCount > 0) {
+            return;
+        }
+        const tpl = winOf(opener)?.querySelector('template[data-folder-menu-tpl]');
+        if (tpl) {
+            panel.append(tpl.content.cloneNode(true));
+        }
+    }, true);
+
+    document.addEventListener('click', event => {
+        const toggle = event.target.closest?.('.folder-menu .menu-tree-toggle[aria-expanded]');
+        if (!toggle) {
+            return;
+        }
+        const open = toggle.getAttribute('aria-expanded') !== 'true';
+        const tpl = winOf(toggle)?.querySelector('template[data-folder-menu-tpl]');
+        const label = (open ? tpl?.dataset.collapse : tpl?.dataset.expand) ?? '';
+        toggle.setAttribute('aria-expanded', String(open));
+        toggle.dataset.tooltip = label;
+        toggle.setAttribute('aria-label', `${label}: ${toggle.dataset.name ?? ''}`);
+        const branch = toggle.closest('li')?.querySelector(':scope > .menu-tree');
+        if (branch) {
+            branch.hidden = !open;
+        }
+    });
+
+    document.addEventListener('click', event => {
+        const pickFolder = event.target.closest?.('.folder-menu [data-file-into]');
+        const row = pickFolder?.closest('[data-doc]');
+        const docs = DocHamster.docs;
+        const cfg = docs?.config() ?? {};
+        if (!row || !cfg.move) {
+            return;
+        }
+        const win = winOf(row);
+        const rows = row.classList.contains('is-selected') ? docs.docsIn(win ?? document).filter(each => each.classList.contains('is-selected')) : [row];
+        docs.post(cfg.move, { ids: rows.map(each => each.dataset.doc), folder: pickFolder.dataset.fileInto, filed: 1 })
+            .then(json => {
+                rows.forEach(each => { each.hidden = true; });
+                docs.toast(json.message, { undo: () => docs.undoMoves(json.moves ?? []) });
+                docs.refresh();
+                DocHamster.refreshBadges?.();
+            })
+            .catch(docs.fail);
+    });
+
+    // 153.4: the head's upload ("Hochladen", point 182); new files wait here without a folder, the window shows them.
     document.addEventListener('change', event => {
         const input = event.target.closest?.('form[data-inbox-upload] input[type="file"]');
         const form = input?.form;

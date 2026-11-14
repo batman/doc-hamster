@@ -59,8 +59,8 @@ final class DocumentListing
             $query->with('folder');
         }
 
-        // Like an explorer (points 10-12): a folder shows only its own receipts, the top level only those
-        // without a folder; a search looks through everything below the current folder.
+        // Like an explorer (points 10-12): a folder shows only its own receipts, the top level only the folders
+        // (A358); a search looks through everything below the current folder.
         $folders = Folder::flat();
         $wantedFolder = $request->query('folder');
         $folder = is_string($wantedFolder) && collect($folders)->contains(static fn (array $row): bool => $row['folder']->id === $wantedFolder) ? $wantedFolder : null;
@@ -92,7 +92,9 @@ final class DocumentListing
         } elseif (! $wide && $folder !== null) {
             $query->where('folder_id', $folder);
         } elseif (! $wide) {
-            $query->whereNull('folder_id');
+            // A358: the top level lists folders only. Documents without a folder wait in the Posteingang (they still
+            // show in searches, timeline and calendar).
+            $query->whereRaw('1 = 0');
         }
 
         // A244: the details view sorts by a click on a column head (?sort=name|date|prop:<id>&dir=asc|desc) and shows the

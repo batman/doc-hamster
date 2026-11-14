@@ -64,10 +64,10 @@ it('gives every organisation "Dokumente allgemein" and "Rechnungen", with bank m
         ->and(Folder::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $org->id)->count())->toBe(2);
 });
 
-it('puts a receipt without a chosen folder into "Belege"', function (): void {
-    $this->actingAs($this->admin->user)->post('/documents', ['file' => UploadedFile::fake()->image('lose.jpg')])->assertRedirect('/documents');
+it('leaves a receipt without a chosen folder unfiled, in the Posteingang (A358)', function (): void {
+    $this->actingAs($this->admin->user)->post('/documents', ['file' => UploadedFile::fake()->image('lose.jpg')])->assertRedirect('/inbox');
 
-    expect(titled('lose.jpg')->folder_id)->toBe(belegeOf($this->orgId)->id);
+    expect(titled('lose.jpg')->folder_id)->toBeNull();
 });
 
 it('creates a folder and one inside it; new folders have bank matching off unless ticked', function (): void {
@@ -134,7 +134,7 @@ it('files an upload into a folder; a folder shows its own receipts, a search eve
 
     $this->post('/documents', ['file' => UploadedFile::fake()->image('oben.jpg'), 'folder' => $top->id])->assertRedirect('/documents');
     $this->post('/documents', ['file' => UploadedFile::fake()->image('unten.jpg'), 'folder' => $sub->id])->assertRedirect('/documents');
-    $this->post('/documents', ['file' => UploadedFile::fake()->image('lose.jpg')])->assertRedirect('/documents');
+    $this->post('/documents', ['file' => UploadedFile::fake()->image('lose.jpg'), 'folder' => belegeOf($this->orgId)->id])->assertRedirect('/documents');
 
     $this->get('/documents?folder='.$top->id)->assertSee('oben.jpg')->assertDontSee('unten.jpg')->assertDontSee('lose.jpg');
     $this->get('/documents?folder='.$top->id.'&q=.jpg')->assertSee('oben.jpg')->assertSee('unten.jpg')->assertDontSee('lose.jpg');
@@ -143,7 +143,7 @@ it('files an upload into a folder; a folder shows its own receipts, a search eve
     $this->get('/documents?q=.jpg')->assertSee('oben.jpg')->assertSee('lose.jpg');
 });
 
-it('moves a receipt to another folder from its detail view; an empty choice means "Belege"', function (): void {
+it('moves a receipt to another folder from its detail view; an empty choice means the Posteingang', function (): void {
     $folder = makeFolder($this->orgId, 'Verträge');
     $this->actingAs($this->admin->user)->post('/documents', ['file' => UploadedFile::fake()->image('v.jpg')]);
     $document = titled('v.jpg');
@@ -152,7 +152,7 @@ it('moves a receipt to another folder from its detail view; an empty choice mean
     expect(titled('v.jpg')->folder_id)->toBe($folder->id);
 
     $this->post('/documents/'.$document->id, ['title' => 'v.jpg', 'folder' => ''])->assertRedirect();
-    expect(titled('v.jpg')->folder_id)->toBe(belegeOf($this->orgId)->id);
+    expect(titled('v.jpg')->folder_id)->toBeNull();
 
     // "In Ordner verschieben" from the ⋯ menu changes only the folder (point 26).
     $this->post('/documents/'.$document->id.'/move', ['folder' => $folder->id])->assertRedirect();
