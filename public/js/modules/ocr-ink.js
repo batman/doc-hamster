@@ -4,7 +4,8 @@
 //    thin) are painted white on the canvas before Tesseract reads it – text inside a thin box is missed otherwise.
 // 2. uncovered(): ink areas (row bands split at wide gaps) that no recognised word overlaps; keepOnly() paints the rest
 //    white for a second read with PSM 11 (sparse text).
-// 3. merge(): the second read's words go into the page by position (no duplicates, no unsure or letterless words).
+// 3. merge(): the second read's words go into the page by position (no duplicates, no letterless words, no lines
+//    unsure as a whole).
 (() => {
     const DARK = 160;
     const H_LINE = 0.25;
@@ -161,20 +162,22 @@
         const old = page?.words ?? [];
         const fresh = [];
         (extra?.words ?? []).forEach(o => {
-            if ((o.c ?? 0) < MIN_CONFIDENCE || !/[\p{L}\p{N}]/u.test(o.t)) return;
+            if (!/[\p{L}\p{N}]/u.test(o.t)) return;
             if ([...old, ...fresh].some(p => overlap(o, p) > 0.3)) return;
             fresh.push(o);
         });
-        if (!fresh.length) return [page, 0];
+        const all = [];
+        [...fresh].sort((a, b) => middle([a]) - middle([b])).forEach(o => {
+            const last = all[all.length - 1];
+            if (last && Math.abs(middle(last) - middle([o])) < Math.max(height(last), o.h) / 2) last.push(o);
+            else all.push([o]);
+        });
+        // An unsure word inside a sure line stays (an IBAN's "DE00" often reads at 40); a line unsure as a whole is noise.
+        const groups = all.filter(line => line.reduce((s, o) => s + (o.c ?? 0), 0) / line.length >= MIN_CONFIDENCE);
+        if (!groups.length) return [page, 0];
         const byLine = new Map();
         old.forEach(o => { if (!byLine.has(o.l)) byLine.set(o.l, []); byLine.get(o.l).push(o); });
         const lines = [...byLine.values()];
-        const groups = [];
-        [...fresh].sort((a, b) => middle([a]) - middle([b])).forEach(o => {
-            const last = groups[groups.length - 1];
-            if (last && Math.abs(middle(last) - middle([o])) < Math.max(height(last), o.h) / 2) last.push(o);
-            else groups.push([o]);
-        });
         groups.forEach(line => {
             line.sort((a, b) => a.x - b.x);
             const mid = middle(line);
@@ -191,7 +194,7 @@
                 words.push({ ...o, l, b });
             });
         });
-        return [{ n: page?.n ?? extra?.n ?? 1, words }, fresh.length];
+        return [{ n: page?.n ?? extra?.n ?? 1, words }, groups.reduce((s, line) => s + line.length, 0)];
     };
 
     // Text rebuilt from the words: words of a line by a space (sorted by x), lines by a line break.

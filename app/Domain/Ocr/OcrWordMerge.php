@@ -6,13 +6,13 @@ namespace App\Domain\Ocr;
 
 /**
  * Point 184 (b): the words of the second read (PSM 11 on the ink areas the first read left without words) go into the
- * page by position – a word that overlaps one already there is a duplicate and dropped, unsure or empty ones too. The
- * new words form lines of their own, placed in reading order before the first line that lies below them; line and
- * block indexes are numbered again. Same rules as mergeWords() in public/js/modules/ocr-ink.js.
+ * page by position – a word that overlaps one already there is a duplicate and dropped, letterless ones too, and lines
+ * that are unsure as a whole. The new words form lines of their own, placed in reading order before the first line that
+ * lies below them; line and block indexes are numbered again. Same rules as merge() in public/js/modules/ocr-ink.js.
  */
 final class OcrWordMerge
 {
-    /** Words of the second read below this confidence are left out (PSM 11 reads noise as letters). */
+    /** New lines whose mean confidence is below this are left out (PSM 11 reads noise as letters). */
     public const int MIN_CONFIDENCE = 50;
 
     /**
@@ -24,7 +24,7 @@ final class OcrWordMerge
     {
         $new = [];
         foreach ($extra['words'] ?? [] as $w) {
-            if ((int) ($w['c'] ?? 0) < self::MIN_CONFIDENCE || preg_match('/[\p{L}\p{N}]/u', (string) $w['t']) !== 1) {
+            if (preg_match('/[\p{L}\p{N}]/u', (string) $w['t']) !== 1) {
                 continue;
             }
             foreach ([...($page['words'] ?? []), ...$new] as $old) {
@@ -34,10 +34,12 @@ final class OcrWordMerge
             }
             $new[] = $w;
         }
-        if ($new === []) {
+        // An unsure word inside a sure line stays (an IBAN's "DE00" often reads at 40); a line unsure as a whole is noise.
+        $groups = array_values(array_filter(self::group($new), static fn (array $line): bool => array_sum(array_map(static fn (array $w): int => (int) ($w['c'] ?? 0), $line)) / count($line) >= self::MIN_CONFIDENCE));
+        if ($groups === []) {
             return [$page, 0];
         }
-        $n = $page['n'] ?? $extra['n'];
+        $n = $page['n'] ?? $extra['n'] ?? 1;
 
         // The first read's lines in their order, then each new line before the first old line that starts below it.
         $lines = [];
@@ -45,7 +47,7 @@ final class OcrWordMerge
             $lines[(int) $w['l']][] = $w;
         }
         $lines = array_values($lines);
-        foreach (self::group($new) as $line) {
+        foreach ($groups as $line) {
             $mid = self::middle($line);
             $at = count($lines);
             foreach ($lines as $i => $old) {
@@ -70,7 +72,7 @@ final class OcrWordMerge
             }
         }
 
-        return [['n' => $n, 'words' => $words], count($new)];
+        return [['n' => $n, 'words' => $words], array_sum(array_map('count', $groups))];
     }
 
     /**

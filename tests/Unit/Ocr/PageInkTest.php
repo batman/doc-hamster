@@ -72,10 +72,10 @@ it('merges the second read by position without duplicates', function (): void {
         $word('Rechnung', 0.1, 0.1, 0), $word('Max', 0.1, 0.2, 1), $word('Mustermann', 0.25, 0.2, 1), $word('Danke', 0.1, 0.8, 2, 90, 1),
     ]];
     $extra = ['n' => 1, 'words' => [
-        $word('DE00', 0.25, 0.6, 0), $word('IBAN', 0.1, 0.6, 0), $word('0000', 0.4, 0.605, 0),
+        $word('DE00', 0.25, 0.6, 0, 43), $word('IBAN', 0.1, 0.6, 0), $word('0000', 0.4, 0.605, 0), // unsure in a sure line
         $word('Max', 0.101, 0.201, 1),      // the same word again
         $word('~', 0.7, 0.6, 0),            // no letter
-        $word('xq', 0.8, 0.6, 0, 20),       // unsure
+        $word('xq', 0.8, 0.7, 0, 20),       // a line unsure as a whole
     ]];
 
     [$merged, $added] = OcrWordMerge::merge($page, $extra);
