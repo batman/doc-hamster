@@ -10,7 +10,7 @@
     @endif
 
     <section class="card" data-speed-tests
-             data-ping="{{ route('ping') }}" data-db="{{ route('speed.db') }}" data-download="{{ route('speed.download') }}" data-window="{{ route('documents.index') }}"
+             data-ping="{{ route('ping') }}" data-db="{{ route('speed.db') }}" data-download="{{ route('speed.download') }}" data-test-window="{{ route('documents.index') }}"
              data-running="{{ __('speed.running') }}" data-failed="{{ __('speed.failed') }}"
              @foreach (__('speed.result') as $key => $text) data-result-{{ $key }}="{{ $text }}" @endforeach>
         <h2 class="card-head"><x-icon name="player-play" />{{ __('speed.tests') }}

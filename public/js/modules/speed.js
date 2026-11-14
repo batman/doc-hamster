@@ -41,7 +41,7 @@
         },
         window: async card => {
             const start = performance.now();
-            const run = await timed(card.dataset.window, { headers: { 'X-DocHamster-Window': '1', Accept: 'text/html' } });
+            const run = await timed(card.dataset.testWindow, { headers: { 'X-DocHamster-Window': '1', Accept: 'text/html' } });
             new DOMParser().parseFromString(new TextDecoder().decode(run.body), 'text/html');
             return text(card, 'window', { server: run.server, total: performance.now() - start });
         },
