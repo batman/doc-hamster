@@ -354,11 +354,8 @@
         clearTimeout(st.clickTimer);
         select(st, groupOf(st, ref), event.shiftKey);
         if (event.shiftKey) { st.picking = true; return; }
-        st.clickTimer = setTimeout(() => popup(st, null), 250);
-    });
-    document.addEventListener('dblclick', event => {
-        const st = previewState(viewerFrame(event.target));
-        if (st) clearTimeout(st.clickTimer);
+        // No double-click on the preview any more (point 169): the popup opens at once.
+        popup(st, null);
     });
 
     // --- Selecting and copying the text (point 134, A280/A281) ------------------------------------------------------
