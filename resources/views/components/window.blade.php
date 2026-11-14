@@ -19,8 +19,10 @@
     a window loaded later get a per-window suffix in app.js – write plain ids, dialog names and labels as usual.
     kind (the module type, e.g. "folder", "detail"; default the route name): picks the default widths; a dragged width belongs only to that one window (A97).
     dragDoc, dragFile (point 160): the head drags this document (id, DownloadURL "mime:name:url") into other windows, tabs or the desktop.
+    renameUrl, renameField, renameData (points 185.2, A364, "Fenstertitel umbenennen"): with a renameUrl the title is edited in place
+    (core/window-rename.js) – POST renameData + renameField = the new name; give it only to people with edit rights.
 --}}
-@props(['title', 'icon' => 'file-text', 'url' => null, 'close' => null, 'upload' => null, 'min' => null, 'optimal' => null, 'max' => null, 'priority' => null, 'search' => null, 'searchLive' => false, 'searchParams' => '', 'searchCount' => 0, 'kind' => null, 'dragDoc' => null, 'dragFile' => null])
+@props(['title', 'icon' => 'file-text', 'url' => null, 'close' => null, 'upload' => null, 'min' => null, 'optimal' => null, 'max' => null, 'priority' => null, 'search' => null, 'searchLive' => false, 'searchParams' => '', 'searchCount' => 0, 'kind' => null, 'dragDoc' => null, 'dragFile' => null, 'renameUrl' => null, 'renameField' => 'name', 'renameData' => []])
 @php
     $url ??= request()->fullUrl();
     $kind ??= request()->route()?->getName() ?? 'page';
@@ -70,7 +72,7 @@
         <header class="win-head" @if ($dragDoc) data-doc-drag="{{ $dragDoc }}" data-doc-file="{{ $dragFile }}" @endif>
             <button type="button" class="win-back icon-button" data-window-back aria-label="{{ __('app.window.back') }}" hidden><x-icon name="chevron-left" /></button>
             <x-icon :name="$icon" />
-            <h1 class="win-title" title="{{ $title }}" @if ($dragDoc) data-doc-title @endif>{{ $title }}</h1>
+            <h1 class="win-title" title="{{ $title }}" @if ($dragDoc) data-doc-title @endif @if ($renameUrl) data-window-rename="{{ $renameUrl }}" data-rename-field="{{ $renameField }}" data-rename-data="{{ json_encode((object) $renameData) }}" data-rename-label="{{ __('app.window.rename') }}" data-rename-failed="{{ __('app.edit_in_place.failed') }}" tabindex="0" aria-description="{{ __('app.window.rename_hint') }}" @endif>{{ $title }}</h1>
             {{-- The window controls (points 70, 72, A116-A124): frameless, always this order; on phones only X. --}}
             <button type="button" class="control-button win-minimise" data-window-fold aria-label="{{ __('app.window.minimise') }}" data-tooltip="{{ __('app.window.minimise') }}"><x-icon name="chevron-left" /></button>
             <button type="button" class="control-button win-maximise" data-window-maximise aria-pressed="false" aria-label="{{ __('app.window.maximise') }}" data-tooltip="{{ __('app.window.maximise') }}" data-label-max="{{ __('app.window.maximise') }}" data-label-restore="{{ __('app.window.restore') }}"><x-icon name="window-maximise" /><x-icon name="window-restore" /></button>

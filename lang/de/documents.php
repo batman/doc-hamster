@@ -35,6 +35,7 @@ return [
     'edit' => 'Bearbeiten',
     'send' => 'Verschicken',
     'move' => 'In Ordner verschieben',
+    'move_menu' => 'Verschieben …',
     'move_submit' => 'Verschieben',
     'moved' => 'Dokument verschoben.',
     'ocr_text' => 'Erkannter Text',

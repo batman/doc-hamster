@@ -35,6 +35,7 @@ return [
     'edit' => 'Edit',
     'send' => 'Send',
     'move' => 'Move to folder',
+    'move_menu' => 'Move …',
     'move_submit' => 'Move',
     'moved' => 'Document moved.',
     'ocr_text' => 'Recognised text',

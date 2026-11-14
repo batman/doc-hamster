@@ -415,7 +415,7 @@
     // A281: "Alles kopieren" – the whole recognised text with its line breaks.
     document.addEventListener('click', event => {
         const button = event.target.closest?.('[data-ocr-copy]');
-        const plain = button?.closest('.detail-section')?.querySelector('.is-plain');
+        const plain = button?.closest('[data-ocr-card], .detail-section')?.querySelector('.is-plain');
         if (!button || !plain) return;
         copy(plain.textContent.replace(/\f/g, '\n\n').trim(), { copied: button.dataset.done, copy_failed: button.dataset.failed });
     });

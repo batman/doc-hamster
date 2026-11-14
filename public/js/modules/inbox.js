@@ -61,7 +61,8 @@
             return;
         }
         const open = toggle.getAttribute('aria-expanded') !== 'true';
-        const tpl = winOf(toggle)?.querySelector('template[data-folder-menu-tpl]');
+        // The labels sit on the menu itself (detail's "Verschieben …", A363) or on the window's template.
+        const tpl = toggle.closest('[data-collapse]') ?? winOf(toggle)?.querySelector('template[data-folder-menu-tpl]');
         const label = (open ? tpl?.dataset.collapse : tpl?.dataset.expand) ?? '';
         toggle.setAttribute('aria-expanded', String(open));
         toggle.dataset.tooltip = label;

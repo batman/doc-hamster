@@ -74,6 +74,10 @@ final class FolderController
     public function update(Request $request, string $id, CurrentOrg $org, AuditLog $audit): RedirectResponse|JsonResponse
     {
         $folder = Folder::query()->whereKey($id)->firstOrFail();
+        // Renamed by its window title (points 185.2, A364): only the name changes, place and bank matching stay as they are.
+        if ($request->boolean('only_name')) {
+            $request->merge(['parent_id' => $folder->parent_id, 'bank_matching' => $folder->bank_matching ? '1' : null]);
+        }
         $data = $this->validated($request, $folder);
         $parentBefore = $folder->parent_id;
 

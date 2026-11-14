@@ -267,6 +267,18 @@ it('lets "Dokumente allgemein" be renamed but keeps it on top (A18); "Rechnungen
     expect(folderRow($invoices->id))->toBeNull();
 });
 
+it('renames a folder by its window title without moving it or changing bank matching (185.2, A364)', function (): void {
+    $invoices = folderNamed('Rechnungen');
+    $phone = makeFolder($this->orgId, 'Telefon', $invoices->id, true);
+
+    $this->actingAs($this->admin->user)->postJson('/folders/'.$phone->id, ['name' => 'Handy', 'only_name' => '1'])
+        ->assertOk()->assertJsonPath('folder.name', 'Handy')->assertJsonPath('folder.moved', false);
+
+    expect(folderRow($phone->id)?->name)->toBe('Handy')
+        ->and(folderRow($phone->id)?->parent_id)->toBe($invoices->id)
+        ->and(folderRow($phone->id)?->bank_matching)->toBeTrue();
+});
+
 it('gives a folder a colour and a symbol from the fixed set, and serves the colour as CSS', function (): void {
     $this->actingAs($this->admin->user);
 

@@ -51,16 +51,8 @@
         });
     }, true);
     // A184: a renamed folder or document gets its new title in every open window that shows it (head, strip, history).
-    const retitle = (matches, name) => document.querySelectorAll('section[data-window]').forEach(win => {
-        let url;
-        try { url = new URL(win.dataset.windowUrl, location.href); } catch { return; }
-        if (!matches(url)) return;
-        win.dataset.windowTitle = name;
-        win.setAttribute('aria-label', name);
-        win.querySelectorAll(':scope .win-title').forEach(h => { h.textContent = name; h.title = name; });
-        const label = win.querySelector(':scope > .win-strip .strip-label > span');
-        if (label) label.textContent = name;
-    });
+    // The helper itself is the framework's (core/window-rename.js).
+    const retitle = (matches, name) => DocHamster.retitle?.(matches, name);
     // A194: a folder changed anywhere (row rename, properties) follows at once in every open window: its rows (name,
     // colour classes, symbol) and the heads and strips of its windows (title, symbol). Moved: the folder windows reload.
     const tagCss = () => {
@@ -107,6 +99,11 @@
         if (data.moved) refresh();
     };
     DocHamster.on('properties:saved', ({ json }) => applyFolder(json.folder));
+    // Points 185.2, A364: a folder or document renamed by its window title – the rows and the other windows follow.
+    DocHamster.on('window:renamed', ({ json }) => {
+        if (json?.folder) applyFolder(json.folder);
+        refresh();
+    });
     // Point 170.1: the detail window saved a document's name or tags – its window heads, its other detail forms and the
     // folder windows (rows, tags) follow. Point 170.2: a tag's name or colour – the pills and the colour classes follow.
     DocHamster.on('properties:saved', ({ form, json }) => {

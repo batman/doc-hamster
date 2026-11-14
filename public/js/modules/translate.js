@@ -70,7 +70,7 @@
         }
         const button = event.target.closest?.('[data-translate-run]');
         const group = button?.closest('[data-translate]');
-        const section = button?.closest('.detail-section');
+        const section = button?.closest('[data-ocr-card], .detail-section');
         const plain = section?.querySelector('.is-plain');
         if (!group || !section || !plain || button.classList.contains('is-busy')) return;
         let config;

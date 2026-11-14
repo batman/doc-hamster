@@ -40,6 +40,8 @@ return [
         'search_options' => 'Advanced search',
         'search_reset' => 'Reset all',
         'resize' => 'Change the window width',
+        'rename' => 'Rename',
+        'rename_hint' => 'Click to rename',
         'resize_hint' => 'Drag to change the width, double-click resets',
     ],
 ];

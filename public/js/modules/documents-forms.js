@@ -89,38 +89,23 @@
         }
     });
 
-    // --- Folder of a document saves on change (point 170.1) --------------------------------------------------------
-    // select[data-doc-move] in the detail window: moves the document at once (bulk move route, like a drop), toast with
-    // "Rückgängig"; every select of that document follows, the folder windows reload.
-    document.addEventListener('change', event => {
-        const select = event.target.closest?.('select[data-doc-move]');
+    // --- "Verschieben …" of the detail window (points 185.3, A363) ------------------------------------------------
+    // The touch/keyboard way besides drag and drop: the dialog holds the Ordner-Menü; a pick moves the document at once
+    // (bulk move route, like a drop), closes the dialog, toast with "Rückgängig"; the folder windows reload.
+    document.addEventListener('click', event => {
+        const pick = event.target.closest?.('[data-doc-move-menu] [data-file-into]');
+        const menu = pick?.closest('[data-doc-move-menu]');
         const cfg = docs.config();
-        if (!select || !cfg.move) {
+        if (!menu || !cfg.move) {
             return;
         }
-        const id = select.dataset.docMove;
-        const before = select.dataset.current ?? '';
-        const show = folder => document.querySelectorAll(`select[data-doc-move="${CSS.escape(id)}"]`).forEach(each => {
-            each.value = folder;
-            each.dataset.current = folder;
-        });
-        post(cfg.move, { ids: [id], folder: select.value }).then(json => {
-            show(select.value);
-            toast(json.message, {
-                // An empty folder = back into the Posteingang (A358).
-                undo: () => post(cfg.move, { ids: [id], folder: before }).then(() => {
-                    show(before);
-                    toast(cfg.undone);
-                    docs.refresh();
-                    DocHamster.refreshBadges?.();
-                }).catch(fail),
-            });
+        const id = menu.dataset.docMoveMenu;
+        post(cfg.move, { ids: [id], folder: pick.dataset.fileInto }).then(json => {
+            menu.closest('[data-dialog]')?.querySelector('[data-dialog-close]')?.click();
+            toast(json.message, { undo: () => docs.undoMoves?.(json.moves ?? []) });
             docs.refresh();
             DocHamster.refreshBadges?.();
-        }).catch(error => {
-            select.value = before;
-            fail(error);
-        });
+        }).catch(fail);
     });
 
     // --- Field with symbol ("Feld mit Symbol", A195-A199): X clears, the eye shows the password ---------------------

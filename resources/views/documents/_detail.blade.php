@@ -18,12 +18,14 @@
         default => 'waiting',
     };
 @endphp
-<x-window :title="$document->title" icon="file-text" kind="detail" :url="route('documents.show', [$document->id, ...request()->query()])" :close="$close" class="win-detail" :drag-doc="$document->id" :drag-file="$document->dragFile()">
+@php
+    $canEdit = Gate::allows('documents.edit');
+    $canTrash = Gate::allows('documents.trash');
+@endphp
+{{-- Points 185.2, A364: the name is edited in the window title (Fenstertitel umbenennen) – no name field in the body. --}}
+<x-window :title="$document->title" icon="file-text" kind="detail" :url="route('documents.show', [$document->id, ...request()->query()])" :close="$close" class="win-detail" :drag-doc="$document->id" :drag-file="$document->dragFile()"
+    :rename-url="$canEdit ? route('documents.field', $document->id) : null" rename-field="value" :rename-data="['field' => 'title']">
     {{-- Only "Herunterladen" stays a button of its own; everything else is in the ⋯ menu (point 26). --}}
-    @php
-        $canEdit = Gate::allows('documents.edit');
-        $canTrash = Gate::allows('documents.trash');
-    @endphp
     @if ($file)
         <x-slot:actions>
             <a class="icon-button" href="{{ route('documents.download', $file->id) }}" aria-label="{{ __('documents.download') }}" data-tooltip="{{ __('documents.download') }}"><x-icon name="download" /></a>
@@ -34,15 +36,14 @@
         @if ($isText)
             {{-- Text documents open in their own editor window (point 21); without documents.edit it only reads. --}}
             <a class="menu-item" href="{{ route('documents.text', $document->id) }}" data-window><x-icon name="pencil" /><span>{{ $canEdit ? __('documents.edit') : __('documents.text.open') }}</span></a>
-        @elseif ($canEdit)
-            <a class="menu-item" href="#title-{{ $document->id }}" data-focus="title-{{ $document->id }}"><x-icon name="pencil" /><span>{{ __('documents.edit') }}</span></a>
         @endif
         @if ($file)
             {{-- The device's share menu with the file itself (A2); where there is none, our dialog with mail and link (A3). --}}
             <button type="button" class="menu-item" data-share="{{ route('documents.download', $file->id) }}" data-share-name="{{ $document->title }}" data-share-type="{{ $file->mime }}" data-dialog-open="share-document-{{ $document->id }}"><x-icon name="send" /><span>{{ __('documents.send') }}</span></button>
         @endif
         @if ($canEdit)
-            <button type="button" class="menu-item" data-dialog-open="move-document-{{ $document->id }}"><x-icon name="arrows-move" /><span>{{ __('documents.move') }}</span></button>
+            {{-- Points 185.3, A363: moving is drag and drop; this entry is the touch/keyboard way (dialog with the Ordner-Menü). --}}
+            <button type="button" class="menu-item" data-dialog-open="move-document-{{ $document->id }}"><x-icon name="arrows-move" /><span>{{ __('documents.move_menu') }}</span></button>
         @endif
         @if ($canTrash)
             <hr class="menu-separator">
@@ -157,31 +158,13 @@
     {{-- GiroCode (point 120): payee, IBAN, amount and the QR code for the banking app. --}}
     @include('documents._girocode')
 
-    @can('documents.edit')
-        {{-- Point 170.1: no save button – each value saves on its own (FRAMEWORK.md "Properties module"): the name with the ✓ in
-             the field (Enter or ✓), every tag tick at once; the folder select moves the document at once (bulk move route, toast
-             with "Rückgängig", documents-forms.js). The select belongs to the move form below (form=…), so the autosave never
-             sends it. Without JavaScript both forms post with their noscript buttons. --}}
-        <form method="post" action="{{ route('documents.update', $document->id) }}" data-autosave data-doc-detail="{{ $document->id }}">
-            @csrf
-            <section class="detail-section">
-                <h3><label for="title-{{ $document->id }}">{{ __('documents.name') }}</label></h3>
-                <div class="field-addon">
-                    <input id="title-{{ $document->id }}" name="title" value="{{ old('title', $document->title) }}" maxlength="250" required>
-                    <span class="addon-end"><button type="button" class="control-button addon-button" data-field-save aria-label="{{ __('documents.save') }}" data-tooltip="{{ __('documents.save') }}" hidden><x-icon name="check" /></button></span>
-                </div>
-            </section>
-            <section class="detail-section">
-                <h3><label for="folder-{{ $document->id }}">{{ __('folders.folder') }}</label></h3>
-                <select id="folder-{{ $document->id }}" name="folder" form="move-form-{{ $document->id }}" data-doc-move="{{ $document->id }}" data-current="{{ $document->folder_id }}">
-                    {{-- A358: not filed yet = waits in the Posteingang; choosing it takes a document back there. --}}
-                    <option value="" @selected($document->folder_id === null)>{{ __('inbox.not_filed') }}</option>
-                    @foreach ($folders as $row)
-                        <option value="{{ $row['folder']->id }}" @selected(old('folder', $document->folder_id) === $row['folder']->id)>{{ str_repeat('– ', $row['depth']) }}{{ $row['folder']->name }}</option>
-                    @endforeach
-                </select>
-            </section>
-            @if ($tags->isNotEmpty())
+    @if ($canEdit)
+        @if ($tags->isNotEmpty())
+            {{-- Point 170.1: no save button – every tag tick saves at once (FRAMEWORK.md "Properties module"). Points 185.2/185.3:
+                 the name is renamed in the window title, the folder changes by drag and drop or "Verschieben …" in the ⋯ menu.
+                 Without JavaScript the form posts with its noscript button. --}}
+            <form method="post" action="{{ route('documents.update', $document->id) }}" data-autosave data-doc-detail="{{ $document->id }}">
+                @csrf
                 {{-- Foldable card (point 132, A279: open at first); folded the head names the chosen tags. --}}
                 <x-fold-card fold="detail.tags" :title="__('documents.tags')" icon="tags" :summary="$tagSummary">
                     <div class="tags">
@@ -190,25 +173,35 @@
                         @endforeach
                     </div>
                 </x-fold-card>
+                <noscript><button type="submit">{{ __('documents.save') }}</button></noscript>
+            </form>
+        @endif
+    @else
+        <x-fold-card fold="detail.tags" :title="__('documents.tags')" icon="tags" :summary="$tagSummary">
+            @include('documents._tags')
+        </x-fold-card>
+    @endif
+
+    {{-- Point 185.1: Notiz and Erkannter Text are foldable cards like the others (fold state remembered). The note is edited
+         in place and saves on its own (points 27/28); folded, the head shows its beginning. --}}
+    @if ($canEdit || $document->note)
+        <x-fold-card fold="detail.note" :title="__('documents.note')" icon="note" :summary="\Illuminate\Support\Str::limit((string) $document->note, 60)">
+            @if ($canEdit)
+                <x-edit-in-place name="note" :value="$document->note" :action="route('documents.field', $document->id)" multiline maxlength="5000"
+                    :placeholder="__('documents.note_placeholder')" :label="__('documents.note')" />
+            @else
+                <p>{{ $document->note }}</p>
             @endif
-            <noscript><button type="submit">{{ __('documents.save') }}</button></noscript>
-        </form>
-        <form id="move-form-{{ $document->id }}" method="post" action="{{ route('documents.move', $document->id) }}">
-            @csrf
-            <noscript><button type="submit">{{ __('documents.move') }}</button></noscript>
-        </form>
-        {{-- Note and recognised text are edited in place and save on their own (points 27/28). --}}
-        <section class="detail-section">
-            <h3 id="note-{{ $document->id }}">{{ __('documents.note') }}</h3>
-            <x-edit-in-place name="note" :value="$document->note" :action="route('documents.field', $document->id)" multiline maxlength="5000"
-                :placeholder="__('documents.note_placeholder')" aria-labelledby="note-{{ $document->id }}" />
-        </section>
-        <section class="detail-section">
+        </x-fold-card>
+    @endif
+
+    @if ($canEdit || $document->ocr_text || ! $isText)
+        {{-- Folded, the head names the recognition state; open, its tools stand in one row above the text. --}}
+        <x-fold-card fold="detail.ocr" :title="__('documents.ocr_text')" icon="text-scan-2" :summary="$isText ? '' : __('ocr.state.'.$ocrState)" data-ocr-card>
             <div class="ocr-head">
-                <h3 id="ocr-{{ $document->id }}">{{ __('documents.ocr_text') }}</h3>
                 @unless ($isText)
                     <span class="pill">{{ __('ocr.state.'.$ocrState) }}</span>
-                    @if ($ocrState !== 'running')
+                    @if ($canEdit && $ocrState !== 'running')
                         <form method="post" action="{{ route('ocr.redo', $document->id) }}">
                             @csrf
                             {{-- A345: with extra OCR languages installed, one document can be read with a language of its own. --}}
@@ -232,31 +225,12 @@
             {{-- Point 134: the text is no longer edited as a block; words are corrected one by one in the word popup. --}}
             @if ($document->ocr_text)
                 <p class="edit-in-place-small is-plain">{{ $document->ocr_text }}</p>
-            @else
+            @elseif ($canEdit)
                 <p class="muted">{{ __('documents.ocr_placeholder') }}</p>
             @endif
             @include('documents._translations')
-        </section>
-    @else
-        <x-fold-card fold="detail.tags" :title="__('documents.tags')" icon="tags" :summary="$tagSummary">
-            @include('documents._tags')
         </x-fold-card>
-        @if ($document->note)
-            <section class="detail-section"><h3>{{ __('documents.note') }}</h3><p>{{ $document->note }}</p></section>
-        @endif
-        @if ($document->ocr_text || ! $isText)
-            <section class="detail-section">
-                <div class="ocr-head">
-                    <h3>{{ __('documents.ocr_text') }}</h3>
-                    @unless ($isText)<span class="pill">{{ __('ocr.state.'.$ocrState) }}</span>@endunless
-                    @include('documents._ocr_copy')
-                </div>
-                @include('documents._ocr_read')
-                @if ($document->ocr_text)<p class="edit-in-place-small is-plain">{{ $document->ocr_text }}</p>@endif
-                @include('documents._translations')
-            </section>
-        @endif
-    @endcan
+    @endif
 
     {{-- Foldable card (point 132, A279: folded at first). --}}
     <x-fold-card fold="detail.history" :title="__('documents.history')" icon="clock" folded
@@ -303,22 +277,29 @@
 @endif
 
 @can('documents.edit')
+    {{-- "Verschieben …" (points 185.3, A363): the Ordner-Menü (recent folders, the tree); a pick moves at once with a toast and
+         "Rückgängig" (documents-forms.js). Without JavaScript the select below posts to the move route. --}}
+    @php($recent = \App\Domain\Documents\Inbox::recentFolders($document->org_id, (string) app(\App\Domain\Org\CurrentOrg::class)->membership()->user_id))
     <div class="dialog-backdrop" data-dialog="move-document-{{ $document->id }}" hidden>
         <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="move-document-{{ $document->id }}-title">
             <h2 id="move-document-{{ $document->id }}-title">{{ __('documents.move') }}</h2>
-            <form method="post" action="{{ route('documents.move', $document->id) }}">
-                @csrf
-                <label for="move-folder-{{ $document->id }}" class="visually-hidden">{{ __('folders.folder') }}</label>
-                <select id="move-folder-{{ $document->id }}" name="folder" required>
-                    @foreach ($folders as $row)
-                        <option value="{{ $row['folder']->id }}" @selected($document->folder_id === $row['folder']->id)>{{ str_repeat('– ', $row['depth']) }}{{ $row['folder']->name }}</option>
-                    @endforeach
-                </select>
-                <div class="dialog-actions">
-                    <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
+            <div class="folder-menu" data-doc-move-menu="{{ $document->id }}" data-expand="{{ __('inbox.expand') }}" data-collapse="{{ __('inbox.collapse') }}">
+                @include('inbox._folder-menu-items')
+            </div>
+            <noscript>
+                <form method="post" action="{{ route('documents.move', $document->id) }}">
+                    @csrf
+                    <select name="folder" required aria-label="{{ __('folders.folder') }}">
+                        @foreach ($folders as $row)
+                            <option value="{{ $row['folder']->id }}" @selected($document->folder_id === $row['folder']->id)>{{ str_repeat('– ', $row['depth']) }}{{ $row['folder']->name }}</option>
+                        @endforeach
+                    </select>
                     <button type="submit">{{ __('documents.move_submit') }}</button>
-                </div>
-            </form>
+                </form>
+            </noscript>
+            <div class="dialog-actions">
+                <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
+            </div>
         </div>
     </div>
 @endcan

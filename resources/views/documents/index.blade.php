@@ -8,10 +8,12 @@
     @php $openFolder = $folder !== null ? collect($folders)->pluck('folder')->firstWhere('id', $folder) : null; @endphp
     <div class="windows" data-windows>
     {{-- Folders on the window system (PO, 2026-11-07; FRAMEWORK.md: the main menu has no sub-items): Dokumente lists the top folders
-         and the Papierkorb as rows, a folder opens as a window on the right with its subfolders and receipts. --}}
+         and the Papierkorb as rows, a folder opens as a window on the right with its subfolders and receipts.
+         Points 185.2, A364: an open folder is renamed by its window title (people with edit rights). --}}
     <x-window :title="$openFolder?->name ?? __('documents.title')" kind="folder" :icon="$openFolder?->iconName() ?? 'file-text'"
               :url="route('documents.index', request()->except('page'))" :close="$openFolder ? route('documents.index') : route('home')"
               :upload="$openFolder ? 'folder='.$openFolder->id : null"
+              :rename-url="$openFolder && Gate::allows('documents.edit') ? route('folders.update', $openFolder->id) : null" :rename-data="['only_name' => 1]"
               :search="__('documents.search')" :search-params="implode(' ', ['ocr', 'all', 'tags[]', 'any', 'by', 'from', 'to', 'match', 'read', 'type', ...$propParams])" :search-count="count($filters)">
         {{-- The advanced search (points 4-7): text where, tags, period, status, file type; all in the address (point 7). --}}
         <x-slot name="searchOptions">

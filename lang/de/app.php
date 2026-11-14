@@ -40,6 +40,8 @@ return [
         'search_options' => 'Erweiterte Suche',
         'search_reset' => 'Alle zurücksetzen',
         'resize' => 'Fensterbreite ändern',
+        'rename' => 'Umbenennen',
+        'rename_hint' => 'Zum Umbenennen klicken',
         'resize_hint' => 'Ziehen ändert die Breite, Doppelklick setzt zurück',
     ],
 ];
