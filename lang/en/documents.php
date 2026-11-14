@@ -156,6 +156,15 @@ return [
         'align_justify' => 'Justify',
     ],
     // Drag and drop, several at once, the trash (points 75-77, 85, A131-A137).
+    // Points 196, A369, A370: checkboxes before the rows and the selection bar.
+    'pick' => [
+        'one' => 'Select',
+        'all' => 'Select all',
+        'count' => ':count selected',
+        'bar' => 'Selection',
+        'move' => 'Move to …',
+        'clear' => 'Clear selection',
+    ],
     'bulk' => [
         'moved' => '{1} :count document moved to “:name”|[2,*] :count documents moved to “:name”',
         'restored_into' => '{1} :count document restored to “:name”|[2,*] :count documents restored to “:name”',

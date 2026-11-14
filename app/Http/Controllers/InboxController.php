@@ -54,12 +54,20 @@ final class InboxController
         return $this->answer($request, __('inbox.done_one', ['title' => $document->title]));
     }
 
-    /** "Alle erledigt": everything of the open tab (or of every source) goes into "Dokumente allgemein". */
+    /**
+     * "Alle erledigt": everything of the open tab (or of every source) goes into "Dokumente allgemein". With ids[] (the
+     * selection bar's ✓, A369) only those picked rows – still only what is in this person's Posteingang.
+     */
     public function doneAll(Request $request, AuditLog $audit, CurrentOrg $org): JsonResponse|RedirectResponse
     {
+        $data = $request->validate(['ids' => ['sometimes', 'array', 'max:500'], 'ids.*' => ['string', 'max:30']]);
         $source = $this->source($request);
-        $count = $this->inbox($org, $source)->update(['inbox_done_at' => now(), 'folder_id' => Folder::defaultIdFor($org->id())]);
-        $audit->record('document.inbox_done_all', orgId: $org->id(), userId: $org->membership()->user_id, meta: ['source' => $source, 'count' => $count], ip: $request->ip());
+        $query = $this->inbox($org, $source);
+        if (isset($data['ids'])) {
+            $query->whereKey($data['ids']);
+        }
+        $count = $query->update(['inbox_done_at' => now(), 'folder_id' => Folder::defaultIdFor($org->id())]);
+        $audit->record('document.inbox_done_all', orgId: $org->id(), userId: $org->membership()->user_id, meta: ['source' => $source, 'count' => $count, 'picked' => isset($data['ids'])], ip: $request->ip());
 
         return $this->answer($request, trans_choice('inbox.done_all_status', $count, ['count' => $count]), $source);
     }

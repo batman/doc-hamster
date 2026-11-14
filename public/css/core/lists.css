@@ -184,6 +184,11 @@ html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
     border-radius: var(--row-radius); background: var(--primary); color: var(--primary-text); font-weight: 600; text-align: center; }
 [data-doc].is-selected, .view-details tr[data-doc].is-selected { background: color-mix(in srgb, var(--primary) 14%, var(--bg)); }
 [data-doc].is-carried, [data-drag-folder].is-carried { opacity: .45; }
+/* Point 196: a checkbox before each document row (.row-pick, above the row's stretched link) and "Alle auswählen" on top
+   (.pick-all, compact; in the details table the head cell .col-pick). Picked rows show the selection bar. */
+.row-pick { position: relative; z-index: 1; }
+label.pick-all:not(.chip):has(> input[type="checkbox"]) { min-height: 36px; margin: .5rem 0 0; padding: 0 .6rem; gap: .75rem; font-size: .875rem; color: var(--muted); }
+.view-details :is(th, td).col-pick { width: 2.25rem; padding-right: 0; }
 [data-doc], [data-drag-folder] { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .drag-ghost { position: fixed; left: 0; top: 0; z-index: 70; max-width: 18rem; padding: .4rem .8rem; border-radius: var(--row-radius); background: var(--primary); color: var(--primary-text);
     font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: var(--shadow); pointer-events: none; }

@@ -35,18 +35,32 @@ li:has(> .dropdown > .dropdown-panel:not([hidden])), tr:has(.dropdown-panel:not(
 .menu-separator { margin: .25rem .5rem; border: 0; border-top: 1px solid var(--border); }
 .menu-item.menu-danger, .menu-item.menu-danger .icon { color: var(--danger); }
 
-/* Ordner-Menü (folder menu, A360): a dropdown that picks a folder – "Zuletzt benutzt" on top, below the whole tree.
-   <ul class="menu-tree"> of <li><div class="menu-tree-row"> [chevron .menu-tree-toggle] <button class="menu-item"></div>
-   <ul class="menu-tree" hidden>…</ul></li>: a branch opens with its chevron (down = "Aufklappen", turned up while open,
-   point 131); a click on the name picks it. Long trees scroll inside the panel. */
-.folder-menu { min-width: 16rem; max-height: min(70vh, 32rem); overflow-y: auto; }
+/* Ordner-Menü (folder menu, A360, point 195): picks a folder – "Zuletzt benutzt" on top, below the whole tree, like the
+   Explorer's left pane but quiet. <ul class="menu-tree"> of <li><div class="menu-tree-row"> [chevron .menu-tree-toggle]
+   <button class="menu-item"></div> <ul class="menu-tree" hidden>…</ul></li>: one dense row per folder, children indented
+   1rem per level (no columns), the chevron points right (closed) or down (open) and toggles; a click on the name picks.
+   Leaves have an empty chevron slot. Grey outline folder symbols, no lines between rows. As a dropdown the panel is
+   280px wide and as high as the room beside its button (core/top-layer.js flips it up / left near the edges); the tree
+   scrolls inside. */
+.dropdown-panel.folder-menu { width: 280px; min-width: 0; max-width: calc(100vw - 16px); padding: .35rem; overflow-y: auto; overscroll-behavior: contain; }
+.folder-menu:not(.dropdown-panel) { max-height: 60vh; overflow-y: auto; }
+.folder-menu .dropdown-title { margin: .35rem .4rem .2rem; }
+.folder-menu .menu-item { min-height: 30px; padding: 0 .4rem; gap: .45rem; font-weight: 400; white-space: nowrap; }
+.folder-menu .menu-item > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.folder-menu .menu-item .icon { width: 1.1rem; height: 1.1rem; flex: none; color: var(--muted); }
+.folder-menu .menu-item[aria-current="true"] { font-weight: 600; }
 .menu-tree { margin: 0; padding: 0; list-style: none; }
-.menu-tree .menu-tree { padding-left: 1.25rem; }
-.menu-tree-row { display: flex; align-items: center; gap: .1rem; }
+.menu-tree .menu-tree { padding-left: 1rem; }
+.menu-tree-row { display: flex; align-items: center; }
 .menu-tree-row > .menu-item { flex: 1; min-width: 0; }
-.menu-tree-toggle { flex: none; width: 2rem; height: 2rem; }
-.menu-tree-toggle .icon { transition: rotate .12s; }
-.menu-tree-toggle[aria-expanded="true"] .icon { rotate: 180deg; }
+.menu-tree-toggle, .control-button.menu-tree-toggle { flex: none; width: 1.4rem; min-width: 0; height: 30px; min-height: 0; border-radius: 6px; }
+.menu-tree-toggle .icon { width: 1rem; height: 1rem; color: var(--muted); transition: rotate .12s; }
+.menu-tree-toggle:hover .icon { color: var(--primary-ink); }
+.menu-tree-toggle[aria-expanded="true"] .icon { rotate: 90deg; }
+@media (pointer: coarse) {
+    .folder-menu .menu-item, .control-button.menu-tree-toggle, .menu-tree-toggle { min-height: 40px; }
+    .menu-tree-toggle, .control-button.menu-tree-toggle { width: 1.9rem; height: 40px; }
+}
 /* A dropdown in the row actions (A360) keeps them visible while its panel is open. */
 .row-actions:has(.dropdown-panel:not([hidden])) { opacity: 1; }
 .row-actions .dropdown > .control-button[aria-expanded="true"] { color: var(--primary-ink); }

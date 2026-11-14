@@ -370,7 +370,13 @@
                 <div class="empty-state"><p class="muted">{{ $searching ? __('documents.search_none') : __('documents.empty') }}</p></div>
             @endif
         @else
+            {{-- Point 196, A370: checkboxes in the list and details views; the selection bar moves the picked rows. --}}
+            @php $canPick = Gate::allows('documents.edit') && in_array($view, ['list', 'details'], true); @endphp
             @include('documents.views.'.(in_array($view, ['small', 'large'], true) ? 'tiles' : $view))
+            @if ($canPick)
+                @include('documents._pick-bar')
+                @include('inbox._folder-menu', ['current' => $folder])
+            @endif
         @endif
     </x-window>
 

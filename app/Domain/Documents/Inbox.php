@@ -114,11 +114,12 @@ final class Inbox
      * The folders this person filed into last (A360: on top of "Ablegen in …"), newest first. Read from the audit
      * trail's moves, so nothing new is stored.
      *
+     * @param  list<string>|null  $existing  the org's folder ids when the caller has them already (saves a query)
      * @return list<string> folder ids
      */
-    public static function recentFolders(string $orgId, string $userId, int $limit = 5): array
+    public static function recentFolders(string $orgId, string $userId, int $limit = 5, ?array $existing = null): array
     {
-        $existing = Folder::query()->pluck('id')->all();
+        $existing ??= Folder::query()->pluck('id')->all();
         $recent = [];
         $moves = AuditLogEntry::query()->where('org_id', $orgId)->where('user_id', $userId)->where('action', 'document.moved')
             ->latest('created_at')->latest('id')->limit(200)->pluck('meta_json');

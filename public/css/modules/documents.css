@@ -126,8 +126,8 @@
 .view-details .col-actions, .view-details td.row-actions-cell { width: 0; padding: 0; border-left: 0; }
 .view-details td.row-actions-cell { position: relative; overflow: visible; }
 .view-details td.row-actions-cell .row-actions { position: absolute; right: .5rem; top: 50%; translate: 0 -50%; background: var(--surface); border-radius: var(--radius); }
-.view-details td:first-child a { display: flex; align-items: flex-start; gap: .75rem; min-width: 0; overflow-wrap: anywhere; }
-.view-details td:first-child .type-icon { flex: none; margin: 0; }
+.view-details td:is(:first-child, .col-pick + td) a { display: flex; align-items: flex-start; gap: .75rem; min-width: 0; overflow-wrap: anywhere; }
+.view-details td:is(:first-child, .col-pick + td) .type-icon { flex: none; margin: 0; }
 .view-details .col-date { white-space: nowrap; }
 @container win (width < 36rem) { .view-details .col-tags { display: none; } }
 @container win (width < 28rem) { .view-details .col-time { display: none; } .view-details .col-date { width: 6.5rem; } }

@@ -16,6 +16,9 @@
     <table>
         <thead>
             <tr>
+                @if ($canPick ?? false)
+                    <th scope="col" class="col-pick"><input type="checkbox" data-pick-all aria-label="{{ __('documents.pick.all') }}"></th>
+                @endif
                 @foreach ([['name', __('documents.name'), ''], ['date', __('documents.date'), 'col-date']] as [$key, $label, $class])
                     @if ($key === 'date' && $searching)
                         <th scope="col" class="col-folder">{{ __('documents.folder') }}</th>
@@ -42,6 +45,9 @@
                  anywhere on it (or Enter) opens the document (point 167, documents-rows.js). --}}
             @foreach ($documents as $document)
                 <tr data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" data-doc="{{ $document->id }}" data-doc-file="{{ $document->dragFile() }}" data-folder="{{ $document->folder_id }}" data-doc-row tabindex="0" @if ($open?->id === $document->id) class="is-open" @endif>
+                    @if ($canPick ?? false)
+                        <td class="col-pick">@include('documents._pick')</td>
+                    @endif
                     <td><a href="{{ route('documents.show', [$document->id, ...request()->query()]) }}" data-window tabindex="-1">@include('documents._type-icon')<span data-doc-title>{{ $document->title }}</span></a></td>
                     @if ($searching)
                         <td>@include('documents._folder-link')</td>

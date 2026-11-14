@@ -288,14 +288,15 @@
 @endif
 
 @can('documents.edit')
-    {{-- "Verschieben …" (points 185.3, A363): the Ordner-Menü (recent folders, the tree); a pick moves at once with a toast and
+    {{-- "Verschieben …" (points 185.3, A363): the Ordner-Menü (recent folders, the tree with the document's folder path open,
+         A368); a pick moves at once with a toast and
          "Rückgängig" (documents-forms.js). Without JavaScript the select below posts to the move route. --}}
     @php($recent = \App\Domain\Documents\Inbox::recentFolders($document->org_id, (string) app(\App\Domain\Org\CurrentOrg::class)->membership()->user_id))
     <div class="dialog-backdrop" data-dialog="move-document-{{ $document->id }}" hidden>
         <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="move-document-{{ $document->id }}-title">
             <h2 id="move-document-{{ $document->id }}-title">{{ __('documents.move') }}</h2>
             <div class="folder-menu" data-doc-move-menu="{{ $document->id }}" data-expand="{{ __('inbox.expand') }}" data-collapse="{{ __('inbox.collapse') }}">
-                @include('inbox._folder-menu-items')
+                @include('inbox._folder-menu-items', ['current' => $document->folder_id])
             </div>
             <noscript>
                 <form method="post" action="{{ route('documents.move', $document->id) }}">

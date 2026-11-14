@@ -7,6 +7,7 @@ namespace App\Http\Documents;
 use App\Domain\Auth\User;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\Folder;
+use App\Domain\Documents\Inbox;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Organization;
 use App\Domain\Org\Permission;
@@ -139,12 +140,17 @@ final class DocumentListing
         // Filtering in the browser works only when the page holds every receipt (point 7).
         $complete = ! $searching && ($view === 'calendar' || $documents->count() <= self::LIMIT);
         $organization = $this->organization();
+        // A370: a folder window's selection bar files picked rows through the Ordner-Menü ("Zuletzt" on top).
+        $recent = $folder !== null && $organization !== null && $documents->isNotEmpty() && Gate::allows(Permission::EditDocuments->value)
+            ? Inbox::recentFolders($organization->id, $user->id, existing: array_map(static fn (array $row): string => $row['folder']->id, $folders))
+            : [];
 
         return [
             ...$search->viewData(),
             'open' => null,
             'documents' => $view === 'calendar' ? $documents : $documents->take(self::LIMIT),
             'folders' => $folders,
+            'recent' => $recent,
             'folder' => $folder,
             'folderRows' => $wide || $searching ? [] : $this->folderRows($user, $seesAll, $folders, $folder),
             'columns' => $columns,

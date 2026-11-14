@@ -27,7 +27,7 @@ return [
     'all_folders' => 'Alle Ordner',
     'expand' => 'Aufklappen',
     'collapse' => 'Zuklappen',
-    'filed' => '{1} Abgelegt in „:name“|[2,*] :count Dokumente abgelegt in „:name“',
+    'filed' => '{1} Abgelegt in „:name“|[2,*] :count Dokumente in „:name“ abgelegt',
     'unfiled' => '{1} Zurück im Posteingang|[2,*] :count Dokumente zurück im Posteingang',
     'not_filed' => 'Posteingang (nicht abgelegt)',
     'drop' => 'Loslassen: in den Posteingang',

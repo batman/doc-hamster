@@ -156,6 +156,15 @@ return [
         'align_justify' => 'Blocksatz',
     ],
     // Drag and drop, several at once, the Papierkorb (points 75-77, 85, A131-A137).
+    // Points 196, A369, A370: checkboxes before the rows and the selection bar.
+    'pick' => [
+        'one' => 'Auswählen',
+        'all' => 'Alle auswählen',
+        'count' => ':count ausgewählt',
+        'bar' => 'Auswahl',
+        'move' => 'Verschieben nach …',
+        'clear' => 'Auswahl aufheben',
+    ],
     'bulk' => [
         'moved' => '{1} :count Dokument nach „:name“ verschoben|[2,*] :count Dokumente nach „:name“ verschoben',
         'restored_into' => '{1} :count Dokument nach „:name“ wiederhergestellt|[2,*] :count Dokumente nach „:name“ wiederhergestellt',

@@ -281,6 +281,11 @@ html.has-tips [data-tooltip]::before, html.has-tips [data-tooltip]::after {
 }
 .selection-bar[hidden] { display: none; }
 .selection-bar button { margin: 0; white-space: nowrap; }
+/* Docked (point 196, documents/_pick-bar): the same bar for picked list rows, inside its window at the bottom of the
+   list (sticky) – "N ausgewählt", then icon buttons (control-button with tooltip). Stays out of the top layer. */
+.selection-bar.is-docked { position: sticky; z-index: 30; top: auto; left: auto; bottom: .75rem; align-items: center; width: max-content; max-width: 100%; margin: .75rem auto 0; padding: .2rem .25rem .2rem .85rem; }
+.selection-bar.is-docked[hidden] { display: none; }
+.selection-count { margin-right: .35rem; font-weight: 600; white-space: nowrap; }
 
 /* Vorschlags-Chip (point 120.4, A247): a value the app found, one click takes it over (other amounts, a repaired IBAN).
    Dashed orange outline, never filled – it proposes, the main button decides. A row of them: .suggest-chips. */

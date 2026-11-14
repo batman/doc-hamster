@@ -40,39 +40,9 @@
     });
 
     // --- "Ablegen in …" (A360, A361) ------------------------------------------------------------------------------
-    // Each row's folder button opens a dropdown; its content (recent folders, the tree) comes from the window's template
-    // the first time. A pick files this row – or every picked row of the window when this one is picked too – then the
-    // toast "Abgelegt in „X“" offers "Rückgängig" and the window reloads without them.
-    document.addEventListener('click', event => {
-        const opener = event.target.closest?.('[data-folder-menu]');
-        const panel = opener?.parentElement.querySelector(':scope > .dropdown-panel');
-        if (!panel || panel.childElementCount > 0) {
-            return;
-        }
-        const tpl = winOf(opener)?.querySelector('template[data-folder-menu-tpl]');
-        if (tpl) {
-            panel.append(tpl.content.cloneNode(true));
-        }
-    }, true);
-
-    document.addEventListener('click', event => {
-        const toggle = event.target.closest?.('.folder-menu .menu-tree-toggle[aria-expanded]');
-        if (!toggle) {
-            return;
-        }
-        const open = toggle.getAttribute('aria-expanded') !== 'true';
-        // The labels sit on the menu itself (detail's "Verschieben …", A363) or on the window's template.
-        const tpl = toggle.closest('[data-collapse]') ?? winOf(toggle)?.querySelector('template[data-folder-menu-tpl]');
-        const label = (open ? tpl?.dataset.collapse : tpl?.dataset.expand) ?? '';
-        toggle.setAttribute('aria-expanded', String(open));
-        toggle.dataset.tooltip = label;
-        toggle.setAttribute('aria-label', `${label}: ${toggle.dataset.name ?? ''}`);
-        const branch = toggle.closest('li')?.querySelector(':scope > .menu-tree');
-        if (branch) {
-            branch.hidden = !open;
-        }
-    });
-
+    // Each row's folder button opens the Ordner-Menü (core/folder-menu.js fills it). A pick files this row – or every
+    // picked row of the window when this one is picked too – then the toast "Abgelegt in „X“" offers "Rückgängig" and
+    // the rows leave. The selection bar's menu (documents-pick.js) does the same for the picked rows.
     document.addEventListener('click', event => {
         const pickFolder = event.target.closest?.('.folder-menu [data-file-into]');
         const row = pickFolder?.closest('[data-doc]');

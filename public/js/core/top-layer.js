@@ -7,7 +7,8 @@
     if (!HTMLElement.prototype.showPopover) {
         return;
     }
-    const LAYER = '[data-dialog], .dialog-backdrop, .dropdown-panel, .tip, .toast, .selection-bar';
+    // A docked Auswahl-Leiste (.selection-bar.is-docked, point 196) stays inside its window.
+    const LAYER = '[data-dialog], .dialog-backdrop, .dropdown-panel, .tip, .toast, .selection-bar:not(.is-docked)';
     const GAP = 8;
     // A dropdown panel hangs fixed below its button, LEFT edges flush, so it opens to the bottom right (point 158.2);
     // only without room on the right it turns to right-flush. It opens upwards when there is more room above than
@@ -34,6 +35,10 @@
         const y = up ? Math.max(GAP, a.top - GAP - Math.min(h, room)) : a.bottom + GAP;
         Object.assign(panel.style, { left: `${Math.round(x)}px`, top: `${Math.round(y)}px`, right: 'auto', bottom: 'auto', maxHeight: `${Math.round(room)}px` });
     };
+    // A panel whose content changed height (the Ordner-Menü's tree, core/folder-menu.js) is placed again.
+    if (window.DocHamster) {
+        window.DocHamster.placeDropdown = place;
+    }
     // Removing the attribute also takes the element out of the top layer; it then shows in place again,
     // so code that focuses a field right after hidden = false still finds it visible.
     const drop = el => {

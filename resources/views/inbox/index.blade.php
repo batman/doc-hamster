@@ -1,6 +1,7 @@
 {{-- Posteingang (point 153, A327): one window with everything that came in, newest first, each row with its source.
      Tabs per source with their own red count (Badges inbox-<source>); a row leaves when it is filed (A358-A361): dragged onto
-     a folder, "Ablegen in …" (folder menu per row, also for several picked rows) or ✓ (into "Dokumente allgemein").
+     a folder, "Ablegen in …" (folder menu per row, also for several picked rows) or ✓ (into "Dokumente allgemein");
+     point 196: checkboxes pick several, the selection bar files them in one go.
      Rows are the document rows of Dokumente (data-doc: drag onto folders, rename, details). JS: modules/inbox.js. --}}
 @extends('layouts.app')
 
@@ -60,10 +61,18 @@
                 <p class="muted" data-no-printer>{{ __('print_tray.no_printer_hint') }} <a href="{{ route('printers.index') }}">{{ __('print_tray.no_printer_link') }}</a></p>
             @endunless
         @else
+            @php $canPick = Gate::allows('documents.edit'); @endphp
+            @if ($canPick)
+                {{-- Point 196: a checkbox before each row, this one picks all; the selection bar files them at once. --}}
+                <label class="pick-all"><input type="checkbox" data-pick-all>{{ __('documents.pick.all') }}</label>
+            @endif
             <ul class="view-list">
                 @foreach ($documents as $document)
                     @php $from = \App\Domain\Documents\Inbox::sourceOf($document); $fromLabel = __('inbox.from', ['source' => __('inbox.sources.'.$from)]); @endphp
                     <li data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" data-doc="{{ $document->id }}" data-doc-file="{{ $document->dragFile() }}" data-folder="{{ $document->folder_id }}" data-source="{{ $from }}" data-doc-row tabindex="0">
+                        @if ($canPick)
+                            @include('documents._pick')
+                        @endif
                         @include('documents._type-icon')
                         <a href="{{ route('documents.show', $document->id) }}" data-window tabindex="-1"><span data-doc-title>{{ $document->title }}</span></a>
                         <span class="muted">{{ $document->created_at->format('d.m.Y H:i') }}</span>
@@ -72,9 +81,10 @@
                     </li>
                 @endforeach
             </ul>
-            @can('documents.edit')
+            @if ($canPick)
+                @include('documents._pick-bar', ['doneUrl' => route('inbox.done-all', $source !== null ? ['source' => $source] : [])])
                 @include('inbox._folder-menu')
-            @endcan
+            @endif
         @endif
     </x-window>
     </div>

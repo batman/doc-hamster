@@ -1,6 +1,9 @@
 {{-- Point 166: file rows look like the folder rows above them – Listeneintrag with fill, the orange file-type symbol in the
      row-icon slot, the title and a second line (date · size/pages · tags). The whole row opens the document (point 167):
      the title link stretches over the row (lists.css); row tools keep their own action. --}}
+@if ($canPick ?? false)
+    <label class="pick-all"><input type="checkbox" data-pick-all>{{ __('documents.pick.all') }}</label>
+@endif
 <ul class="pick-list doc-rows">
     @foreach ($documents as $document)
         @php
@@ -9,6 +12,9 @@
             $pages = $document->files->count();
         @endphp
         <li class="pick-row is-static doc-row @if ($open?->id === $document->id) is-open @endif" data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" data-doc="{{ $document->id }}" data-doc-file="{{ $document->dragFile() }}" data-folder="{{ $document->folder_id }}" data-doc-row tabindex="0">
+            @if ($canPick ?? false)
+                @include('documents._pick')
+            @endif
             <span class="row-icon"><x-icon :name="$document->files->first()?->typeIcon() ?? 'file-text'" /></span>
             <span class="doc-row-text">
                 <strong><a href="{{ route('documents.show', [$document->id, ...request()->query()]) }}" data-window tabindex="-1"><span data-doc-title>{{ $document->title }}</span></a></strong>
