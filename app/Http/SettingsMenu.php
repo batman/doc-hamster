@@ -53,6 +53,10 @@ final class SettingsMenu
             ['export', 'exports.form', 'file-export', 'exports.create', ['exports.*']],
             ['shares', 'shares.index', 'send', 'exports.create', ['shares.*']],
         ], false],
+        // Point 164.7: measured server times, speed checks, self tests and options.
+        'speed' => ['gauge', [
+            ['speed', 'speed.index', 'gauge', 'settings.manage', ['speed.*']],
+        ], true],
         'update' => ['cloud-download', [
             ['update', 'updates.show', 'cloud-download', 'system.update', ['updates.*']],
             ['phone', 'phone-check.qr', 'device-mobile', null, ['phone-check*']],

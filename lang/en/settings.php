@@ -15,6 +15,7 @@ return [
         'update' => 'Update',
         'eingang' => 'Incoming',
         'log' => 'Log',
+        'speed' => 'Speed',
     ],
     // Point 156: the short description of each group on its tile.
     'group_texts' => [
@@ -28,6 +29,7 @@ return [
         'update' => 'New version and phone test',
         'eingang' => 'Printer, e-mail and devices for the inbox',
         'log' => 'Events and errors',
+        'speed' => 'Measurements, checks and prefetching',
     ],
     'links' => [
         'properties' => ['title' => 'Properties', 'text' => 'Fields like invoice amount, date or IBAN'],
@@ -50,5 +52,6 @@ return [
         'log_general' => ['title' => 'General', 'text' => 'Sign-ins, uploads, changes, errors'],
         'log_ocr' => ['title' => 'Text recognition', 'text' => 'What text recognition read'],
         'log_updates' => ['title' => 'Updates', 'text' => 'Installs and switches'],
+        'speed' => ['title' => 'Speed', 'text' => 'Measurements, checks and prefetching'],
     ],
 ];

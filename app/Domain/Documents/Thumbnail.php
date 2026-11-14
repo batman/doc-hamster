@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Documents;
 
+use App\Domain\Org\Organization;
+use App\Domain\Org\SpeedOptions;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
@@ -18,8 +20,6 @@ use Throwable;
  */
 final class Thumbnail
 {
-    private const SIZE = 480;
-
     /** Pixels decoded during a web request: ~160 MB in GD, below the 256M the installer sets. */
     public const UPLOAD_MAX_PIXELS = 40_000_000;
 
@@ -48,7 +48,10 @@ final class Thumbnail
             return null;
         }
 
-        $scale = min(1, self::SIZE / max(imagesx($image), imagesy($image)));
+        // Point 164.7: Einstellungen -> Geschwindigkeit -> Vorschaubilder (small: 320 px, quality 70).
+        $orgId = $file->getAttribute('org_id');
+        [$edge, $quality] = SpeedOptions::thumbSize(is_string($orgId) ? Organization::query()->find($orgId) : null);
+        $scale = min(1, $edge / max(imagesx($image), imagesy($image)));
         $thumb = imagescale($image, max(1, (int) round(imagesx($image) * $scale)), max(1, (int) round(imagesy($image) * $scale)));
         if ($thumb === false) {
             return null;
@@ -59,7 +62,7 @@ final class Thumbnail
 
         $path = $file->path.'.thumb.jpg';
         ob_start();
-        imagejpeg($thumb, null, 80);
+        imagejpeg($thumb, null, $quality);
         $disk->put($path, (string) ob_get_clean());
 
         return $path;

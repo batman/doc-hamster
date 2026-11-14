@@ -38,6 +38,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SetupController;
 use App\Http\Controllers\ShareController;
 use App\Http\Controllers\ShareTargetController;
+use App\Http\Controllers\SpeedController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TextDocumentController;
 use App\Http\Controllers\UpdateController;
@@ -159,6 +160,15 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('done', [ShareTargetController::class, 'update'])->middleware('can:documents.edit')->name('update');
     });
 
+    // Einstellungen → Geschwindigkeit (point 164.7; before settings/{group}): measurements, checks, self tests, options.
+    Route::middleware('can:settings.manage')->prefix('settings/speed')->name('speed.')->controller(SpeedController::class)->group(function (): void {
+        Route::get('/', 'index')->name('index');
+        Route::post('options', 'options')->name('options');
+        Route::post('optimize', 'optimize')->name('optimize');
+        Route::post('reset', 'reset')->name('reset');
+        Route::get('db', 'db')->name('db');
+        Route::get('download', 'download')->name('download');
+    });
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::get('settings/{group}', [SettingsController::class, 'group'])->name('settings.group');
     Route::post('documents/{id}/tags', [DocumentController::class, 'updateTags'])->middleware('can:documents.edit')->name('documents.tags');

@@ -15,6 +15,7 @@ return [
         'update' => 'Update',
         'eingang' => 'Eingang',
         'log' => 'Log',
+        'speed' => 'Geschwindigkeit',
     ],
     // Point 156: the short description of each group on its tile.
     'group_texts' => [
@@ -28,6 +29,7 @@ return [
         'update' => 'Neue Version und Handy-Test',
         'eingang' => 'Drucker, E-Mail und Geräte für den Posteingang',
         'log' => 'Ereignisse und Fehler',
+        'speed' => 'Messwerte, Prüfungen und Vorladen',
     ],
     'links' => [
         'properties' => ['title' => 'Eigenschaften', 'text' => 'Felder wie Rechnungsbetrag, Datum oder IBAN'],
@@ -50,5 +52,6 @@ return [
         'log_general' => ['title' => 'Allgemein', 'text' => 'Anmelden, Hochladen, Ändern, Fehler'],
         'log_ocr' => ['title' => 'Texterkennung', 'text' => 'Was die Texterkennung gelesen hat'],
         'log_updates' => ['title' => 'Updates', 'text' => 'Installationen und Wechsel'],
+        'speed' => ['title' => 'Geschwindigkeit', 'text' => 'Messwerte, Prüfungen und Vorladen'],
     ],
 ];
