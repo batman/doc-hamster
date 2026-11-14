@@ -29,7 +29,7 @@
                         @csrf
                         <input type="hidden" name="active" value="0">
                         <label class="check" data-tooltip="{{ __('properties.active') }}"><input type="checkbox" name="active" value="1" @checked($property->active) aria-label="{{ __('properties.active') }}: {{ $property->name }}"></label>
-                        <noscript><button type="submit" class="button-small">{{ __('properties.save') }}</button></noscript>
+                        <noscript><button type="submit">{{ __('properties.save') }}</button></noscript>
                     </form>
                     <span class="row-actions">
                         <button type="button" class="control-button" data-dialog-open="property-{{ $property->id }}" aria-label="{{ __('properties.edit') }}: {{ $property->name }}" data-tooltip="{{ __('properties.edit') }}"><x-icon name="settings" /></button>

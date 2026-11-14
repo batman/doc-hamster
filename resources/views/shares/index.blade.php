@@ -8,12 +8,16 @@
     @endif
 
     @if ($canSetDays)
-        <form method="post" action="{{ route('shares.days') }}">
+        {{-- Point 170.2: one value – the ✓ in the field saves it (Enter or ✓, FRAMEWORK.md "Properties module"). --}}
+        <form method="post" action="{{ route('shares.days') }}" data-autosave>
             @csrf
             <label for="days">{{ __('shares.days') }}</label>
-            <input id="days" name="days" type="number" min="1" max="365" value="{{ old('days', $days) }}" required>
+            <div class="field-addon">
+                <input id="days" name="days" type="number" min="1" max="365" value="{{ old('days', $days) }}" required>
+                <span class="addon-end"><button type="button" class="control-button addon-button" data-field-save aria-label="{{ __('shares.save') }}" data-tooltip="{{ __('shares.save') }}" hidden><x-icon name="check" /></button></span>
+            </div>
             @error('days')<p class="error" role="alert">{{ $message }}</p>@enderror
-            <button type="submit">{{ __('shares.save') }}</button>
+            <noscript><button type="submit">{{ __('shares.save') }}</button></noscript>
         </form>
     @else
         <p class="muted">{{ __('shares.days_set', ['days' => $days]) }}</p>

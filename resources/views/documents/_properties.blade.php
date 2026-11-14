@@ -64,7 +64,7 @@
                     @endforeach
                 </select>
                 <input class="input-small" name="value" aria-label="{{ __('properties.card.value') }}">
-                <button type="submit" class="button-small">{{ __('properties.save') }}</button>
+                <button type="submit">{{ __('properties.save') }}</button>
             </form>
         </noscript>
     @endif

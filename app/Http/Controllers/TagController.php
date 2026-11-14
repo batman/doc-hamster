@@ -14,6 +14,7 @@ use App\Domain\Palette\PaletteColor;
 use App\Http\TagsCss;
 use Closure;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -83,7 +84,7 @@ final class TagController
         return redirect()->route('tags.index', ['tag' => $tag->id])->with('status', __('tags.saved'));
     }
 
-    public function update(Request $request, string $id, CurrentOrg $org, AuditLog $audit): RedirectResponse
+    public function update(Request $request, string $id, CurrentOrg $org, AuditLog $audit): RedirectResponse|JsonResponse
     {
         $tag = Tag::query()->whereKey($id)->firstOrFail();
         $this->cleanName($request);
@@ -91,6 +92,10 @@ final class TagController
 
         $tag->update(['name' => $data['name'], 'color' => $data['color'] ?? $tag->color]);
         $this->log($audit, $request, $org, 'tag.renamed', $tag);
+        // Point 170.2: the tag window saves on change (form[data-autosave]); pills and colour classes follow in JS.
+        if ($request->wantsJson()) {
+            return response()->json(['message' => __('tags.saved'), 'tag' => ['id' => $tag->id, 'name' => $tag->name]]);
+        }
 
         return redirect()->route('tags.index', ['tag' => $tag->id])->with('status', __('tags.saved'));
     }

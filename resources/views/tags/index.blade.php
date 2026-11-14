@@ -42,11 +42,12 @@
     @if ($tag)
         <p><span class="tag tag-{{ $tag->id }} is-selected">{{ $tag->name }}</span></p>
         <p><a href="{{ route('documents.index', ['tags' => [$tag->id]]) }}">{{ trans_choice('tags.used', $tag->documents_count, ['count' => $tag->documents_count]) }}</a></p>
-        <form method="post" action="{{ route('tags.update', $tag->id) }}">
+        {{-- Point 170.2: the tag saves on change (FRAMEWORK.md "Properties module"); without JavaScript the button posts. --}}
+        <form method="post" action="{{ route('tags.update', $tag->id) }}" data-autosave>
             @csrf
-            @include('tags._fields', ['name' => $tag->name, 'color' => $tag->color])
+            @include('tags._fields', ['name' => $tag->name, 'color' => $tag->color, 'autosave' => true])
             <div class="actions">
-                <button type="submit">{{ __('tags.save') }}</button>
+                <noscript><button type="submit">{{ __('tags.save') }}</button></noscript>
                 <button type="button" class="button-danger" data-dialog-open="delete-tag">{{ __('tags.delete') }}</button>
             </div>
         </form>

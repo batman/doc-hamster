@@ -12,6 +12,7 @@ use App\Domain\Org\OrgScope;
 use App\Domain\Org\Permission;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -60,11 +61,15 @@ final class ShareController
         ]);
     }
 
-    public function days(Request $request, CurrentOrg $org): RedirectResponse
+    public function days(Request $request, CurrentOrg $org): RedirectResponse|JsonResponse
     {
         $data = $request->validate(['days' => ['required', 'integer', 'between:1,365']]);
         $organization = $org->organization();
         $organization->update(['settings_json' => [...($organization->settings_json ?? []), 'share_link_days' => (int) $data['days']]]);
+        // Point 170.2: one value that makes sense alone – saved with the ✓ in its field (form[data-autosave]).
+        if ($request->wantsJson()) {
+            return response()->json(['message' => __('shares.saved')]);
+        }
 
         return redirect()->route('shares.index')->with('status', __('shares.saved'));
     }

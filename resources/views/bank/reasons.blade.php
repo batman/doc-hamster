@@ -23,7 +23,7 @@
                         <input class="input-small" name="name" value="{{ $reason->name }}" maxlength="100" required aria-label="{{ __('bank.reason_name') }}">
                         <span class="addon-end"><button type="button" class="control-button addon-button" data-field-save aria-label="{{ __('bank.save') }}" data-tooltip="{{ __('bank.save') }}" hidden><x-icon name="check" /></button></span>
                     </div>
-                    <noscript><button type="submit" class="button-small">{{ __('bank.save') }}</button></noscript>
+                    <noscript><button type="submit">{{ __('bank.save') }}</button></noscript>
                 </form>
                 @if ($used->has($reason->id))
                     <span class="pill">{{ __('bank.reason_used') }}</span>
@@ -32,7 +32,7 @@
                     @csrf
                     <input type="hidden" name="active" value="0">
                     <label class="check" data-tooltip="{{ __('bank.reason_active') }}"><input type="checkbox" name="active" value="1" @checked($reason->active) aria-label="{{ __('bank.reason_active') }}: {{ $reason->name }}"></label>
-                    <noscript><button type="submit" class="button-small">{{ __('bank.save') }}</button></noscript>
+                    <noscript><button type="submit">{{ __('bank.save') }}</button></noscript>
                 </form>
                 <span class="row-actions">
                     @if ($used->has($reason->id))

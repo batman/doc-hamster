@@ -87,7 +87,7 @@
                         </label>
                     @endforeach
                 </fieldset>
-                <noscript><button type="submit" class="button-small">{{ __('speed.saved') }}</button></noscript>
+                <noscript><button type="submit">{{ __('speed.saved') }}</button></noscript>
             </form>
         @endforeach
     </section>
