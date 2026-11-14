@@ -176,6 +176,16 @@ return [
     'totals_out' => 'Outgoing',
     'totals_sum' => 'Balance',
     'imported_periods' => 'Imported',
+    // Period chip and calendar (159.1, 159.2, A332–A334).
+    'period_since' => 'from :date',
+    'period_until' => 'until :date',
+    'period_remove' => 'Remove period',
+    'view' => 'View',
+    'view_list' => 'List',
+    'view_calendar' => 'Calendar',
+    'calendar_more' => '+:count more',
+    'day_show' => 'Show bookings on :date',
+    'day_open' => 'Bookings without a document',
     'bank_state' => ['pending' => 'pending', 'reverted' => 'reverted', 'declined' => 'declined', 'failed' => 'failed', 'pdng' => 'pending'],
     'nature' => ['card' => 'Card payment', 'transfer' => 'Transfer', 'debit' => 'Direct debit or standing order', 'fee' => 'Fee or interest', 'own' => 'Own transfer', 'cash' => 'Cash', 'other' => 'Booking'],
 

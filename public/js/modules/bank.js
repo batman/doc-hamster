@@ -1,5 +1,6 @@
 /* Bank module (points 129, 136–144, A267–A274, A286–A312) */
-// - the account window's filters (status, Eingänge/Ausgänge) reload only that window ([data-bank-filter]);
+// - the account window's filters (status, Eingänge/Ausgänge, Liste/Kalender, the period chip) reload only that window
+//   ([data-bank-filter]); a click on a calendar day shows the list of that day ([data-bank-day], A333);
 // - "Anderer Grund" opens its text field, every other reason saves with its click;
 // - a statement (CSV or Excel) dropped onto the Bank window, an account row or an account window ([data-statement-drop])
 //   is imported: an account that knows its columns imports at once (toast), otherwise the column window opens;
@@ -132,6 +133,16 @@
         }
         event.preventDefault();
         DocHamster.reloadWindow(win, new URL(link.href, location.href), '.win-frame').catch(() => { location.href = link.href; });
+    });
+
+    // --- Calendar (A333): a click anywhere on a day (not on a booking) shows the list of that day --------------
+    document.addEventListener('click', event => {
+        const day = event.target.closest?.('[data-bank-day]');
+        const win = day?.closest('section[data-window]');
+        if (!day || !win || event.target.closest('a, button')) {
+            return;
+        }
+        DocHamster.reloadWindow(win, new URL(day.dataset.bankDay, location.href), '.win-frame').catch(() => { location.href = day.dataset.bankDay; });
     });
 
     // --- A318: "Auch schon verknüpfte zeigen" reloads the booking window with or without them ------------------

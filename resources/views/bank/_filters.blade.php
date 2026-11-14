@@ -29,4 +29,19 @@
             @endforeach
         </div>
     </div>
+    {{-- 159.2: Liste | Kalender like the view switch of Dokumente; narrow one dropdown button. --}}
+    @php $viewNow = $calendar ? 'calendar' : 'list'; @endphp
+    <div class="button-group bank-filters-wide win-wide-only" role="group" aria-label="{{ __('bank.view') }}">
+        @foreach ($viewOptions as $value => $icon)
+            <a class="icon-button button-small" href="{{ $with(['view' => $value === 'list' ? null : $value, 'month' => null]) }}" data-bank-filter aria-pressed="{{ $viewNow === $value ? 'true' : 'false' }}" aria-label="{{ __('bank.view_'.$value) }}" data-tooltip="{{ __('bank.view_'.$value) }}"><x-icon :name="$icon" /></a>
+        @endforeach
+    </div>
+    <div class="dropdown bank-filters-narrow win-narrow-only">
+        <button type="button" class="icon-button" aria-haspopup="true" aria-expanded="false" aria-label="{{ __('bank.view') }}: {{ __('bank.view_'.$viewNow) }}" data-tooltip="{{ __('bank.view') }}"><x-icon :name="$viewOptions[$viewNow]" /></button>
+        <div class="dropdown-panel" role="menu" hidden>
+            @foreach ($viewOptions as $value => $icon)
+                <a class="menu-item" role="menuitemradio" aria-checked="{{ $viewNow === $value ? 'true' : 'false' }}" href="{{ $with(['view' => $value === 'list' ? null : $value, 'month' => null]) }}" data-bank-filter><x-icon :name="$icon" /><span>{{ __('bank.view_'.$value) }}</span></a>
+            @endforeach
+        </div>
+    </div>
 </div>

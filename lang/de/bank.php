@@ -181,6 +181,16 @@ return [
     'totals_out' => 'Ausgänge',
     'totals_sum' => 'Saldo',
     'imported_periods' => 'Importiert',
+    // Period chip and calendar (159.1, 159.2, A332–A334).
+    'period_since' => 'ab :date',
+    'period_until' => 'bis :date',
+    'period_remove' => 'Zeitraum entfernen',
+    'view' => 'Ansicht',
+    'view_list' => 'Liste',
+    'view_calendar' => 'Kalender',
+    'calendar_more' => '+:count weitere',
+    'day_show' => 'Buchungen am :date zeigen',
+    'day_open' => 'Buchungen ohne Dokument',
     'bank_state' => ['pending' => 'ausstehend', 'reverted' => 'storniert', 'declined' => 'abgelehnt', 'failed' => 'fehlgeschlagen', 'pdng' => 'ausstehend'],
     'nature' => ['card' => 'Kartenzahlung', 'transfer' => 'Überweisung', 'debit' => 'Lastschrift oder Dauerauftrag', 'fee' => 'Gebühr oder Zinsen', 'own' => 'Umbuchung', 'cash' => 'Bargeld', 'other' => 'Buchung'],
 

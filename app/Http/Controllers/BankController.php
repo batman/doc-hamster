@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Audit\AuditLog;
 use App\Domain\Banking\BankAccount;
+use App\Domain\Banking\BankCalendar;
 use App\Domain\Banking\BankImport;
 use App\Domain\Banking\CsvStatement;
 use App\Domain\Banking\Links;
@@ -270,7 +271,8 @@ final class BankController
     /**
      * The account window: newest first, search in counterparty, purposes, reference and the further details (A290),
      * the status filter (A270, A304) and Eingänge/Ausgänge (A311) as button groups in the toolbar, a period in the
-     * search panel; the sums of what is shown (A310) and the imported periods (A296).
+     * search panel (159.1); the sums of what is shown (A310) and the imported periods (A296). `view=calendar` shows one
+     * month (`month=YYYY-MM`) of the same filtered bookings by day (159.2, A332–A334).
      *
      * @return array<string, mixed>
      */
@@ -293,6 +295,21 @@ final class BankController
         $shown = $filtered()->when($status !== null, static fn (Builder $q) => $q->status((string) $status))->where('currency', $account->currency);
         $in = (int) (clone $shown)->where('amount_minor', '>', 0)->sum('amount_minor');
         $out = (int) (clone $shown)->where('amount_minor', '<', 0)->sum('amount_minor');
+        $listed = static fn (): Builder => $filtered()->withStatusCounts()->when($status !== null, static fn (Builder $q) => $q->status((string) $status));
+
+        // 159.2, A332–A334: the calendar pages only over the months with bookings and shows one month at a time.
+        $view = $own && $request->query('view') === 'calendar' ? 'calendar' : 'list';
+        $calendar = null;
+        if ($view === 'calendar') {
+            $range = BankCalendar::range($listed());
+            $month = BankCalendar::month($request->query('month'), $range);
+            $calendar = [
+                'range' => $range,
+                'month' => $month,
+                'days' => BankCalendar::days($listed()->whereDate('booking_date', '>=', $month->toDateString())->whereDate('booking_date', '<=', $month->endOfMonth()->toDateString())
+                    ->orderBy('booking_date')->orderBy('id')->get(), $account->currency),
+            ];
+        }
 
         return [
             'account' => $account,
@@ -304,9 +321,9 @@ final class BankController
             'accountSearch' => $search,
             'totals' => ['in' => $in, 'out' => $out, 'sum' => $in + $out],
             'periods' => BankImport::periods($account),
-            'transactions' => $filtered()->withStatusCounts()
-                ->when($status !== null, static fn (Builder $q) => $q->status((string) $status))
-                ->orderByDesc('booking_date')->orderByDesc('id')
+            'accountView' => $view,
+            'calendar' => $calendar,
+            'transactions' => $view === 'calendar' ? null : $listed()->orderByDesc('booking_date')->orderByDesc('id')
                 ->simplePaginate(self::PER_PAGE)->withQueryString(),
         ];
     }
@@ -321,8 +338,8 @@ final class BankController
         return Transaction::query()->where('bank_account_id', $account->id)
             ->when($flow === 'in', static fn (Builder $q) => $q->where('amount_minor', '>', 0))
             ->when($flow === 'out', static fn (Builder $q) => $q->where('amount_minor', '<', 0))
-            ->when($from !== null, static fn (Builder $q) => $q->where('booking_date', '>=', $from))
-            ->when($to !== null, static fn (Builder $q) => $q->where('booking_date', '<=', $to))
+            ->when($from !== null, static fn (Builder $q) => $q->whereDate('booking_date', '>=', (string) $from))
+            ->when($to !== null, static fn (Builder $q) => $q->whereDate('booking_date', '<=', (string) $to))
             ->when($search !== '', static fn (Builder $q) => $q->where(static fn (Builder $w) => $w->where('counterparty', 'like', $like)->orWhere('purpose', 'like', $like)
                 ->orWhere('purpose2', 'like', $like)->orWhere('reference', 'like', $like)->orWhere('kind', 'like', $like)->orWhere('extra', 'like', $like)->orWhere('note', 'like', $like)));
     }

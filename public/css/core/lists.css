@@ -152,6 +152,22 @@ html.is-carrying, html.is-carrying * { cursor: grabbing !important; }
 .bank-filters .button { white-space: nowrap; }
 .win.is-filters-tight .bank-filters-wide { display: none; }
 .win.is-filters-tight .bank-filters-narrow { display: block; }
+/* The account window as a calendar (159.2, A332–A334; on the .calendar block of Dokumente): a day head with the date, an
+   orange dot while a booking lacks a document and the day's sum; then up to three bookings with their signed amount
+   (green "+" in, text-colour "−" out, A309). The whole day is a link to the list of that day (A333). In a narrow window
+   only the amounts show, the name is in the tooltip. */
+.bank-calendar .day.has-entries { cursor: pointer; }
+.bank-calendar .day.has-entries:hover { background: var(--surface); }
+.bank-calendar .day-head { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; min-width: 0; color: var(--text); text-decoration: none; }
+.bank-calendar .day-head b { display: inline; }
+.bank-calendar .day-head .row-amount { font-size: .75rem; font-weight: 500; color: var(--muted); }
+.bank-calendar .day-head .row-amount.is-income { color: color-mix(in srgb, var(--ok) 70%, var(--text)); }
+.bank-calendar .day-open { flex: none; width: .5rem; height: .5rem; border-radius: 50%; background: var(--warning); }
+.bank-calendar .entry { display: flex; gap: .3rem; align-items: baseline; padding-inline: .3rem; font-size: .8rem; }
+.bank-calendar .entry-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.bank-calendar .entry .row-amount { font-weight: 500; }
+.bank-calendar .more { font-size: .8rem; text-decoration: none; }
+@container win (width < 44rem) { .bank-calendar .entry-name { display: none; } }
 /* A319: a booking with a note shows a small note sign; the tooltip holds the note. */
 .row-note { flex: none; display: inline-flex; color: var(--muted); }
 .row-note .icon { width: 1rem; height: 1rem; }
