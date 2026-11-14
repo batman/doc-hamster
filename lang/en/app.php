@@ -24,7 +24,6 @@ return [
         'open' => 'Open: :title',
         'remove' => 'Remove :title from the history',
         'remove_short' => 'Remove from the history',
-        'path' => 'Path',
         'close' => 'Close',
         'back' => 'Back',
         'fold' => 'Minimise',

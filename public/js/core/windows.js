@@ -109,7 +109,7 @@
         };
         const reveal = win => requestAnimationFrame(() => win.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' }));
 
-        // Opener row, notch and window path (point 141, A306–A308; FRAMEWORK.md "Öffner-Zeile", "Fensterpfad").
+        // Opener row and notch (point 141, A306, A307; FRAMEWORK.md "Öffner-Zeile").
         // Every window remembers the window it was opened from (data-window-from = its id) and the link
         // (data-window-opener = href). The row of that link in the opener window carries is-opener while the child is
         // open – found again by href after a body reload or a page load (exact address first, then the closest one).
@@ -117,7 +117,7 @@
         // search panel or a menu mark nothing. Next to each other on a wide screen, the row gets the notch (is-linked)
         // and the opener window a short line on its right edge at the row's height (has-opener-line, --opener-y).
         const ROW = '[data-window-row], li, tr';
-        const NO_ROW = '.win-head, .win-tools, .win-search-area, .win-path, .dropdown-panel, .more-menu';
+        const NO_ROW = '.win-head, .win-tools, .win-search-area, .dropdown-panel, .more-menu';
         const hints = new WeakMap();
         const parse = href => {
             try {
@@ -218,34 +218,6 @@
                 }
             });
         };
-        // A308: the titles of the windows on the left; each brings its window back. Rebuilt only when they change.
-        const paths = () => wins().forEach((win, at, all) => {
-            const nav = win.querySelector(':scope > .win-frame > [data-window-path]');
-            if (!nav) {
-                return;
-            }
-            const left = all.slice(0, at);
-            const sig = left.map(other => `${other.dataset.windowId}\t${other.dataset.windowTitle}`).join('\n');
-            if (nav.dataset.sig === sig) {
-                return;
-            }
-            nav.dataset.sig = sig;
-            nav.replaceChildren(...left.flatMap((other, i) => {
-                const part = document.createElement('a');
-                part.href = other.dataset.windowUrl;
-                part.dataset.windowGoto = other.dataset.windowId;
-                part.textContent = other.dataset.windowTitle;
-                if (i === 0) {
-                    return [part];
-                }
-                const sep = document.createElement('span');
-                sep.className = 'win-path-sep';
-                sep.setAttribute('aria-hidden', 'true');
-                sep.textContent = '›';
-                return [sep, part];
-            }));
-            nav.hidden = left.length === 0;
-        });
         let tick = 0;
         let full = false;
         const refresh = (all = true) => {
@@ -254,7 +226,6 @@
             tick = requestAnimationFrame(() => {
                 if (full) {
                     marks();
-                    paths();
                 }
                 full = false;
                 notch();
@@ -824,13 +795,6 @@
                 const before = win.previousElementSibling;
                 if (before?.matches('section[data-window]')) {
                     restore(before);
-                }
-            } else if (event.target.closest('[data-window-goto]')) {
-                // A308: a part of the window path brings that window back.
-                event.preventDefault();
-                const target = wins().find(other => other.dataset.windowId === event.target.closest('[data-window-goto]').dataset.windowGoto);
-                if (target) {
-                    restore(target);
                 }
             } else {
                 const link = event.target.closest('a[data-window]');
