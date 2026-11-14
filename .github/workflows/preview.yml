@@ -96,7 +96,7 @@ jobs:
       actions: read
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: preview-${{ github.event.pull_request.number || env.DEV_PREVIEW }}
           path: preview
