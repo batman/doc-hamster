@@ -21,8 +21,6 @@ use Illuminate\Validation\Rule;
  */
 final class RoleController
 {
-    private const CONFIRM = ['required', 'current_password'];
-
     public function index(): View
     {
         return view('roles.index', [
@@ -58,7 +56,6 @@ final class RoleController
 
     public function destroy(Request $request, string $id, CurrentOrg $org, AuditLog $audit): RedirectResponse
     {
-        $request->validate(['password' => self::CONFIRM]);
         $role = OrgRole::query()->whereKey($id)->firstOrFail();
         abort_if($role->isPreinstalled(), 403);
 
@@ -90,7 +87,6 @@ final class RoleController
             }],
             'rights' => ['array'],
             'rights.*' => [Rule::enum(RoleRight::class)],
-            'password' => self::CONFIRM,
         ];
     }
 

@@ -186,7 +186,6 @@ final class UpdateController
     /** "Aktualisieren" on Main: the newest release, only while Main is installed (an update never changes the branch). */
     public function install(Request $request, UpdateSource $source, AuditLog $audit, CurrentOrg $org): JsonResponse|RedirectResponse
     {
-        $request->validate(['password' => ['required', 'current_password']]);
         if ($this->previewInfo() !== null) {
             return back()->withErrors(['update' => __('updates.stay_in_branch')]);
         }
@@ -209,7 +208,6 @@ final class UpdateController
     /** "Wechseln" to Main: the way back from a preview branch (A95). */
     public function installMain(Request $request, UpdateSource $source, AuditLog $audit, CurrentOrg $org): JsonResponse|RedirectResponse
     {
-        $request->validate(['password' => ['required', 'current_password']]);
         abort_unless($this->supported($request), 403);
 
         try {
@@ -229,7 +227,6 @@ final class UpdateController
     public function installPreview(Request $request, UpdateSource $source, AuditLog $audit, CurrentOrg $org): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
-            'password' => ['required', 'current_password'],
             'preview_pr' => ['required', 'integer', 'min:1'],
             'confirm_preview' => ['accepted'],
         ]);

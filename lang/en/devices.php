@@ -107,7 +107,6 @@ return [
         'end_others' => 'Sign out all others',
         'end_others_title' => 'Sign out all other devices?',
         'end_others_text' => 'All other devices are signed out at once, also those with "Stay signed in". This device stays signed in.',
-        'password' => 'Your password',
         'others_ended' => '{0} No other device was signed in.|{1} One other device is signed out.|[2,*] :count other devices are signed out.',
         'empty' => 'No sign-in found.',
     ],

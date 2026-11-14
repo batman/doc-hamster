@@ -10,13 +10,13 @@
     @endif
 
     @if ($errors->any())
-        <p class="error" role="alert">{{ $errors->has('password') ? __('exports.password_wrong') : $errors->first() }}</p>
+        <p class="error" role="alert">{{ $errors->first() }}</p>
     @endif
 
     <ul class="documents">
         @foreach ($roles as $role)
             <li>
-                <form method="post" action="{{ route('roles.update', $role->id) }}">
+                <form method="post" action="{{ route('roles.update', $role->id) }}" data-confirm-sudo>
                     @csrf
                     <label for="name-{{ $role->id }}">{{ __('roles.name') }}</label>
                     <input id="name-{{ $role->id }}" name="name" value="{{ $role->name }}" maxlength="64" required>
@@ -32,8 +32,6 @@
                             · {{ __('roles.preinstalled') }}
                         @endif
                     </p>
-                    <label for="password-{{ $role->id }}">{{ __('exports.password') }}</label>
-                    <input id="password-{{ $role->id }}" type="password" name="password" autocomplete="current-password" required>
                     <button type="submit">{{ __('roles.save') }}</button>
                     @if (! $role->isPreinstalled() && $role->memberships_count === 0)
                         <button type="submit" formaction="{{ route('roles.destroy', $role->id) }}">{{ __('roles.delete') }}</button>
@@ -44,7 +42,7 @@
     </ul>
 
     <h2>{{ __('roles.add') }}</h2>
-    <form method="post" action="{{ route('roles.store') }}">
+    <form method="post" action="{{ route('roles.store') }}" data-confirm-sudo>
         @csrf
         <label for="name">{{ __('roles.name') }}</label>
         <input id="name" name="name" value="{{ old('name') }}" maxlength="64" required>
@@ -54,8 +52,6 @@
                 <label><input type="checkbox" name="rights[]" value="{{ $right->value }}"> {{ __('roles.rights.'.$right->value) }}</label>
             @endforeach
         </fieldset>
-        <label for="password">{{ __('exports.password') }}</label>
-        <input id="password" type="password" name="password" autocomplete="current-password" required>
         <button type="submit">{{ __('roles.create') }}</button>
     </form>
 @endsection

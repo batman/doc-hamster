@@ -24,7 +24,7 @@ beforeEach(function (): void {
 });
 
 it('exports the period as ZIP with the receipts and an index', function (): void {
-    $response = $this->post('/export', ['from' => today()->format('Y-m-d'), 'to' => today()->format('Y-m-d'), 'password' => 'ein-langes-test-passwort']);
+    $response = $this->confirmed()->post('/export', ['from' => today()->format('Y-m-d'), 'to' => today()->format('Y-m-d')]);
 
     $response->assertOk();
     $path = $response->baseResponse->getFile()->getPathname();
@@ -46,11 +46,11 @@ it('exports the period as ZIP with the receipts and an index', function (): void
         ->and($index)->not->toContain('Datei fehlt');
 });
 
-it('needs the password and a period with receipts', function (): void {
+it('needs a fresh confirmation and a period with receipts', function (): void {
     $today = today()->format('Y-m-d');
 
-    $this->post('/export', ['from' => $today, 'to' => $today, 'password' => 'falsch'])->assertSessionHasErrors('password');
-    $this->post('/export', ['from' => '2001-01-01', 'to' => '2001-01-31', 'password' => 'ein-langes-test-passwort'])->assertSessionHasErrors('from');
+    $this->from('/export')->post('/export', ['from' => $today, 'to' => $today])->assertRedirect('/export')->assertSessionHas('confirm_required');
+    $this->confirmed()->post('/export', ['from' => '2001-01-01', 'to' => '2001-01-31'])->assertSessionHasErrors('from');
 });
 
 it('needs the checkbox "Exportieren"', function (): void {

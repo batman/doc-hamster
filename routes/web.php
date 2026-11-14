@@ -10,6 +10,7 @@ use App\Http\Controllers\BankController;
 use App\Http\Controllers\BankImportController;
 use App\Http\Controllers\BankSettingsController;
 use App\Http\Controllers\BankSuggestionsController;
+use App\Http\Controllers\ConfirmController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardPhotoController;
 use App\Http\Controllers\DeviceSettingsController;
@@ -52,6 +53,7 @@ use App\Http\Controllers\TextDocumentController;
 use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\TrashController;
 use App\Http\Controllers\UpdateController;
+use App\Http\Middleware\RequireRecentConfirmation;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'org'])->group(function (): void {
@@ -370,3 +372,14 @@ Route::middleware(['auth', 'org', 'can:backup.create'])->prefix('backup')->name(
     Route::post('/', 'store')->middleware('throttle:10,1')->name('store');
     Route::post('{id}/download', 'download')->middleware('throttle:10,1')->name('download');
 });
+
+// Point 212: "Bitte bestätigen" (sudo mode) – the dialog's two routes, and the middleware `confirmed` on every
+// sensitive action listed in RequireRecentConfirmation::ROUTES (new routes may also add ->middleware('confirmed')).
+Route::middleware(['auth', 'org'])->prefix('confirm')->name('confirm.')->controller(ConfirmController::class)->group(function (): void {
+    Route::get('status', 'status')->name('status');
+    Route::post('/', 'store')->middleware('throttle:10,1')->name('store');
+});
+Route::getRoutes()->refreshNameLookups();
+foreach (RequireRecentConfirmation::ROUTES as $confirmedRoute) {
+    Route::getRoutes()->getByName($confirmedRoute)?->middleware(RequireRecentConfirmation::ALIAS);
+}

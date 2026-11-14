@@ -114,7 +114,7 @@ it('puts the active properties into the export index (A245)', function (): void 
     $doc = Document::query()->withoutGlobalScope(OrgScope::class)->where('title', 'bon.jpg')->firstOrFail();
     app(PropertyValues::class)->set($doc, 'invoice_amount', '12,50');
 
-    $path = $this->post('/export', ['from' => today()->format('Y-m-d'), 'to' => today()->format('Y-m-d'), 'password' => 'ein-langes-test-passwort'])
+    $path = $this->confirmed()->post('/export', ['from' => today()->format('Y-m-d'), 'to' => today()->format('Y-m-d')])
         ->assertOk()->baseResponse->getFile()->getPathname();
     $zip = new ZipArchive;
     $zip->open($path);

@@ -1,6 +1,6 @@
 {{-- Einstellungen → Backup (point 206, D-023): choice (Alles / Zeitraum, files, parts), the expected size (asked again on
-     every change, modules/backup.js), optional ZIP password, then the sign-in password in a dialog. Below: this
-     person's background backups with progress and download (again with the password). --}}
+     every change, modules/backup.js), optional ZIP password; start and download need a fresh confirmation
+     ("Bitte bestätigen", point 212). Below: this person's background backups with progress and download. --}}
 @extends('layouts.settings')
 
 @section('title', __('backup.title'))
@@ -20,7 +20,7 @@
             <p class="card-note">{{ __('backup.last') }}: {{ $last->format('d.m.Y H:i') }}</p>
         @endif
 
-        <form method="post" action="{{ route('backup.store') }}" id="backup-form" data-backup data-estimate="{{ route('backup.estimate') }}">
+        <form method="post" action="{{ route('backup.store') }}" id="backup-form" data-backup data-estimate="{{ route('backup.estimate') }}" data-confirm-sudo>
             @csrf
             <fieldset>
                 <legend>{{ __('backup.range') }}</legend>
@@ -70,26 +70,7 @@
                 <p class="card-note" data-backup-warning><x-icon name="alert-triangle" /> {{ __('backup.password_warning') }}</p>
             </fieldset>
 
-            @if ($hasPassword)
-                <button type="button" data-dialog-open="backup-confirm"><x-icon name="download" />{{ __('backup.start') }}</button>
-            @else
-                <p class="card-note">{{ __('backup.no_login_password') }}</p>
-            @endif
-
-            <div class="dialog-backdrop" data-dialog="backup-confirm" hidden>
-                <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="backup-confirm-title">
-                    <h2 id="backup-confirm-title">{{ __('backup.confirm_title') }}</h2>
-                    <p>{{ __('backup.confirm_text') }}</p>
-                    <div class="field">
-                        <label for="backup-login-password">{{ __('backup.login_password') }}</label>
-                        <input id="backup-login-password" type="password" name="password" autocomplete="current-password" required>
-                    </div>
-                    <div class="dialog-actions">
-                        <button type="button" class="button-quiet" data-dialog-close>{{ __('backup.cancel') }}</button>
-                        <button type="submit"><x-icon name="download" />{{ __('backup.start') }}</button>
-                    </div>
-                </div>
-            </div>
+            <button type="submit"><x-icon name="download" />{{ __('backup.start') }}</button>
         </form>
     </section>
 
@@ -105,7 +86,10 @@
                     @php $state = $backup->status === \App\Domain\Backup\Backup::DONE && ! $backup->isReady() ? \App\Domain\Backup\Backup::EXPIRED : $backup->status; @endphp
                     <span class="pill {{ $state === 'done' ? 'pill-ok' : ($state === 'failed' ? 'pill-error' : '') }}">{{ __('backup.status.'.$state, ['progress' => $backup->progress]) }}</span>
                     @if ($backup->isReady())
-                        <button type="button" class="icon-button" data-dialog-open="backup-download-{{ $backup->id }}" aria-label="{{ __('backup.download') }}" data-tooltip="{{ __('backup.download') }}"><x-icon name="download" />@if ($backup->downloaded_at === null)<span class="badge badge-alert">1</span>@endif</button>
+                        <form method="post" action="{{ route('backup.download', $backup->id) }}" class="row-actions" data-confirm-sudo>
+                            @csrf
+                            <button type="submit" class="icon-button" aria-label="{{ __('backup.download') }}" data-tooltip="{{ __('backup.download') }}"><x-icon name="download" />@if ($backup->downloaded_at === null)<span class="badge badge-alert">1</span>@endif</button>
+                        </form>
                     @endif
                 </li>
             @empty
@@ -113,25 +97,4 @@
             @endforelse
         </ul>
     </section>
-
-    @foreach ($backups as $backup)
-        @if ($backup->isReady())
-            <div class="dialog-backdrop" data-dialog="backup-download-{{ $backup->id }}" hidden>
-                <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="backup-download-{{ $backup->id }}-title">
-                    <h2 id="backup-download-{{ $backup->id }}-title">{{ __('backup.download_title') }}</h2>
-                    <form method="post" action="{{ route('backup.download', $backup->id) }}">
-                        @csrf
-                        <div class="field">
-                            <label for="backup-download-password-{{ $backup->id }}">{{ __('backup.login_password') }}</label>
-                            <input id="backup-download-password-{{ $backup->id }}" type="password" name="password" autocomplete="current-password" required>
-                        </div>
-                        <div class="dialog-actions">
-                            <button type="button" class="button-quiet" data-dialog-close>{{ __('backup.cancel') }}</button>
-                            <button type="submit"><x-icon name="download" />{{ __('backup.download') }}</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        @endif
-    @endforeach
 @endsection

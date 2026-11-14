@@ -63,10 +63,6 @@ final class SessionSettingsController
     {
         $user = $request->user();
         abort_unless($user instanceof User, 403);
-        if ($user->hasPassword()) {
-            $request->validateWithBag('sessions', ['password' => ['required', 'current_password']]);
-        }
-
         $count = UserSessions::endOthers($user->id, $request->session()->getId());
         $token = UserSessions::rotateRememberToken($user);
         $this->keepRememberCookie($request, $user, $token);

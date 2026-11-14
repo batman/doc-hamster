@@ -154,7 +154,7 @@ it('lists the tags in the index of the export', function (): void {
     $this->actingAs($user)->post('/documents', ['file' => UploadedFile::fake()->image('bon.jpg'), 'tags' => [$contract->id, $invoice->id]]);
 
     $today = today()->format('Y-m-d');
-    $path = $this->post('/export', ['from' => $today, 'to' => $today, 'password' => 'ein-langes-test-passwort'])
+    $path = $this->confirmed()->post('/export', ['from' => $today, 'to' => $today])
         ->assertOk()->baseResponse->getFile()->getPathname();
 
     $zip = new ZipArchive;

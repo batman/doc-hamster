@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests;
 
+use App\Domain\Auth\RecentConfirmation;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
@@ -16,5 +17,11 @@ abstract class TestCase extends BaseTestCase
         if (blank(config('app.key'))) {
             config(['app.key' => 'base64:'.base64_encode(random_bytes(32))]);
         }
+    }
+
+    /** Point 212: as if the person had just confirmed ("Bitte bestätigen"), for tests of sensitive actions. */
+    public function confirmed(): static
+    {
+        return $this->withSession([RecentConfirmation::KEY => now()->getTimestamp()]);
     }
 }

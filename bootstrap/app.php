@@ -10,6 +10,7 @@ use App\Http\Controllers\UploadApiController;
 use App\Http\MenuViews;
 use App\Http\Middleware\ForgetBadgesOnChange;
 use App\Http\Middleware\RedirectToSetup;
+use App\Http\Middleware\RequireRecentConfirmation;
 use App\Http\Middleware\RequireSameOriginApi;
 use App\Http\Middleware\ResolveCurrentOrg;
 use App\Http\Middleware\SecurityHeaders;
@@ -57,6 +58,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'org' => ResolveCurrentOrg::class,
             'api.same-origin' => RequireSameOriginApi::class,
+            RequireRecentConfirmation::ALIAS => RequireRecentConfirmation::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

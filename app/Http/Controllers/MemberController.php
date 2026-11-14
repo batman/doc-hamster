@@ -11,6 +11,7 @@ use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Membership;
 use App\Domain\Org\OrgRole;
 use App\Domain\Org\Role;
+use App\Http\ShownOnce;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,14 +26,15 @@ use Illuminate\Validation\Rule;
  */
 final class MemberController
 {
-    private const CONFIRM = ['required', 'current_password'];
-
     /** Form value for the fixed Admin role; every other value is an OrgRole id. */
     private const ADMIN = 'owner';
 
-    public function index(CurrentOrg $org): View
+    public function index(Request $request, CurrentOrg $org): View
     {
+        $fresh = ShownOnce::get('member-password', $org->membership()->user_id, $request->query('shown'), ['name', 'username', 'password']);
+
         return view('members.index', [
+            'fresh' => $fresh !== null && $fresh['password'] !== '' ? $fresh : null,
             'memberships' => Membership::query()->with(['user', 'orgRole'])->where('org_id', $org->id())->oldest()->get(),
             'roles' => OrgRole::query()->orderByRaw('system_key IS NULL')->orderBy('name')->get(),
             'adminValue' => self::ADMIN,
@@ -46,7 +48,6 @@ final class MemberController
             'display_name' => ['required', 'string', 'max:100'],
             'username' => ['required', 'string', 'max:64', 'regex:/^[A-Za-z0-9._-]+$/', Rule::unique('users', 'username')],
             'role' => self::roleRule(),
-            'password' => self::CONFIRM,
         ]);
 
         $password = self::newPassword();
@@ -66,16 +67,11 @@ final class MemberController
 
         $this->log($audit, $request, $org, 'org.member_added', $membership);
 
-        return redirect()->route('members.index')->with('new_password', [
-            'name' => $data['display_name'],
-            'username' => mb_strtolower($data['username']),
-            'password' => $password,
-        ]);
+        return $this->show($org, $data['display_name'], mb_strtolower($data['username']), $password);
     }
 
     public function resetPassword(Request $request, string $id, CurrentOrg $org, AuditLog $audit): RedirectResponse
     {
-        $request->validate(['password' => self::CONFIRM]);
         $membership = $this->membership($id, $org);
         $user = $membership->user;
         abort_if($user === null || $membership->user_id === $org->membership()->user_id, 403);
@@ -89,16 +85,19 @@ final class MemberController
         UserSessions::rotateRememberToken($user);
         $this->log($audit, $request, $org, 'org.member_password_reset', $membership);
 
-        return redirect()->route('members.index')->with('new_password', [
-            'name' => $user->display_name,
-            'username' => (string) $user->username,
-            'password' => $password,
-        ]);
+        return $this->show($org, (string) $user->display_name, (string) $user->username, $password);
+    }
+
+    /** The new password at once in an open dialog – via ShownOnce, not a flash that other requests eat. */
+    private function show(CurrentOrg $org, string $name, string $username, string $password): RedirectResponse
+    {
+        $token = ShownOnce::put('member-password', $org->membership()->user_id, ['name' => $name, 'username' => $username, 'password' => $password]);
+
+        return redirect()->route('members.index', ['shown' => $token]);
     }
 
     public function revoke(Request $request, string $id, CurrentOrg $org, AuditLog $audit): RedirectResponse
     {
-        $request->validate(['password' => self::CONFIRM]);
         $membership = $this->membership($id, $org);
         abort_if($membership->user_id === $org->membership()->user_id, 403);
 
@@ -123,7 +122,7 @@ final class MemberController
 
     public function changeRole(Request $request, string $id, CurrentOrg $org, AuditLog $audit): RedirectResponse
     {
-        $data = $request->validate(['role' => self::roleRule(), 'password' => self::CONFIRM]);
+        $data = $request->validate(['role' => self::roleRule()]);
         $membership = $this->membership($id, $org);
         abort_if($membership->user_id === $org->membership()->user_id || ! $membership->isActive(), 403);
 

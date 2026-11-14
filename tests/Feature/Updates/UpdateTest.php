@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Domain\Auth\RecentConfirmation;
 use App\Domain\Auth\User;
 use App\Domain\Org\Membership;
 use App\Domain\Org\Role;
@@ -30,7 +31,7 @@ beforeEach(function (): void {
     config(['dochamster.version' => '1.0.0']);
     $this->owner = User::factory()->create(['password_hash' => 'ein-langes-test-passwort']);
     Membership::factory()->create(['user_id' => $this->owner->id, 'role' => Role::Owner]);
-    $this->actingAs($this->owner);
+    $this->actingAs($this->owner)->confirmed();
 });
 
 it('does not contact GitHub just by opening the page', function (): void {
@@ -63,10 +64,12 @@ it('stays calm when GitHub is unreachable', function (): void {
     $this->post('/update/check')->assertSessionHasErrors('update');
 });
 
-it('is for owners and people with the update box, and needs the password to install', function (): void {
+it('is for owners and people with the update box, and needs a fresh confirmation to install', function (): void {
     fakeRelease('1.1.0');
 
-    $this->post('/update/install', ['password' => 'falsch'])->assertSessionHasErrors('password');
+    session()->forget(RecentConfirmation::KEY);
+    $this->postJson('/update/install')->assertStatus(423);
+    $this->confirmed();
 
     $member = Membership::factory()->create();
     $this->actingAs($member->user)->get('/update')->assertForbidden();
@@ -91,7 +94,7 @@ it('refuses an installer whose checksum does not match', function (): void {
     mkdir($webRoot);
 
     $response = $this->withServerVariables(['SCRIPT_FILENAME' => $webRoot.'/index.php'])
-        ->post('/update/install', ['password' => 'ein-langes-test-passwort']);
+        ->post('/update/install');
 
     $written = file_exists($webRoot.'/install.php');
     @rmdir($webRoot);
@@ -107,7 +110,7 @@ it('hands over to install.php for an update without questions and says when it i
     mkdir($webRoot);
 
     $response = $this->withServerVariables(['SCRIPT_FILENAME' => $webRoot.'/index.php'])
-        ->post('/update/install', ['password' => 'ein-langes-test-passwort']);
+        ->post('/update/install');
 
     @unlink($webRoot.'/install.php');
     @unlink(dirname($webRoot).'/dochamster-install-code.txt');
@@ -155,7 +158,7 @@ it('keeps an update in the installed preview branch and offers Main only as a sw
         ->not->toContain('data-dialog-open="update-main"');
 
     // "Aktualisieren" on Main never leaves a preview branch.
-    $this->post('/update/install', ['password' => 'ein-langes-test-passwort'])->assertSessionHasErrors(['update' => __('updates.stay_in_branch')]);
+    $this->post('/update/install')->assertSessionHasErrors(['update' => __('updates.stay_in_branch')]);
     $this->get('/update')->assertSee(__('updates.main'));
 });
 

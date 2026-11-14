@@ -25,7 +25,6 @@ return [
     'switch_main_title' => 'Zur Hauptversion wechseln?',
     'switch_preview_title' => 'Zu #:number wechseln?',
     'switch_text' => 'Der Programmcode dieser Installation wird ersetzt. Dokumente, Konten und Einstellungen bleiben erhalten. Updates kommen danach aus der gewählten Version.',
-    'password_hint' => 'Zur Bestätigung Ihr Passwort.',
     'stay_in_branch' => 'Eine Vorschau ist installiert. Zur Hauptversion geht es nur mit „Wechseln“.',
     'preview_gone' => 'Nicht mehr freigegeben. Zurück geht es mit „Wechseln“ zur Hauptversion.',
     'preview_unavailable' => 'Der Branch ist nicht mehr freigegeben oder sein geprüftes Paket ist noch nicht verfügbar. Es wurde nichts verändert.',

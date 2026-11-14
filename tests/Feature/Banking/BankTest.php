@@ -227,7 +227,7 @@ it('lists the booking in the index of the export, without the purpose', function
     $this->post('/bank/transactions/'.transactions()->where('amount_minor', -1230)->firstOrFail()->id.'/match', ['document_id' => $document->id]);
 
     $today = today()->format('Y-m-d');
-    $path = $this->post('/export', ['from' => $today, 'to' => $today, 'password' => 'ein-langes-test-passwort'])
+    $path = $this->confirmed()->post('/export', ['from' => $today, 'to' => $today])
         ->assertOk()->baseResponse->getFile()->getPathname();
 
     $zip = new ZipArchive;

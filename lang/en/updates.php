@@ -25,7 +25,6 @@ return [
     'switch_main_title' => 'Switch to the main version?',
     'switch_preview_title' => 'Switch to #:number?',
     'switch_text' => 'This installation’s program code is replaced. Documents, accounts and settings stay. Updates then come from the chosen version.',
-    'password_hint' => 'Confirm with your password.',
     'stay_in_branch' => 'A preview is installed. The way to the main version is “Switch”.',
     'preview_gone' => 'No longer released. “Switch” takes you back to the main version.',
     'preview_unavailable' => 'This branch is no longer approved or its verified package is not ready. Nothing was changed.',

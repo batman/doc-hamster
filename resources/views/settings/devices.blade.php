@@ -65,7 +65,7 @@
     <div class="dialog-backdrop" data-dialog="add-device" hidden>
         <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="add-device-title">
             <h2 id="add-device-title">{{ __('devices.add_title') }}</h2>
-            <form method="post" action="{{ route('devices.store') }}">
+            <form method="post" action="{{ route('devices.store') }}" data-confirm-sudo>
                 @csrf
                 <div class="field">
                     <label for="device-name">{{ __('devices.name') }}</label>
@@ -90,7 +90,7 @@
                 <p>{{ __('devices.rekey_text') }}</p>
                 <div class="dialog-actions">
                     <button type="button" class="button-quiet" data-dialog-close>{{ __('devices.cancel') }}</button>
-                    <form method="post" action="{{ route('devices.rekey', $device->id) }}">
+                    <form method="post" action="{{ route('devices.rekey', $device->id) }}" data-confirm-sudo>
                         @csrf
                         <button type="submit"><x-icon name="refresh" />{{ __('devices.rekey') }}</button>
                     </form>
@@ -103,7 +103,7 @@
                 <p>{{ __('devices.delete_text') }}</p>
                 <div class="dialog-actions">
                     <button type="button" class="button-quiet" data-dialog-close>{{ __('devices.cancel') }}</button>
-                    <form method="post" action="{{ route('devices.destroy', $device->id) }}">
+                    <form method="post" action="{{ route('devices.destroy', $device->id) }}" data-confirm-sudo>
                         @csrf
                         <button type="submit" class="button-danger">{{ __('devices.delete') }}</button>
                     </form>

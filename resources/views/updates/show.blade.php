@@ -12,7 +12,7 @@
         <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ $status }}</span></div>
     @endif
     @if ($errors->any())
-        <p class="error" role="alert">{{ $errors->has('password') ? __('exports.password_wrong') : $errors->first() }}</p>
+        <p class="error" role="alert">{{ $errors->first() }}</p>
     @endif
 
     <section class="card">
@@ -35,13 +35,10 @@
         @foreach (['update-main' => [route('updates.install'), 'updates.update_text'], 'switch-main' => [route('updates.install-main'), 'updates.switch_text']] as $key => [$action, $text])
             <div class="dialog-backdrop" data-dialog="{{ $key }}" hidden>
                 <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="{{ $key }}-title">
-                    <form method="post" action="{{ $action }}" data-update-install>
+                    <form method="post" action="{{ $action }}" data-update-install data-confirm-sudo>
                         @csrf
                         <h2 id="{{ $key }}-title" data-dialog-heading>{{ __($key === 'switch-main' ? 'updates.switch_main_title' : 'updates.update_short') }}</h2>
                         <p>{{ __($text) }}</p>
-                        <p>{{ __('updates.password_hint') }}</p>
-                        <label for="{{ $key }}-password" class="visually-hidden">{{ __('exports.password') }}</label>
-                        <input id="{{ $key }}-password" type="password" name="password" autocomplete="current-password" placeholder="{{ __('exports.password') }}" required>
                         <div class="dialog-actions">
                             <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
                             <button type="submit">{{ __($key === 'switch-main' ? 'updates.switch' : 'updates.update_short') }}</button>
@@ -55,15 +52,12 @@
             @foreach (['update-preview' => 'updates.update_text', 'switch-preview' => 'updates.switch_text'] as $key => $text)
                 <div class="dialog-backdrop" data-dialog="{{ $key }}" hidden>
                     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="{{ $key }}-title">
-                        <form method="post" action="{{ route('updates.install-preview') }}" data-update-install>
+                        <form method="post" action="{{ route('updates.install-preview') }}" data-update-install data-confirm-sudo>
                             @csrf
                             <input type="hidden" name="confirm_preview" value="1">
                             <input type="hidden" name="preview_pr" value="" data-preview-pr-field>
                             <h2 id="{{ $key }}-title" data-dialog-heading>{{ __($key === 'switch-preview' ? 'updates.switch' : 'updates.update_short') }}</h2>
                             <p>{{ __($text) }}</p>
-                            <p>{{ __('updates.password_hint') }}</p>
-                            <label for="{{ $key }}-password" class="visually-hidden">{{ __('exports.password') }}</label>
-                            <input id="{{ $key }}-password" type="password" name="password" autocomplete="current-password" placeholder="{{ __('exports.password') }}" required>
                             <div class="dialog-actions">
                                 <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
                                 <button type="submit">{{ __($key === 'switch-preview' ? 'updates.switch' : 'updates.update_short') }}</button>

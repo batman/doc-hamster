@@ -180,6 +180,9 @@
             @endguest
         </div>
     </div>
+    @auth
+        @include('auth._confirm-dialog')
+    @endauth
 </body>
 </html>
 @endif

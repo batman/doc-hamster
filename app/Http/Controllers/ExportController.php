@@ -19,8 +19,8 @@ use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * ZIP export per period (MVP). Asks for the password again: the matrix wants a
- * confirmation for exports (PLAN §2.1) and passkey step-up doesn't exist yet.
+ * ZIP export per period (MVP). The matrix wants a confirmation for exports (PLAN §2.1): the middleware
+ * `confirmed` (point 212) asks for it.
  */
 final class ExportController
 {
@@ -37,7 +37,6 @@ final class ExportController
         $data = $request->validate([
             'from' => ['required', 'date'],
             'to' => ['required', 'date', 'after_or_equal:from'],
-            'password' => ['required', 'current_password'],
         ]);
 
         $from = CarbonImmutable::parse($data['from'])->startOfDay();
@@ -56,7 +55,7 @@ final class ExportController
             ->get();
 
         if ($documents->isEmpty()) {
-            return back()->withInput($request->except('password'))->withErrors(['from' => __('exports.empty')]);
+            return back()->withInput()->withErrors(['from' => __('exports.empty')]);
         }
 
         @set_time_limit(300);

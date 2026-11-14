@@ -19,4 +19,7 @@ return [
     'removed' => 'Access removed',
     // A378: restored without any way to sign in.
     'no_access' => 'Set up access again',
+    // Point 212: the new password in a dialog.
+    'password_title' => 'New password for “:name”',
+    'done' => 'Done',
 ];

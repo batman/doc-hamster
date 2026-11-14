@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Auth;
 
+use App\Domain\Auth\RecentConfirmation;
 use App\Domain\Auth\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
@@ -43,6 +44,8 @@ final class LoginController extends Controller
         }
 
         $request->session()->regenerate();
+        // Point 212: the sign-in itself counts as a fresh confirmation (five minutes without a second ask).
+        RecentConfirmation::mark($request->session());
 
         return redirect()->intended(route('home'));
     }

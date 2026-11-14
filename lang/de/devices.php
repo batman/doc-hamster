@@ -111,7 +111,6 @@ return [
         'end_others' => 'Alle anderen abmelden',
         'end_others_title' => 'Alle anderen Geräte abmelden?',
         'end_others_text' => 'Alle anderen Geräte werden sofort abgemeldet, auch die mit „Angemeldet bleiben“. Dieses Gerät bleibt angemeldet.',
-        'password' => 'Ihr Passwort',
         'others_ended' => '{0} Kein anderes Gerät war angemeldet.|{1} Ein anderes Gerät ist abgemeldet.|[2,*] :count andere Geräte sind abgemeldet.',
         'empty' => 'Keine Anmeldung gefunden.',
     ],

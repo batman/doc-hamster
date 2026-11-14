@@ -28,6 +28,7 @@ const ADMIN_PASSWORD = 'ein-langes-test-passwort';
 beforeEach(function (): void {
     $this->admin = User::factory()->create(['password_hash' => ADMIN_PASSWORD]);
     $this->adminship = Membership::factory()->owner()->create(['user_id' => $this->admin->id]);
+    $this->confirmed();
 });
 
 function roleOf(string $orgId, Role $key): OrgRole
@@ -67,12 +68,12 @@ it('gives nobody but Admins people, roles and updates, whatever the checkboxes s
     $this->get('/members')->assertForbidden();
     $this->get('/roles')->assertForbidden();
     $this->get('/update')->assertForbidden();
-    $this->post('/roles', ['name' => 'Chef', 'rights' => ['upload'], 'password' => 'x'])->assertForbidden();
+    $this->post('/roles', ['name' => 'Chef', 'rights' => ['upload']])->assertForbidden();
 });
 
 it('lets an Admin create a role and give it to a new person', function (): void {
     $this->actingAs($this->admin)
-        ->post('/roles', ['name' => 'Aushilfe', 'rights' => ['upload', 'tags'], 'password' => ADMIN_PASSWORD])
+        ->post('/roles', ['name' => 'Aushilfe', 'rights' => ['upload', 'tags']])
         ->assertRedirect(route('roles.index'));
 
     $role = OrgRole::query()->withoutGlobalScope(OrgScope::class)->where('name', 'Aushilfe')->firstOrFail();
@@ -81,7 +82,7 @@ it('lets an Admin create a role and give it to a new person', function (): void 
         ->and($role->rights)->toBe(['upload', 'tags'])
         ->and($role->isPreinstalled())->toBeFalse();
 
-    $this->post('/members', ['display_name' => 'Max', 'username' => 'max', 'role' => $role->id, 'password' => ADMIN_PASSWORD])->assertRedirect();
+    $this->post('/members', ['display_name' => 'Max', 'username' => 'max', 'role' => $role->id])->assertRedirect();
 
     $membership = User::query()->where('username', 'max')->firstOrFail()->memberships()->firstOrFail();
 
@@ -94,38 +95,37 @@ it('refuses taken names in any case, the Admin name and unknown checkboxes', fun
     $this->actingAs($this->admin);
 
     foreach (['mitarbeiter', 'ADMIN'] as $name) {
-        $this->post('/roles', ['name' => $name, 'password' => ADMIN_PASSWORD])->assertSessionHasErrors('name');
+        $this->post('/roles', ['name' => $name])->assertSessionHasErrors('name');
     }
 
-    $this->post('/roles', ['name' => 'Neu', 'rights' => ['members.manage'], 'password' => ADMIN_PASSWORD])->assertSessionHasErrors('rights.0');
-    $this->post('/roles', ['name' => 'Neu', 'password' => 'falsch'])->assertSessionHasErrors('password');
+    $this->post('/roles', ['name' => 'Neu', 'rights' => ['members.manage']])->assertSessionHasErrors('rights.0');
 });
 
 it('changes name and checkboxes of a pre-installed role, but never deletes it', function (): void {
     $role = roleOf($this->adminship->org_id, Role::Accountant);
 
     $this->actingAs($this->admin)
-        ->post('/roles/'.$role->id, ['name' => 'Kanzlei', 'rights' => ['view_all'], 'password' => ADMIN_PASSWORD])
+        ->post('/roles/'.$role->id, ['name' => 'Kanzlei', 'rights' => ['view_all']])
         ->assertRedirect();
 
     expect($role->fresh()?->name)->toBe('Kanzlei')
         ->and($role->fresh()?->rights)->toBe(['view_all']);
 
-    $this->post('/roles/'.$role->id.'/delete', ['password' => ADMIN_PASSWORD])->assertForbidden();
+    $this->post('/roles/'.$role->id.'/delete', [])->assertForbidden();
     expect($role->fresh())->not->toBeNull();
 });
 
 it('deletes an own role only while nobody active has it', function (): void {
     $this->actingAs($this->admin);
-    $this->post('/roles', ['name' => 'Aushilfe', 'password' => ADMIN_PASSWORD]);
+    $this->post('/roles', ['name' => 'Aushilfe']);
     $role = OrgRole::query()->withoutGlobalScope(OrgScope::class)->where('name', 'Aushilfe')->firstOrFail();
     $member = Membership::factory()->create(['org_id' => $this->adminship->org_id, 'org_role_id' => $role->id]);
 
-    $this->post('/roles/'.$role->id.'/delete', ['password' => ADMIN_PASSWORD])->assertSessionHasErrors('role');
+    $this->post('/roles/'.$role->id.'/delete', [])->assertSessionHasErrors('role');
     expect($role->fresh())->not->toBeNull();
 
     $member->update(['revoked_at' => now()]);
-    $this->post('/roles/'.$role->id.'/delete', ['password' => ADMIN_PASSWORD])->assertRedirect(route('roles.index'));
+    $this->post('/roles/'.$role->id.'/delete', [])->assertRedirect(route('roles.index'));
 
     expect($role->fresh())->toBeNull()
         ->and($member->fresh()?->org_role_id)->toBeNull();
@@ -136,7 +136,7 @@ it('changes the role of a person, and the new rights apply at once', function ()
     $advisorRole = roleOf($this->adminship->org_id, Role::Accountant);
 
     $this->actingAs($this->admin)
-        ->post('/members/'.$member->id.'/role', ['role' => $advisorRole->id, 'password' => ADMIN_PASSWORD])
+        ->post('/members/'.$member->id.'/role', ['role' => $advisorRole->id])
         ->assertRedirect(route('members.index'));
 
     expect($member->fresh()?->role)->toBe(Role::Accountant)
@@ -149,7 +149,7 @@ it('allows several Admins and always keeps at least one', function (): void {
     $member = Membership::factory()->create(['org_id' => $this->adminship->org_id]);
 
     $this->actingAs($this->admin)
-        ->post('/members/'.$member->id.'/role', ['role' => 'owner', 'password' => ADMIN_PASSWORD])
+        ->post('/members/'.$member->id.'/role', ['role' => 'owner'])
         ->assertRedirect();
 
     expect($member->fresh()?->role)->toBe(Role::Owner)
@@ -161,15 +161,15 @@ it('allows several Admins and always keeps at least one', function (): void {
     $employeeRole = roleOf($this->adminship->org_id, Role::Member);
 
     $this->actingAs($second)
-        ->post('/members/'.$this->adminship->id.'/role', ['role' => $employeeRole->id, 'password' => ADMIN_PASSWORD])
+        ->post('/members/'.$this->adminship->id.'/role', ['role' => $employeeRole->id])
         ->assertRedirect(route('members.index'));
 
     expect($this->adminship->fresh()?->role)->toBe(Role::Member);
 
     $this->actingAs($second)
-        ->post('/members/'.$member->id.'/role', ['role' => $employeeRole->id, 'password' => ADMIN_PASSWORD])
+        ->post('/members/'.$member->id.'/role', ['role' => $employeeRole->id])
         ->assertForbidden();
-    $this->post('/members/'.$member->id.'/revoke', ['password' => ADMIN_PASSWORD])->assertForbidden();
+    $this->post('/members/'.$member->id.'/revoke', [])->assertForbidden();
 });
 
 it('refuses roles of other organisations', function (): void {
@@ -177,9 +177,9 @@ it('refuses roles of other organisations', function (): void {
     $foreign = roleOf(Organization::factory()->create()->id, Role::Member);
 
     $this->actingAs($this->admin);
-    $this->post('/members/'.$member->id.'/role', ['role' => $foreign->id, 'password' => ADMIN_PASSWORD])->assertSessionHasErrors('role');
-    $this->post('/roles/'.$foreign->id, ['name' => 'X', 'password' => ADMIN_PASSWORD])->assertNotFound();
-    $this->post('/roles/'.$foreign->id.'/delete', ['password' => ADMIN_PASSWORD])->assertNotFound();
+    $this->post('/members/'.$member->id.'/role', ['role' => $foreign->id])->assertSessionHasErrors('role');
+    $this->post('/roles/'.$foreign->id, ['name' => 'X'])->assertNotFound();
+    $this->post('/roles/'.$foreign->id.'/delete', [])->assertNotFound();
 });
 
 it('exports only the own receipts without the checkbox "Alle Belege sehen"', function (): void {
@@ -192,7 +192,7 @@ it('exports only the own receipts without the checkbox "Alle Belege sehen"', fun
     $this->actingAs($user)->post('/documents', ['file' => UploadedFile::fake()->image('eigen.jpg')]);
 
     $today = today()->format('Y-m-d');
-    $path = $this->post('/export', ['from' => $today, 'to' => $today, 'password' => ADMIN_PASSWORD])
+    $path = $this->post('/export', ['from' => $today, 'to' => $today])
         ->assertOk()->baseResponse->getFile()->getPathname();
 
     $zip = new ZipArchive;

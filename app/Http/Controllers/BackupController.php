@@ -23,8 +23,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Einstellungen → Backup (point 206, D-023, PLAN §4.8): Admins download all data of the organisation as a ZIP.
- * Starting and downloading need the sign-in password again (passkey step-up does not exist yet) and are in the
- * audit log. Small backups stream at once; large ones (or any with a password above the limit) are built by a job.
+ * Starting and downloading need a fresh confirmation (middleware `confirmed`, point 212) and are in the audit log. Small backups stream at once; large ones (or any with a password above the limit) are built by a job.
  */
 final class BackupController
 {
@@ -40,7 +39,6 @@ final class BackupController
             'backups' => Backup::ofOrg($org->id())->where('created_by', $org->membership()->user_id)->where('status', '!=', Backup::STREAMED)
                 ->latest()->limit(5)->get(),
             'last' => Backup::lastAt($org->id()),
-            'hasPassword' => $org->membership()->user?->hasPassword() === true,
         ]);
     }
 
@@ -68,7 +66,6 @@ final class BackupController
             'parts' => ['nullable', 'array'],
             'parts.*' => [Rule::in(BackupOptions::SECTIONS)],
             'zip_password' => ['nullable', 'string', 'min:12', 'max:200', 'confirmed'],
-            'password' => ['required', 'current_password'],
         ]);
         Backup::prune();
         $orgId = $org->id();
@@ -82,7 +79,7 @@ final class BackupController
         $zipPassword = $request->filled('zip_password') ? (string) $request->input('zip_password') : null;
         $background = self::background($estimate);
         if ($background && $zipPassword === null) {
-            return back()->withInput($request->except('password', 'zip_password', 'zip_password_confirmation'))->withErrors(['zip_password' => __('backup.password_required')]);
+            return back()->withInput($request->except('zip_password', 'zip_password_confirmation'))->withErrors(['zip_password' => __('backup.password_required')]);
         }
 
         $backup = Backup::query()->create([
@@ -112,10 +109,9 @@ final class BackupController
         return response()->streamDownload(static fn () => BackupBuilder::stream($orgId, $options, $userId), $name, self::headers());
     }
 
-    /** Only the person who started it, still allowed, within the keep time, with the password again (D-023). */
+    /** Only the person who started it, still allowed, within the keep time, freshly confirmed (D-023, point 212). */
     public function download(Request $request, string $id, CurrentOrg $org, AuditLog $audit): Response
     {
-        $request->validate(['password' => ['required', 'current_password']]);
         $userId = $org->membership()->user_id;
         $backup = Backup::ofOrg($org->id())->whereKey($id)->where('created_by', $userId)->first();
         if ($backup === null || ! $backup->isReady() || ! Storage::disk('local')->exists((string) $backup->path)) {

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Domain\Audit\AuditLog;
-use App\Domain\Auth\User;
 use App\Domain\Devices\DeviceKey;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Payments\GiroCode;
@@ -52,7 +51,6 @@ final class DeviceSettingsController
             'photoQr' => $photo === null ? null : self::qr($photo),
             // Point 208: the card "Angemeldete Geräte".
             'sessions' => SessionSettingsController::rows($request, $org->membership()->user_id),
-            'sessionPassword' => $request->user() instanceof User && $request->user()->hasPassword(),
         ]);
     }
 
