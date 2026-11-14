@@ -51,7 +51,7 @@
     <div class="kanban" data-notes data-csrf="{{ csrf_token() }}" @if ($canShare) data-columns-order="{{ route('notes.columns.order') }}" @endif>
         @foreach ($columns as $column)
             @php($cards = $byColumn->get($column->id, collect()))
-            {{-- Points 65-67, A100-A105, A115: everything a column does sits in its ⋮ menu; a double-click on free space adds a note. --}}
+            {{-- Points 65-67, A100-A105, A362: everything a column does sits in its ⋮ menu, also adding a note (no double-click). --}}
             <section @class(['kanban-col', 'is-narrow' => $column->width === 'narrow', 'is-wide' => $column->width === 'wide', 'has-color' => $column->color !== null, \App\Domain\Palette\PaletteColor::cssClass($column->color)]) data-column-id="{{ $column->id }}" data-sort="{{ $column->note_sort }}" aria-labelledby="column-name-{{ $column->id }}">
                 <header class="kanban-head" @if ($canShare) draggable="true" data-kanban-grip @endif>
                     @if ($canShare)

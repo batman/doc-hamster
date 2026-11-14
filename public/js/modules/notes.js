@@ -195,15 +195,7 @@
             send(field.dataset.columnWidth, { width: field.value })
                 .then(response => { if (!response.ok) { failed(); } }).catch(failed);
         });
-        // A115: a double-click on free space in a column (not a note, not the head) opens the new-note dialog for it.
-        board.addEventListener('dblclick', event => {
-            const column = event.target.closest('.kanban-col[data-column-id]');
-            if (!column || event.target.closest('.note, .kanban-head, button, a, input, textarea, select, .kanban-gap')) {
-                return;
-            }
-            column.querySelector('[data-kanban-add]')?.click();
-        });
-
+        // A362: no double-click on free space any more (it was A115); a note is added through the column's ⋯ menu.
 
         // Edit dialog: colour and opacity show on the note right away; closing without saving puts the old look back (A9).
         scope.querySelectorAll('[data-note-preview]').forEach(dialog => {
