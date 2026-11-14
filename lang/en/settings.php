@@ -59,5 +59,7 @@ return [
         'log_updates' => ['title' => 'Updates', 'text' => 'Installs and switches'],
         'speed' => ['title' => 'Speed', 'text' => 'Measurements, checks and prefetching'],
         'backup' => ['title' => 'Backup', 'text' => 'Download all data as a ZIP'],
+        'advisors' => ['title' => 'Tax advisor access', 'text' => 'User name, scope and one-time password'],
+        'packs' => ['title' => 'Receipt pack', 'text' => 'PDF with overview and receipts per period'],
     ],
 ];

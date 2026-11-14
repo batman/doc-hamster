@@ -70,9 +70,9 @@ final class Thumbnail
 
     /**
      * Phones store a portrait photo sideways plus an EXIF note how to turn it;
-     * GD ignores that note, so the thumbnail is turned here.
+     * GD ignores that note, so the thumbnail is turned here (and the receipt pack's pictures, point 211).
      */
-    private static function upright(\GdImage $image, string $source): \GdImage
+    public static function upright(\GdImage $image, string $source): \GdImage
     {
         $exif = function_exists('exif_read_data') ? @exif_read_data($source) : false;
         $orientation = is_array($exif) && is_int($exif['Orientation'] ?? null) ? $exif['Orientation'] : 1;

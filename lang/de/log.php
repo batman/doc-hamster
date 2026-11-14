@@ -47,6 +47,13 @@ return [
         'backup' => ['started' => 'Backup gestartet', 'downloaded' => 'Backup heruntergeladen'],
         'printer' => ['paired' => 'Drucker verbunden', 'revoked' => 'Drucker getrennt', 'setup_started' => 'Drucker-Einrichtung gestartet'],
         'update' => ['started' => 'Update gestartet'],
+        // Points 210, 211: Steuerberater-Zugang and Belegpaket.
+        'advisor' => [
+            'access_created' => 'Steuerberater-Zugang angelegt', 'access_changed' => 'Steuerberater-Freigabe geändert', 'access_revoked' => 'Steuerberater-Zugang beendet',
+            'password_reset' => 'Steuerberater: neues Einmalpasswort', 'password_changed' => 'Steuerberater: Passwort geändert', 'password_reset_by_mail' => 'Steuerberater: Passwort per E-Mail-Link neu gesetzt',
+            'list_viewed' => 'Steuerberater: Liste angesehen', 'document_viewed' => 'Steuerberater: Beleg angesehen', 'file_downloaded' => 'Steuerberater: Datei heruntergeladen', 'pack_downloaded' => 'Steuerberater: Belegpaket heruntergeladen',
+        ],
+        'pack' => ['created' => 'Belegpaket erstellt', 'downloaded' => 'Belegpaket heruntergeladen', 'document_added' => 'Ins Belegpaket aufgenommen', 'document_removed' => 'Aus dem Belegpaket genommen'],
     ],
     'new' => 'Neu',
     // Point 207: one line per organisation when the daily Papierkorb job deleted something.

@@ -10,6 +10,7 @@ return [
     'remember' => 'Stay signed in',
     'failed' => 'Username or password is incorrect.',
     'throttle' => 'Too many attempts. Please wait a moment.',
+    'locked' => 'Too many wrong attempts. Sign-in is locked for :minutes minutes.',
     'owner' => [
         'org' => 'Organisation name',
         'invalid' => 'All fields are required, and the password must be at least 12 characters.',

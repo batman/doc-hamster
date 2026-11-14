@@ -10,6 +10,7 @@ return [
     'remember' => 'Angemeldet bleiben',
     'failed' => 'Benutzername oder Passwort ist falsch.',
     'throttle' => 'Zu viele Versuche. Bitte warte kurz.',
+    'locked' => 'Zu viele falsche Versuche. Die Anmeldung ist für :minutes Minuten gesperrt.',
     'owner' => [
         'org' => 'Name der Organisation',
         'invalid' => 'Alle Angaben sind nötig, das Passwort mindestens 12 Zeichen.',

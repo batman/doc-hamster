@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Advisor\AdvisorController;
+use App\Http\Controllers\Advisor\AdvisorPasswordController;
+use App\Http\Controllers\AdvisorAccessController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\BadgeController;
@@ -17,6 +20,7 @@ use App\Http\Controllers\DeviceSettingsController;
 use App\Http\Controllers\DocumentBulkController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DocumentFileController;
+use App\Http\Controllers\DocumentPackController;
 use App\Http\Controllers\DocumentPropertyController;
 use App\Http\Controllers\DocumentUploadController;
 use App\Http\Controllers\DocumentViewController;
@@ -41,6 +45,7 @@ use App\Http\Controllers\PrinterSettingsController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\PwaController;
 use App\Http\Controllers\QueueTickController;
+use App\Http\Controllers\ReceiptPackController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SessionSettingsController;
 use App\Http\Controllers\SettingsController;
@@ -373,6 +378,36 @@ Route::middleware(['auth', 'org', 'can:backup.create'])->prefix('backup')->name(
     Route::post('{id}/download', 'download')->middleware('throttle:10,1')->name('download');
 });
 
+// Points 210, 211: Steuerberater-Zugang (Admins set it up; the advisor's own read-only view) and the Belegpaket.
+Route::middleware(['auth', 'org'])->group(function (): void {
+    Route::middleware('can:members.manage')->prefix('advisors')->name('advisors.')->controller(AdvisorAccessController::class)->group(function (): void {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->middleware('confirmed')->name('store');
+        Route::post('{id}', 'update')->name('update');
+        Route::post('{id}/reset', 'reset')->middleware('confirmed')->name('reset');
+        Route::post('{id}/revoke', 'revoke')->name('revoke');
+    });
+    Route::middleware(['can:exports.create', 'can:documents.view_all'])->prefix('export/packs')->name('packs.')->controller(ReceiptPackController::class)->group(function (): void {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->middleware(['throttle:10,1', 'confirmed'])->name('store');
+        Route::get('{id}/download', 'download')->name('download');
+    });
+    Route::post('documents/{id}/receipt-pack', DocumentPackController::class)->middleware('can:documents.edit')->name('documents.receipt-pack');
+    Route::prefix('advisor')->name('advisor.')->group(function (): void {
+        Route::get('/', [AdvisorController::class, 'index'])->name('index');
+        Route::get('documents/{id}', [AdvisorController::class, 'document'])->name('document');
+        Route::get('files/{id}', [AdvisorController::class, 'file'])->name('file');
+        Route::get('packs/{id}', [AdvisorController::class, 'pack'])->name('pack');
+        Route::get('password', [AdvisorPasswordController::class, 'edit'])->name('password');
+        Route::post('password', [AdvisorPasswordController::class, 'update'])->middleware('throttle:10,1')->name('password.update');
+    });
+});
+Route::middleware('guest')->group(function (): void {
+    Route::get('password/forgot', [AdvisorPasswordController::class, 'forgot'])->name('password.request');
+    Route::post('password/forgot', [AdvisorPasswordController::class, 'send'])->middleware('throttle:5,1')->name('password.email');
+    Route::get('password/reset/{token}', [AdvisorPasswordController::class, 'resetForm'])->name('password.reset');
+    Route::post('password/reset', [AdvisorPasswordController::class, 'reset'])->middleware('throttle:10,1')->name('password.store');
+});
 // Point 212: "Bitte bestätigen" (sudo mode) – the dialog's two routes, and the middleware `confirmed` on every
 // sensitive action listed in RequireRecentConfirmation::ROUTES (new routes may also add ->middleware('confirmed')).
 Route::middleware(['auth', 'org'])->prefix('confirm')->name('confirm.')->controller(ConfirmController::class)->group(function (): void {

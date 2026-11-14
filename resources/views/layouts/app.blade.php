@@ -50,12 +50,15 @@
 </head>
 {{-- Browser OCR fallback (point 18): only when the server can't read text itself (in mode app: the PDFs, point 69). Without cron the open app works off the queue (A69/A74). --}}
 @php
-    $ocrBrowser = auth()->check() && app(\App\Infrastructure\Environment\LocalOcr::class)->browserLoop();
+    // Point 210: the tax advisor (accountant with an access) sees only his own view – no OCR loop, no prefetch, one menu entry.
+    $advisorView = auth()->check() && isset($layoutOrg) && $layoutOrg->isSet() && $layoutOrg->role() === \App\Domain\Org\Role::Accountant
+        && \App\Domain\Advisor\AdvisorAccess::forMembership($layoutOrg->membership()) !== null;
+    $ocrBrowser = auth()->check() && ! $advisorView && app(\App\Infrastructure\Environment\LocalOcr::class)->browserLoop();
     $ocrEngineError = $ocrBrowser ? app(\App\Infrastructure\Environment\LocalOcr::class)->browserError() : null;
     $queueTick = auth()->check() && ! \App\Queue\CronClock::running();
     // Point 164.8g: the small windows the browser loads once after sign-in (menu windows, Dokumente, Bank).
     $prefetchSmall = [];
-    if (auth()->check() && isset($layoutOrg) && $layoutOrg->isSet()) {
+    if (auth()->check() && isset($layoutOrg) && $layoutOrg->isSet() && ! $advisorView) {
         $prefetchSmall[] = route('settings.index');
         foreach (\App\Http\SettingsMenu::groups() as $key => $each) {
             if (! $each['leaf'] && count($each['items']) > 1) {
@@ -93,7 +96,7 @@
                     @endcan
                     <ul class="nav-list">
                         {{-- Everything else (people, roles, tags, bank import, export, update, phone test) sits under Einstellungen. --}}
-                        @foreach ([
+                        @foreach ($advisorView ? [['advisor.index', 'briefcase', 'advisor.view_title', null, ['advisor.*'], null]] : [
                             ['home', 'home', 'dashboard.title', null, ['home'], null],
                             ['notes.index', 'note', 'home.notes', null, ['notes.*'], null],
                             ['documents.index', 'file-text', 'documents.title', null, ['documents.*', 'folders.*'], null],

@@ -19,6 +19,8 @@ final class SettingsMenu
         'people' => ['users', [
             ['members', 'members.index', 'users', 'members.manage', ['members.*']],
             ['roles', 'roles.index', 'user-shield', 'members.manage', ['roles.*']],
+            // Point 210: the tax advisor's access (scope, one-time password, "Zuletzt angesehen").
+            ['advisors', 'advisors.index', 'briefcase', 'members.manage', ['advisors.*']],
         ], false],
         'bank' => ['building-bank', [
             ['bank', 'bank.import', 'building-bank', 'banking.import', ['bank.import', 'bank.accounts.*']],
@@ -58,6 +60,8 @@ final class SettingsMenu
         'export' => ['file-export', [
             ['export', 'exports.form', 'file-export', 'exports.create', ['exports.*']],
             ['shares', 'shares.index', 'send', 'exports.create', ['shares.*']],
+            // Point 211: the receipt pack (PDF), frozen and versioned.
+            ['packs', 'packs.index', 'file-type-pdf', 'exports.create', ['packs.*']],
         ], false],
         // Point 164.7: measured server times, speed checks, self tests and options.
         'speed' => ['gauge', [

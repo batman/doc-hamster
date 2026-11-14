@@ -7,6 +7,7 @@ namespace App\Http\Middleware;
 use App\Domain\Auth\User;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Membership;
+use App\Http\AdvisorGate;
 use Closure;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
@@ -39,7 +40,8 @@ final class ResolveCurrentOrg
         $request->session()->put(self::SESSION_KEY, $membership->org_id);
         $this->currentOrg->set($membership);
 
-        return $next($request);
+        // Point 210: the tax advisor stays in his read-only view (one-time password, expiry, 8-hour session).
+        return AdvisorGate::check($request, $membership) ?? $next($request);
     }
 
     private function membership(User $user, mixed $orgId): ?Membership

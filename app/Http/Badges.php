@@ -10,6 +10,7 @@ use App\Domain\Documents\Inbox;
 use App\Domain\Ocr\OcrLog;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
+use App\Domain\ReceiptPack\ReceiptPack;
 use App\Http\Speed\Prefetch;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -99,10 +100,17 @@ final class Badges
         if (Gate::allows(Permission::CreateBackup->value)) {
             $counts[self::BACKUP] = Backup::waiting($org->id(), $org->membership()->user_id);
         }
-        $counts[self::SETTINGS_ALL] = ($counts[self::LOG] ?? 0) + ($counts[self::BACKUP] ?? 0);
+        // Point 211: finished receipt packs of this person that wait for their first download.
+        if (Gate::allows(Permission::Export->value)) {
+            $counts[self::PACKS] = ReceiptPack::waiting($org->id(), $org->membership()->user_id);
+        }
+        $counts[self::SETTINGS_ALL] = ($counts[self::LOG] ?? 0) + ($counts[self::BACKUP] ?? 0) + ($counts[self::PACKS] ?? 0);
 
         return $counts;
     }
+
+    /** Point 211: a finished receipt pack waits for its download (Einstellungen → Export → Belegpaket). */
+    public const PACKS = 'packs';
 
     /** Point 206: a finished backup waits for its download (Einstellungen → Backup). */
     public const BACKUP = 'backup';
@@ -111,7 +119,7 @@ final class Badges
     public const SETTINGS_ALL = 'settings';
 
     /** Point 3: the badge of a settings group or entry, so the count leads down to its place (key => area). */
-    public const array SETTINGS = ['log' => self::LOG, 'backup' => self::BACKUP];
+    public const array SETTINGS = ['log' => self::LOG, 'backup' => self::BACKUP, 'export' => self::PACKS, 'packs' => self::PACKS];
 
     /** The badge key (and seen area) of one Posteingang source, e.g. "inbox-printer". */
     public static function inbox(string $source): string

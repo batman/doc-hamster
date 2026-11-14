@@ -45,6 +45,14 @@
             {{-- Points 185.3, A363: moving is drag and drop; this entry is the touch/keyboard way (dialog with the Ordner-Menü). --}}
             <button type="button" class="menu-item" data-dialog-open="move-document-{{ $document->id }}"><x-icon name="arrows-move" /><span>{{ __('documents.move_menu') }}</span></button>
         @endif
+        @if ($canEdit)
+            {{-- A38 (point 211.3): a document without a booking still goes into the receipt pack. --}}
+            @php $inPack = (bool) $document->getAttribute('in_receipt_pack'); @endphp
+            <form method="post" action="{{ route('documents.receipt-pack', $document->id) }}">
+                @csrf
+                <button type="submit" class="menu-item" aria-pressed="{{ $inPack ? 'true' : 'false' }}"><x-icon :name="$inPack ? 'check' : 'file-type-pdf'" /><span>{{ __($inPack ? 'receipt_pack.unmark' : 'receipt_pack.mark') }}</span></button>
+            </form>
+        @endif
         @if ($canEdit && ! $isText && app(\App\Infrastructure\Environment\LocalOcr::class)->serverReads($file))
             {{-- Point 186.3: the server reads this document again (also with server recognition off); modules/ocr-server.js. --}}
             <form method="post" action="{{ route('ocr.redo-server', $document->id) }}" data-ocr-server-redo>

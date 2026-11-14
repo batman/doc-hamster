@@ -47,6 +47,13 @@ return [
         'backup' => ['started' => 'Backup started', 'downloaded' => 'Backup downloaded'],
         'printer' => ['paired' => 'Printer paired', 'revoked' => 'Printer removed', 'setup_started' => 'Printer set-up started'],
         'update' => ['started' => 'Update started'],
+        // Points 210, 211: tax advisor access and receipt pack.
+        'advisor' => [
+            'access_created' => 'Tax advisor access created', 'access_changed' => 'Tax advisor scope changed', 'access_revoked' => 'Tax advisor access ended',
+            'password_reset' => 'Tax advisor: new one-time password', 'password_changed' => 'Tax advisor: password changed', 'password_reset_by_mail' => 'Tax advisor: password set via e-mail link',
+            'list_viewed' => 'Tax advisor: list viewed', 'document_viewed' => 'Tax advisor: receipt viewed', 'file_downloaded' => 'Tax advisor: file downloaded', 'pack_downloaded' => 'Tax advisor: receipt pack downloaded',
+        ],
+        'pack' => ['created' => 'Receipt pack created', 'downloaded' => 'Receipt pack downloaded', 'document_added' => 'Added to the receipt pack', 'document_removed' => 'Removed from the receipt pack'],
     ],
     'new' => 'New',
     // Point 207: one line per organisation when the daily Papierkorb job deleted something.

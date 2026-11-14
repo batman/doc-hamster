@@ -4,6 +4,9 @@
 
 @section('content')
     <h1>{{ __('auth.login') }}</h1>
+    @if (session('status'))
+        <p class="check-ok" role="status">{{ session('status') }}</p>
+    @endif
     <form method="post" action="{{ route('login.attempt') }}">
         @csrf
         <div class="field">
@@ -18,4 +21,8 @@
         @error('username')<p class="error" role="alert">{{ $message }}</p>@enderror
         <button type="submit">{{ __('auth.login') }}</button>
     </form>
+    @if ($forgot ?? false)
+        {{-- Point 210.3: for tax advisors with a stored e-mail (only where mail works). --}}
+        <p><a href="{{ route('password.request') }}">{{ __('advisor.forgot_link') }}</a></p>
+    @endif
 @endsection
