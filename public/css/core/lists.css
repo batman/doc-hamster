@@ -152,6 +152,14 @@ html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
 .row-stat { position: relative; z-index: 1; display: inline-flex; align-items: center; }
 .row-stat > [aria-hidden] { display: inline-flex; align-items: center; gap: .1rem; }
 .row-stat .icon { width: .95em; height: .95em; color: inherit; }
+/* Tags in a row's second line (document rows, point 166): small pills that fit the line. */
+.row-stats .tag { min-height: 1.25rem; padding: 0 .45rem; border-width: 1.5px; font-size: .75rem; }
+
+/* A row that opens as a whole (point 167, [data-doc-row]): a click anywhere on it or Enter opens it (documents-rows.js);
+   the row itself takes the focus (tabindex=0), its title link is no extra tab stop. */
+[data-doc-row] { cursor: pointer; }
+[data-doc-row]:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.pick-row.is-static > .doc-folder { position: relative; z-index: 1; }
 
 /* Drag and drop: the row or window a drop lands on is orange (A131, A175); picked document rows (A132) are tinted. */
 :is(.is-drop-target:not(.win-body), .pick-row.row-color.is-static.is-opener.is-drop-target:has(> span a)) { background: color-mix(in srgb, var(--primary) 20%, var(--bg)); box-shadow: inset 0 0 0 2px var(--primary); color: var(--text); }

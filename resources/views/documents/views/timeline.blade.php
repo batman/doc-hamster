@@ -6,10 +6,10 @@
             <ul>
                 @foreach ($group as $document)
                     @php($exact = $dates === 'upload' || $document->doc_date === null)
-                    <li data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" @if ($open?->id === $document->id) class="is-open" @endif>
+                    <li data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" data-doc-row tabindex="0" @if ($open?->id === $document->id) class="is-open" @endif>
                         <span class="when muted">{{ $document->dateBy($dates)->format($exact ? 'd.m. H:i' : 'd.m.') }}</span>
                         @include('documents._thumb')
-                        <a href="{{ route('documents.show', [$document->id, ...request()->query()]) }}" data-window>{{ $document->title }}</a>
+                        <a href="{{ route('documents.show', [$document->id, ...request()->query()]) }}" data-window tabindex="-1">{{ $document->title }}</a>
                     </li>
                 @endforeach
             </ul>

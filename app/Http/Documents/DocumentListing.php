@@ -28,7 +28,7 @@ final class DocumentListing
         'details' => 'list-details',
         'list' => 'list',
         'small' => 'layout-grid',
-        'large' => 'layout-cards',
+        'large' => 'photo', // point 166: "Vorschau", the page itself as a thumbnail
         'timeline' => 'timeline',
         'calendar' => 'calendar',
     ];

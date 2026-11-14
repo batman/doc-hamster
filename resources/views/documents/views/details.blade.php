@@ -38,10 +38,11 @@
             </tr>
         </thead>
         <tbody>
-            {{-- data-doc: a row that can be picked (Ctrl/Shift, A132) and dragged onto a folder row (point 75). --}}
+            {{-- data-doc: a row that can be picked (Ctrl/Shift, A132) and dragged onto a folder row (point 75); data-doc-row: a click
+                 anywhere on it (or Enter) opens the document (point 167, documents-rows.js). --}}
             @foreach ($documents as $document)
-                <tr data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" data-doc="{{ $document->id }}" data-doc-file="{{ $document->dragFile() }}" data-folder="{{ $document->folder_id }}" @if ($open?->id === $document->id) class="is-open" @endif>
-                    <td><a href="{{ route('documents.show', [$document->id, ...request()->query()]) }}" data-window>@include('documents._type-icon')<span data-doc-title>{{ $document->title }}</span></a></td>
+                <tr data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" data-doc="{{ $document->id }}" data-doc-file="{{ $document->dragFile() }}" data-folder="{{ $document->folder_id }}" data-doc-row tabindex="0" @if ($open?->id === $document->id) class="is-open" @endif>
+                    <td><a href="{{ route('documents.show', [$document->id, ...request()->query()]) }}" data-window tabindex="-1">@include('documents._type-icon')<span data-doc-title>{{ $document->title }}</span></a></td>
                     @if ($searching)
                         <td>@include('documents._folder-link')</td>
                     @endif

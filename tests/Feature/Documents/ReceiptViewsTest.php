@@ -27,7 +27,7 @@ it('keeps the chosen view per person and shows the receipt in every view', funct
     $this->get('/documents')->assertOk()->assertSee($marker, false)->assertSee('bon.jpg');
 })->with([
     ['details', 'class="view-details"'],
-    ['list', 'class="view-list"'],
+    ['list', 'class="pick-list doc-rows"'],
     ['small', 'view-tiles view-small'],
     ['large', 'view-tiles view-large'],
     ['timeline', 'class="timeline"'],
@@ -40,7 +40,7 @@ it('keeps the view per window in its address; a window without one starts with t
     $this->post('/documents/view', ['view' => 'list', 'back' => 'https://evil.example.com/'])->assertRedirect(route('documents.index').'?view=list');
 
     $this->get('/documents?view=timeline')->assertOk()->assertSee('class="timeline"', false);
-    $this->get('/documents')->assertOk()->assertSee('class="view-list"', false);
+    $this->get('/documents')->assertOk()->assertSee('class="pick-list doc-rows"', false);
     expect($this->admin->user->fresh()->receipt_view)->toBe('list');
 });
 
