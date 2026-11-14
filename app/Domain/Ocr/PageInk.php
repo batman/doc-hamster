@@ -283,12 +283,14 @@ final class PageInk
         }
         ob_start();
         imagegd($this->image);
-        // Header of a palette .gd: signature, width, height (2 bytes each), truecolor flag (1), colours (2),
-        // transparent (4), 256 palette entries (4 each).
-        $pixels = substr((string) ob_get_clean(), 1037);
-        if (strlen($pixels) !== $this->width * $this->height) {
+        // A palette .gd is a header (its length differs between libgd builds: bundled vs system) followed by one byte
+        // per pixel – so the pixels are the last width × height bytes.
+        $raw = (string) ob_get_clean();
+        $size = $this->width * $this->height;
+        if (strlen($raw) < $size + 11) {
             throw new RuntimeException('gd: raw size');
         }
+        $pixels = substr($raw, -$size);
         $this->rows = str_split(strtr($pixels, $from, $to), $this->width);
     }
 
