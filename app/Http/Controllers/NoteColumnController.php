@@ -35,7 +35,7 @@ final class NoteColumnController
             'sort' => (int) NoteColumn::query()->max('sort') + 1,
         ]);
 
-        $back = redirect()->route('home');
+        $back = redirect()->route('notes.index');
 
         return $name !== '' ? $back : $back->with('note_column_new', $column->id);
     }
@@ -51,7 +51,7 @@ final class NoteColumnController
         $name = trim($data['name']);
         NoteColumn::query()->findOrFail($id)->update(['name' => $name]);
 
-        return $request->expectsJson() ? response()->json(['ok' => true, 'value' => $name]) : redirect()->route('home');
+        return $request->expectsJson() ? response()->json(['ok' => true, 'value' => $name]) : redirect()->route('notes.index');
     }
 
     /** Columns dragged into a new order (A30). */
@@ -63,7 +63,7 @@ final class NoteColumnController
             NoteColumn::query()->whereKey($id)->update(['sort' => $i]);
         }
 
-        return $request->expectsJson() ? response()->json(['ok' => true]) : redirect()->route('home');
+        return $request->expectsJson() ? response()->json(['ok' => true]) : redirect()->route('notes.index');
     }
 
     /**
@@ -88,7 +88,7 @@ final class NoteColumnController
         }
         $column->save();
 
-        return $request->expectsJson() ? response()->json(['ok' => true]) : redirect()->route('home');
+        return $request->expectsJson() ? response()->json(['ok' => true]) : redirect()->route('notes.index');
     }
 
     /** Its notes go to the end of the first other column; the last column stays (A38). */
@@ -105,7 +105,7 @@ final class NoteColumnController
         }
         $column->delete();
 
-        return redirect()->route('home');
+        return redirect()->route('notes.index');
     }
 
     private function authorize(): void

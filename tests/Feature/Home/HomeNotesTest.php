@@ -29,17 +29,17 @@ beforeEach(function (): void {
 it('keeps a quick note private, and with the right shows it to everyone', function (): void {
     $clerk = Membership::factory()->withRights(RoleRight::Upload)->create(['org_id' => $this->admin->org_id]);
 
-    $this->actingAs($clerk->user)->post('/notes', ['body' => 'Nur für mich', 'shared' => 1])->assertRedirect(route('home'));
+    $this->actingAs($clerk->user)->post('/notes', ['body' => 'Nur für mich', 'shared' => 1])->assertRedirect(route('notes.index'));
     expect(Note::query()->withoutGlobalScope(OrgScope::class)->firstOrFail()->shared)->toBeFalse();
 
-    $this->actingAs($this->admin->user)->get('/')->assertOk()->assertDontSee('Nur für mich');
+    $this->actingAs($this->admin->user)->get('/notes')->assertOk()->assertDontSee('Nur für mich');
     $this->post('/notes', ['body' => 'Für alle [Milch, #Brot]', 'shared' => 1, 'link' => 'bon.jpg'])->assertRedirect();
 
     $note = Note::query()->withoutGlobalScope(OrgScope::class)->where('body', 'like', 'Für alle%')->firstOrFail();
     expect($note->documents()->pluck('documents.id')->all())->toBe([$this->doc->id]);
 
     // The clerk may not see the Admin's receipt, so the shared note doesn't name it (#56).
-    $this->actingAs($clerk->user)->get('/')->assertSee('Für alle')->assertDontSee('bon.jpg');
+    $this->actingAs($clerk->user)->get('/notes')->assertSee('Für alle')->assertDontSee('bon.jpg');
     $this->postJson('/notes/'.$note->id.'/text', ['body' => 'Für alle [#Milch, #Brot]'])->assertForbidden();
 
     // The edit dialog sends no text, so the text stays; then others may tick (write the text).
@@ -57,7 +57,7 @@ it('changes the text on the note and keeps its size', function (): void {
     $this->postJson('/notes/'.$note->id.'/look', ['w' => 300, 'h' => 200])->assertOk();
     $this->postJson('/notes/'.$note->id.'/look', ['w' => 50])->assertStatus(422);
     expect($note->fresh()->only(['body', 'width', 'height']))->toBe(['body' => 'neu [x, #y]', 'width' => 300, 'height' => 200]);
-    $this->get('/')->assertSee('data-h="200"', false);
+    $this->get('/notes')->assertSee('data-h="200"', false);
 });
 
 it('hands out a receipt by link until it is revoked', function (): void {
@@ -131,11 +131,11 @@ it('keeps title, colour, opacity and place of a note, and a locked note stays as
     $note = Note::query()->withoutGlobalScope(OrgScope::class)->firstOrFail();
 
     $this->postJson('/notes/'.$note->id.'/look', ['x' => 120, 'y' => 40])->assertOk();
-    $this->post('/notes/'.$note->id, ['title' => 'Einkauf', 'body' => 'Milch', 'color' => '#0d1b4c', 'opacity' => 60])->assertRedirect(route('home'));
+    $this->post('/notes/'.$note->id, ['title' => 'Einkauf', 'body' => 'Milch', 'color' => '#0d1b4c', 'opacity' => 60])->assertRedirect(route('notes.index'));
     $this->post('/notes/'.$note->id.'/look', ['color' => 'rainbow'])->assertSessionHasErrors('color');
     expect($note->fresh()->only(['title', 'color', 'opacity', 'pos_x', 'pos_y']))
         ->toBe(['title' => 'Einkauf', 'color' => '#0d1b4c', 'opacity' => 60, 'pos_x' => 120, 'pos_y' => 40]);
-    $this->get('/')->assertSee('Einkauf')->assertSee('c-0d1b4c');
+    $this->get('/notes')->assertSee('Einkauf')->assertSee('c-0d1b4c');
 
     // Locked in the edit dialog (A13): the fields stay as they are, only the lock can change.
     $this->post('/notes/'.$note->id, ['title' => 'Einkauf', 'body' => 'Milch', 'locked' => 1])->assertRedirect();
@@ -143,7 +143,7 @@ it('keeps title, colour, opacity and place of a note, and a locked note stays as
     expect($note->fresh()->only(['title', 'body', 'locked']))->toBe(['title' => 'Einkauf', 'body' => 'Milch', 'locked' => true]);
     $this->postJson('/notes/'.$note->id.'/look', ['x' => 0, 'y' => 0])->assertStatus(423);
     $this->post('/notes/'.$note->id.'/delete')->assertStatus(423);
-    $this->get('/')->assertSee('Milch')->assertSee('note-lock')->assertDontSee('data-note-look', false);
+    $this->get('/notes')->assertSee('Milch')->assertSee('note-lock')->assertDontSee('data-note-look', false);
 
     $this->post('/notes/'.$note->id, [])->assertRedirect();
     expect($note->fresh()->only(['body', 'locked']))->toBe(['body' => 'Milch', 'locked' => false]);
@@ -156,7 +156,7 @@ it('puts notes on a board of columns, moves and tags them', function (): void {
     $tag = Tag::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $this->admin->org_id)->firstOrFail();
 
     // The board starts with one column; new notes go to its end.
-    $this->actingAs($this->admin->user)->get('/')->assertOk()->assertSee('Notizen');
+    $this->actingAs($this->admin->user)->get('/notes')->assertOk()->assertSee('Notizen');
     $first = NoteColumn::query()->withoutGlobalScope(OrgScope::class)->sole();
     $this->post('/notes', ['title' => 'A', 'tags' => [$tag->id]]);
     $this->post('/notes', ['title' => 'B']);
@@ -166,7 +166,7 @@ it('puts notes on a board of columns, moves and tags them', function (): void {
         ->and($a->tags()->pluck('tags.id')->all())->toBe([$tag->id]);
 
     // Columns: any number, renamed, ordered; only with the right.
-    $this->post('/notes/columns', ['name' => 'Erledigt'])->assertRedirect(route('home'));
+    $this->post('/notes/columns', ['name' => 'Erledigt'])->assertRedirect(route('notes.index'));
     $done = NoteColumn::query()->withoutGlobalScope(OrgScope::class)->where('name', 'Erledigt')->firstOrFail();
     $this->postJson('/notes/columns/'.$done->id, ['field' => 'name', 'value' => ' Fertig '])->assertOk()->assertJson(['value' => 'Fertig']);
     $this->postJson('/notes/columns/order', ['order' => [$done->id, $first->id]])->assertOk();
@@ -179,20 +179,20 @@ it('puts notes on a board of columns, moves and tags them', function (): void {
     expect([$b->fresh()->sort, $a->fresh()->sort, $a->fresh()->column_id])->toBe([0, 1, $done->id]);
 
     // Deleting a column moves its notes to the first other one.
-    $this->post('/notes/columns/'.$done->id.'/delete')->assertRedirect(route('home'));
+    $this->post('/notes/columns/'.$done->id.'/delete')->assertRedirect(route('notes.index'));
     expect($a->fresh()->column_id)->toBe($first->id);
 
     // "+" adds a column "Neue Spalte" at once and starts its rename (point 94).
-    $this->post('/notes/columns')->assertRedirect(route('home'))->assertSessionHas('note_column_new');
-    $this->get('/')->assertSee('Neue Spalte')->assertSee('data-rename-now', false);
-    $this->get('/')->assertDontSee('data-rename-now', false);
+    $this->post('/notes/columns')->assertRedirect(route('notes.index'))->assertSessionHas('note_column_new');
+    $this->get('/notes')->assertSee('Neue Spalte')->assertSee('data-rename-now', false);
+    $this->get('/notes')->assertDontSee('data-rename-now', false);
     $new = NoteColumn::query()->withoutGlobalScope(OrgScope::class)->where('name', 'Neue Spalte')->firstOrFail();
-    $this->post('/notes/columns/'.$new->id.'/delete')->assertRedirect(route('home'));
+    $this->post('/notes/columns/'.$new->id.'/delete')->assertRedirect(route('notes.index'));
     $this->post('/notes/columns/'.$first->id.'/delete')->assertStatus(422);
 });
 
 it('sets a column look and sorting from its menu', function (): void {
-    $this->actingAs($this->admin->user)->get('/')->assertOk();
+    $this->actingAs($this->admin->user)->get('/notes')->assertOk();
     $column = NoteColumn::query()->withoutGlobalScope(OrgScope::class)->firstOrFail();
 
     $this->postJson('/notes/columns/'.$column->id.'/look', ['color' => '#2e7d32', 'note_color' => '#e53935', 'sort' => 'title'])->assertOk();
@@ -201,7 +201,7 @@ it('sets a column look and sorting from its menu', function (): void {
 
     $this->post('/notes', ['title' => 'Zebra']);
     $this->post('/notes', ['title' => 'Apfel']);
-    $this->get('/')->assertSeeInOrder(['>Apfel<', '>Zebra<'], false)->assertSee('has-color c-2e7d32', false);
+    $this->get('/notes')->assertSeeInOrder(['>Apfel<', '>Zebra<'], false)->assertSee('has-color c-2e7d32', false);
 
     $this->postJson('/notes/columns/'.$column->id.'/look', ['color' => 'none'])->assertOk();
     expect($column->fresh()->color)->toBeNull();

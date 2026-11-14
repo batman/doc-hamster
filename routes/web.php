@@ -7,6 +7,8 @@ use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\BankImportController;
 use App\Http\Controllers\BankSettingsController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DashboardPhotoController;
 use App\Http\Controllers\DeviceSettingsController;
 use App\Http\Controllers\DocumentBulkController;
 use App\Http\Controllers\DocumentController;
@@ -47,7 +49,16 @@ use App\Http\Controllers\UpdateController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'org'])->group(function (): void {
-    Route::get('/', [HomeController::class, 'index'])->name('home');
+    // Point 176: Home is the dashboard (per person); point 175: the notes board has its own menu entry.
+    Route::get('/', [DashboardController::class, 'index'])->name('home');
+    Route::post('dashboard/layout', [DashboardController::class, 'layout'])->name('dashboard.layout');
+    Route::post('dashboard/widgets', [DashboardController::class, 'add'])->name('dashboard.widgets.store');
+    Route::post('dashboard/pins', [DashboardController::class, 'pin'])->name('dashboard.pins.store');
+    Route::post('dashboard/pins/delete', [DashboardController::class, 'unpin'])->name('dashboard.pins.destroy');
+    Route::get('dashboard/photo', [DashboardPhotoController::class, 'show'])->name('dashboard.photo');
+    Route::post('dashboard/photo', [DashboardPhotoController::class, 'store'])->name('dashboard.photo.store');
+    Route::post('dashboard/photo/delete', [DashboardPhotoController::class, 'destroy'])->name('dashboard.photo.destroy');
+    Route::get('notes', [HomeController::class, 'index'])->name('notes.index');
     Route::get('badges', BadgeController::class)->name('badges');
     // Board columns first, so "notes/columns" is not taken for a note id.
     Route::post('notes/columns', [NoteColumnController::class, 'store'])->name('notes.columns.store');

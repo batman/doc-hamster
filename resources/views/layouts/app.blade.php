@@ -93,7 +93,8 @@
                     <ul class="nav-list">
                         {{-- Everything else (people, roles, tags, bank import, export, update, phone test) sits under Einstellungen. --}}
                         @foreach ([
-                            ['home', 'home', 'home.title', null, ['home', 'notes.*'], null],
+                            ['home', 'home', 'dashboard.title', null, ['home'], null],
+                            ['notes.index', 'note', 'home.notes', null, ['notes.*'], null],
                             ['documents.index', 'file-text', 'documents.title', null, ['documents.*', 'folders.*'], null],
                             ['inbox.index', 'inbox', 'inbox.title', 'documents.upload', ['inbox.index'], \App\Http\Badges::INBOX],
                             ['bank.index', 'building-bank', 'bank.title', 'banking.import', ['bank.index', 'bank.show', 'bank.account', 'bank.receipts', 'bank.import.columns'], \App\Http\Badges::BANK],

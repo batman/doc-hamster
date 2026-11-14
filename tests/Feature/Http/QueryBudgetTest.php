@@ -16,11 +16,12 @@ use Illuminate\Support\Facades\DB;
 
 /*
 | Point 164.4: the main pages run a small, fixed number of queries, however many documents, tags and bookings
-| there are (regression guard against N+1 and against counts run twice per page). Budgets = measured + 2.
+| there are (regression guard against N+1 and against counts run twice per page). Budgets = measured + 2
+| (home: the dashboard's widgets since point 176).
 */
 uses(RefreshDatabase::class)->group('db');
 
-const QUERY_BUDGETS = ['home' => 8, 'documents' => 12, 'folder' => 14, 'window' => 14, 'bank' => 6, 'account' => 16, 'settings' => 4, 'badges' => 3, 'inbox' => 12];
+const QUERY_BUDGETS = ['home' => 12, 'documents' => 12, 'folder' => 14, 'window' => 14, 'bank' => 6, 'account' => 16, 'settings' => 4, 'badges' => 3, 'inbox' => 12];
 
 beforeEach(function (): void {
     $this->admin = Membership::factory()->owner()->create();

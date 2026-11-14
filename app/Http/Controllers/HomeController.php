@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 /**
- * Home: sticky notes (collected 2026-11-03) on a board like Trello (Go of
+ * Notizen (/notes, own main-menu entry since point 175; Home is the dashboard): sticky notes (collected 2026-11-03) on a board like Trello (Go of
  * 2026-11-08): columns, notes dragged between and within them,
  * tags (no archive any more, point 92). Text with inline lists ("[Milch, #Brot]", set and drawn by app.js)
  * and links to receipts. A note is private; with the right "Notizen für
@@ -77,7 +77,7 @@ final class HomeController
             Note::query()->whereKey($noteId)->update(['column_id' => $data['column'], 'sort' => $i]);
         }
 
-        return $request->expectsJson() ? response()->json(['ok' => true]) : redirect()->route('home');
+        return $request->expectsJson() ? response()->json(['ok' => true]) : redirect()->route('notes.index');
     }
 
     public function store(Request $request, CurrentOrg $org): RedirectResponse
@@ -85,7 +85,7 @@ final class HomeController
         $note = new Note(['user_id' => $org->membership()->user_id]);
         $this->fill($request, $note);
 
-        return redirect()->route('home');
+        return redirect()->route('notes.index');
     }
 
     public function update(Request $request, string $id, CurrentOrg $org): RedirectResponse
@@ -95,11 +95,11 @@ final class HomeController
         if ($note->locked && ($request->boolean('locked') || ! $request->exists('title'))) {
             $note->update(['locked' => $request->boolean('locked')]);
 
-            return redirect()->route('home');
+            return redirect()->route('notes.index');
         }
         $this->fill($request, $note);
 
-        return redirect()->route('home');
+        return redirect()->route('notes.index');
     }
 
     /**
@@ -133,7 +133,7 @@ final class HomeController
         }
         $note->save();
 
-        return $request->expectsJson() ? response()->json(['ok' => true]) : redirect()->route('home');
+        return $request->expectsJson() ? response()->json(['ok' => true]) : redirect()->route('notes.index');
     }
 
     /**
@@ -146,14 +146,14 @@ final class HomeController
         $data = $request->validate(['body' => ['nullable', 'string', 'max:5000']]);
         $note->update(['body' => ($data['body'] ?? '') === '' ? null : $data['body']]);
 
-        return $request->expectsJson() ? response()->json(['ok' => true]) : redirect()->route('home');
+        return $request->expectsJson() ? response()->json(['ok' => true]) : redirect()->route('notes.index');
     }
 
     public function destroy(string $id, CurrentOrg $org): RedirectResponse
     {
         $this->editable($id, $org, unlocked: true)->delete();
 
-        return redirect()->route('home');
+        return redirect()->route('notes.index');
     }
 
     /**

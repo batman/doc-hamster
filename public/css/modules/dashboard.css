@@ -1,0 +1,63 @@
+/* Home dashboard (points 176, A349-A353; docs/design/FRAMEWORK.md "Dashboard-Baustein"). The grid follows the
+   window's own width (container "win" on .win-frame): one column (phones and narrow windows: widgets stack),
+   two from 34rem (S/M one column, L both), six from 60rem (S 2, M 3, L all). */
+.dash-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: start; }
+@container win (width >= 34rem) {
+    .dash-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .dash-widget.is-l { grid-column: 1 / -1; }
+}
+@container win (width >= 60rem) {
+    .dash-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .dash-widget.is-s { grid-column: span 2; }
+    .dash-widget.is-m { grid-column: span 3; }
+    .dash-widget.is-l { grid-column: 1 / -1; }
+}
+.dash-widget { max-width: none; margin: 0; min-width: 0; }
+.dash-widget .card-head { margin-bottom: .25rem; }
+
+/* Edit mode (A350): the tool line and edit-only parts show, widgets get a dashed frame; outside it nothing moves. */
+.dash-tools { display: none; align-items: center; gap: .5rem; margin: -.25rem 0 .75rem; padding-bottom: .5rem; border-bottom: 1px dashed var(--border); }
+.dash.is-editing .dash-tools { display: flex; }
+.dash:not(.is-editing) .dash-edit-only { display: none; }
+.dash.is-editing .dash-widget { border-style: dashed; }
+.dash-tools-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.dash-grip { cursor: grab; touch-action: none; }
+.dash-widget.is-dragging { opacity: .55; border-color: var(--primary); }
+
+/* Empty widgets say what to do (A352). */
+.dash-empty { display: flex; align-items: center; gap: .5rem; margin: .25rem 0; color: var(--muted); }
+.dash-empty .icon { flex: none; color: var(--primary); }
+.dash-more { margin: .5rem 0 0; }
+.dash-list { margin: 0; }
+
+/* Foto: large on top, cut to fit; a picture dropped on it replaces it. */
+.dash-photo { display: grid; place-items: center; min-height: 8rem; border-radius: calc(var(--radius) / 2); overflow: hidden; background: var(--surface); }
+.dash-photo img { display: block; width: 100%; height: clamp(10rem, 30cqi, 22rem); object-fit: cover; }
+.dash-photo-tools { display: flex; gap: .5rem; margin-top: .5rem; }
+
+/* Begrüßung */
+.dash-hello { margin: 0; font-size: 1.6rem; line-height: 1.2; }
+.dash-date { margin: .25rem 0 0; color: var(--muted); }
+.dash-summary { margin: .5rem 0 0; }
+
+/* Schnellzugriff: tiles like menu-window tiles, the X sits in the corner in edit mode. */
+.dash-tiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: .5rem; }
+.dash-tile-item { position: relative; min-width: 0; }
+.dash-tile { display: flex; flex-direction: column; align-items: center; gap: .4rem; padding: .9rem .5rem; border-radius: var(--row-radius); background: var(--surface); color: var(--text); text-align: center; text-decoration: none; }
+.dash-tile:hover { background-image: linear-gradient(var(--row-tint), var(--row-tint)); }
+.dash-tile:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--primary); }
+.dash-tile .icon { width: 1.75rem; height: 1.75rem; color: var(--primary); }
+.dash-tile span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-tile-x { position: absolute; top: .1rem; right: .1rem; }
+.dash-link-form { display: flex; flex-wrap: wrap; align-items: end; gap: .5rem 1rem; margin-top: .75rem; }
+.dash-link-form .field { flex: 1 1 12rem; margin: 0; }
+
+/* Texterkennung */
+.dash-progress { width: 100%; margin-top: .5rem; accent-color: var(--primary); }
+
+/* Ablegen: a big dashed field; while files hover it, the framework's drop look (.is-drop-target). */
+.dash-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .35rem; min-height: 9rem; padding: 1.25rem 1rem; border: 2px dashed var(--border); border-radius: calc(var(--radius) / 2); text-align: center; }
+.dash-drop > .icon { width: 2.25rem; height: 2.25rem; color: var(--primary); }
+.dash-drop small { color: var(--muted); }
+.dash-drop.is-busy { opacity: .6; }
+.dash-drop.is-drop-target, .dash-photo.is-drop-target { border-color: var(--primary); }

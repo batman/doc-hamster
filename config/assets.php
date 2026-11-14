@@ -14,7 +14,7 @@ return [
         'core/base', 'core/layout', 'core/forms', 'core/components', 'core/buttons', 'core/menus', 'core/lists',
         'core/windows', 'core/menu-window', 'core/pane-edge',
         'modules/documents', 'modules/notes', 'modules/text-editor', 'modules/ocr', 'modules/log', 'modules/updates',
-        'modules/palette', 'modules/pages', 'modules/properties', 'modules/ocr-text', 'modules/girocode', 'modules/dnd', 'modules/doc-fullscreen', 'core/layout-debug',
+        'modules/palette', 'modules/pages', 'modules/properties', 'modules/ocr-text', 'modules/girocode', 'modules/dnd', 'modules/doc-fullscreen', 'modules/dashboard', 'core/layout-debug',
     ],
     'js' => [
         'core/bus', 'core/error-report', 'core/menu', 'core/dropdowns', 'core/card-fold', 'core/button-choice', 'core/expand-plus', 'modules/documents-filter', 'core/sortable', 'core/tabs',
@@ -26,6 +26,6 @@ return [
         'modules/updates',
         'modules/text-editor', 'core/edit-in-place', 'modules/ocr-progress', 'modules/ocr-live', 'modules/note-options',
         'modules/properties', 'modules/girocode', 'modules/bank', 'modules/inbox', 'core/window-edge', 'core/top-layer', 'core/layout-debug',
-        'core/pwa', 'modules/share', 'modules/speed',
+        'core/pwa', 'modules/share', 'modules/speed', 'modules/dashboard',
     ],
 ];
