@@ -17,6 +17,4 @@ html.is-carrying-booking :is([data-doc]:not([data-trashed]), [data-doc-drag]):no
    button of its small menu "Mit dieser Buchung verknüpfen" (A341) – a grip, never a visible button. */
 .drag-row { cursor: grab; }
 .drag-row:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
-.drag-grip { cursor: grab; color: var(--muted); background: none; border-color: transparent; box-shadow: none; }
-.drag-grip:hover, .drag-grip[aria-expanded="true"] { color: var(--primary-ink); background: none; }
 .drag-row > .dropdown { display: flex; align-self: center; margin-inline: -.5rem -.25rem; }

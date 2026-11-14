@@ -329,7 +329,7 @@
     const SOURCES = '[data-doc], [data-doc-drag], [data-booking-drag], [data-drag-folder]';
     const sourceAt = target => {
         const source = target.closest?.(SOURCES);
-        if (!source || (target.closest('input, select, textarea, button, form, .row-actions, .dropdown, .doc-rename') && !target.closest('.drag-grip'))) {
+        if (!source || (target.closest('input, select, textarea, button, form, .row-actions, .dropdown, .doc-rename'))) {
             return null;
         }
         const cfg = config();
