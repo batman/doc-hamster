@@ -30,7 +30,10 @@
     font: inherit; font-weight: 500; letter-spacing: normal; text-align: left; text-decoration: none; cursor: pointer;
 }
 .nav-item .icon, .menu-item .icon { width: 1.4rem; height: 1.4rem; }
-.nav-item:hover, .menu-item:hover { background: var(--bg); box-shadow: none; }
+.nav-item:hover { background: var(--bg); box-shadow: none; }
+/* Point 158.1: menu entries show their hover (and keyboard focus) on every surface – the panel's own background
+   would hide a --bg hover. The chosen entry keeps the marked look (lists.css, point 155). */
+.menu-item:hover, .menu-item:focus-visible { background: color-mix(in srgb, var(--text) 8%, transparent); box-shadow: none; }
 .nav-item[aria-current="page"] .icon, .menu-item[aria-checked="true"] .icon { color: var(--primary); }
 .sidebar .nav-action { margin: 0 0 .5rem; background: var(--primary); color: var(--primary-text); font-weight: 600; }
 .sidebar .nav-action:hover { background: var(--primary); box-shadow: var(--shadow); }

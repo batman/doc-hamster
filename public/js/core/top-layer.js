@@ -9,8 +9,9 @@
     }
     const LAYER = '[data-dialog], .dialog-backdrop, .dropdown-panel, .tip, .toast, .selection-bar';
     const GAP = 8;
-    // A dropdown panel hangs fixed below its button, right edges flush; it turns rightwards when there is no
-    // room on the left and opens upwards when there is more room above than below. Long panels scroll.
+    // A dropdown panel hangs fixed below its button, LEFT edges flush, so it opens to the bottom right (point 158.2);
+    // only without room on the right it turns to right-flush. It opens upwards when there is more room above than
+    // below. Long panels scroll.
     const place = panel => {
         const anchor = panel.parentElement?.querySelector(':scope > .icon-button') ?? panel.parentElement;
         if (!anchor || !panel.matches(':popover-open')) {
@@ -25,9 +26,9 @@
         const above = a.top - 2 * GAP;
         const up = h > below && above > below;
         const room = Math.max(120, up ? above : below);
-        let x = a.right - w;
-        if (x < GAP) {
-            x = a.left;
+        let x = a.left;
+        if (x + w > vw - GAP) {
+            x = a.right - w;
         }
         x = Math.max(GAP, Math.min(x, vw - w - GAP));
         const y = up ? Math.max(GAP, a.top - GAP - Math.min(h, room)) : a.bottom + GAP;
