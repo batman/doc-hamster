@@ -12,6 +12,7 @@ return [
     'never' => 'noch nie',
     'key_prefix' => 'Schlüssel :prefix…',
     'add' => 'Hinzufügen',
+    'phone_check_first' => 'Erst Handy-Test machen: prüft, ob dein Handy alles kann',
     'add_title' => 'Gerät hinzufügen',
     'name' => 'Name',
     'name_placeholder' => 'z. B. iPhone von Max',

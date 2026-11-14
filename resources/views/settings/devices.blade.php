@@ -28,6 +28,8 @@
                 <button type="button" class="button-small" data-dialog-open="add-device"><x-icon name="plus" />{{ __('devices.add') }}</button>
             </span>
         </h2>
+        {{-- A348: whoever sets up a phone finds the phone test right here. --}}
+        <p class="card-note"><a href="{{ route('phone-check.qr') }}" data-window><x-icon name="stethoscope" /> {{ __('devices.phone_check_first') }}</a></p>
         <ul class="pick-list">
             @forelse ($devices as $device)
                 <li class="pick-row is-static">

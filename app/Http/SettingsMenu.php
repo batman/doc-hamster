@@ -46,6 +46,8 @@ final class SettingsMenu
             ['printer', 'printers.index', 'printer', 'documents.upload', ['printers.*']],
             ['mail', 'inbox.mail', 'mail', 'documents.upload', ['inbox.mail']],
             ['devices', 'devices.index', 'device-mobile', 'documents.upload', ['devices.*']],
+            // Point 174: the phone test belongs to the phones that send documents, not to the updates.
+            ['phone', 'phone-check.qr', 'stethoscope', null, ['phone-check*']],
         ], false],
         'log' => ['list-details', [
             ['log', 'log.index', 'list-details', 'settings.manage', ['log.index']],
@@ -61,10 +63,10 @@ final class SettingsMenu
         'speed' => ['gauge', [
             ['speed', 'speed.index', 'gauge', 'settings.manage', ['speed.*']],
         ], true],
+        // A347: one entry only, so the tile opens the Update page directly.
         'update' => ['cloud-download', [
             ['update', 'updates.show', 'cloud-download', 'system.update', ['updates.*']],
-            ['phone', 'phone-check.qr', 'device-mobile', null, ['phone-check*']],
-        ], false],
+        ], true],
     ];
 
     /**

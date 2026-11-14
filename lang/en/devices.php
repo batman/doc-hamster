@@ -12,6 +12,7 @@ return [
     'never' => 'never',
     'key_prefix' => 'Key :prefix…',
     'add' => 'Add',
+    'phone_check_first' => 'Run the phone test first: checks whether your phone can do everything',
     'add_title' => 'Add device',
     'name' => 'Name',
     'name_placeholder' => 'e.g. Max’s iPhone',
