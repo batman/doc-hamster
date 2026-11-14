@@ -18,6 +18,10 @@
     <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="48x48">
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     <link rel="apple-touch-icon" href="{{ asset('img/apple-touch-icon.png') }}">
+    {{-- Point 151: the app installs on the home screen and is a share target on Android (core/pwa.js registers sw.js). --}}
+    @unless (request()->routeIs('phone-check'))
+        <link rel="manifest" href="{{ route('manifest') }}" data-sw="{{ asset('sw.js') }}">
+    @endunless
     <title>@hasSection('title')@yield('title') – @endif{{ config('app.name') }}</title>
     @foreach (config('assets.css') as $file)
         <link rel="stylesheet" href="{{ asset('css/'.$file.'.css') }}?v={{ config('dochamster.version') }}">

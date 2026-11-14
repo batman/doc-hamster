@@ -7,6 +7,7 @@ use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\BankImportController;
 use App\Http\Controllers\BankSettingsController;
+use App\Http\Controllers\DeviceSettingsController;
 use App\Http\Controllers\DocumentBulkController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DocumentFileController;
@@ -30,11 +31,13 @@ use App\Http\Controllers\PaletteController;
 use App\Http\Controllers\PhoneCheckController;
 use App\Http\Controllers\PrinterSettingsController;
 use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\PwaController;
 use App\Http\Controllers\QueueTickController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SetupController;
 use App\Http\Controllers\ShareController;
+use App\Http\Controllers\ShareTargetController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TextDocumentController;
 use App\Http\Controllers\UpdateController;
@@ -139,6 +142,21 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::get('/', [PrinterSettingsController::class, 'index'])->name('index');
         Route::post('setup', [PrinterSettingsController::class, 'setup'])->name('setup');
         Route::post('{id}/delete', [PrinterSettingsController::class, 'destroy'])->name('destroy');
+    });
+
+    // Einstellungen → Geräte (points 152, A329, A330; before settings/{group}): upload keys for an iPhone shortcut or a program.
+    Route::middleware('can:documents.upload')->prefix('settings/devices')->name('devices.')->group(function (): void {
+        Route::get('/', [DeviceSettingsController::class, 'index'])->name('index');
+        Route::post('/', [DeviceSettingsController::class, 'store'])->name('store');
+        Route::post('{id}/delete', [DeviceSettingsController::class, 'destroy'])->name('destroy');
+    });
+
+    // "Teilen → DocHamster" (points 151, A328): the service worker keeps the share, this page sends it (also after login).
+    Route::middleware('can:documents.upload')->prefix('share')->name('share.')->group(function (): void {
+        Route::get('/', [ShareTargetController::class, 'receive'])->name('receive');
+        Route::post('/', [ShareTargetController::class, 'store'])->name('store');
+        Route::get('done', [ShareTargetController::class, 'done'])->name('done');
+        Route::post('done', [ShareTargetController::class, 'update'])->middleware('can:documents.edit')->name('update');
     });
 
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
@@ -257,6 +275,9 @@ Route::get('s/{token}', [ShareController::class, 'open'])->middleware('throttle:
 // Temporary device probe (#37): open like the later home-screen page, holds no data.
 Route::get('phone-check', [PhoneCheckController::class, 'show'])->name('phone-check');
 Route::get('phone-check/manifest', [PhoneCheckController::class, 'manifest'])->name('phone-check.manifest');
+
+// The app's web app manifest (point 151): installable, share target on Android.
+Route::get('manifest.webmanifest', [PwaController::class, 'manifest'])->name('manifest');
 
 // Setup wizard (D-024); RedirectToSetup sends everyone here until installed, then returns 404.
 Route::prefix('setup')->name('setup.')->controller(SetupController::class)->group(function (): void {

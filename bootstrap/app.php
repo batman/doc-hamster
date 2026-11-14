@@ -6,6 +6,7 @@ use App\Domain\Log\LogEntry;
 use App\Http\CardFolds;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\PrinterApiController;
+use App\Http\Controllers\UploadApiController;
 use App\Http\Middleware\RedirectToSetup;
 use App\Http\Middleware\RequireSameOriginApi;
 use App\Http\Middleware\ResolveCurrentOrg;
@@ -30,6 +31,9 @@ return Application::configure(basePath: dirname(__DIR__))
                 Route::post('pair', [PrinterApiController::class, 'pair'])->middleware('throttle:pairing')->name('pair');
                 Route::post('upload', [PrinterApiController::class, 'upload'])->middleware('throttle:120,1')->name('upload');
             });
+
+            // Points 152.2, A330: an iPhone shortcut or a program sends documents with its device key.
+            Route::post('api/upload', UploadApiController::class)->middleware('throttle:120,1')->name('api.upload');
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -37,6 +41,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(prepend: [RedirectToSetup::class], append: [SetLocale::class]);
         // Point 125: the folded cards (CardFolds) are written by JavaScript and hold nothing secret.
         $middleware->encryptCookies(except: [CardFolds::COOKIE]);
+        // Point 151: the share sheet posts to /share without a token when no service worker caught it;
+        // the session cookie is SameSite=Lax, so another site's POST arrives logged out anyway.
+        $middleware->validateCsrfTokens(except: ['share']);
         $middleware->alias([
             'org' => ResolveCurrentOrg::class,
             'api.same-origin' => RequireSameOriginApi::class,
