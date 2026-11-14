@@ -62,11 +62,25 @@
         });
         document.addEventListener('click', event => {
             const button = event.target.closest('[data-copy]');
-            if (button) {
-                const field = document.getElementById(button.dataset.copy);
-                field.select();
-                navigator.clipboard?.writeText(field.value).then(() => { button.textContent = button.dataset.copied; });
+            if (!button) {
+                return;
             }
+            // Kopierfeld (points 152, A329): the symbol button inside a field copies its value and toasts; a button with
+            // text (the share link) shows the "copied" text instead. The field is found next to the button or by its id.
+            const field = button.closest('.field-addon')?.querySelector('input, textarea') ?? document.getElementById(button.dataset.copy);
+            if (!field) {
+                return;
+            }
+            field.select();
+            const copy = DocHamster.copyText ? DocHamster.copyText(field.value) : navigator.clipboard?.writeText(field.value).then(() => true);
+            copy?.then(ok => {
+                if (ok === false) return;
+                if (button.classList.contains('addon-button')) {
+                    DocHamster.toast?.(button.dataset.copied);
+                } else {
+                    button.textContent = button.dataset.copied;
+                }
+            });
         });
         // Checklists save with every tick.
         document.addEventListener('change', event => event.target.closest('form[data-autosubmit]')?.submit());

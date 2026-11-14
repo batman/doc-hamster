@@ -165,6 +165,8 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
 .field-addon > .addon-end > .control-button:hover { background: color-mix(in srgb, var(--primary) 10%, transparent); }
 .field-addon > .addon-end > .control-button[aria-pressed="true"] > .icon:first-of-type,
 .field-addon > .addon-end > .control-button:not([aria-pressed="true"]) > .icon + .icon { display: none; }
+/* Kopierfeld (points 152, A329): a read-only value (key, address) with a copy symbol inside; a key in monospace. */
+.field-addon.is-copy > input { font-family: ui-monospace, "Cascadia Mono", Consolas, Menlo, "DejaVu Sans Mono", monospace; font-size: .875rem; }
 .field-addon > .addon-end > .addon-state { display: grid; place-items: center; width: 2rem; height: 100%; }
 .field-addon > .addon-end > .addon-state .icon { width: 1.25rem; height: 1.25rem; }
 .field-addon:has(> .addon-end > :not([hidden])) > :is(input, select) { padding-right: 3rem; }

@@ -115,6 +115,12 @@
                 <div class="field"><div class="field-addon"><span class="addon-lead" aria-hidden="true"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">  <path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg></span><input class="input-small" type="search" value="Hotel" aria-label="Suchen" autocomplete="off"><span class="addon-end"><button type="button" class="control-button addon-button" aria-label="Leeren" data-tooltip="Leeren"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></button></span></div></div>
             </div>
 
+            <h3 class="sg-pad" id="copy-field">Kopierfeld</h3>
+            <p class="sg-note">Baustein <code>.field-addon.is-copy</code> (Punkte 152, A329): ein fester Wert (Schlüssel, Adresse) zum Kopieren, Schrift gleich breit; das Symbol im Feld kopiert (<code>data-copy</code>) und meldet „Kopiert.“ als Toast. Ein Schlüssel, der nur einmal sichtbar ist, steht mit Hinweis in einer Karte.</p>
+            <div style="max-width: 26rem;">
+                <div class="field"><label for="sg-copy-key">Schlüssel</label><div class="field-addon is-copy"><input id="sg-copy-key" value="dhk_0000000000000000000000000000000000000000" readonly><span class="addon-end"><button type="button" class="control-button addon-button" data-copy="sg-copy-key" data-copied="Kopiert." aria-label="Kopieren" data-tooltip="Kopieren"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667l0 -8.666"/><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1"/></svg></button></span></div></div>
+            </div>
+
             <h3 class="sg-pad">Umbenennen in der Zeile</h3>
             <p class="sg-note">Stift oder langes Drücken auf den Namen (Maus ~2 s, Finger ~1 s; dabei füllt sich eine dünne orange Linie unter dem Namen). Enter oder ✓ speichert, Esc oder ein Klick außerhalb der Zeile bricht ab – kein X.</p>
             <ul class="pick-list folder-rows sg-rows" style="max-width: 26rem;">
