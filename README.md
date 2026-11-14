@@ -1,19 +1,19 @@
-# DocHamster 🐹
+# docHamster 🐹
 
-Snap a receipt, send it, forget it. DocHamster takes the photo with time and (optional) location, matches it to your bank transactions (CSV/Excel import from any bank), and builds a clean receipt pack (PDF) for your tax advisor.
+Snap a receipt, send it, forget it. docHamster takes the photo with time and (optional) location, matches it to your bank transactions (CSV/Excel import from any bank), and builds a clean receipt pack (PDF) for your tax advisor.
 
 > **Status: early version (v0.1).** Upload, receipt list, bank CSV import, tags, notes and export work; more is coming. The plan is in [`docs/PLAN.md`](docs/PLAN.md) (German).
 
 ## How to install
 
-DocHamster installs itself from one file, `install.php`. You need no command line, no Composer and no Docker – only FTP (or your host's file manager) and a browser.
+docHamster installs itself from one file, `install.php`. You need no command line, no Composer and no Docker – only FTP (or your host's file manager) and a browser.
 
 ### What you need
 
 - Web hosting or a server with **PHP 8.3 or newer** and the PHP extensions `pdo_mysql`, `mbstring`, `intl`, `sodium`, `fileinfo`, `exif`, `zip`, `gd`, `curl`
 - A **MariaDB 10.11+ or MySQL 8.4+** database (empty, with its host, name, user and password at hand)
 - A **fixed domain or subdomain with HTTPS**, e.g. `https://dochamster.example.com`. Choose it carefully: passkeys and the phone app are bound to it, so it can't be changed later.
-- Best: a domain whose web folder is empty, and a parent folder the web server may write to (DocHamster then keeps its code outside the web folder)
+- Best: a domain whose web folder is empty, and a parent folder the web server may write to (docHamster then keeps its code outside the web folder)
 
 ### Step by step
 
@@ -23,11 +23,11 @@ DocHamster installs itself from one file, `install.php`. You need no command lin
 4. **Prove the web space is yours.** The page names a small text file that `install.php` has just created next to it. Open that file with FTP or the file manager, copy the code (`XXXX-XXXX-XXXX-XXXX`) and type it into the page. This stops strangers from taking over your installation.
 5. **Server check.** The page lists every requirement with ✔ or ✘. Fix the red ones in your host's control panel (mostly PHP version, PHP extensions or HTTPS) and reload the page. When all are green, it shows the version it will install.
 6. **Click "Installieren".** `install.php` downloads the release from GitHub, checks its SHA-256 checksum, unpacks it and connects it to your web folder. Files already in the web folder are kept as `….bak-<date>`. This takes about a minute.
-   - If the parent folder isn't writable, DocHamster goes into a `dochamster` folder inside the web folder instead. The page then tells you to set your domain's document root to `…/dochamster/public` in your host's control panel – do that before you go on.
+   - If the parent folder isn't writable, docHamster goes into a `dochamster` folder inside the web folder instead. The page then tells you to set your domain's document root to `…/dochamster/public` in your host's control panel – do that before you go on.
 7. **`install.php` deletes itself.** If the page says it couldn't, delete it with FTP.
 8. **Click "Weiter zur Einrichtung".** The setup wizard opens at `/setup` and walks you through:
    1. **Server** – a second, closer check. Missing PHP limits for uploads can be fixed with one click ("Automatisch einstellen"); the page reloads itself within five minutes.
-   2. **Database** – enter host, port, database name, user and password. DocHamster checks the connection and creates its tables.
+   2. **Database** – enter host, port, database name, user and password. docHamster checks the connection and creates its tables.
    3. **Finish** – create your **owner account** (organisation name, user name, password of at least 12 characters). You log in with it afterwards.
    4. **Background jobs** – the wizard shows one command line. Add it in your host's control panel as a cron job that runs **every minute**. You can do this later.
 9. **Done.** Log in at `https://dochamster.example.com`. The wizard locks itself.
@@ -36,20 +36,20 @@ The installer stays usable for two hours after its first start. After that it lo
 
 ### Updates
 
-In DocHamster go to **Einstellungen → Update**. When a new version is available, click the button: it runs `install.php` in the background, keeps all receipts, accounts and settings, updates the database and brings you back. If an update fails halfway, the old version keeps running.
+In docHamster go to **Einstellungen → Update**. When a new version is available, click the button: it runs `install.php` in the background, keeps all receipts, accounts and settings, updates the database and brings you back. If an update fails halfway, the old version keeps running.
 
 You can also upload `install.php` again by hand. It finds the existing installation and offers two choices:
 
 - **Aktualisieren** (update) – everything is kept.
 - **Neu installieren** (reinstall) – tick what to delete (receipts, users and roles, bank data, tags) and type `LÖSCHEN` to confirm. The database login is always kept. If you delete the users, the wizard asks for a new owner account.
 
-There is no backup function in DocHamster yet. Use your host's backups for the files and the database.
+There is no backup function in docHamster yet. Use your host's backups for the files and the database.
 
-Security note for operators: where PHP's Imagick extension is installed, DocHamster uses it (via Ghostscript) to thumbnail the first page of uploaded PDFs. Ghostscript has a history of code-execution CVEs — lock it down in ImageMagick's `policy.xml`, or disable PDF coders there if you want no PDF thumbnails at all.
+Security note for operators: where PHP's Imagick extension is installed, docHamster uses it (via Ghostscript) to thumbnail the first page of uploaded PDFs. Ghostscript has a history of code-execution CVEs — lock it down in ImageMagick's `policy.xml`, or disable PDF coders there if you want no PDF thumbnails at all.
 
 ## Try it in 2 minutes (Docker)
 
-The fastest way to see DocHamster running. You need only Docker — no PHP, no Composer, no database, no hosting.
+The fastest way to see docHamster running. You need only Docker — no PHP, no Composer, no database, no hosting.
 
 ```sh
 git clone https://github.com/batman/doc-hamster
@@ -61,7 +61,7 @@ The first boot provisions itself (a few minutes): it writes the config, installs
 
 `docker compose down` stops it and keeps your test data; `docker compose down -v` wipes everything for a fresh start. Custom demo logins and details: [`TRY.md`](TRY.md).
 
-This is only for trying out DocHamster — real installations use `install.php` on hosting (see above).
+This is only for trying out docHamster — real installations use `install.php` on hosting (see above).
 
 ## Planned features
 
@@ -74,7 +74,7 @@ This is only for trying out DocHamster — real installations use `install.php` 
 - Read-only access for your tax advisor
 - Passkey device pairing – no password every time
 
-DocHamster is **not** a tax or bookkeeping app, and it uses **no cloud AI**: speech-to-text and everything else runs on your own server.
+docHamster is **not** a tax or bookkeeping app, and it uses **no cloud AI**: speech-to-text and everything else runs on your own server.
 
 ## Tech
 

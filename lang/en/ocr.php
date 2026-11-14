@@ -13,7 +13,7 @@ return [
     ],
     'running_setup' => 'Setting up …',
     'broken' => 'Does not work on this server: :reason',
-    'browser_hint' => 'The browser reads images and PDFs while a DocHamster page is open.',
+    'browser_hint' => 'The browser reads images and PDFs while a docHamster page is open.',
     'set_up' => 'Set up recognition on the server (faster)',
     'set_up_hint' => 'Downloads a portable Tesseract into the app folder and tests whether the server may run it.',
     'setup_title' => 'Setting up recognition',

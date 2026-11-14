@@ -13,7 +13,7 @@ return [
     ],
     'running_setup' => 'Wird eingerichtet …',
     'broken' => 'Geht nicht auf diesem Server: :reason',
-    'browser_hint' => 'Der Browser liest Bilder und PDFs, solange eine Seite von DocHamster offen ist.',
+    'browser_hint' => 'Der Browser liest Bilder und PDFs, solange eine Seite von docHamster offen ist.',
     'set_up' => 'Erkennung auf dem Server einrichten (schneller)',
     'set_up_hint' => 'Lädt ein eigenständiges Tesseract in den App-Ordner und prüft, ob der Server es ausführen darf.',
     'setup_title' => 'Erkennung wird eingerichtet',

@@ -23,6 +23,6 @@ return [
         'Click "Set up printer". This downloads a small file for Windows that is already linked to your account. It is valid for 24 hours and for one computer.',
         'Double-click the file and confirm the Windows question for administrator rights.',
         'Done: every program now has the printer "Hamster". What you print on it lands in the inbox – if the computer was offline, a little later.',
-        'Remove: uninstall "DocHamster Drucker" under Windows "Apps". Delete its entry here, then nothing from that computer arrives any more.',
+        'Remove: uninstall "docHamster Drucker" under Windows "Apps". Delete its entry here, then nothing from that computer arrives any more.',
     ],
 ];

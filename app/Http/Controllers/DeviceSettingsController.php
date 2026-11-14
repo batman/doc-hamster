@@ -45,7 +45,10 @@ final class DeviceSettingsController
             'fresh' => is_array($fresh) ? $fresh : null,
             'apiUrl' => route('api.upload'),
             'shortcutUrl' => self::SHORTCUT_URL,
-            'shortcutQr' => 'data:image/svg+xml;base64,'.base64_encode(GiroCode::svg(self::SHORTCUT_URL, 180)),
+            'shortcutQr' => self::qr(self::SHORTCUT_URL),
+            // Point 204: the second shortcut, from config until its checked link is there.
+            'photoUrl' => $photo = (is_string($p = config('dochamster.photo_shortcut')) && $p !== '' ? $p : null),
+            'photoQr' => $photo === null ? null : self::qr($photo),
         ]);
     }
 
@@ -95,6 +98,11 @@ final class DeviceSettingsController
         $part = static fn (string $name): string => is_string($fresh[$name] ?? null) ? $fresh[$name] : '';
 
         return $part('key') === '' ? null : ['id' => $part('id'), 'key' => $part('key'), 'kind' => $part('kind'), 'name' => $part('name')];
+    }
+
+    private static function qr(string $url): string
+    {
+        return 'data:image/svg+xml;base64,'.base64_encode(GiroCode::svg($url, 180));
     }
 
     private function cacheKey(string $userId, string $token): string

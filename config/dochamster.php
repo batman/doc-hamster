@@ -24,4 +24,10 @@ return [
     */
     'trusted_proxies' => env('TRUSTED_PROXIES', ''),
 
+    /*
+    | Point 204 (A37): the ready-made iPhone shortcut "Foto aufnehmen" (iCloud link, placeholders only). Empty until its
+    | checked link is there; Einstellungen → Geräte then shows "kommt in Kürze".
+    */
+    'photo_shortcut' => '',
+
 ];

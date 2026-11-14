@@ -49,10 +49,10 @@ function Stop-Setup([string] $message) {
 }
 
 if ($PairingCode -notmatch '^[A-Za-z0-9]+$' -or $ServerUrl -notmatch '^https?://') {
-    Stop-Setup 'Bitte diese Datei in DocHamster herunterladen: Druckerablage > Drucker einrichten.'
+    Stop-Setup 'Bitte diese Datei in docHamster herunterladen: Druckerablage > Drucker einrichten.'
 }
 
-Write-Host 'DocHamster: Drucker "Hamster" einrichten' -ForegroundColor Cyan
+Write-Host 'docHamster: Drucker "Hamster" einrichten' -ForegroundColor Cyan
 Write-Host ''
 
 # --- 1. Printer (needs administrator rights) --------------------------------
@@ -98,7 +98,7 @@ if ($elevated.ExitCode -ne 0) {
 }
 
 # --- 2. Link this computer to the account ------------------------------------
-Write-Host '2. Computer mit DocHamster verknüpfen ...'
+Write-Host '2. Computer mit docHamster verknüpfen ...'
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 $body = @{ code = $PairingCode; name = $env:COMPUTERNAME } | ConvertTo-Json
 try {
@@ -108,9 +108,9 @@ try {
     $status = 0
     if ($_.Exception.Response) { $status = [int] $_.Exception.Response.StatusCode }
     if ($status -eq 404) {
-        Stop-Setup 'Diese Datei ist schon benutzt oder abgelaufen. Bitte in DocHamster neu herunterladen.'
+        Stop-Setup 'Diese Datei ist schon benutzt oder abgelaufen. Bitte in docHamster neu herunterladen.'
     }
-    Stop-Setup "DocHamster ist nicht erreichbar ($ServerUrl). Bitte Internetverbindung prüfen und die Datei erneut starten."
+    Stop-Setup "docHamster ist nicht erreichbar ($ServerUrl). Bitte Internetverbindung prüfen und die Datei erneut starten."
 }
 
 New-Item -ItemType Directory -Force -Path (Join-Path $UserDir 'Outbox') | Out-Null
@@ -209,14 +209,14 @@ function Send-Outbox {
             if (Test-Path -LiteralPath $titleFile) { Remove-Item -LiteralPath $titleFile -Force }
             Write-Log ('Sent ' + $pdf.Name)
         } elseif ($status -eq 401 -or $status -eq 403) {
-            Write-Log "DocHamster refused this computer ($status): locked or no upload right. Prints wait in the outbox."
+            Write-Log "docHamster refused this computer ($status): locked or no upload right. Prints wait in the outbox."
             return 600
         } elseif ($status -eq 413 -or $status -eq 422) {
-            Write-Log "DocHamster did not take $($pdf.Name) ($status); kept in Outbox\failed."
+            Write-Log "docHamster did not take $($pdf.Name) ($status); kept in Outbox\failed."
             Move-Item -LiteralPath $pdf.FullName -Destination $Failed -Force
             if (Test-Path -LiteralPath $titleFile) { Move-Item -LiteralPath $titleFile -Destination $Failed -Force }
         } else {
-            Write-Log "DocHamster answered $status, will try again."
+            Write-Log "docHamster answered $status, will try again."
             return 60
         }
     }
@@ -306,18 +306,18 @@ $link = $shell.CreateShortcut($StartupLink)
 $link.TargetPath = $PowerShellExe
 $link.Arguments = $uploaderArguments
 $link.WindowStyle = 7
-$link.Description = 'DocHamster Drucker'
+$link.Description = 'docHamster Drucker'
 $link.Save()
 Start-Process -FilePath $PowerShellExe -ArgumentList $uploaderArguments -WindowStyle Hidden
 
 # --- 4. Entry under Windows "Apps" ---------------------------------------------
 New-Item -Path $UninstallKey -Force | Out-Null
-New-ItemProperty -Path $UninstallKey -Name 'DisplayName' -Value 'DocHamster Drucker' -Force | Out-Null
-New-ItemProperty -Path $UninstallKey -Name 'Publisher' -Value 'DocHamster' -Force | Out-Null
+New-ItemProperty -Path $UninstallKey -Name 'DisplayName' -Value 'docHamster Drucker' -Force | Out-Null
+New-ItemProperty -Path $UninstallKey -Name 'Publisher' -Value 'docHamster' -Force | Out-Null
 New-ItemProperty -Path $UninstallKey -Name 'UninstallString' -Value ('"' + $PowerShellExe + '" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "' + $UninstallPath + '"') -Force | Out-Null
 New-ItemProperty -Path $UninstallKey -Name 'NoModify' -Value 1 -PropertyType DWord -Force | Out-Null
 New-ItemProperty -Path $UninstallKey -Name 'NoRepair' -Value 1 -PropertyType DWord -Force | Out-Null
 
 Write-Host ''
 Write-Host 'Fertig. In jedem Programm gibt es jetzt den Drucker "Hamster".' -ForegroundColor Green
-Write-Host 'Was Sie darauf drucken, landet in DocHamster in der Druckerablage.'
+Write-Host 'Was Sie darauf drucken, landet in docHamster in der Druckerablage.'

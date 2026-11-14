@@ -23,6 +23,6 @@ return [
         'Auf „Drucker einrichten“ klicken. Das lädt eine kleine Datei für Windows herunter, die schon mit Ihrem Konto verknüpft ist. Sie gilt 24 Stunden und nur für einen Computer.',
         'Die Datei doppelklicken und die Windows-Frage nach Administratorrechten bestätigen.',
         'Fertig: In jedem Programm gibt es jetzt den Drucker „Hamster“. Was Sie darauf drucken, landet im Posteingang – auch wenn der Computer gerade offline war, dann etwas später.',
-        'Entfernen: unter Windows bei „Apps“ den Eintrag „DocHamster Drucker“ deinstallieren. Hier den Eintrag löschen, dann kommt von dem Computer nichts mehr an.',
+        'Entfernen: unter Windows bei „Apps“ den Eintrag „docHamster Drucker“ deinstallieren. Hier den Eintrag löschen, dann kommt von dem Computer nichts mehr an.',
     ],
 ];

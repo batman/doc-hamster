@@ -129,6 +129,27 @@
         <p class="field-hint">{{ __('devices.header_hint') }}</p>
     </x-fold-card>
 
+    {{-- Point 204 (A37): the second shortcut, "Foto aufnehmen" from the Home screen – photo, done. --}}
+    <x-fold-card fold="devices.photo" :title="__('devices.photo_title')" icon="photo">
+        <div class="device-shortcut">
+            @if ($photoUrl !== null)
+                <img class="phone-qr" src="{{ $photoQr }}" width="180" height="180" alt="{{ __('devices.shortcut_qr') }}">
+            @endif
+            <div>
+                @if ($photoUrl !== null)
+                    <a class="button button-small" href="{{ $photoUrl }}" target="_blank" rel="noopener"><x-icon name="download" />{{ __('devices.shortcut_load') }}</a>
+                @else
+                    <p class="card-note">{{ __('devices.photo_soon') }}</p>
+                @endif
+                <ol class="card-text">
+                    @foreach (__('devices.photo_steps') as $step)
+                        <li>{{ $step }}</li>
+                    @endforeach
+                </ol>
+            </div>
+        </div>
+    </x-fold-card>
+
     {{-- Point 203: building it by hand, the traps shown as wrong → right. --}}
     <x-fold-card fold="devices.manual" :title="__('devices.manual_title')" icon="tools" :folded="true">
         <p class="card-text">{{ __('devices.manual_intro') }}</p>
