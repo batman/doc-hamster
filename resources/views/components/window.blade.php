@@ -31,6 +31,7 @@
         'detail' => [30, 44, 64, 2],
         'text' => [32, 48, 72, 2],
         'notes' => [22, 40, 96, 1],
+        'dashboard' => [22, 60, 160, 1],
         default => [24, 32, 48, 1],
     };
     $min ??= $minRem.'rem';
@@ -98,9 +99,20 @@
             @endif
             <div class="win-actions">
                 {{ $actions ?? '' }}
-                {{-- The module's ⋯ menu (points 71, 73, A200): only the module's own entries (slot "menu"); none, no button. --}}
-                @if (isset($menu) && $menu->hasActualContent())
-                    <x-more-menu class="win-menu">{{ $menu }}</x-more-menu>
+                {{-- The module's ⋯ menu (points 71, 73, A200): the framework's "Auf Home anheften" (A351, not on Home itself),
+                     then the module's own entries (slot "menu"). Nothing to show, no button. --}}
+                @php
+                    $hasMenu = isset($menu) && $menu->hasActualContent();
+                    $pinHome = $kind !== 'dashboard' && auth()->check() && Route::has('dashboard.pins.store');
+                @endphp
+                @if ($hasMenu || $pinHome)
+                    <x-more-menu class="win-menu">
+                        @if ($pinHome)
+                            <button type="button" class="menu-item" data-pin-home="{{ route('dashboard.pins.store') }}" data-pin-icon="{{ $icon }}" data-failed="{{ __('dashboard.failed') }}"><x-icon name="pin" /><span>{{ __('dashboard.pin') }}</span></button>
+                            @if ($hasMenu)<hr class="menu-separator">@endif
+                        @endif
+                        @if ($hasMenu){{ $menu }}@endif
+                    </x-more-menu>
                 @endif
             </div>
         </div>

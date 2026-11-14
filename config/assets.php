@@ -26,6 +26,6 @@ return [
         'modules/updates',
         'modules/text-editor', 'core/edit-in-place', 'modules/ocr-progress', 'modules/ocr-live', 'modules/note-options',
         'modules/properties', 'modules/girocode', 'modules/bank', 'modules/inbox', 'core/window-edge', 'core/top-layer', 'core/layout-debug',
-        'core/pwa', 'modules/share', 'modules/speed', 'modules/dashboard',
+        'core/pwa', 'modules/share', 'modules/speed', 'core/window-pin', 'modules/dashboard',
     ],
 ];
