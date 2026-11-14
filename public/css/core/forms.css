@@ -10,6 +10,10 @@ label:not(:has(input[type="checkbox"])) { color: var(--primary); }
 .chip input:checked + span { font-weight: 600; border: 2px solid var(--primary); }
 .chip input:checked + span::before { content: "✓ "; }
 .chip input:focus-visible + span { outline: 2px solid currentColor; outline-offset: 2px; }
+/* Small toggle chips (point 187.1, e.g. "Suchen in" in the search panel): 36 px high, for tight spots; they wrap. */
+.chips.chips-small { gap: .35rem; margin-top: 0; }
+.chips-small .chip input { inset: 0; width: 100%; height: 100%; min-height: 0; margin: 0; }
+.chips-small .chip span { min-height: 2.25rem; line-height: calc(2.25rem - 2px); padding: 0 .75rem; border-radius: 1.125rem; font-size: .9rem; white-space: nowrap; }
 input, select, textarea {
     width: 100%; min-height: 48px; padding: .6rem .75rem; font: inherit; color: var(--text);
     background: var(--bg); border: 2px solid var(--primary); border-radius: var(--radius);

@@ -15,15 +15,15 @@ label.button.file-button { margin: 0; color: var(--primary-text); }
    keep their own look and are left out here. */
 :root { --button-shadow: 0 1px 0 rgb(0 0 0 / .12), 0 2px 6px rgb(0 0 0 / .14); --primary-hover: #ee6410; --danger: #d92d20; --danger-hover: #b9251a; }
 @media (prefers-color-scheme: dark) { :root { --button-shadow: 0 1px 0 rgb(0 0 0 / .4), 0 2px 8px rgb(0 0 0 / .45); } }
-:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .list-entry, .control-button, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)) {
+:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .list-entry, .control-button, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice, .switcher > *)) {
     display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
     min-height: 48px; padding: 0 1.25rem; border: 2px solid transparent; border-radius: 10px;
     background: var(--primary); color: var(--primary-text); box-shadow: var(--button-shadow);
     font: inherit; font-size: 1rem; font-weight: 600; letter-spacing: 0; line-height: 1.2; text-decoration: none;
     cursor: pointer; transition: background-color .12s, box-shadow .12s, translate .06s;
 }
-:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .list-entry, .control-button, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)):hover { background: var(--primary-hover); box-shadow: var(--button-shadow); }
-:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .list-entry, .control-button, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice)):active:not(:disabled) { translate: 0 1px; box-shadow: none; }
+:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .list-entry, .control-button, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice, .switcher > *)):hover { background: var(--primary-hover); box-shadow: var(--button-shadow); }
+:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .list-entry, .control-button, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice, .switcher > *)):active:not(:disabled) { translate: 0 1px; box-shadow: none; }
 :is(button, .button):focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; box-shadow: none; }
 :is(button, .button):disabled { opacity: .45; box-shadow: none; cursor: not-allowed; translate: none; }
 button .icon, .button .icon { width: 1.25rem; height: 1.25rem; }
@@ -46,6 +46,10 @@ button .icon, .button .icon { width: 1.25rem; height: 1.25rem; }
 }
 :is(button, .button).button-link:hover { background: none; box-shadow: none; text-decoration: underline; }
 :is(button, .button).button-link .icon { width: 1em; height: 1em; }
+/* Quiet link button (point 187.4): a side action that should not draw the eye, e.g. "Zurücksetzen" in the search panel –
+   muted text, orange on hover. */
+:is(button, .button).button-link.is-quiet { color: var(--muted); font-weight: 500; }
+:is(button, .button).button-link.is-quiet:hover { color: var(--primary-ink); }
 
 /* Sizes: 48 px, small 40 px; icon buttons are square */
 :is(button, .button).button-small { min-height: 40px; padding: 0 .9rem; font-size: .95rem; }
@@ -69,6 +73,38 @@ button .icon, .button .icon { width: 1.25rem; height: 1.25rem; }
 .win-tools .button-group > .icon-button:last-child { border-radius: 0 8px 8px 0; }
 .win-tools .button-group > .icon-button + .icon-button { margin-left: -1px; }
 .card-head .icon-button, .icon-button.button-small { width: 40px; min-height: 40px; }
+
+/* Umschalter (point 188.2, variant B): the one horizontal choice – one grey rail with text (or icon) segments, the chosen
+   one a raised white segment in the marked look (--mark-surface / --mark-shadow, point 188.5); hover a slightly darker
+   grey. Replaces every bordered button group used as a choice (188.3); a group of actions (zoom bar, editor) stays a
+   .button-group. <span class="switcher" role="group" aria-label="…"> around <button>s or <a>s with aria-pressed.
+   Narrow (188.4): the rail fills the width (segments share it); when it still does not fit, core/button-choice.js shows
+   a small select in its place (.is-tight + .switcher-select) – unless data-switch-static (the module has its own narrow
+   form, e.g. a dropdown in the toolbar). */
+.switcher {
+    display: inline-flex; flex-wrap: nowrap; align-items: stretch; gap: 2px; box-sizing: border-box; max-width: 100%; min-width: 0;
+    margin: 0; padding: 3px; border: 0; border-radius: 10px; background: var(--surface); vertical-align: middle;
+}
+.switcher > :is(button, a) {
+    display: inline-flex; flex: 1 0 auto; align-items: center; justify-content: center; gap: .4rem; min-width: 0; min-height: 34px;
+    margin: 0; padding: 0 .85rem; border: 0; border-radius: 7px; background: none; box-shadow: none; color: var(--muted);
+    font: inherit; font-size: .925rem; font-weight: 600; letter-spacing: 0; line-height: 1.2; text-decoration: none; white-space: nowrap;
+    cursor: pointer; transition: background-color .12s, box-shadow .12s, color .12s;
+}
+.switcher > :is(button, a):hover { background: color-mix(in srgb, var(--text) 8%, var(--surface)); color: var(--text); }
+.switcher > [aria-pressed="true"], .switcher > [aria-pressed="true"]:hover { background: var(--mark-surface); box-shadow: var(--mark-shadow); color: var(--text); }
+.switcher > :is(button, a):focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; box-shadow: none; }
+.switcher > :is(button, a) .icon { flex: none; width: 1.15rem; height: 1.15rem; }
+.switcher > :is(button, a):has(> .icon:only-child) { padding-inline: .6rem; }
+.switcher > [aria-pressed="true"] .icon { color: var(--primary); }
+.switcher > :is(button, a) .pill { font-size: .7rem; }
+.switcher.is-wide { display: flex; width: 100%; }
+.switcher[data-switch-static] { flex: none; max-width: none; }
+.win-tools .switcher > :is(button, a) { min-height: 30px; padding-inline: .7rem; }
+.switcher.is-tight { display: none; }
+.switcher-select { display: none; }
+.switcher.is-tight + .switcher-select { display: block; width: 100%; min-width: 0; }
+@media (prefers-color-scheme: dark) { .switcher > :is(button, a):hover { background: color-mix(in srgb, var(--text) 10%, var(--surface)); } }
 .icon-button[aria-expanded="true"] { border-color: var(--primary); color: var(--primary-ink); }
 
 input[type="file"]::file-selector-button { border-radius: 10px; font-size: 1rem; letter-spacing: 0; box-shadow: var(--button-shadow); }

@@ -50,6 +50,11 @@ ul.pick-list { margin: .75rem 0; }
 .pick-row:has(input:checked) > .icon, .pick-mark { color: var(--primary); }
 .pick-mark { display: none; margin-left: auto; }
 .pick-row:has(input:checked) .pick-mark { display: flex; }
+/* Optionskarten (point 188.1): the standard VERTICAL choice – <fieldset class="pick-list option-cards"> of
+   <label class="pick-row"> with a hidden radio, <span><strong>title</strong><small>description</small></span> and the
+   orange check <span class="pick-mark">; grey rows, the chosen one in the marked look (below). The horizontal choice is
+   the Umschalter (.switcher, buttons.css). */
+.option-cards { gap: .4rem; }
 .list-empty { margin: 0; padding: .7rem .9rem; border: 1px dashed var(--border); border-radius: var(--row-radius); color: var(--muted); }
 .list-error { color: var(--error); border-color: currentColor; }
 

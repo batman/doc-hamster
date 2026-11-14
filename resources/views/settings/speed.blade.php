@@ -77,7 +77,7 @@
         @foreach (['prefetch' => \App\Domain\Org\SpeedOptions::PREFETCH, 'thumbs' => array_reverse(\App\Domain\Org\SpeedOptions::THUMBS)] as $name => $choices)
             <form method="post" action="{{ route('speed.options') }}" data-autosubmit>
                 @csrf
-                <fieldset class="pick-list">
+                <fieldset class="pick-list option-cards">
                     <legend>{{ __('speed.'.$name) }}</legend>
                     @foreach ($choices as $choice)
                         <label class="pick-row">
