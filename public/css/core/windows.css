@@ -150,30 +150,64 @@ input.win-title-field {
 .win-search-toggle .icon { transition: rotate .15s; }
 .win-search-toggle[aria-expanded="true"] .icon { rotate: 180deg; }
 
-/* Points 4-7: the advanced search slides open below the tools, as wide as the window. */
-   Point 135 (A282-A285): it scrolls on its own when it is taller than the room; "Zurücksetzen" and the magnifier stay
-   fixed at its bottom. */
-.win-search-area { display: flex; flex-direction: column; max-height: min(70vh, 44rem); overflow: auto; margin: 0 1.5rem 1rem; padding: .75rem 1rem 0; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+/* Point 187: the advanced search is ONE card right under the search row, as wide as the window minus its padding;
+   the chevron becomes its tab (below). The card scrolls on its own when it is taller than the room; its footer
+   ("Zurücksetzen" left, "Suchen" right) stays at its bottom, inside the card. Never a horizontal scroll (187.6). */
+.win-search-area {
+    display: flex; flex-direction: column; min-width: 0; max-height: min(70vh, 44rem); overflow: hidden auto; overscroll-behavior: contain;
+    margin: 0 1.5rem 1rem; padding: 1rem 1rem 0; border: 1px solid var(--border); border-radius: 12px; border-top-right-radius: 0; background: var(--bg);
+}
 .win-search-area[hidden] { display: none; }
-/* The panel's top row, always visible (A282): ticks such as "Auch im erkannten Text" and "In allen Ordnern". */
-.search-top { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem 1.25rem; padding: 0 0 .5rem; }
-/* Its foldable sections (compact foldable cards, A283): stacked in a narrow window, two columns in a wide one (A285). */
-.search-sections { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 1.5rem; align-items: start; border-top: 1px solid var(--border); }
-@container win (width >= 44rem) { .search-sections { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-/* One labelled line of a section (A284): the labels in one column, the control beside them; small fields. */
-.search-line { display: grid; grid-template-columns: minmax(6rem, 9rem) minmax(0, 1fr); align-items: center; gap: .4rem .75rem; margin: 0 0 .5rem; }
+/* The rows always shown on top (187.1, 187.2): "Suchen in:" as toggle chips, "Wo:" as an Umschalter. */
+.search-top { display: grid; gap: .25rem; padding: 0 0 .5rem; }
+/* The sections (Zeitraum, Tags, Status, Eigenschaften): always ONE column, each a compact foldable card (187.3). */
+.search-sections { display: grid; grid-template-columns: minmax(0, 1fr); border-top: 1px solid var(--border); }
+.search-sections > .card-fold.is-compact:last-child { border-bottom: 0; }
+.search-sections:first-child { border-top: 0; }
+/* One labelled line (A284): the label column and the control; in a narrow window the label stands above (187.6). */
+.search-line { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); align-items: center; gap: .4rem .75rem; margin: 0 0 .5rem; }
 .search-line > :first-child { color: var(--muted); font-size: .9rem; }
-.search-line > .search-row { min-width: 0; }
-.search-line .button-group { flex-wrap: wrap; }
+.search-line > * { min-width: 0; }
+.search-line > .button-choice, .search-line > .switcher { display: flex; justify-self: start; max-width: 100%; }
+.search-line .button-choice > .switcher { flex: 0 1 auto; }
+.search-row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .75rem; min-width: 0; }
 .search-row input[type="date"] { flex: 1 1 8rem; min-width: 0; }
-.search-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 1rem 1.5rem; }
-.search-group { display: grid; align-content: start; gap: .5rem; min-width: 0; margin: 0; padding: 0; border: 0; }
-.search-group legend { margin: 0 0 .5rem; padding: 0; font-weight: 600; color: var(--primary); }
-.search-tags { grid-column: 1 / -1; }
-.search-row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .75rem; }
-.field-inline { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
-.field-inline select { flex: 0 1 9rem; }
-.win-search-actions { position: sticky; bottom: 0; z-index: 2; display: flex; justify-content: flex-end; align-items: center; gap: .5rem; margin: auto 0 0; padding: .6rem 0 .75rem; border-top: 1px solid var(--border); background: var(--surface); }
+.win-search-area .tags { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 .5rem; }
+@container win (width < 30rem) {
+    .search-line { grid-template-columns: minmax(0, 1fr); gap: .3rem; margin-bottom: .75rem; }
+    .search-line > .button-choice, .search-line > .switcher { justify-self: stretch; }
+    .search-line .button-choice > .switcher { flex: 1 1 auto; }
+    .search-line .switcher:not(.is-tight) { display: flex; width: 100%; }
+    .win-search-area { padding-inline: .75rem; }
+}
+/* 187.4: the footer inside the card – no band of its own; Enter in any field searches (core/window-search.js). */
+.win-search-actions {
+    position: sticky; bottom: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: .75rem;
+    margin: auto 0 0; padding: .75rem 0 1rem; background: var(--bg);
+}
+
+/* 187.7: open, the chevron is a tab that grows down into the card – same background and border, no bottom border, the
+   chevron turned up, a small concave curve (8 px) on its left where it meets the card's top edge; the card's top-right
+   corner is square under it. Closed = a normal icon button. While open the search takes the toolbar's last row on its
+   own (full width), so the tab stands over the card's right end and the card sits right under the search row. */
+.win-frame:has(> .win-search-area:not([hidden])) > .win-tools { padding-bottom: .5rem; }
+.win-frame:has(> .win-search-area:not([hidden])) > .win-tools > .win-search { order: 1; flex: 1 0 100%; align-self: stretch; }
+.win-tools .win-search-toggle[aria-expanded="true"] {
+    z-index: 3; align-self: stretch; height: auto; min-height: 0; margin-bottom: calc(-.5rem - 1px); padding-bottom: calc(.5rem + 1px);
+    border-color: var(--border); border-bottom: 0; border-radius: 8px 8px 0 0; background: var(--bg); color: var(--text);
+}
+.win-tools .win-search-toggle[aria-expanded="true"]::before {
+    content: ""; position: absolute; right: 100%; bottom: 0; width: 9px; height: 9px; box-sizing: border-box;
+    border: solid var(--border); border-width: 0 1px 1px 0; border-bottom-right-radius: 8px; box-shadow: 3px 3px 0 0 var(--bg); pointer-events: none;
+}
+.win-tools .win-search-toggle[aria-expanded="true"]:hover { background: var(--bg); }
+.win-tools .win-search-toggle.is-active:not([aria-expanded="true"]) { border-color: var(--primary); color: var(--primary-ink); }
+/* Phones (187.5, 187.6): the card keeps the window's side padding; the toolbar keeps the floating menu button's room
+   on the left, like the head, so the button never covers the search field. */
+@media (max-width: 63.99rem) {
+    .win-search-area { margin-inline: var(--space); }
+    .win-frame > .win-tools:has(> .win-search) { padding-inline: 4rem var(--space); }
+}
 
 /* Point 6: the active filters as chips above the results, each with its own X. */
 .filter-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0 0; }

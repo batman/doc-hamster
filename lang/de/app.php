@@ -39,6 +39,7 @@ return [
         'search_run' => 'Suchen',
         'search_options' => 'Erweiterte Suche',
         'search_reset' => 'Alle zurücksetzen',
+        'search_reset_short' => 'Zurücksetzen',
         'resize' => 'Fensterbreite ändern',
         'rename' => 'Umbenennen',
         'rename_hint' => 'Zum Umbenennen klicken',

@@ -87,6 +87,14 @@
         });
     };
 
+    // "Suchen in" (point 187.1): at least one chip stays on – taking off the last one puts it back.
+    document.addEventListener('change', event => {
+        const chip = event.target.closest?.('[data-window-search-area] input[name="in[]"]');
+        const area = chip?.closest('[data-window-search-area]');
+        if (chip && !chip.checked && !area.querySelector('input[name="in[]"]:checked')) {
+            chip.checked = true;
+        }
+    });
     document.addEventListener('change', event => {
         const panel = event.target.closest?.('[data-doc-search]');
         if (!panel) return;

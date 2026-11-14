@@ -20,7 +20,13 @@ use Illuminate\Http\Request;
 final class DocumentSearch
 {
     /** The panel's own query fields (besides q and the property fields). */
-    public const PARAMS = ['ocr', 'all', 'tags[]', 'any', 'by', 'from', 'to', 'match', 'read', 'type'];
+    public const PARAMS = ['in[]', 'ocr', 'all', 'tags[]', 'any', 'by', 'from', 'to', 'match', 'read', 'type'];
+
+    /** Where the text is looked for ("Suchen in", point 187.1), in the order of the chips. */
+    public const IN = ['name', 'ocr', 'note', 'tags', 'props'];
+
+    /** The chips that are on without an `in[]` in the address. */
+    public const IN_DEFAULT = ['name', 'ocr'];
 
     /** The period buttons of the panel (point 135, A283), in their order. */
     public const PRESETS = ['this_month', 'last_month', 'this_year', 'last_year'];
@@ -31,10 +37,11 @@ final class DocumentSearch
      * @param  array{from?: string, to?: string}  $period
      * @param  Collection<int, Property>  $properties
      * @param  array<string, array<string, string>>  $propFilters
+     * @param  list<string>  $in
      */
     private function __construct(
         public readonly string $q,
-        public readonly bool $ocr,
+        public readonly array $in,
         public readonly bool $all,
         public readonly Collection $tags,
         public readonly array $selected,
@@ -64,7 +71,7 @@ final class DocumentSearch
 
         return new self(
             q: trim((string) $request->query('q', '')),
-            ocr: $request->query('ocr') === '1',
+            in: self::readIn($request),
             all: $request->query('all') === '1',
             tags: $tags,
             selected: array_values($tags->pluck('id')->intersect(is_array($wanted) ? $wanted : [])->values()->all()),
@@ -80,8 +87,29 @@ final class DocumentSearch
     }
 
     /**
-     * Narrows the documents: tags (all of them, or at least one), the text in title, note and tag names (with ocr also
-     * in the recognised text), the period by receipt or upload date, status, file type and the property filters.
+     * "Suchen in" (point 187.1): the chips from `in[]`, the default (name and recognised text) without any; the old
+     * `ocr=1` still adds the recognised text.
+     *
+     * @return list<string>
+     */
+    private static function readIn(Request $request): array
+    {
+        $wanted = $request->query('in');
+        $in = is_array($wanted) ? array_intersect(self::IN, $wanted) : [];
+        if ($in === []) {
+            $in = self::IN_DEFAULT;
+        }
+        if ($request->query('ocr') === '1') {
+            $in[] = 'ocr';
+        }
+
+        return array_values(array_intersect(self::IN, $in));
+    }
+
+    /**
+     * Narrows the documents: tags (all of them, or at least one), the text where "Suchen in" says (name, recognised
+     * text, note, tag names, property values), the period by receipt or upload date, status, file type and the
+     * property filters.
      *
      * @param  Builder<Document>  $query
      */
@@ -96,13 +124,26 @@ final class DocumentSearch
         }
         if ($this->q !== '') {
             $like = '%'.addcslashes($this->q, '%_\\').'%';
-            $ocr = $this->ocr;
-            $query->where(static fn ($w) => $w->where('title', 'like', $like)
-                ->orWhere('note', 'like', $like)
-                ->orWhereHas('tags', static fn ($tag) => $tag->where('name', 'like', $like))
-                ->when($ocr, static fn ($w) => $w->orWhere('ocr_text', 'like', $like)
+            $in = array_flip($this->in);
+            $query->where(static function ($w) use ($in, $like): void {
+                if (isset($in['name'])) {
+                    $w->orWhere('title', 'like', $like);
+                }
+                if (isset($in['ocr'])) {
                     // 172.2: the stored translations of the recognised text count as recognised text.
-                    ->orWhereHas('translations', static fn ($t) => $t->where('text', 'like', $like))));
+                    $w->orWhere('ocr_text', 'like', $like)
+                        ->orWhereHas('translations', static fn ($t) => $t->where('text', 'like', $like));
+                }
+                if (isset($in['note'])) {
+                    $w->orWhere('note', 'like', $like);
+                }
+                if (isset($in['tags'])) {
+                    $w->orWhereHas('tags', static fn ($tag) => $tag->where('name', 'like', $like));
+                }
+                if (isset($in['props'])) {
+                    $w->orWhereHas('properties', static fn ($value) => $value->where('value_text', 'like', $like));
+                }
+            });
         }
         $periodSql = Document::dateSql($this->by);
         if (isset($this->period['from'])) {
@@ -201,7 +242,7 @@ final class DocumentSearch
             'selected' => $this->selected,
             'searching' => $this->searching(),
             'search' => $this,
-            'ocr' => $this->ocr,
+            'in' => $this->in,
             'all' => $this->all,
             'anyTag' => $this->anyTag,
             'by' => $this->by,

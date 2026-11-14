@@ -14,12 +14,12 @@
               :url="route('documents.index', request()->except('page'))" :close="$openFolder ? route('documents.index') : route('home')"
               :upload="$openFolder ? 'folder='.$openFolder->id : null"
               :rename-url="$openFolder && Gate::allows('documents.edit') ? route('folders.update', $openFolder->id) : null" :rename-data="['only_name' => 1]"
-              :search="__('documents.search')" :search-params="implode(' ', ['ocr', 'all', 'tags[]', 'any', 'by', 'from', 'to', 'match', 'read', 'type', ...$propParams])" :search-count="count($filters)">
+              :search="__('documents.search')" :search-params="implode(' ', $search->params())" :search-count="count($filters)">
         {{-- The advanced search (points 4-7): text where, tags, period, status, file type; all in the address (point 7). --}}
         <x-slot name="searchOptions">
-            {{-- Point 135 (A282-A285): on top the ticks, always visible; below four compact foldable sections, folded unless a
-                 filter in them is set, each head with a summary of what is set (documents-search.js keeps it current). Button
-                 groups as a choice instead of radios and "egal" selects. All fields keep their address names (point 7). --}}
+            {{-- Points 135, 187: on top "Suchen in" and "Wo", always visible; below four compact foldable sections in one column,
+                 folded unless a filter in them is set, each head with a summary of what is set (documents-search.js keeps it
+                 current). Umschalter instead of radios and "egal" selects. All fields keep their address names (point 7). --}}
             @php
                 $choice = fn (string $name, string $value, array $options, ?string $label = null, bool $toggle = false) => view('documents._search-choice', compact('name', 'value', 'options', 'label', 'toggle'));
                 $preset = $search->preset();
@@ -35,9 +35,21 @@
                 ]));
                 $propSummary = $properties->filter(fn ($p) => isset($propFilters[$p->id]))->pluck('name')->implode(', ');
             @endphp
+            {{-- Point 187.1/187.2, always shown: "Suchen in" as toggle chips (in[]; Name + Erkannter Text are the default and
+                 stay out of the address while they are all that is on) and "Wo" as an Umschalter (all). --}}
             <div class="search-top">
-                <label class="check"><input type="checkbox" name="ocr" value="1" @checked($ocr)> {{ __('documents.adv.ocr') }}</label>
-                <label class="check"><input type="checkbox" name="all" value="1" @checked($all)> {{ __('documents.search_all') }}</label>
+                <div class="search-line">
+                    <span>{{ __('documents.adv.in') }}:</span>
+                    <div class="chips chips-small" role="group" aria-label="{{ __('documents.adv.in') }}">
+                        @foreach (\App\Http\Documents\DocumentSearch::IN as $field)
+                            <label class="chip"><input type="checkbox" name="in[]" value="{{ $field }}" @checked(in_array($field, $in, true)) @if (in_array($field, \App\Http\Documents\DocumentSearch::IN_DEFAULT, true)) data-default @endif><span>{{ __('documents.adv.in_options.'.$field) }}</span></label>
+                        @endforeach
+                    </div>
+                </div>
+                <div class="search-line">
+                    <span>{{ __('documents.adv.where') }}:</span>
+                    {!! $choice('all', $all ? '1' : '', ['' => __('documents.adv.this_folder'), '1' => __('documents.adv.all_folders')], __('documents.adv.where')) !!}
+                </div>
             </div>
             <div class="search-sections" data-doc-search data-chosen="{{ __('documents.adv.tags_chosen') }}">
                 <x-fold-card fold="documents.search.period" :remember="false" compact :folded="$period === []" :title="__('documents.adv.period')" icon="calendar" :summary="$periodSummary" data-search-section="period">
@@ -45,11 +57,11 @@
                         <span>{{ __('documents.adv.period') }}</span>
                         <span class="button-choice" data-choice data-choice-toggle data-period-choice>
                             <input type="hidden" value="{{ $preset ?? '' }}">
-                            <span class="button-group" role="group" aria-label="{{ __('documents.adv.period') }}">
+                            <span class="switcher" role="group" aria-label="{{ __('documents.adv.period') }}">
                                 @foreach ($ranges as $presetKey => $presetRange)
-                                    <button type="button" class="button-quiet button-small" data-value="{{ $presetKey }}" data-range="{{ $presetRange }}" aria-pressed="{{ $preset === $presetKey ? 'true' : 'false' }}">{{ __('documents.adv.quick.'.$presetKey) }}</button>
+                                    <button type="button" data-value="{{ $presetKey }}" data-range="{{ $presetRange }}" aria-pressed="{{ $preset === $presetKey ? 'true' : 'false' }}">{{ __('documents.adv.quick.'.$presetKey) }}</button>
                                 @endforeach
-                                <button type="button" class="button-quiet button-small" data-value="custom" aria-pressed="{{ $preset === 'custom' ? 'true' : 'false' }}">{{ __('documents.adv.quick.custom') }}</button>
+                                <button type="button" data-value="custom" aria-pressed="{{ $preset === 'custom' ? 'true' : 'false' }}">{{ __('documents.adv.quick.custom') }}</button>
                             </span>
                         </span>
                     </div>
@@ -138,21 +150,21 @@
                 @php $back = route('documents.index', request()->except('page')); @endphp
                 @if ($wide)
                     {{-- Timeline and calendar go by the receipt date or the upload date (point 108, A209); remembered and in ?date=. --}}
-                    <form class="button-group" data-view-switch role="group" aria-label="{{ __('documents.dates.label') }}" method="post" action="{{ route('documents.view') }}">
+                    <form class="switcher" data-view-switch role="group" aria-label="{{ __('documents.dates.label') }}" method="post" action="{{ route('documents.view') }}">
                         @csrf
                         <input type="hidden" name="back" value="{{ $back }}">
                         @foreach (['doc', 'upload'] as $basis)
-                            <button type="submit" name="date" value="{{ $basis }}" class="button-quiet button-small" aria-pressed="{{ $basis === $dates ? 'true' : 'false' }}">{{ __('documents.dates.'.$basis) }}</button>
+                            <button type="submit" name="date" value="{{ $basis }}" aria-pressed="{{ $basis === $dates ? 'true' : 'false' }}">{{ __('documents.dates.'.$basis) }}</button>
                         @endforeach
                     </form>
                 @else
                     {{-- The display modes of the folder view as a button group (points 16, 98); in a narrow window one dropdown button
                          (point 41). The view belongs to this window (?view=…, point 52); app.js reloads only this window and saves the choice. --}}
-                    <form class="button-group win-wide-only" data-view-switch role="group" aria-label="{{ __('documents.view') }}" method="post" action="{{ route('documents.view') }}">
+                    <form class="switcher win-wide-only" data-switch-static data-view-switch role="group" aria-label="{{ __('documents.view') }}" method="post" action="{{ route('documents.view') }}">
                         @csrf
                         <input type="hidden" name="back" value="{{ $back }}">
                         @foreach ($folderViews as $name)
-                            <button type="submit" name="view" value="{{ $name }}" class="icon-button button-small" aria-pressed="{{ $name === $view ? 'true' : 'false' }}" aria-label="{{ __('documents.views.'.$name) }}" data-tooltip="{{ __('documents.views.'.$name) }}"><x-icon :name="$views[$name]" /></button>
+                            <button type="submit" name="view" value="{{ $name }}" aria-pressed="{{ $name === $view ? 'true' : 'false' }}" aria-label="{{ __('documents.views.'.$name) }}" data-tooltip="{{ __('documents.views.'.$name) }}"><x-icon :name="$views[$name]" /></button>
                         @endforeach
                     </form>
                     <form class="dropdown win-narrow-only" data-view-switch method="post" action="{{ route('documents.view') }}">
@@ -315,7 +327,7 @@
             {{-- The result list (point 105): documents only, each with its folder; X closes it (point 106). --}}
             <div class="search-head" data-search-count="{{ count($filters) }}">
                 <h2>{{ trans_choice('documents.search_found', $documents->count(), ['count' => $documents->count()]) }}</h2>
-                <a class="control-button" href="{{ route('documents.index', request()->except(['q', 'ocr', 'all', 'tags', 'any', 'by', 'from', 'to', 'match', 'read', 'type', 'page', ...$propParams])) }}" data-window-search-clear aria-label="{{ __('app.window.search_reset') }}" data-tooltip="{{ __('app.window.search_reset') }}"><x-icon name="x" /></a>
+                <a class="control-button" href="{{ route('documents.index', request()->except(['q', 'in', 'ocr', 'all', 'tags', 'any', 'by', 'from', 'to', 'match', 'read', 'type', 'page', ...$propParams])) }}" data-window-search-clear aria-label="{{ __('app.window.search_reset') }}" data-tooltip="{{ __('app.window.search_reset') }}"><x-icon name="x" /></a>
             </div>
             {{-- Point 6: every active filter as a chip; its X removes just that one. --}}
             @php

@@ -39,6 +39,7 @@ return [
         'search_run' => 'Search',
         'search_options' => 'Advanced search',
         'search_reset' => 'Reset all',
+        'search_reset_short' => 'Reset',
         'resize' => 'Change the window width',
         'rename' => 'Rename',
         'rename_hint' => 'Click to rename',

@@ -180,6 +180,11 @@ return [
     'adv' => [
         'text' => 'Suchtext',
         'ocr' => 'Auch im erkannten Text (OCR)',
+        'in' => 'Suchen in',
+        'in_options' => ['name' => 'Name', 'ocr' => 'Erkannter Text', 'note' => 'Notiz', 'tags' => 'Tags', 'props' => 'Eigenschaften'],
+        'where' => 'Wo',
+        'this_folder' => 'Dieser Ordner',
+        'all_folders' => 'Alle Ordner',
         'period' => 'Zeitraum',
         'from' => 'ab',
         'to' => 'bis',

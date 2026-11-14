@@ -47,7 +47,15 @@
             // The fields of the advanced search area (points 4-7) belong to this search; "name[]" fields carry several values.
             const area = win?.querySelector('[data-window-search-area]');
             const data = new FormData(form);
+            // Ticks that all stand as they start (data-default, e.g. "Suchen in", point 187.1) stay out of the address.
+            const atDefault = name => {
+                const boxes = [...area.querySelectorAll(`input[type="checkbox"][name="${CSS.escape(name)}"]`)];
+                return boxes.some(box => box.hasAttribute('data-default')) && boxes.every(box => box.checked === box.hasAttribute('data-default'));
+            };
             area?.querySelectorAll('input[name], select[name]').forEach(input => {
+                if (input.type === 'checkbox' && atDefault(input.name)) {
+                    return;
+                }
                 if ((input.type !== 'checkbox' && input.type !== 'radio') || input.checked) {
                     data.append(input.name, input.value);
                 }
@@ -188,7 +196,8 @@
         });
         document.addEventListener('keydown', event => {
             const area = event.target.closest?.('[data-window-search-area]');
-            if (event.key === 'Enter' && area && event.target.matches('input:not([type="checkbox"]):not([type="radio"])')) {
+            // 187.4: Enter in any field of the panel searches (text, date, ticks and chips).
+            if (event.key === 'Enter' && area && event.target.matches('input')) {
                 event.preventDefault();
                 search(formOf(area));
             }

@@ -119,13 +119,14 @@
             </div>
         </div>
         @if ($search && isset($searchOptions) && $searchOptions->hasActualContent())
-            {{-- Points 4-7: the advanced search slides open below the tools; its fields belong to the search above (JS). --}}
+            {{-- Points 4-7, 187: the advanced search opens as one card right under the search row (the chevron becomes its
+                 tab); its fields belong to the search above (JS). --}}
             <div class="win-search-area" data-window-search-area @if ($searchCount === 0) hidden @endif>
                 {{ $searchOptions }}
-                {{-- Fixed at the bottom of the panel (A282); a search button is always the magnifier with the tooltip "Suchen" (A305). --}}
+                {{-- 187.4: the footer inside the card – a quiet "Zurücksetzen" left, "Suchen" right (the magnifier in the field stays). --}}
                 <div class="win-search-actions">
-                    <button type="button" class="button-quiet button-small" data-window-search-clear>{{ __('app.window.search_reset') }}</button>
-                    <button type="button" class="icon-button button-small" data-window-search-run aria-label="{{ __('app.window.search_run') }}" data-tooltip="{{ __('app.window.search_run') }}"><x-icon name="search" /></button>
+                    <button type="button" class="button-link is-quiet" data-window-search-clear>{{ __('app.window.search_reset_short') }}</button>
+                    <button type="button" class="button-small" data-window-search-run><x-icon name="search" />{{ __('app.window.search_run') }}</button>
                 </div>
             </div>
         @endif

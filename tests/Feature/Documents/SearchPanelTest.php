@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 use App\Domain\Documents\Document;
 use App\Domain\Documents\Folder;
+use App\Domain\Documents\Tag;
+use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Membership;
 use App\Domain\Org\OrgScope;
+use App\Domain\Properties\PropertyValues;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 /*
@@ -35,11 +38,31 @@ it('searches the current folder, or all folders with the checkbox, and shows eac
         ->assertSee('hotel-rechnung.pdf')->assertSee('tank-rechnung.pdf')->assertSee('2 Treffer');
 });
 
-it('looks for recognised text only when the panel asks for it', function (): void {
-    $this->get('/documents?q=Diesel')->assertSee('Nichts gefunden.')->assertDontSee('tank-rechnung.pdf');
-    $this->get('/documents?q=Diesel&ocr=1')->assertSee('tank-rechnung.pdf')->assertDontSee('hotel-rechnung.pdf')
-        // the panel's tick stays ticked and is not a hidden field of the window
-        ->assertSee('name="ocr" value="1" checked', false)->assertDontSee('type="hidden" name="ocr"', false);
+it('looks in the name and the recognised text by default, elsewhere only when "Suchen in" says so (187.1)', function (): void {
+    $this->get('/documents?q=Diesel')->assertSee('tank-rechnung.pdf')->assertDontSee('hotel-rechnung.pdf')
+        // the default chips are ticked and none is a hidden field of the window
+        ->assertSee('name="in[]" value="ocr" checked', false)->assertDontSee('name="in[]" value="note" checked', false)
+        ->assertDontSee('type="hidden" name="in[]"', false);
+    $this->get('/documents?q=Diesel&in[]=name')->assertSee('Nichts gefunden.');
+    // the old address keeps working: ocr=1 adds the recognised text
+    $this->get('/documents?q=Diesel&in[]=name&ocr=1')->assertSee('tank-rechnung.pdf');
+    // unknown fields are ignored, nothing left = the default
+    $this->get('/documents?q=Diesel&in[]=bogus')->assertSee('tank-rechnung.pdf');
+});
+
+it('searches the note, tag names and property values only with their chip (187.1)', function (): void {
+    app(CurrentOrg::class)->set($this->admin);
+    $hotel = Document::query()->withoutGlobalScope(OrgScope::class)->where('title', 'hotel-rechnung.pdf')->firstOrFail();
+    $hotel->forceFill(['note' => 'Messe Hannover'])->save();
+    $this->post('/tags', ['name' => 'Dienstreise'])->assertRedirect();
+    $hotel->tags()->attach(Tag::query()->where('name', 'Dienstreise')->firstOrFail());
+    app(PropertyValues::class)->set($hotel, 'sender', 'Musterhotel GmbH');
+
+    foreach (['note' => 'Hannover', 'tags' => 'Dienstreise', 'props' => 'Musterhotel'] as $field => $term) {
+        $this->get('/documents?q='.$term.'&all=1')->assertSee('Nichts gefunden.');
+        $this->get('/documents?q='.$term.'&all=1&in[]='.$field)->assertSee('hotel-rechnung.pdf')->assertDontSee('tank-rechnung.pdf')
+            ->assertSee('name="in[]" value="'.$field.'" checked', false);
+    }
 });
 
 it('shows the result list also in a timeline window and drops back to it without the search', function (): void {

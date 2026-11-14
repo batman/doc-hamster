@@ -107,7 +107,7 @@ it('stores one translation per language and finds it in the search of the recogn
 
     expect(DocumentTranslation::query()->where('document_id', $document->id)->pluck('text')->all())->toBe(['Summe 12,50']);
     $this->get('/documents?q=Summe&ocr=1')->assertSee('beleg.jpg');
-    $this->get('/documents?q=Summe')->assertDontSee('beleg.jpg');
+    $this->get('/documents?q=Summe&in[]=name')->assertDontSee('beleg.jpg');
     $this->get('/documents/'.$document->id)->assertOk()->assertSee('Summe 12,50')->assertDontSee('data-translate-run', false);
 
     fakeInstalled($this->root, ['translate-engine' => true, 'translate-el-en' => false]);
