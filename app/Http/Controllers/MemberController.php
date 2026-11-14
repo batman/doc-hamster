@@ -81,7 +81,9 @@ final class MemberController
         abort_if($user === null || $membership->user_id === $org->membership()->user_id, 403);
 
         $password = self::newPassword();
-        $user->update(['password_hash' => $password]);
+        // A378: someone restored from a backup may have lost the username (the owner took it) – give a free one.
+        $username = $user->username ?? self::freeUsername((string) $user->display_name);
+        $user->update(['password_hash' => $password, 'username' => $username]);
         // A375: a new password ends every sign-in of that person, "Angemeldet bleiben" included.
         UserSessions::endOthers($user->id, null);
         UserSessions::rotateRememberToken($user);
@@ -193,5 +195,17 @@ final class MemberController
     private function log(AuditLog $audit, Request $request, CurrentOrg $org, string $action, Membership $membership): void
     {
         $audit->record($action, orgId: $org->id(), userId: $org->membership()->user_id, subject: $membership, meta: ['role' => $membership->role->value, 'role_name' => $membership->roleName()], ip: $request->ip());
+    }
+
+    private static function freeUsername(string $name): string
+    {
+        $base = trim((string) preg_replace('/[^a-z0-9._-]+/', '.', mb_strtolower(Str::ascii($name))), '.');
+        $base = $base === '' ? 'mitglied' : mb_substr($base, 0, 40);
+        $candidate = $base;
+        for ($i = 2; User::query()->where('username', $candidate)->exists(); $i++) {
+            $candidate = $base.$i;
+        }
+
+        return $candidate;
     }
 }

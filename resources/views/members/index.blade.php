@@ -25,6 +25,10 @@
             <li>
                 <strong>{{ $membership->user?->display_name }}</strong>
                 <span class="muted">{{ $membership->roleName() }} · {{ $membership->user?->username }}</span>
+                {{-- A378: restored from a backup without any way to sign in – "Passwort zurücksetzen" sets it up again. --}}
+                @if ($membership->isActive() && $membership->user !== null && $membership->user->password_hash === null && ! $membership->user->passkeys()->exists())
+                    <span class="pill pill-warning">{{ __('members.no_access') }}</span>
+                @endif
                 @if (! $membership->isActive())
                     <span class="muted">· {{ __('members.removed') }}</span>
                 @elseif ($membership->user_id !== $selfId)

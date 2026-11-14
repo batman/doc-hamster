@@ -24,7 +24,7 @@ use Illuminate\Support\Str;
 /*
 | Point 206.9: a small synthetic organisation goes out as a full backup and comes back into an empty instance with
 | its original IDs – files, tags, bookings, matches, notes; the owner gets a new login, a member without an account
-| is skipped. Nothing secret is in the ZIP.
+| comes back without access (A378). Nothing secret is in the ZIP.
 */
 uses(RefreshDatabase::class)->group('db');
 
@@ -88,12 +88,13 @@ it('restores a full backup into an empty instance with the original IDs', functi
         ->and(DB::table('organizations')->where('id', $orgId)->exists())->toBeTrue()
         ->and($owner->username)->toBe('inhaberin')
         ->and(Hash::check('neues-passwort-1234', (string) $owner->password_hash))->toBeTrue()
-        ->and(DB::table('memberships')->where('org_id', $orgId)->pluck('role')->all())->toBe(['owner'])
-        ->and(DB::table('documents')->where('id', $this->document->id)->value('uploaded_by'))->toBeNull()
+        // A378: the other member comes back with role and data, but without any way to sign in.
+        ->and(DB::table('memberships')->where('org_id', $orgId)->orderBy('role')->pluck('role')->all())->toBe(['member', 'owner'])
+        ->and(DB::table('users')->where('id', '!=', $owner->id)->whereNotNull('password_hash')->exists())->toBeFalse()
         ->and(DB::table('document_tags')->where('document_id', $this->document->id)->pluck('tag_id')->all())->toBe([$this->tag->id])
         ->and(DB::table('transactions')->where('id', $this->transaction->id)->value('amount_minor'))->toEqual(-1234)
         ->and(DB::table('matches')->where('transaction_id', $this->transaction->id)->value('document_id'))->toBe($this->document->id)
-        ->and(DB::table('notes')->where('id', $this->note->id)->value('user_id'))->toBe($owner->id)
+        ->and(DB::table('notes')->where('id', $this->note->id)->value('user_id'))->toBe($this->member->user_id)
         ->and($file?->mime)->toBe('application/pdf')
         ->and(Storage::disk('local')->get((string) $file?->path))->toBe(BACKUP_PDF);
 });

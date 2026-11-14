@@ -16,8 +16,9 @@ use Illuminate\Support\Facades\Storage;
  * RestoreSource checks names, limits, manifest and checksums first; rows and files are checked again here; nothing
  * reaches the database before all of that passed, and then everything goes in one transaction with the original IDs.
  *
- * People: the backup's owner (the one who made it, else the first owner) comes back as the owner with the username
- * and password given here; members without an account here are skipped and reported – their notes go to the owner.
+ * People (A378): the backup's owner (the one who made it, else the first owner) comes back as the owner with the
+ * username and password given here. Everyone else comes back with name, role and data but without any way to sign in
+ * (no password, no passkey – the backup never holds them); the owner sets their access up again under Mitglieder.
  */
 final class BackupRestorer
 {
@@ -53,11 +54,14 @@ final class BackupRestorer
                 throw new RestoreFailed('content', ['name' => 'organizations']);
             }
 
-            [$owner, $skipped] = self::people($tables, $manifest->createdBy);
-            $tables['users'] = [[...$owner, 'username' => $ownerUsername, 'password_hash' => Hash::make($ownerPassword)]];
-            foreach ($tables as $table => $rows) {
-                $tables[$table] = RestoreRows::mapPeople($table, $rows, $skipped['ids'], (string) $owner['id']);
+            [$owner, $others] = self::people($tables, $manifest->createdBy);
+            $tables['users'] = [[...$owner, 'username' => $ownerUsername, 'password_hash' => Hash::make($ownerPassword), 'remember_token' => null]];
+            foreach ($others as $user) {
+                // No sign-in until the owner sets it up; a username the owner now uses is freed.
+                $username = is_string($user['username'] ?? null) && mb_strtolower((string) $user['username']) !== $ownerUsername ? $user['username'] : null;
+                $tables['users'][] = [...$user, 'username' => $username, 'password_hash' => null, 'remember_token' => null];
             }
+            $skipped = ['names' => array_map(static fn (array $u): string => (string) ($u['display_name'] ?? $u['id']), $others)];
             $tables['folders'] = RestoreRows::parentsFirst($tables['folders'] ?? []);
 
             [$tables['document_files'], $missing] = $this->files($source, $tables['document_files'] ?? [], $orgId, $written);
@@ -94,7 +98,7 @@ final class BackupRestorer
 
     /**
      * @param  array<string, list<array<string, scalar|null>>>  $tables
-     * @return array{array<string, scalar|null>, array{ids: array<string, true>, names: list<string>}}
+     * @return array{array<string, scalar|null>, list<array<string, scalar|null>>}
      */
     private static function people(array $tables, ?string $createdBy): array
     {
@@ -102,20 +106,19 @@ final class BackupRestorer
         $ownerIds = array_map(static fn (array $m): string => (string) $m['user_id'], $owners);
         $ownerId = $createdBy !== null && in_array($createdBy, $ownerIds, true) ? $createdBy : ($ownerIds[0] ?? null);
         $owner = null;
-        $skipped = ['ids' => [], 'names' => []];
+        $others = [];
         foreach ($tables['users'] ?? [] as $user) {
             if ($user['id'] === $ownerId) {
                 $owner = $user;
             } else {
-                $skipped['ids'][(string) $user['id']] = true;
-                $skipped['names'][] = (string) ($user['display_name'] ?? $user['id']);
+                $others[] = $user;
             }
         }
         if ($owner === null) {
             throw new RestoreFailed('no_owner');
         }
 
-        return [$owner, $skipped];
+        return [$owner, $others];
     }
 
     /**

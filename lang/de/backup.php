@@ -67,7 +67,7 @@ return [
         'owner_password' => 'Neues Passwort des Inhabers (mind. 12 Zeichen)',
         'zip_password' => 'Passwort des Backups',
         'done' => 'Wiederhergestellt: :org (:files Dateien).',
-        'skipped' => 'Ohne Konto hier und daher nicht übernommen: :names. Ihre Notizen gehören jetzt dem Inhaber.',
+        'skipped' => 'Ohne Zugang zurückgeholt: :names. Ihren Zugang richten Sie unter Mitglieder mit „Passwort zurücksetzen“ neu ein.',
         'missing' => ':count Dateien fehlten im Backup.',
         'next' => 'Als Nächstes: php artisan dochamster:thumbnails (Vorschaubilder), Geräte neu verbinden, Steuerberater-Passwörter neu setzen.',
         'errors' => [

@@ -69,34 +69,6 @@ final class RestoreRows
     }
 
     /**
-     * People without an account here (D-023, point 206.7): references to them become the new owner (notes), go away
-     * with the row (their dashboard, their membership) or are emptied.
-     *
-     * @param  list<array<string, scalar|null>>  $rows
-     * @param  array<string, true>  $skipped  user ids
-     * @return list<array<string, scalar|null>>
-     */
-    public static function mapPeople(string $table, array $rows, array $skipped, string $ownerId): array
-    {
-        $out = [];
-        foreach ($rows as $row) {
-            foreach (BackupTables::USER_COLUMNS as $column) {
-                $value = $row[$column] ?? null;
-                if (! is_string($value) || ! isset($skipped[$value])) {
-                    continue;
-                }
-                if (in_array($table, ['memberships', 'user_dashboards'], true)) {
-                    continue 2;
-                }
-                $row[$column] = $table === 'notes' ? $ownerId : null;
-            }
-            $out[] = $row;
-        }
-
-        return $out;
-    }
-
-    /**
      * Folders reference their parent: parents first, so the foreign key holds while inserting.
      *
      * @param  list<array<string, scalar|null>>  $rows

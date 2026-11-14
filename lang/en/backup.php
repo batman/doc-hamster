@@ -67,7 +67,7 @@ return [
         'owner_password' => 'New password of the owner (at least 12 characters)',
         'zip_password' => 'Password of the backup',
         'done' => 'Restored: :org (:files files).',
-        'skipped' => 'No account here, so not taken over: :names. Their notes now belong to the owner.',
+        'skipped' => 'Restored without access: :names. Set up their access again under Members with "Reset password".',
         'missing' => ':count files were missing in the backup.',
         'next' => 'Next: php artisan dochamster:thumbnails (thumbnails), pair devices again, set tax advisor passwords again.',
         'errors' => [

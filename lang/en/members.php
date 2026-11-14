@@ -17,4 +17,6 @@ return [
     'revoke' => 'Remove access',
     'revoked' => 'The access was removed.',
     'removed' => 'Access removed',
+    // A378: restored without any way to sign in.
+    'no_access' => 'Set up access again',
 ];

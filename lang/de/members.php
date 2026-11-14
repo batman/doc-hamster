@@ -17,4 +17,6 @@ return [
     'revoke' => 'Zugang entfernen',
     'revoked' => 'Der Zugang wurde entfernt.',
     'removed' => 'Zugang entfernt',
+    // A378: restored without any way to sign in.
+    'no_access' => 'Zugang neu einrichten',
 ];
