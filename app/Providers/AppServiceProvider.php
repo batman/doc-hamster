@@ -86,7 +86,9 @@ class AppServiceProvider extends ServiceProvider
     {
         self::logSignIns();
         // Point 164.1: queries and view rendering count into the request's Server-Timing.
-        DB::listen(fn (QueryExecuted $query) => $this->app->make(RequestTiming::class)->query($query->time ?? 0.0));
+        // An event listener, not DB::listen(): that would create the default connection at boot with the config of that
+        // moment (later config changes, e.g. the setup's database check, would then be ignored).
+        Event::listen(QueryExecuted::class, fn (QueryExecuted $query) => $this->app->make(RequestTiming::class)->query($query->time ?? 0.0));
         View::creator('*', fn () => $this->app->make(RequestTiming::class)->viewCreated());
         TagsCss::watch();
         Blade::prepareStringsForCompilationUsing(static fn (string $template): string => Icon::compile($template));
