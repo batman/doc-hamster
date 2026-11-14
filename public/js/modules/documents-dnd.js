@@ -1,5 +1,9 @@
 /* Documents: dragging documents and folders onto folder rows, windows, the Papierkorb and rows with data-doc-drop
-   (points 75-79, A133-A155, A269); split from documents.js (A315). */
+   (points 75-79, A133-A155, A269); split from documents.js (A315).
+   Point 160: two ways in, one set of rules. This pointer engine carries folders (sorting needs the gaps between rows)
+   and everything a finger drags; a mouse drags documents and bookings with the browser's own drag and drop
+   (documents-dnd-native.js), which also reaches other browser tabs and the desktop. Both ask aim() where a drop would
+   land and land() what it does, with the same orange label and highlights. */
 (() => {
     const DocHamster = window.DocHamster;
     const docs = DocHamster?.docs;
@@ -66,17 +70,27 @@
             }
             return { type: 'folder-into', el: row, folder: row.dataset.id };
         }
-        // Documents. A booking row of a Bank account window links them (A269); the Bank module answers and reloads.
+        // A booking (A337): onto a document row, a candidate, a detail window's head or body = the same link.
+        if (carry.kind === 'booking') {
+            const doc = el.closest('[data-doc]:not([data-trashed]), [data-doc-drag]');
+            const win = doc ? null : winOf(el);
+            const head = win?.dataset.windowKind === 'detail' && !win.classList.contains('is-min') ? win.querySelector('.win-head[data-doc-drag]') : null;
+            const id = doc ? (doc.dataset.doc ?? doc.dataset.docDrag) : head?.dataset.docDrag;
+            return id ? { type: 'link', el: doc ?? win.querySelector('.win-body') ?? win, url: carry.url, ids: [id] } : null;
+        }
+        // Documents. A booking row of a Bank account window or a booking card links them (A269, 160.2); the Bank module
+        // answers and reloads.
         const booking = el.closest('[data-doc-drop]');
         if (booking) {
             return carry.trashed ? null : { type: 'link', el: booking, url: booking.dataset.docDrop };
         }
+        // Rows of another tab are not here: then only the server knows where they are (160.4).
+        const already = folder => carry.items.length > 0 && carry.items.every(item => item.dataset.folder === folder && !item.hasAttribute('data-trashed'));
         if (row) {
             if (row.hasAttribute('data-drop-trash')) {
                 return cfg.trash && !carry.trashed ? { type: 'trash', el: row } : null;
             }
-            return cfg.move && !carry.items.every(item => item.dataset.folder === row.dataset.id && !item.hasAttribute('data-trashed'))
-                ? { type: 'move', el: row, folder: row.dataset.id } : null;
+            return cfg.move && !already(row.dataset.id) ? { type: 'move', el: row, folder: row.dataset.id } : null;
         }
         const win = winOf(el);
         const body = el.closest('.win-body');
@@ -87,7 +101,7 @@
             return cfg.trash && !carry.trashed ? { type: 'trash', el: body } : null;
         }
         const folder = folderOfWindow(win);
-        if (win.dataset.windowKind === 'folder' && folder && cfg.move && !body.querySelector('[data-no-drop]') && !carry.items.every(item => item.dataset.folder === folder && !item.hasAttribute('data-trashed'))) {
+        if (win.dataset.windowKind === 'folder' && folder && cfg.move && !body.querySelector('[data-no-drop]') && !already(folder)) {
             return { type: 'move', el: body, folder };
         }
         return null;
@@ -107,14 +121,24 @@
             .catch(fail);
     };
 
+    // "Verknüpft" with "Rückgängig" (A339): the undo removes only the links this drop made.
+    const linked = json => {
+        const undo = json.undo ? () => post(json.undo.url, { ids: json.undo.ids }).then(back => {
+            toast(back.message);
+            DocHamster.emit('bank:changed', back);
+        }).catch(fail) : null;
+        toast(json.message, { undo });
+        DocHamster.emit('bank:changed', json);
+    };
+
     const land = (carry, target) => {
         const cfg = config();
-        const ids = carry.items.map(item => item.dataset.doc ?? item.dataset.id);
+        const ids = carry.ids ?? carry.items.map(item => item.dataset.doc ?? item.dataset.docDrag ?? item.dataset.id);
         if (target.type === 'link') {
-            post(target.url, { ids }).then(json => {
-                toast(json.message);
-                DocHamster.emit('bank:changed', json);
-            }).catch(fail);
+            const docIds = target.ids ?? ids;
+            // A322: the booking window's Dauerbeleg tick goes along with a single document dropped there.
+            const standing = carry.kind === 'docs' && docIds.length === 1 && target.el.closest('section[data-window]')?.querySelector('input[data-bank-standing]')?.checked ? 1 : null;
+            post(target.url, { ids: docIds, standing }).then(linked).catch(fail);
         } else if (target.type === 'move') {
             post(cfg.move, { ids, folder: target.folder }).then(json => {
                 toast(json.message, { undo: () => undoMoves(json.moves ?? []) });
@@ -159,30 +183,64 @@
         }
     };
 
-    const carryOut = (source, start) => {
-        let items;
-        let kind;
+    // What a drag from `source` carries: all picked rows of its window (A132, A338), one document handle
+    // (data-doc-drag: a candidate, a detail window's head), a booking (data-booking-drag, A337) or a folder.
+    const carryOf = source => {
+        let items = [source];
+        let kind = 'folder';
         if (source.matches('[data-doc]')) {
-            const scope = scopeOf(source);
             if (!source.classList.contains('is-selected')) {
                 document.querySelectorAll('[data-doc].is-selected').forEach(row => pick(row, false));
                 pick(source);
             }
-            items = docsIn(scope).filter(row => row.classList.contains('is-selected'));
+            items = docsIn(scopeOf(source)).filter(row => row.classList.contains('is-selected'));
             kind = 'docs';
-        } else {
-            items = [source];
-            kind = 'folder';
+        } else if (source.matches('[data-doc-drag]')) {
+            kind = 'docs';
+        } else if (source.matches('[data-booking-drag]')) {
+            kind = 'booking';
         }
-        const carry = { kind, items, trashed: items.some(item => item.hasAttribute('data-trashed')) };
-        items.forEach(item => item.classList.add('is-carried'));
-
+        const ids = kind === 'docs' ? items.map(item => item.dataset.doc ?? item.dataset.docDrag) : null;
+        const label = kind === 'folder' ? source.dataset.name : kind === 'booking' ? source.dataset.bookingLabel
+            : (items.length === 1 ? (items[0].querySelector('[data-doc-title]')?.textContent.trim() || docsLabel(1)) : docsLabel(items.length));
+        return { kind, items, ids, label, url: source.dataset.bookingDrag ?? null, trashed: items.some(item => item.hasAttribute('data-trashed')) };
+    };
+    // The orange label on the pointer (also the browser's drag image, documents-dnd-native.js).
+    const ghostOf = (text, x, y) => {
         const ghost = document.createElement('div');
         ghost.className = 'drag-ghost';
         ghost.setAttribute('aria-hidden', 'true');
-        ghost.textContent = kind === 'folder' ? source.dataset.name : (items.length === 1 ? (items[0].querySelector('[data-doc-title]')?.textContent.trim() ?? docsLabel(1)) : docsLabel(items.length));
+        ghost.textContent = text ?? '';
+        ghost.style.transform = `translate(${x + 14}px, ${y + 10}px)`;
         document.body.append(ghost);
+        return ghost;
+    };
+    // A336: while documents or a booking are carried, every place that takes them shows it (dnd.css).
+    const showTargets = carry => {
+        html.classList.toggle('is-carrying-docs', carry?.kind === 'docs' && !carry.trashed && Boolean(config().bank));
+        html.classList.toggle('is-carrying-move', carry?.kind === 'docs' && Boolean(config().move));
+        html.classList.toggle('is-carrying-booking', carry?.kind === 'booking');
+    };
+    // Near the top or bottom edge of a window body the body scrolls along; true when it moved.
+    const edgeScroll = (x, y, factor = 1) => {
+        const body = document.elementFromPoint(x, y)?.closest('.win-body');
+        if (!body) {
+            return false;
+        }
+        const rect = body.getBoundingClientRect();
+        const zone = 40;
+        const speed = y < rect.top + zone ? y - (rect.top + zone) : y > rect.bottom - zone ? y - (rect.bottom - zone) : 0;
+        body.scrollTop += speed / 3 * factor;
+        return speed !== 0;
+    };
+
+    const carryOut = (source, start) => {
+        const carry = carryOf(source);
+        const { items } = carry;
+        items.forEach(item => item.classList.add('is-carried'));
+        const ghost = ghostOf(carry.label, start.clientX, start.clientY);
         html.classList.add('is-carrying');
+        showTargets(carry);
 
         let bar = null;
         let target = null;
@@ -209,17 +267,9 @@
                 bar = null;
             }
         };
-        // Near the top or bottom edge of a window body the body scrolls along.
         const edge = () => {
-            const body = document.elementFromPoint(pointer.x, pointer.y)?.closest('.win-body');
-            if (body) {
-                const rect = body.getBoundingClientRect();
-                const zone = 40;
-                const speed = pointer.y < rect.top + zone ? pointer.y - (rect.top + zone) : pointer.y > rect.bottom - zone ? pointer.y - (rect.bottom - zone) : 0;
-                if (speed) {
-                    body.scrollTop += speed / 3;
-                    place();
-                }
+            if (edgeScroll(pointer.x, pointer.y)) {
+                place();
             }
             frame = requestAnimationFrame(edge);
         };
@@ -235,6 +285,7 @@
             window.removeEventListener('keydown', key, true);
             dragging = false;
             html.classList.remove('is-carrying');
+            showTargets(null);
             ghost.remove();
             bar?.remove();
             setTarget(null);
@@ -269,24 +320,32 @@
             event.preventDefault();
         }
     }, { passive: false });
-    document.addEventListener('dragstart', event => {
-        if (event.target.closest?.('[data-doc], [data-drag-folder]')) {
-            event.preventDefault();
+    // Where a drag may start and whether this person may carry it anywhere (shared with documents-dnd-native.js).
+    const SOURCES = '[data-doc], [data-doc-drag], [data-booking-drag], [data-drag-folder]';
+    const sourceAt = target => {
+        const source = target.closest?.(SOURCES);
+        if (!source || (target.closest('input, select, textarea, button, form, .row-actions, .dropdown, .doc-rename') && !target.closest('.drag-grip'))) {
+            return null;
         }
-    });
-    document.addEventListener('pointerdown', event => {
         const cfg = config();
-        const source = event.target.closest?.('[data-doc], [data-drag-folder]');
-        if (!source || event.button !== 0 || event.target.closest('input, select, textarea, button, form, .row-actions, .dropdown, .doc-rename')) {
-            return;
+        if (source.matches('[data-booking-drag]')) {
+            return cfg.bank ? source : null;
         }
-        if (source.matches('[data-doc]') && !cfg.move && !cfg.trash) {
-            return;
+        if (source.matches('[data-doc][data-trashed]')) {
+            return cfg.move ? source : null;
         }
-        if (source.matches('[data-doc][data-trashed]') && !cfg.move) {
-            return;
+        if (source.matches('[data-doc], [data-doc-drag]')) {
+            return cfg.move || cfg.trash || cfg.bank ? source : null;
         }
+        return source;
+    };
+    document.addEventListener('pointerdown', event => {
+        const source = event.button === 0 ? sourceAt(event.target) : null;
         const touch = event.pointerType === 'touch';
+        // A mouse carries documents and bookings with the browser's drag and drop (documents-dnd-native.js).
+        if (!source || (!touch && !source.matches('[data-drag-folder]'))) {
+            return;
+        }
         const start = { clientX: event.clientX, clientY: event.clientY };
         if (!touch) {
             event.preventDefault(); // no text selection while dragging
@@ -322,5 +381,5 @@
             timer = setTimeout(begin, 350); // a finger on the name waits for the long press instead (A190)
         }
     });
-    Object.assign(docs, { winOf, folderOfWindow, setTarget });
+    Object.assign(docs, { winOf, folderOfWindow, setTarget, aim, land, carryOf, ghostOf, showTargets, edgeScroll, sourceAt });
 })();

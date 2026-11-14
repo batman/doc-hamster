@@ -18,8 +18,9 @@
     One window = one instance of a module for one record; the same record can be open twice (point 40), so ids inside
     a window loaded later get a per-window suffix in app.js – write plain ids, dialog names and labels as usual.
     kind (the module type, e.g. "folder", "detail"; default the route name): picks the default widths; a dragged width belongs only to that one window (A97).
+    dragDoc, dragFile (point 160): the head drags this document (id, DownloadURL "mime:name:url") into other windows, tabs or the desktop.
 --}}
-@props(['title', 'icon' => 'file-text', 'url' => null, 'close' => null, 'upload' => null, 'min' => null, 'optimal' => null, 'max' => null, 'priority' => null, 'search' => null, 'searchLive' => false, 'searchParams' => '', 'searchCount' => 0, 'kind' => null])
+@props(['title', 'icon' => 'file-text', 'url' => null, 'close' => null, 'upload' => null, 'min' => null, 'optimal' => null, 'max' => null, 'priority' => null, 'search' => null, 'searchLive' => false, 'searchParams' => '', 'searchCount' => 0, 'kind' => null, 'dragDoc' => null, 'dragFile' => null])
 @php
     $url ??= request()->fullUrl();
     $kind ??= request()->route()?->getName() ?? 'page';
@@ -65,10 +66,10 @@
         <button type="button" class="win-strip-x" data-window-close aria-label="{{ __('app.window.remove', ['title' => $title]) }}" data-tooltip="{{ __('app.window.remove_short') }}"><x-icon name="x" /></button>
     @endif
     <div class="win-frame">
-        <header class="win-head">
+        <header class="win-head" @if ($dragDoc) data-doc-drag="{{ $dragDoc }}" data-doc-file="{{ $dragFile }}" @endif>
             <button type="button" class="win-back icon-button" data-window-back aria-label="{{ __('app.window.back') }}" hidden><x-icon name="chevron-left" /></button>
             <x-icon :name="$icon" />
-            <h1 class="win-title" title="{{ $title }}">{{ $title }}</h1>
+            <h1 class="win-title" title="{{ $title }}" @if ($dragDoc) data-doc-title @endif>{{ $title }}</h1>
             {{-- The window controls (points 70, 72, A116-A124): frameless, always this order; on phones only X. --}}
             <button type="button" class="control-button win-minimise" data-window-fold aria-label="{{ __('app.window.minimise') }}" data-tooltip="{{ __('app.window.minimise') }}"><x-icon name="chevron-left" /></button>
             <button type="button" class="control-button win-maximise" data-window-maximise aria-pressed="false" aria-label="{{ __('app.window.maximise') }}" data-tooltip="{{ __('app.window.maximise') }}" data-label-max="{{ __('app.window.maximise') }}" data-label-restore="{{ __('app.window.restore') }}"><x-icon name="window-maximise" /><x-icon name="window-restore" /></button>

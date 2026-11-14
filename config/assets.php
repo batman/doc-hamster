@@ -14,7 +14,7 @@ return [
         'core/base', 'core/layout', 'core/forms', 'core/components', 'core/buttons', 'core/menus', 'core/lists',
         'core/windows', 'core/menu-window',
         'modules/documents', 'modules/notes', 'modules/text-editor', 'modules/ocr', 'modules/log', 'modules/updates',
-        'modules/palette', 'modules/pages', 'modules/properties', 'modules/ocr-text', 'modules/girocode', 'core/layout-debug',
+        'modules/palette', 'modules/pages', 'modules/properties', 'modules/ocr-text', 'modules/girocode', 'modules/dnd', 'core/layout-debug',
     ],
     'js' => [
         'core/bus', 'core/error-report', 'core/menu', 'core/dropdowns', 'core/card-fold', 'core/button-choice', 'modules/documents-filter', 'core/sortable', 'core/tabs',
@@ -22,7 +22,7 @@ return [
         'core/badges', 'modules/notes', 'modules/tags-search', 'core/toasts', 'core/selection-bar', 'core/ajax-forms',
         'modules/updates-preview-pick', 'core/color-field', 'modules/folder-import', 'core/start',
         'modules/document-viewer', 'modules/ocr-text', 'modules/palette', 'modules/ocr-browser', 'modules/documents', 'modules/documents-rows', 'modules/documents-forms',
-        'modules/documents-rename', 'modules/documents-trash', 'modules/documents-select', 'modules/documents-dnd', 'modules/documents-upload', 'modules/documents-search',
+        'modules/documents-rename', 'modules/documents-trash', 'modules/documents-select', 'modules/documents-dnd', 'modules/documents-dnd-native', 'modules/documents-upload', 'modules/documents-search',
         'modules/updates',
         'modules/text-editor', 'core/edit-in-place', 'modules/ocr-progress', 'modules/ocr-live', 'modules/note-options',
         'modules/properties', 'modules/girocode', 'modules/bank', 'modules/inbox', 'core/window-edge', 'core/top-layer', 'core/layout-debug',

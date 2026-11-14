@@ -1,7 +1,7 @@
 {{-- Only large icons show the page itself; small icons show the file type (design point 13). --}}
 <ul class="view-tiles view-{{ $view }}">
     @foreach ($documents as $document)
-        <li data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" data-doc="{{ $document->id }}" data-folder="{{ $document->folder_id }}" @if ($open?->id === $document->id) class="is-open" @endif>
+        <li data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" data-doc="{{ $document->id }}" data-doc-file="{{ $document->dragFile() }}" data-folder="{{ $document->folder_id }}" @if ($open?->id === $document->id) class="is-open" @endif>
             <a href="{{ route('documents.show', [$document->id, ...request()->query()]) }}" data-window>
                 @if ($view === 'large')
                     @include('documents._thumb')

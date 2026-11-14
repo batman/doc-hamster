@@ -60,7 +60,7 @@
             <ul class="view-list">
                 @foreach ($documents as $document)
                     @php $from = \App\Domain\Documents\Inbox::sourceOf($document); $fromLabel = __('inbox.from', ['source' => __('inbox.sources.'.$from)]); @endphp
-                    <li data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" data-doc="{{ $document->id }}" data-folder="{{ $document->folder_id }}" data-source="{{ $from }}">
+                    <li data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" data-doc="{{ $document->id }}" data-doc-file="{{ $document->dragFile() }}" data-folder="{{ $document->folder_id }}" data-source="{{ $from }}">
                         @include('documents._type-icon')
                         <a href="{{ route('documents.show', $document->id) }}" data-window><span data-doc-title>{{ $document->title }}</span></a>
                         <span class="muted">{{ $document->created_at->format('d.m.Y H:i') }}</span>

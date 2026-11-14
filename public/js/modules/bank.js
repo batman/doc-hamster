@@ -4,7 +4,8 @@
 // - "Anderer Grund" opens its text field, every other reason saves with its click;
 // - a statement (CSV or Excel) dropped onto the Bank window, an account row or an account window ([data-statement-drop])
 //   is imported: an account that knows its columns imports at once (toast), otherwise the column window opens;
-// - forms with data-bank-action (confirm, reject, link, unlink, "kein Beleg nötig") are sent in the background;
+// - forms with data-bank-action (confirm, reject, link, unlink, "kein Beleg nötig") are sent in the background; a link
+//   answers with "Rückgängig" (A339); a candidate opens its menu "Mit dieser Buchung verknüpfen" on tap/Enter (A341);
 // - afterwards, and after documents were dropped onto a booking (documents.js emits 'bank:changed'), every Bank window
 //   reloads its body. Several Bank windows side by side work: nothing is looked up by id.
 (() => {
@@ -112,7 +113,7 @@
                 if (dialog) {
                     dialog.hidden = true;
                 }
-                toast(json.message);
+                toast(json.message, json.undo ? { undo: () => undoLink(json.undo) } : undefined);
                 reloadAll();
             })
             .catch(error => toast(error.message, { error: true }))
@@ -122,6 +123,37 @@
                     button.classList.remove('is-busy');
                 }
             });
+    });
+    // A339: "Rückgängig" after a link removes only the links it made.
+    const undoLink = ({ url, ids }) => {
+        const body = new FormData();
+        ids.forEach(id => body.append('ids[]', id));
+        send(url, body).then(json => {
+            toast(json.message);
+            reloadAll();
+        }).catch(error => toast(error.message, { error: true }));
+    };
+
+    // --- A341: a candidate without drag (finger, keyboard): a tap, click or Enter opens its menu ---------------
+    // "Mit dieser Buchung verknüpfen" behind the grip; dragging the row onto the booking does the same (point 160).
+    const openMenu = (row, focus) => setTimeout(() => {
+        row.querySelector('.drag-grip')?.click();
+        if (focus) {
+            row.querySelector('.dropdown-panel .menu-item')?.focus();
+        }
+    }, 0); // after the click that closes other dropdowns
+    document.addEventListener('click', event => {
+        const row = event.target.closest?.('[data-bank-candidate]');
+        if (row && !event.target.closest('a, button, input, label, .dropdown')) {
+            openMenu(row, false);
+        }
+    });
+    document.addEventListener('keydown', event => {
+        const row = event.target.closest?.('[data-bank-candidate]');
+        if (row && event.target === row && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            openMenu(row, true);
+        }
     });
 
     // --- Filters in the account window's toolbar (A304, A311): a click reloads only this window ----------------

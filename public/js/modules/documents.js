@@ -1,7 +1,8 @@
 /* Documents and folders: rows, drag and drop, uploads by drop (points 75-87, A131-A180) */
 // Split by responsibility (A315): this file holds the shared helpers (DocHamster.docs); documents-rows.js (row icons),
 // documents-forms.js (properties modules, field with symbol), documents-rename.js, documents-trash.js, documents-select.js,
-// documents-dnd.js (drag engine) and documents-upload.js (files from the computer) build on it, loaded in that order.
+// documents-dnd.js (drag engine), documents-dnd-native.js (mouse drags across windows, tabs and the desktop, point 160)
+// and documents-upload.js (files from the computer) build on it, loaded in that order.
 // One module for every Dokumente, folder and Papierkorb window, also for windows loaded later and several side by side:
 // - row icons as tall as the two text lines (A144-A146): a tight viewBox from the symbol's own box;
 // - row actions (A161, A174): pencil renames in place, the gear opens the properties / details as a window (plain link);

@@ -111,11 +111,14 @@
                 </nav>
             </aside>
             <div class="nav-backdrop"></div>
-            @if ($currentOrg->isSet() && Gate::any(['documents.upload', 'documents.edit']))
+            @if ($currentOrg->isSet() && Gate::any(['documents.upload', 'documents.edit', 'banking.import']))
                 {{-- Drag and drop of documents, folders and files (points 75-87): addresses and texts for app.js. No overlay any more:
-                     files land on a folder row, a folder window or the main menu's drop field (A169-A175). --}}
+                     files land on a folder row, a folder window or the main menu's drop field (A169-A175).
+                     Point 160: data-org marks drags between browser tabs (same organisation only), data-doc-url builds
+                     the document address for text/uri-list, data-bank allows links to bookings. --}}
                 @php $defaultFolder = \App\Domain\Documents\Folder::defaultIdFor($currentOrg->id()); @endphp
-                <div hidden data-dnd
+                <div hidden data-dnd data-org="{{ $currentOrg->id() }}" data-doc-url="{{ route('documents.show', '__ID__') }}"
+                     @can('banking.import') data-bank="1" @endcan
                      @can('documents.upload') data-upload="{{ route('documents.store') }}" @endcan
                      @can('documents.edit') data-move="{{ route('documents.bulk.move') }}" data-folder-move="{{ route('folders.move', '__ID__') }}" @endcan
                      @can('documents.trash') data-trash="{{ route('documents.bulk.trash') }}" data-restore="{{ route('documents.bulk.restore') }}" data-folder-destroy="{{ route('folders.destroy', '__ID__') }}" @endcan

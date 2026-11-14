@@ -5,7 +5,7 @@
     <p class="card-note">{{ __('bank.receipts_hint') }}</p>
     <ul class="pick-list">
         @forelse ($receipts as $document)
-            <li class="pick-row is-static" data-doc="{{ $document->id }}" data-folder="{{ $document->folder_id }}">
+            <li class="pick-row is-static" data-doc="{{ $document->id }}" data-doc-file="{{ $document->dragFile() }}" data-folder="{{ $document->folder_id }}">
                 <span class="row-icon"><x-icon name="file-text" /></span>
                 <span>
                     <strong><a href="{{ route('documents.show', $document->id) }}" data-window><span data-doc-title>{{ $document->title }}</span></a></strong>

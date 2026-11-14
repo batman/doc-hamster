@@ -18,7 +18,8 @@
         <p class="error" role="alert">{{ $errors->first() }}</p>
     @endif
 
-    <section class="card">
+    {{-- Point 160: documents dropped onto the booking card link to it (like a booking row of the account window). --}}
+    <section class="card" data-doc-drop="{{ route('bank.link', $transaction->id) }}">
         <h2 class="card-head"><x-icon name="receipt" />{{ __('bank.transaction') }} <span class="pill {{ $statusClass[$state] }}">{{ __('bank.status.'.$state) }}</span></h2>
         <ul class="prop-list">
             <li class="prop-row"><span class="prop-name">{{ __('bank.columns.date') }}</span><span class="prop-value">{{ $transaction->booking_date->format('d.m.Y') }}</span></li>
@@ -234,7 +235,7 @@
     <section class="card">
         <h2 class="card-head"><x-icon name="file-text" />{{ __('bank.candidates') }}</h2>
         <p class="card-note">{{ __('bank.candidates_hint') }}</p>
-        {{-- A318: documents with a booking already stay out unless asked for; A322: the next "Zuordnen" makes a Dauerbeleg. --}}
+        {{-- A318: documents with a booking already stay out unless asked for; A322: the next link (drop or menu) makes a Dauerbeleg. --}}
         <div class="bank-ticks">
             <label class="check"><input type="checkbox" data-bank-reload="{{ route('bank.show', array_filter([$transaction->id, 'q' => $search !== '' ? $search : null, 'linked' => $withLinked ? null : 1])) }}" @checked($withLinked)> {{ __('bank.show_linked') }}</label>
             <label class="check" data-tooltip="{{ __('bank.standing_hint') }}"><input type="checkbox" data-bank-standing> {{ __('bank.standing_tick') }}</label>
@@ -242,10 +243,22 @@
         <ul class="pick-list">
             @forelse ($candidates as $candidate)
                 @php $document = $candidate['document']; $amount = $candidateAmounts[$document->id] ?? null; $elsewhere = $candidateLinks[$document->id] ?? null; @endphp
-                <li class="pick-row is-static">
+                {{-- 160.5, A341: no button – the row drags onto the booking (card above or a row of the account window);
+                     a tap, click or Enter opens the small menu "Mit dieser Buchung verknüpfen" behind the grip. --}}
+                <li class="pick-row is-static drag-row" data-doc-drag="{{ $document->id }}" data-doc-file="{{ $document->dragFile() }}" data-bank-candidate tabindex="0">
+                    <div class="dropdown">
+                        <button type="button" class="icon-button drag-grip" aria-haspopup="true" aria-expanded="false" aria-label="{{ __('bank.drag_grip', ['name' => $document->title]) }}"><x-icon name="grip-vertical" /></button>
+                        <div class="dropdown-panel" role="menu" hidden>
+                            <form method="post" action="{{ route('bank.match', $transaction->id) }}" data-bank-action data-bank-match>
+                                @csrf
+                                <input type="hidden" name="document_id" value="{{ $document->id }}">
+                                <button type="submit" class="menu-item" role="menuitem"><x-icon name="link" /><span>{{ __('bank.link_here') }}</span></button>
+                            </form>
+                        </div>
+                    </div>
                     <span class="row-icon"><x-icon name="file-text" /></span>
                     <span>
-                        <strong><a href="{{ route('documents.show', $document->id) }}" data-window>{{ $document->title }}</a></strong>
+                        <strong><a href="{{ route('documents.show', $document->id) }}" data-window><span data-doc-title>{{ $document->title }}</span></a></strong>
                         <small>
                             {{ $document->created_at->format('d.m.Y') }}
                             @if ($amount !== null) · {{ $money(abs($amount)) }}@endif
@@ -258,11 +271,6 @@
                     @if ($candidate['score'] >= \App\Domain\Banking\MatchScore::SUGGEST)
                         <span class="pill pill-new">{{ __('bank.score', ['score' => $candidate['score']]) }}</span>
                     @endif
-                    <form method="post" action="{{ route('bank.match', $transaction->id) }}" data-bank-action data-bank-match>
-                        @csrf
-                        <input type="hidden" name="document_id" value="{{ $document->id }}">
-                        <button type="submit" class="button-quiet button-small">{{ __('bank.link') }}</button>
-                    </form>
                 </li>
             @empty
                 <li class="list-empty">{{ __('bank.no_candidates') }}</li>

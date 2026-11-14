@@ -1,0 +1,22 @@
+/* Drag and drop between windows, browser tabs and the desktop (point 160, A336-A341). The row or window a drop
+   would land on stays the orange .is-drop-target (core/lists.css); this file adds the rest. */
+
+/* Every document or booking that can be dragged: no text selection, no callout on a long press. */
+[data-doc-drag], [data-booking-drag] { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.win-head[data-doc-drag] { cursor: grab; }
+[data-doc-drag].is-carried, [data-booking-drag].is-carried { opacity: .45; }
+
+/* A336: while documents (or a booking) are carried, every place that takes them is outlined; the one under the
+   pointer turns orange. Places that take nothing stay as they are (the browser shows "no drop"). */
+html.is-carrying-docs [data-doc-drop]:not(.is-drop-target),
+html.is-carrying-move [data-folder-row]:not(.is-drop-target):not([data-drop-trash]),
+html.is-carrying-booking :is([data-doc]:not([data-trashed]), [data-doc-drag]):not(.is-drop-target):not(.is-carried) {
+    outline: 2px dashed color-mix(in srgb, var(--primary) 55%, transparent); outline-offset: -2px; }
+
+/* 160.5: a candidate row of a booking window drags by its grip (or anywhere on the row); the grip is also the
+   button of its small menu "Mit dieser Buchung verknüpfen" (A341) – a grip, never a visible button. */
+.drag-row { cursor: grab; }
+.drag-row:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.drag-grip { cursor: grab; color: var(--muted); background: none; border-color: transparent; box-shadow: none; }
+.drag-grip:hover, .drag-grip[aria-expanded="true"] { color: var(--primary-ink); background: none; }
+.drag-row > .dropdown { display: flex; align-self: center; margin-inline: -.5rem -.25rem; }

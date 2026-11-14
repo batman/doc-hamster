@@ -27,6 +27,7 @@
     <link rel="stylesheet" href="../css/modules/properties.css">
     <link rel="stylesheet" href="../css/modules/ocr-text.css">
     <link rel="stylesheet" href="../css/modules/girocode.css">
+    <link rel="stylesheet" href="../css/modules/dnd.css">
     <link rel="stylesheet" href="../css/core/layout-debug.css">
     <style>
         /* Sheet-only helpers, not part of the app CSS. */
@@ -485,6 +486,12 @@
             </ul>
             <span class="drag-ghost sg-ghost">3 Dokumente</span>
             <p class="sg-note">Oben: Zielzeile beim Darüberziehen – orange (Dokumente oder Ordner hinein). Das orange Schild hängt am Zeiger und nennt, was gezogen wird. Darunter: Dateien vom Computer über einer Ordnerzeile – die Zeile selbst wird zum Feld „Loslassen zum Hochladen in „X““. Keine Hervorhebung, wo nichts abgelegt werden kann (in sich selbst, zu tief, Dateien auf den Papierkorb).</p>
+            <ul class="pick-list sg-rows" style="max-width: 32rem;">
+                <li class="pick-row is-static drag-row" data-doc-drag="sample" tabindex="0"><div class="dropdown"><button type="button" class="icon-button drag-grip" aria-haspopup="true" aria-expanded="false" aria-label="Ziehen oder tippen: rechnung.pdf mit dieser Buchung verknüpfen"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M8 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M8 19a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M14 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M14 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M14 19a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /></svg></button></div><span><strong><a href="#lists">rechnung.pdf</a></strong><small>03.11.2026 · 404,60 EUR</small></span><span class="pill pill-new">92 %</span></li>
+                <li class="pick-row is-static" data-doc-drop="#" style="outline: 2px dashed color-mix(in srgb, var(--primary) 55%, transparent); outline-offset: -2px;"><span><strong><a href="#lists">Muster Handwerk GmbH</a></strong><small>17.11.2026</small></span><span class="row-amount">−404,60 EUR</span></li>
+                <li class="pick-row is-static is-drop-target" data-doc-drop="#"><span><strong><a href="#lists">Cafe</a></strong><small>18.11.2026</small></span><span class="row-amount">−3,50 EUR</span></li>
+            </ul>
+            <p class="sg-note">Punkt 160: Ziehen zwischen Fenstern, Browser-Tabs und auf den Desktop. Oben ein Kandidat im Buchungsfenster „Dokument zuordnen“: kein Knopf, nur der Griff (Antippen oder Enter öffnet das Menü „Mit dieser Buchung verknüpfen“). Darunter: während des Ziehens gestrichelt jede Stelle, die nimmt; orange die unter dem Zeiger. Was nichts nimmt, zeigt „nicht ablegen“.</p>
             <ul class="pick-list folder-rows sg-rows sg-reorder" style="max-width: 32rem;">
                 <li class="pick-row is-static folder-row "><span class="row-icon"><svg
  

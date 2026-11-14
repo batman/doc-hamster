@@ -92,7 +92,7 @@
     <ul class="pick-list">
         @forelse ($transactions as $entry)
             @php $state = $entry->status(); @endphp
-            <li class="pick-row is-static @if ($transaction?->id === $entry->id) is-marked @endif @if ($entry->isUnsettled()) is-off @endif" data-doc-drop="{{ route('bank.link', $entry->id) }}">
+            <li class="pick-row is-static @if ($transaction?->id === $entry->id) is-marked @endif @if ($entry->isUnsettled()) is-off @endif" data-doc-drop="{{ route('bank.link', $entry->id) }}" data-booking-drag="{{ route('bank.link', $entry->id) }}" data-booking-label="{{ $entry->counterparty ?? $entry->purpose ?? '–' }} · {{ $entry->signedAmount() }}">
                 <span class="row-icon" data-tooltip="{{ __('bank.nature.'.$entry->nature()) }}"><x-icon :name="$entry->natureIcon()" /></span>
                 <span>
                     <strong><a href="{{ route('bank.show', $entry->id) }}" data-window>{{ $entry->counterparty ?? $entry->purpose ?? '–' }}</a></strong>

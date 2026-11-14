@@ -40,7 +40,7 @@
         <tbody>
             {{-- data-doc: a row that can be picked (Ctrl/Shift, A132) and dragged onto a folder row (point 75). --}}
             @foreach ($documents as $document)
-                <tr data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" data-doc="{{ $document->id }}" data-folder="{{ $document->folder_id }}" @if ($open?->id === $document->id) class="is-open" @endif>
+                <tr data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" data-doc="{{ $document->id }}" data-doc-file="{{ $document->dragFile() }}" data-folder="{{ $document->folder_id }}" @if ($open?->id === $document->id) class="is-open" @endif>
                     <td><a href="{{ route('documents.show', [$document->id, ...request()->query()]) }}" data-window>@include('documents._type-icon')<span data-doc-title>{{ $document->title }}</span></a></td>
                     @if ($searching)
                         <td>@include('documents._folder-link')</td>

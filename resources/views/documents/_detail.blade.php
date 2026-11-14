@@ -18,7 +18,7 @@
         default => 'waiting',
     };
 @endphp
-<x-window :title="$document->title" icon="file-text" kind="detail" :url="route('documents.show', [$document->id, ...request()->query()])" :close="$close" class="win-detail">
+<x-window :title="$document->title" icon="file-text" kind="detail" :url="route('documents.show', [$document->id, ...request()->query()])" :close="$close" class="win-detail" :drag-doc="$document->id" :drag-file="$document->dragFile()">
     {{-- Only "Herunterladen" stays a button of its own; everything else is in the ⋯ menu (point 26). --}}
     @php
         $canEdit = Gate::allows('documents.edit');
