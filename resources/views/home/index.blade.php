@@ -8,7 +8,7 @@
     <div class="windows" data-windows>
     {{-- The whole board is one module (points 71, 73): one window "Notizen"; its columns are plain content and never
          fold. It can be open several times. --}}
-    <x-window :title="__('home.notes')" icon="note" kind="notes" :url="route('home')" :close="route('home')" class="win-notes">
+    <x-window :title="__('home.notes')" icon="note" kind="notes" :url="route('notes.index')" :close="route('home')" class="win-notes">
         <x-slot:actions>
             <div class="toolbar">
                 {{-- Point 177: no "+" here any more – a new note comes from its column's ⋮ menu. A356: columns share the
