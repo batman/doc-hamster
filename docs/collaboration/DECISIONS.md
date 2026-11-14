@@ -13,6 +13,7 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
 - **Question:** v0 used the working title "Belegbox"; the repo is "DocHamster".
 - **Recommendation (Manager):** Use **DocHamster** everywhere (repo, namespace `DocHamster\`, UI). "Belegbox" retired.
 - **Decision:** **DocHamster** everywhere (repo, UI, artisan commands `dochamster:*`, docs). The operator named the repo this way and P1-1 already uses it, so there is one logical answer. PHP namespace stays Laravel's `App\` (framework convention); `DocHamster` is the product name. "Belegbox" is retired. PO can veto until the repo goes public (D-014) – after that a rename is expensive.
+- **Changed 2026-11-14:** spelling in everything people read is **docHamster** (small d), see D-034; identifiers stay as they are.
 
 ### D-001 · PHP framework: Laravel vs Slim — Owner: Lead
 - **Status:** decided (Lead, 2026-10-29)
@@ -24,6 +25,7 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
 - **Status:** decided (Lead, 2026-10-29)
 - **Input:** PHP 8.3+ (8.2 security support ends 2026-12-31), or whatever the chosen framework requires.
 - **Decision:** **PHP 8.4 minimum.** It is the PHP version of Debian 13, so the standard install (D-010) works there without third-party repos; Ubuntu 24.04 LTS ships 8.3 and needs the common PHP PPA (check newer Ubuntu releases when writing the install docs). Web hosts usually let you pick the PHP version per site. 8.3 would add a version to test for no gain in a new project.
+- **Changed 2026-11-14:** `composer.json` requires `^8.3` since 2026-10-30 (#26, build: lower the minimum to PHP 8.3); the PLAN states 8.3 as today's minimum. A new D-number is needed if 8.4 is to come back.
 - **Changed 2026-10-29 (P0-15):** "Revisit when Debian/our image moves on" dropped – there is no image since D-010; when and how the minimum is raised is now **D-025**.
 
 ### D-003 · Database default — Owner: Lead
@@ -73,7 +75,7 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
   - **Data files:** GeoNames place names (D-017) are loaded by the setup/update command (pinned version + checksum), Tesseract language data and the Whisper model by the add-on's install step. Nothing is downloaded while processing documents.
 
 ### D-011 · Scope of v1.0: single household or teams? — Owner: Lead
-- **Status:** decided (Lead, 2026-10-29, under the operator rule of AGENTS rule 6)
+- **Status:** decided (Lead, 2026-10-29, under the operator rule of AGENTS rule 6) – **multi-org part superseded by D-027** (one organisation per installation); roles stay
 - **Recommendation (Manager):** Multi-org in the data model from day one; member-role UI may move to v1.1.
 - **Decision:** answered by the plan itself: **several organisations per instance, with the roles owner, member and tax advisor, in v1** – PLAN §2 (roles, permission matrix), §4.6 (AK-4.6.1/2), §6.1 (`memberships`), D-012 and the v0.1 test list ("Mitglied einladen", "Mitglied sieht andere Org nicht") already require it, and Phase 1 builds it (P1-2, P1-6). Typical first users (Q-4) are the ones PLAN §2 names: households, freelancers, small businesses, clubs. The core flow stays focused on one person capturing and one owner checking; team extras (e.g. approval workflows) are not in v1.
 
@@ -118,7 +120,7 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
   - **Offline queue:** IndexedDB holds blobs + metadata until the server confirms. Sent on app open, on `online`, on `visibilitychange`, and via Background Sync where available (not on iOS). `navigator.storage.persist()` requested; the app recommends installing to the home screen (iOS evicts storage of non-installed sites). Badge shows queue length.
 
 ### D-018 · Receipt pack layout ("Belegpaket") — Owner: Lead
-- **Status:** proposed
+- **Status:** proposed – provisional layout built 2026-11-14, see **D-032**
 - **Proposal (Manager):** PLAN.md §10.1 – cover page with key figures, overview table, one page per transaction with details + large receipt photo, list of missing receipts. Manager drafts the layout in P0-5; PO signs off. PDF technology → Lead.
 - **Decision:** _…_
 
@@ -197,6 +199,7 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
     - Encrypted ZIPs ask for the password on the console (never as an argument, so it doesn't land in the shell history).
   - **Server backup (for the operator, docs + CLI):** `php artisan dochamster:backup` writes a consistent database dump (`mariadb-dump`/`mysqldump --single-transaction`, no downtime) plus the storage folder to a target folder. DB credentials reach the dump tool via a temporary `--defaults-extra-file` (mode 0600, deleted afterwards), never on the command line (visible in the process list); output is created with umask 077; a target inside the storage or `public/` folder is refused; backup temp files, restore staging and unfinished uploads are not copied; schedulable via cron. Needs `proc_open` and the dump binary; where they are missing (some web hosting), `dochamster:doctor` shows "Server-Backup nicht verfügbar – nutze die Datenbank-Sicherung deines Hosters" and the command refuses with the same text (Q-15, Lead, 2026-10-29, under the operator rule of AGENTS rule 6). No own PHP dumper: hosters back up their databases anyway, and the admin-page export works everywhere. This is the disaster-recovery backup; the admin-page export is the user-facing one. Docs explain both and that the app key (`.env`) must be kept separately – without it encrypted fields can't be read.
   - **PLAN impact:** §4.8 "Datenexport (DSGVO Art. 20)" is covered by this export; new acceptance criteria and §12 backup text – see PLAN-REVIEW B22.
+- **Changed 2026-11-14:** who may back up, which parts and how a restore treats people are now **D-028** (built, point 206, A378). `dochamster:backup` (server backup) is not built yet.
 
 ### D-024 · Guided setup for non-technical users: setup wizard in the browser + shell install — Owner: PO (requirement), Lead (technical design)
 - **Status:** requirement decided (PO, 2026-10-29); technical design open for the Lead (Q-12)
@@ -222,6 +225,65 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
 - **Status:** decided (Lead, 2026-10-29, under the operator rule of AGENTS rule 6; Q-14, Manager review of PR #5 point 11)
 - **Decision:** we follow the PHP version of the current **Debian stable** release and never go below 8.4 (D-002). When a new Debian stable ships a newer PHP, the minimum is raised – **before 1.0 in any release, from 1.0 only in a major release**, so an unattended minor update never breaks an install. Announced in the CHANGELOG; `dochamster:doctor` warns one release ahead; the update steps stop with a clear message if PHP is too old.
 
+## Decisions of November 2026 (recorded 2026-11-14, point 209)
+
+Short entries for product decisions that were taken while building and were not written down yet. Point numbers (`point N`, `A…`, `F…`) refer to the PO's numbered list; their answers are recorded only as the generic outcome.
+
+### D-026 · No invoice writing in the core — Owner: PO
+- **Status:** decided (PO, 2026-11, A365)
+- **Decision:** docHamster collects, reads and matches receipts; it does **not write invoices**. If wanted, invoice writing comes later as a separate module.
+- **Reason:** keeps the core small and away from bookkeeping (PLAN §1 non-goals); invoicing has its own legal rules.
+
+### D-027 · One organisation per installation — Owner: PO
+- **Status:** decided (PO, 2026-11); supersedes the multi-org part of D-011 and AK-4.6.1
+- **Decision:** one installation holds **one organisation**. No org switcher, no creating further organisations; `org_id` stays on every domain table and every query stays org-scoped (AGENTS.md, AK-4.6.2). A second data space = a second installation.
+- **Reason:** much simpler UI, permissions and backup; the target users (household, freelancer, small business, club) each run their own instance.
+
+### D-028 · Backup: who, what, restore — Owner: PO (scope), Lead (how); amends D-023
+- **Status:** decided and built (2026-11-14, point 206, F23, A378)
+- **Decision:** Einstellungen → Backup for **owners and admins** – "Admin" in the UI is the role `owner` (new permission `backup.create`). Choice: all or a period, originals or + derived files, and ticks **Dokumente · Bankdaten · Notizen · Tags/Eigenschaften/Einstellungen** (all on by default). The **Papierkorb is always included**, the **audit log never**; GPS does not apply (no locations are stored). Secrets never go in. Restore with `php artisan dochamster:restore <zip>` into an **empty** instance only, ZIP treated as untrusted (D-023 checks). The owner comes back with the login given at restore; **every other member comes back without access** – the Mitglieder page marks them and a password reset sets them up (A378).
+- **Reason:** owners/admins are the ones who are responsible for the data; the audit log describes the old instance and would be misleading after a restore; passwords must never travel in a ZIP.
+
+### D-029 · Fresh confirmation before sensitive actions ("Bitte bestätigen") — Owner: Lead (PO requirement)
+- **Status:** decided and built (2026-11-14, point 212); implements PLAN §11.1 point 6 for now
+- **Decision:** like a "sudo mode": one confirmation, then **5 minutes** without a second ask (signing in counts as confirmation). Required for export, backup start/download, final delete and emptying the Papierkorb, roles, people, tax-advisor access, device keys, signing out other sessions and system updates. Method: the **sign-in password**, until a passkey assertion flow exists – then passkey holders confirm with their passkey (hook in `RecentConfirmation::methods()`). The tax advisor is never asked.
+- **Reason:** one clear rule instead of password fields on single forms; protects against an unlocked, unattended session.
+
+### D-030 · Belegdatum: one source of truth — Owner: PO
+- **Status:** decided and built (2026-11-14, point 214, A381, A39)
+- **Decision:** a document's date (`documents.doc_date`) **is the property Rechnungsdatum**: confirmed beats recognised; a recognised date in the future or more than 10 years back is only a hint. Without one: EXIF capture date of the photo, then the PDF's creation date, then the upload day ("Belegdatum fehlt"). The source is stored. This date drives lists, timeline, calendar, search period, export, matching and the receipt pack.
+- **Reason:** one date everywhere instead of capture, upload and invoice dates competing; the invoice date is what the tax advisor needs.
+
+### D-031 · Tax-advisor access and password reset — Owner: PO; amends D-012
+- **Status:** decided and built (2026-11-14, points 210, F29, A380)
+- **Decision:** owners/admins create the access: user name, period (open ends allowed), accounts incl. cash boxes, optional expiry, optional e-mail. docHamster shows a **24-character one-time password once**; the advisor sets his own at the first sign-in. Lock after 10 failed sign-ins (15 min), 8-hour session, no "stay signed in"; every view and download is audited ("Zuletzt angesehen"). **Without mail** the owner/admin makes a new one-time password (all advisor sessions end). **With mail configured**, the login also offers "Passwort vergessen?" (reset link, sent by a `net` job). No categories in the scope.
+- **Reason:** the advisor installs nothing (D-012); a reset must work on servers without mail, mail is a convenience on top.
+
+### D-032 · Belegpaket contents (provisional) — Owner: PO (contents), Lead (how); answers D-018 for now
+- **Status:** decided as **provisional** (2026-11-14, point 211, F8–F12, A38, F30); the PO may change the layout later, a change gives a new D-number
+- **Decision:** one PDF per period (month, quarter, year or free) and chosen accounts: cover with key figures, overview per account with page numbers, one page per booking with all its receipt pages, a section "Belege ohne Buchung" for documents marked "Ins Belegpaket" (A38), a list of missing receipts, footer "Seite n von m" + version + "kein steuerliches Dokument"; IBANs masked; **each cash box is its own section** (F30). Packs are frozen and versioned (`Belegpaket_<period>_v<N>.pdf`) and shown in the advisor access. Built with an **own small PDF writer** instead of Dompdf (streaming, low memory).
+- **Reason:** gets the core flow (receipts → advisor) usable now; the final look needs real use first.
+
+### D-033 · Papierkorb: retention and undo after emptying — Owner: PO
+- **Status:** decided and built (2026-11-14, point 207)
+- **Decision:** "Papierkorb leeren" does not delete at once: the documents leave the Papierkorb and are deleted for good after an **undo period** (7/14/30 days, default 14) – until then "Rückgängig machen" brings them back. Per organisation the Papierkorb also empties itself after 7/30/90/365 days or never. Both settings sit in the Papierkorb's properties; a daily job does the deleting.
+- **Reason:** emptying by mistake must not lose receipts that may have to be kept for years.
+
+### D-034 · Product name spelling "docHamster" — Owner: PO; amends D-000
+- **Status:** decided (PO, 2026-11, point 205)
+- **Decision:** wherever people read it – UI, mails, PDFs, docs prose – the name is written **docHamster** (small d). Repo name, namespace, artisan commands (`dochamster:*`), headers and other identifiers stay as they are.
+- **Reason:** matches the logo and the brand; changing identifiers would only break installs.
+
+### D-035 · One working branch `dev`; `main` by fast-forward + tag — Owner: PO
+- **Status:** decided (PO, 2026-11-14, A335); replaces the area branches and pull requests of WORKFLOW.md
+- **Decision:** all work goes directly to `dev` after the PO's "Go"; CI and a dev preview package run on every push. When the PO says "main": CI green, fast-forward `main` to `dev` **locally** (never the GitHub merge button), push, then push the next patch tag `vX.Y.Z`; the release workflow builds the release. Details in AGENTS.md.
+- **Reason:** speed with one PO and AI agents; the local fast-forward keeps real names out of the history.
+
+### D-036 · Sign-in today: user name + password; passkeys later — Owner: Lead
+- **Status:** decided as interim (Lead, since 2026-10-29, #27); D-012 stays the goal for owners/members
+- **Decision:** everyone signs in with user name + password (Argon2id, rate limit); owners and members may tick "Angemeldet bleiben". Owners/admins create people with a password shown once – no invitation links. Phones and programs that only send documents use **device keys** (upload only). "Angemeldete Geräte" lists the own sessions. Passkeys, pairing by link/QR/code and rotating device tokens (PLAN §11.1) are not built yet.
+- **Reason:** works everywhere at once (also before a fixed HTTPS domain); the security add-ons (D-029, session list, lockouts) cover the gap until passkeys come.
+
 ## Decide before the relevant phase
 
 | ID | Topic | Owner | Needed by | Status | Input |
@@ -231,7 +293,7 @@ The original v0 plan referred to questions "F1–F4 in chat"; that chat is not i
 | D-007 | App-level file encryption on by default? | Lead | Phase 2 | fields: decided (Lead, 2026-10-29) · files: proposed | **Decided:** small secrets/PII fields are always encrypted with Laravel encrypted casts (Revolut refresh token + private key, coordinates, any future TOTP secret) – D-016/D-017 rely on this. **Proposed:** file encryption opt-in, off by default; volume encryption documented as strongly recommended; key backup warning in setup |
 | D-008 | Org in URL vs active org in session | Lead | Phase 1 | decided (Lead, 2026-10-29) | Active org in session; every query org-scoped by middleware + policies regardless (PLAN §11.2 IDOR) |
 | D-009 | Device cookie SameSite Strict vs Lax | Lead | Phase 1 | decided (Lead, 2026-10-29) | **Lax** + `Origin` check; CSRF token for HTML forms, same-origin + custom header for `/api/*` (D-017). Strict would drop the cookie when the app is opened from a mail/QR link and look like a logout |
-| D-012 | Password+TOTP fallback or passkeys only? | Lead (PO requirement Q-9) | Phase 1 | decided (Lead after PO answer, 2026-10-29) | **By role.** *Owner/member:* passkeys + device token (PLAN §11.1), no password; recovery = owner issues a new pairing link, setup CLI for the owner. *Tax advisor (`accountant`):* **username + password**, nothing to install, no app, no phone needed. **No self-registration:** the owner creates the account (username, role, share scope) and the app generates a strong random password (≥ 20 characters) that is shown to the owner **once** to pass on; the owner can reset it any time (old sessions end). Safeguards: Argon2id hash, rate limit + temporary lockout after repeated failures, session 8 h without long-lived device token, logins in the audit log, account inherits share expiry/revocation (§4.6). The advisor may change the password; optional TOTP for the advisor can come later (C). Affected PLAN sections: PLAN-REVIEW B18 |
+| D-012 | Password+TOTP fallback or passkeys only? | Lead (PO requirement Q-9) | Phase 1 | decided (Lead after PO answer, 2026-10-29) | **By role.** *Owner/member:* passkeys + device token (PLAN §11.1), no password; recovery = owner issues a new pairing link, setup CLI for the owner. *Tax advisor (`accountant`):* **username + password**, nothing to install, no app, no phone needed. **No self-registration:** the owner creates the account (username, role, share scope) and the app generates a strong random password (≥ 20 characters) that is shown to the owner **once** to pass on; the owner can reset it any time (old sessions end). Safeguards: Argon2id hash, rate limit + temporary lockout after repeated failures, session 8 h without long-lived device token, logins in the audit log, account inherits share expiry/revocation (§4.6). The advisor may change the password; optional TOTP for the advisor can come later (C). Affected PLAN sections: PLAN-REVIEW B18. **Changed 2026-11-14:** advisor details in D-031; owners/members sign in with a password for now (D-036) |
 | D-013 | AI in the app | PO | – | superseded by D-019 | (was: no AI features at all) |
 | D-014 | When does the repo go public? | Lead | anytime | proposed – milestone asked as Q-17 | **Criteria (Lead, all required):** P0-8 history scan clean; gitleaks in CI + GitHub secret scanning and push protection on; Revolut's answer received (P0-10, D-021) **and** Revolut-specific details moved out of the core docs unless that answer allows them; D-000 final. **Milestone:** operator question Q-17 (recommendation: v0.3 = bank import + matching, the first version that is useful to others). Going public before v1.0 moves the P8-3 items (security check, history scan, Revolut docs move) before that milestone – P0-1c updates PLAN P8-3. Flipping the switch is a PO action (`to:po`) |
 
