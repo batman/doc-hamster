@@ -103,6 +103,19 @@ final class Document extends Model
     }
 
     /**
+     * A340: what Chrome needs to drop the document's file onto the desktop ("mime:name:absolute url", DownloadURL);
+     * only when the files are loaded already (no query per row).
+     */
+    public function dragFile(): ?string
+    {
+        $file = $this->relationLoaded('files') ? $this->files->first() : null;
+
+        return $file instanceof DocumentFile
+            ? $file->mime.':'.str_replace(':', '-', $file->downloadName($this->title)).':'.route('documents.download', $file->id)
+            : null;
+    }
+
+    /**
      * @return HasMany<TransactionMatch, $this>
      */
     public function matches(): HasMany

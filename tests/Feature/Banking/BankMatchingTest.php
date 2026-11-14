@@ -216,7 +216,7 @@ it('links several documents by drag and shows the sums n:m (A269, A271)', functi
     $this->values->set($a, 'invoice_amount', '400,00');
     $this->values->set($b, 'invoice_amount', '4,60');
 
-    $this->postJson('/bank/transactions/'.$payment->id.'/link', ['ids' => [$a->id, $b->id]])->assertOk()->assertJson(['message' => '2 Dokumente zugeordnet.']);
+    $this->postJson('/bank/transactions/'.$payment->id.'/link', ['ids' => [$a->id, $b->id]])->assertOk()->assertJson(['message' => '2 Dokumente verknüpft.']);
     $this->get('/bank/transactions/'.$payment->id)->assertSee('teil-a.pdf')->assertSee('teil-b.pdf')->assertSee('passt');
 
     // A document paid by two bookings: the second shows a difference and what the document got in total.

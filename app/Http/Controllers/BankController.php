@@ -128,6 +128,7 @@ final class BankController
         $document = $this->visible($org)->matchable()->whereKey($data['document_id'])->first()
             ?? throw ValidationException::withMessages(['document_id' => __('bank.receipt_gone')]);
 
+        $new = $this->unconfirmed($transaction, [$document->id]);
         $links->link($transaction, $document, $org->membership()->user_id);
         $audit->record('bank.matched', orgId: $org->id(), userId: $org->membership()->user_id, subject: $transaction, meta: ['document' => $document->id], ip: $request->ip());
         if ($request->boolean('standing')) {
@@ -138,7 +139,7 @@ final class BankController
             return $this->done($request, $transaction, trans_choice('bank.standing_done', $count, ['count' => $count]));
         }
 
-        return $this->done($request, $transaction, __('bank.matched'));
+        return $this->done($request, $transaction, __('bank.matched'), $new);
     }
 
     /** Point 147: the booking's note, edited in place (x-edit-in-place answers {"value"}). */
@@ -167,21 +168,49 @@ final class BankController
         return redirect()->route('documents.show', $rule->document_id)->with('status', __('bank.standing_ended'));
     }
 
-    /** Documents dragged onto a booking row (A269): all picked ones at once. */
-    public function link(Request $request, string $id, AuditLog $audit, CurrentOrg $org, Links $links): JsonResponse|RedirectResponse
+    /**
+     * Documents dropped onto a booking (A269, point 160): all picked ones at once, from any window or another browser
+     * tab of the same organisation (documents of another one are not found). The answer names the links that are new,
+     * so "Rückgängig" removes only those (A339). With the Dauerbeleg tick (A322) a single document becomes a Dauerbeleg.
+     */
+    public function link(Request $request, string $id, AuditLog $audit, CurrentOrg $org, Links $links, StandingDocuments $standing): JsonResponse|RedirectResponse
     {
         $transaction = Transaction::query()->whereKey($id)->firstOrFail();
-        $data = $request->validate(['ids' => ['required', 'array', 'max:200'], 'ids.*' => ['string']]);
+        $data = $request->validate(['ids' => ['required', 'array', 'max:200'], 'ids.*' => ['string'], 'standing' => ['nullable', 'boolean']]);
         $documents = $this->visible($org)->matchable()->whereIn('id', $data['ids'])->get();
         if ($documents->isEmpty()) {
             throw ValidationException::withMessages(['ids' => __('bank.receipt_gone')]);
         }
+        $new = $this->unconfirmed($transaction, $documents->modelKeys());
         foreach ($documents as $document) {
             $links->link($transaction, $document, $org->membership()->user_id);
             $audit->record('bank.matched', orgId: $org->id(), userId: $org->membership()->user_id, subject: $transaction, meta: ['document' => $document->id], ip: $request->ip());
         }
+        $first = $documents->first();
+        if ($request->boolean('standing') && $documents->count() === 1) {
+            $rule = $standing->create($transaction, $first, $org->membership()->user_id);
+            $count = TransactionMatch::query()->where('standing_id', $rule->id)->count() - 1;
+            $audit->record('bank.standing', orgId: $org->id(), userId: $org->membership()->user_id, subject: $first, meta: ['rule' => $rule->id, 'linked' => $count], ip: $request->ip());
 
-        return $this->done($request, $transaction, trans_choice('bank.linked_count', $documents->count(), ['count' => $documents->count()]));
+            return $this->done($request, $transaction, trans_choice('bank.standing_done', $count, ['count' => $count]));
+        }
+
+        return $this->done($request, $transaction, trans_choice('bank.linked_count', $documents->count(), ['count' => $documents->count()]), $new);
+    }
+
+    /** "Rückgängig" after a link (A339): the named documents' confirmed links to this booking go. */
+    public function unlink(Request $request, string $id, AuditLog $audit, CurrentOrg $org, Links $links): JsonResponse|RedirectResponse
+    {
+        $transaction = Transaction::query()->whereKey($id)->firstOrFail();
+        $data = $request->validate(['ids' => ['required', 'array', 'max:200'], 'ids.*' => ['string']]);
+        $matches = TransactionMatch::query()->where('transaction_id', $transaction->id)->where('state', TransactionMatch::CONFIRMED)
+            ->whereIn('document_id', $this->visible($org)->whereIn('id', $data['ids'])->select('id'))->get();
+        foreach ($matches as $match) {
+            $links->unlink($match);
+            $audit->record('bank.unmatched', orgId: $org->id(), userId: $org->membership()->user_id, subject: $transaction, meta: ['document' => $match->document_id], ip: $request->ip());
+        }
+
+        return $this->done($request, $transaction, trans_choice('bank.unlinked_count', $matches->count(), ['count' => $matches->count()]));
     }
 
     public function confirm(Request $request, string $id, AuditLog $audit, CurrentOrg $org, Links $links): JsonResponse|RedirectResponse
@@ -394,10 +423,28 @@ final class BankController
         return [$transaction, $match];
     }
 
-    private function done(Request $request, Transaction $transaction, string $message): JsonResponse|RedirectResponse
+    /**
+     * Which of the documents have no confirmed link to the booking yet (what an undo may remove again).
+     *
+     * @param  array<int|string>  $ids
+     * @return list<string>
+     */
+    private function unconfirmed(Transaction $transaction, array $ids): array
+    {
+        $done = TransactionMatch::query()->where('transaction_id', $transaction->id)->where('state', TransactionMatch::CONFIRMED)
+            ->whereIn('document_id', $ids)->pluck('document_id')->map(static fn ($id): string => (string) $id)->all();
+
+        return array_values(array_diff(array_map(static fn ($id): string => (string) $id, $ids), $done));
+    }
+
+    /**
+     * @param  list<string>  $undo  the documents whose new link "Rückgängig" removes again (A339)
+     */
+    private function done(Request $request, Transaction $transaction, string $message, array $undo = []): JsonResponse|RedirectResponse
     {
         if ($request->expectsJson()) {
-            return response()->json(['message' => $message, 'transaction' => $transaction->id]);
+            return response()->json(['message' => $message, 'transaction' => $transaction->id,
+                'undo' => $undo === [] ? null : ['url' => route('bank.unlink', $transaction->id), 'ids' => $undo]]);
         }
 
         return redirect()->route('bank.show', $transaction->id)->with('status', $message);
