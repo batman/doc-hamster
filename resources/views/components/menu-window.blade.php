@@ -35,7 +35,7 @@
                     </span>
                     @if (($entry['badge'] ?? null) !== null)
                         @php $count = (int) ($entry['count'] ?? 0); @endphp
-                        <span class="badge badge-alert" data-badge="{{ $entry['badge'] }}" @if ($count === 0) hidden @endif>{{ $count > 9 ? '9+' : $count }}</span>
+                        <span class="badge badge-alert" data-badge="{{ $entry['badge'] }}" @if ($count === 0) hidden @endif>{{ $count > 99 ? '99+' : $count }}</span>
                     @endif
                     <span class="go"><x-icon name="chevron-right" /></span>
                 </a>

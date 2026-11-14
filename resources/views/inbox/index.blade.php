@@ -40,7 +40,7 @@
                 <a class="tab" href="{{ route('inbox.index', $tab !== null ? ['source' => $tab] : []) }}" data-inbox-tab @if ($tab === $source) aria-current="page" @endif>
                     @if ($tab !== null)<x-icon :name="\App\Domain\Documents\Inbox::ICONS[$tab]" />@endif
                     <span>{{ $tab === null ? __('inbox.all') : __('inbox.sources.'.$tab) }}</span>
-                    <span class="badge badge-alert" data-badge="{{ $key }}" @if ($count === 0) hidden @endif>{{ $count > 9 ? '9+' : $count }}</span>
+                    <span class="badge badge-alert" data-badge="{{ $key }}" @if ($count === 0) hidden @endif>{{ $count > 99 ? '99+' : $count }}</span>
                     @if ($tab === $source)<span class="tab-mark"></span>@endif
                 </a>
             @endforeach

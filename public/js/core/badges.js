@@ -8,7 +8,7 @@
         const show = counts => {
             document.querySelectorAll('[data-badge]').forEach(badge => {
                 const count = counts[badge.dataset.badge] ?? 0;
-                badge.textContent = count > 9 ? '9+' : String(count);
+                badge.textContent = count > 99 ? '99+' : String(count);
                 badge.hidden = count === 0;
             });
             side.querySelector('[data-badge-any]').hidden = Object.values(counts).every(count => !count);

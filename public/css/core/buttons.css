@@ -5,7 +5,10 @@
 
 /* File button (point 182): <label class="button button-small file-button"> around a hidden file field, symbol + text;
    picking files starts at once. The keyboard focus of the hidden field shows on the label; busy while sending. */
-label.button.file-button { margin: 0; color: var(--primary-text); }
+label.button.file-button { display: inline-flex; align-items: center; gap: .45rem; margin: 0; color: var(--primary-text); line-height: 1; }
+label.button.file-button > .icon { flex: none; width: 1.1rem; height: 1.1rem; }
+/* Point 197: in a window toolbar as tall as the icon buttons beside it. */
+:is(.win-head, .win-tools) label.button.file-button { min-height: 36px; height: 36px; padding: 0 .85rem; }
 .file-button:has(> input:focus-visible) { outline: 3px solid var(--primary); outline-offset: 3px; }
 .file-button.is-busy { opacity: .7; cursor: progress; pointer-events: none; }
 
