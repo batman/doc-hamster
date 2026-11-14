@@ -523,7 +523,7 @@
         };
 
         // Point 164.8: through the window cache (core/window-cache.js) – a kept window comes at once and is marked
-        // data-window-cached; after it opened, refreshed() fetches it again quietly.
+        // data-window-cached (= the address it was kept under); after it opened, refreshed() fetches it again quietly.
         const plain = url => fetch(url, { credentials: 'same-origin', headers: { 'X-DocHamster-Window': '1', Accept: 'text/html' } })
             .then(response => (response.ok ? response.text() : Promise.reject(response)))
             .then(html => ({ html, cached: false }));
@@ -534,13 +534,16 @@
                     return Promise.reject(new Error('no window'));
                 }
                 const win = document.importNode(found, true);
-                win.toggleAttribute('data-window-cached', cached);
+                if (cached) {
+                    win.dataset.windowCached = url;
+                }
                 return win;
             });
         const refreshed = win => {
-            if (win.hasAttribute('data-window-cached')) {
-                win.removeAttribute('data-window-cached');
-                DocHamster.windowCache?.refresh(win, win.dataset.windowUrl);
+            const kept = win.dataset.windowCached;
+            if (kept !== undefined) {
+                delete win.dataset.windowCached;
+                DocHamster.windowCache?.refresh(win, kept);
             }
             DocHamster.windowCache?.afterOpen(win.dataset.windowUrl);
         };
