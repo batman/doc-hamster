@@ -16,6 +16,7 @@ use App\Http\Controllers\DocumentUploadController;
 use App\Http\Controllers\DocumentViewController;
 use App\Http\Controllers\DocumentWordsController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\ExtensionController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\FolderImportController;
 use App\Http\Controllers\GiroCodeController;
@@ -121,6 +122,8 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::get('ocr/next', [OcrBrowserController::class, 'next'])->name('ocr.next');
     Route::post('ocr/{id}/progress', [OcrBrowserController::class, 'progress'])->name('ocr.progress');
     Route::get('ocr/image/{id}', [OcrBrowserController::class, 'image'])->name('ocr.image');
+    // 171.1: tesseract.js loads "<langPath>/<code>.traineddata" for every chosen language.
+    Route::get('ocr/lang/{code}.traineddata', [OcrBrowserController::class, 'lang'])->where('code', '[a-z_]{3,10}')->name('ocr.lang');
     Route::post('ocr/{id}', [OcrBrowserController::class, 'store'])->name('ocr.store');
     Route::post('ocr-engine', [OcrStatusController::class, 'engineError'])->name('ocr.engine');
     Route::post('ocr-log', [OcrStatusController::class, 'log'])->name('ocr.log');
@@ -158,6 +161,15 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('/', [ShareTargetController::class, 'store'])->name('store');
         Route::get('done', [ShareTargetController::class, 'done'])->name('done');
         Route::post('done', [ShareTargetController::class, 'update'])->middleware('can:documents.edit')->name('update');
+    });
+
+    // Einstellungen → Erweiterungen (point 173; before settings/{group}): optional data packs and modules, catalogue only.
+    Route::middleware('can:settings.manage')->prefix('settings/extensions')->name('extensions.')->controller(ExtensionController::class)->group(function (): void {
+        Route::get('/', 'show')->name('index');
+        Route::post('ocr-rerun', 'rerunBroken')->name('rerun');
+        Route::post('{key}/install', 'install')->where('key', '[a-z0-9-]+')->name('install');
+        Route::post('{key}/remove', 'remove')->where('key', '[a-z0-9-]+')->name('remove');
+        Route::post('{key}/toggle', 'toggle')->where('key', '[a-z0-9-]+')->name('toggle');
     });
 
     // Einstellungen → Geschwindigkeit (point 164.7; before settings/{group}): measurements, checks, self tests, options.

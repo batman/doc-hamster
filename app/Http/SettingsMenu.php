@@ -37,6 +37,10 @@ final class SettingsMenu
         'ocr' => ['text-scan-2', [
             ['ocr', 'ocr.show', 'text-scan-2', 'settings.manage', ['ocr.show']],
         ], true],
+        // Point 173: everything optional – OCR languages, later translation packs and modules.
+        'extensions' => ['puzzle', [
+            ['extensions', 'extensions.index', 'puzzle', 'settings.manage', ['extensions.*']],
+        ], true],
         // Point 153.5: the sources of the Posteingang. Geräte comes with the Android share target (only once its route exists).
         'eingang' => ['inbox', [
             ['printer', 'printers.index', 'printer', 'documents.upload', ['printers.*']],

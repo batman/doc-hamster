@@ -209,6 +209,16 @@
                     @if ($ocrState !== 'running')
                         <form method="post" action="{{ route('ocr.redo', $document->id) }}">
                             @csrf
+                            {{-- A345: with extra OCR languages installed, one document can be read with a language of its own. --}}
+                            @php($ocrLanguages = app(\App\Infrastructure\Environment\LocalOcr::class)->installedLanguages(false))
+                            @if (count($ocrLanguages) > count(\App\Infrastructure\Environment\LocalOcr::CORE_LANGUAGES))
+                                <select name="langs" class="input-small" aria-label="{{ __('extensions.redo_languages') }}">
+                                    <option value="">{{ __('extensions.redo_all') }}</option>
+                                    @foreach ($ocrLanguages as $code)
+                                        <option value="{{ $code }}" @selected($document->ocr_langs === $code)>{{ __('extensions.languages.'.$code) }}</option>
+                                    @endforeach
+                                </select>
+                            @endif
                             <button type="submit" class="button-quiet button-small">{{ __('ocr.redo') }}</button>
                         </form>
                     @endif

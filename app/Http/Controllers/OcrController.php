@@ -93,10 +93,18 @@ final class OcrController extends Controller
         return back()->with('status', __('ocr.rerun_started'));
     }
 
-    /** "Neu erkennen" on one document (A23). */
-    public function redo(Request $request, string $id): RedirectResponse
+    /**
+     * "Neu erkennen" on one document (A23). A345: with `langs` (an installed language, e.g. "ell") this document is
+     * read with that language and keeps the choice for later re-reads; empty = all chosen languages again.
+     */
+    public function redo(Request $request, LocalOcr $ocr, string $id): RedirectResponse
     {
         $document = OcrAccess::editable($request)->whereKey($id)->firstOrFail();
+        if ($request->has('langs')) {
+            $langs = (string) $request->input('langs', '');
+            $choice = $langs !== '' && LocalOcr::pickLanguages([], $langs, $ocr->installedLanguages(false)) !== [] ? $langs : null;
+            $document->forceFill(['ocr_langs' => $choice]);
+        }
         $document->forceFill(['ocr_status' => 'pending', 'ocr_pass' => null, 'ocr_failures' => 0, 'ocr_rescan' => false])->save();
         RecognizeText::dispatch($document->id);
         OcrProgress::forgetWaiting($document->org_id);
