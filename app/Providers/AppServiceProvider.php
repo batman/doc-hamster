@@ -14,6 +14,8 @@ use App\Domain\Payments\InvoiceSuggestions;
 use App\Domain\Payments\SuggestInvoiceProperties;
 use App\Domain\Properties\DocumentProperty;
 use App\Events\TextRecognized;
+use App\Http\Speed\RequestTiming;
+use App\Http\TagsCss;
 use App\Infrastructure\Crypto\IpHasher;
 use App\Infrastructure\Environment\NativeSystemProbe;
 use App\Infrastructure\Environment\SystemProbe;
@@ -26,13 +28,16 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Encryption\MissingAppKeyException;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Throwable;
 
@@ -53,6 +58,9 @@ class AppServiceProvider extends ServiceProvider
         if (config('dochamster.installed') !== true && ! $this->app->runningInConsole()) {
             SetupMode::apply($this->app->make(EnvFile::class), base_path('.env.example'));
         }
+
+        // Point 164.1: what a request spends where (Server-Timing header, Einstellungen → Geschwindigkeit).
+        $this->app->singleton(RequestTiming::class);
 
         // Active organisation per request/job (D-008), reset between them.
         $this->app->scoped(CurrentOrg::class);
@@ -75,6 +83,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         self::logSignIns();
+        // Point 164.1: queries and view rendering count into the request's Server-Timing.
+        DB::listen(fn (QueryExecuted $query) => $this->app->make(RequestTiming::class)->query($query->time ?? 0.0));
+        View::creator('*', fn () => $this->app->make(RequestTiming::class)->viewCreated());
+        TagsCss::watch();
         // A local reverse proxy (e.g. nginx in front of Apache on Plesk) terminates TLS; trust its X-Forwarded-*
         // headers so scheme and host are right. Set here, not in bootstrap/app.php, where .env isn't loaded yet.
         $proxies = config('dochamster.trusted_proxies');

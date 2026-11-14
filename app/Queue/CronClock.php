@@ -26,7 +26,7 @@ final class CronClock
     public static function lastRun(): ?int
     {
         try {
-            $value = Cache::get(NativeSystemProbe::HEARTBEAT_CACHE_KEY);
+            $value = Cache::memo()->get(NativeSystemProbe::HEARTBEAT_CACHE_KEY);
         } catch (Throwable) {
             return null;
         }

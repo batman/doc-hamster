@@ -27,7 +27,8 @@
         <link rel="stylesheet" href="{{ asset('css/'.$file.'.css') }}?v={{ config('dochamster.version') }}">
     @endforeach
     @auth
-        <link rel="stylesheet" href="{{ route('tags.css') }}">
+        {{-- Point 164.4: versioned, so the browser keeps it until a colour changes (no request per page). --}}
+        <link rel="stylesheet" href="{{ route('tags.css', ['v' => \App\Http\TagsCss::version()]) }}">
     @endauth
     @foreach (config('assets.js') as $file)
         <script src="{{ asset('js/'.$file.'.js') }}?v={{ config('dochamster.version') }}"></script>
@@ -36,6 +37,15 @@
 </head>
 {{-- Browser OCR fallback (point 18): only when the server can't read text itself (in mode app: the PDFs, point 69). Without cron the open app works off the queue (A69/A74). --}}
 @php
+    // Point 164.4: the cache values this layout reads, in one query (the database cache store would ask once per key).
+    if (auth()->check()) {
+        $layoutOrg = app(\App\Domain\Org\CurrentOrg::class);
+        \Illuminate\Support\Facades\Cache::memo()->many(array_values(array_filter([
+            \App\Infrastructure\Environment\LocalOcr::MODE_KEY, \App\Infrastructure\Environment\LocalOcr::STATUS_KEY, \App\Infrastructure\Environment\LocalOcr::BROWSER_ERROR_KEY,
+            \App\Infrastructure\Environment\NativeSystemProbe::HEARTBEAT_CACHE_KEY, \App\Http\TagsCss::KEY,
+            $layoutOrg->isSet() ? \App\Infrastructure\Environment\OcrProgress::waitingKey($layoutOrg->id()) : null,
+        ])));
+    }
     $ocrBrowser = auth()->check() && app(\App\Infrastructure\Environment\LocalOcr::class)->browserLoop();
     $ocrEngineError = $ocrBrowser ? app(\App\Infrastructure\Environment\LocalOcr::class)->browserError() : null;
     $queueTick = auth()->check() && ! \App\Queue\CronClock::running();
@@ -116,13 +126,18 @@
                      files land on a folder row, a folder window or the main menu's drop field (A169-A175).
                      Point 160: data-org marks drags between browser tabs (same organisation only), data-doc-url builds
                      the document address for text/uri-list, data-bank allows links to bookings. --}}
-                @php $defaultFolder = \App\Domain\Documents\Folder::defaultIdFor($currentOrg->id()); @endphp
+                @php
+                    // Point 164.4: id and name in one query.
+                    $defaultRow = \App\Domain\Documents\Folder::query()->where('is_default', true)->first(['id', 'name']);
+                    $defaultFolder = $defaultRow?->id ?? \App\Domain\Documents\Folder::defaultIdFor($currentOrg->id());
+                    $defaultName = $defaultRow?->name ?? \App\Domain\Documents\Folder::query()->whereKey($defaultFolder)->value('name');
+                @endphp
                 <div hidden data-dnd data-org="{{ $currentOrg->id() }}" data-doc-url="{{ route('documents.show', '__ID__') }}"
                      @can('banking.import') data-bank="1" @endcan
                      @can('documents.upload') data-upload="{{ route('documents.store') }}" @endcan
                      @can('documents.edit') data-move="{{ route('documents.bulk.move') }}" data-folder-move="{{ route('folders.move', '__ID__') }}" @endcan
                      @can('documents.trash') data-trash="{{ route('documents.bulk.trash') }}" data-restore="{{ route('documents.bulk.restore') }}" data-folder-destroy="{{ route('folders.destroy', '__ID__') }}" @endcan
-                     data-default-folder="{{ $defaultFolder }}" data-default-name="{{ \App\Domain\Documents\Folder::query()->whereKey($defaultFolder)->value('name') }}"
+                     data-default-folder="{{ $defaultFolder }}" data-default-name="{{ $defaultName }}"
                      data-drop-upload="{{ __('documents.bulk.drop_upload', ['name' => ':name']) }}"
                      data-max-depth="{{ \App\Domain\Documents\Folder::MAX_DEPTH }}"
                      data-docs-one="{{ trans_choice('documents.bulk.count', 1, ['count' => ':count']) }}" data-docs-many="{{ trans_choice('documents.bulk.count', 2, ['count' => ':count']) }}"

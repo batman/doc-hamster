@@ -8,6 +8,7 @@ use App\Domain\Documents\Inbox;
 use App\Domain\Documents\TextDocument;
 use App\Domain\Org\Membership;
 use App\Domain\Org\OrgScope;
+use App\Http\Badges;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -74,7 +75,8 @@ it('counts new things per source, not own uploads, and a viewed tab starts again
         Schema::table('documents', fn (Blueprint $table) => $table->string('source', 16)->nullable());
     }
     Inbox::forgetSchema();
-    $this->travel(1)->seconds();
+    // Changes made elsewhere (here: straight in the database) show once the session's badge counts expire (point 164.4).
+    $this->travel(Badges::TTL + 1)->seconds();
     $printed->forceFill(['in_print_tray' => false, 'source' => 'phone', 'created_at' => now()])->save();
 
     $this->getJson('/badges')->assertJson(['inbox-phone' => 1, 'inbox-printer' => 0]);

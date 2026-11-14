@@ -8,11 +8,14 @@ use App\Http\Controllers\HealthController;
 use App\Http\Controllers\PrinterApiController;
 use App\Http\Controllers\UploadApiController;
 use App\Http\MenuViews;
+use App\Http\Middleware\ForgetBadgesOnChange;
 use App\Http\Middleware\RedirectToSetup;
 use App\Http\Middleware\RequireSameOriginApi;
 use App\Http\Middleware\ResolveCurrentOrg;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\ServerTiming;
 use App\Http\Middleware\SetLocale;
+use App\Http\Middleware\WindowEtag;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -26,6 +29,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // Outside the `web` group: monitoring polls must not start sessions.
         then: function (): void {
             Route::get('/health', HealthController::class)->name('health');
+            // Point 164.2: the empty route – what the server needs before any app code (baseline, browser ping).
+            Route::get('/ping', static fn () => response('', 204, ['Cache-Control' => 'no-store']))->name('ping');
 
             // The printer "Hamster" on a computer: no session, its own token (PrinterApiController).
             Route::prefix('api/printer')->name('api.printer.')->group(function (): void {
@@ -38,8 +43,10 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Point 164.1: first in, last out – the Server-Timing covers every other middleware.
+        $middleware->prepend(ServerTiming::class);
         $middleware->append(SecurityHeaders::class);
-        $middleware->web(prepend: [RedirectToSetup::class], append: [SetLocale::class]);
+        $middleware->web(prepend: [RedirectToSetup::class], append: [SetLocale::class, WindowEtag::class, ForgetBadgesOnChange::class]);
         // Point 125, A331: the folded cards (CardFolds) and menu window displays (MenuViews) are written by JavaScript and hold nothing secret.
         $middleware->encryptCookies(except: [CardFolds::COOKIE, MenuViews::COOKIE]);
         // Point 151: the share sheet posts to /share without a token when no service worker caught it;

@@ -11,6 +11,7 @@ use App\Domain\Notes\Note;
 use App\Domain\Notes\NoteColumn;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Palette\PaletteColor;
+use App\Http\TagsCss;
 use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -62,7 +63,9 @@ final class TagController
             ->implode('
 ');
 
-        $response = response($css, 200, ['Content-Type' => 'text/css; charset=utf-8', 'Cache-Control' => 'private, no-cache']);
+        // Point 164.4: the layout links it with the current version (TagsCss) – that address never changes its content.
+        $versioned = $request->query('v') === TagsCss::version();
+        $response = response($css, 200, ['Content-Type' => 'text/css; charset=utf-8', 'Cache-Control' => $versioned ? 'private, max-age=31536000, immutable' : 'private, no-cache']);
         $response->setEtag(md5($css))->isNotModified($request);
 
         return $response;

@@ -83,19 +83,29 @@ final class Inbox
      */
     public static function newCounts(string $userId, bool $seesAll, array $seen): array
     {
+        // Point 164.4: one query for all sources (a conditional sum each) instead of one count per source.
+        $column = self::hasSourceColumn();
+        $query = self::query($userId, $seesAll)->toBase();
+        $query->columns = [];
+        foreach (self::SOURCES as $source) {
+            [$sql, $bindings] = match ($source) {
+                'printer' => [$column ? '(documents.in_print_tray = ? or documents.source = ?)' : 'documents.in_print_tray = ?', $column ? [true, 'printer'] : [true]],
+                'upload' => ['documents.in_print_tray = ?'.($column ? ' and (documents.source is null or documents.source = ?)' : '')
+                    .' and (documents.uploaded_by is null or documents.uploaded_by <> ?)', $column ? [false, 'upload', $userId] : [false, $userId]],
+                default => $column ? ['documents.source = ?', [$source]] : ['1 = 0', []],
+            };
+            $since = $seen[$source] ?? null;
+            if ($since !== null) {
+                $sql .= ' and documents.created_at > ?';
+                $bindings[] = $since;
+            }
+            $query->selectRaw("sum(case when {$sql} then 1 else 0 end) as n_{$source}", $bindings);
+        }
+        $row = (array) $query->first();
+
         $counts = [];
         foreach (self::SOURCES as $source) {
-            if ($source !== 'printer' && $source !== 'upload' && ! self::hasSourceColumn()) {
-                $counts[$source] = 0;
-
-                continue;
-            }
-            $since = $seen[$source] ?? null;
-            $counts[$source] = self::query($userId, $seesAll, $source)
-                ->when($since !== null, static fn (Builder $query): Builder => $query->where('documents.created_at', '>', $since))
-                ->when($source === 'upload', static fn (Builder $query): Builder => $query->where(static fn (Builder $inner): Builder => $inner
-                    ->whereNull('documents.uploaded_by')->orWhere('documents.uploaded_by', '!=', $userId)))
-                ->count();
+            $counts[$source] = (int) ($row['n_'.$source] ?? 0);
         }
 
         return $counts;

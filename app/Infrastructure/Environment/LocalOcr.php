@@ -29,7 +29,7 @@ final class LocalOcr
     public const string MODE_KEY = 'ocr.mode.v2';
 
     /** Why the browser engine could not start (A61), reported by the browser. */
-    private const string BROWSER_ERROR_KEY = 'ocr.browser.error';
+    public const string BROWSER_ERROR_KEY = 'ocr.browser.error';
 
     /** A set-up still "running" after this long died with its request or worker (A66). */
     private const int RUNNING_MAX_SECONDS = 600;
@@ -140,7 +140,8 @@ final class LocalOcr
     /** system | app | browser | none – cached, it is read on every page. */
     public function mode(): string
     {
-        return Cache::remember(self::MODE_KEY, 300, function (): string {
+        // Cache::memo(): read once per request (the layout preloads it with the other keys, point 164.4).
+        return Cache::memo()->remember(self::MODE_KEY, 300, function (): string {
             return match (true) {
                 $this->systemAvailable() => 'system',
                 $this->appAvailable() => 'app',
@@ -155,13 +156,13 @@ final class LocalOcr
      */
     public function status(): array
     {
-        $status = Cache::get(self::STATUS_KEY);
+        $status = Cache::memo()->get(self::STATUS_KEY);
         if (! is_array($status)) {
             return [];
         }
         // A66: a set-up that died (killed request or worker) shows the button again after 10 minutes.
         if (($status['state'] ?? null) === 'running' && time() - (int) ($status['started'] ?? 0) > self::RUNNING_MAX_SECONDS) {
-            Cache::forget(self::STATUS_KEY);
+            Cache::memo()->forget(self::STATUS_KEY);
 
             return [];
         }
@@ -171,26 +172,26 @@ final class LocalOcr
 
     public function markRunning(): void
     {
-        Cache::forever(self::STATUS_KEY, ['state' => 'running', 'started' => time()]);
-        Cache::forget(self::MODE_KEY);
+        Cache::memo()->forever(self::STATUS_KEY, ['state' => 'running', 'started' => time()]);
+        Cache::memo()->forget(self::MODE_KEY);
     }
 
     /** A61: the browser engine did not start (timeout, wasm blocked …); shown on the settings page and in the menu. */
     public function reportBrowserError(string $reason): void
     {
-        Cache::put(self::BROWSER_ERROR_KEY, mb_substr(trim($reason), 0, 200), now()->addDay());
+        Cache::memo()->put(self::BROWSER_ERROR_KEY, mb_substr(trim($reason), 0, 200), now()->addDay());
     }
 
     public function browserError(): ?string
     {
-        $error = Cache::get(self::BROWSER_ERROR_KEY);
+        $error = Cache::memo()->get(self::BROWSER_ERROR_KEY);
 
         return is_string($error) && $error !== '' ? $error : null;
     }
 
     public function clearBrowserError(): void
     {
-        Cache::forget(self::BROWSER_ERROR_KEY);
+        Cache::memo()->forget(self::BROWSER_ERROR_KEY);
     }
 
     /**
@@ -259,8 +260,8 @@ final class LocalOcr
                     $status += ['pdf' => 'failed', 'pdf_reason' => mb_substr($e->getMessage(), 0, 200)];
                 }
             }
-            Cache::forever(self::STATUS_KEY, $status);
-            Cache::forget(self::MODE_KEY);
+            Cache::memo()->forever(self::STATUS_KEY, $status);
+            Cache::memo()->forget(self::MODE_KEY);
 
             return $status;
         } finally {

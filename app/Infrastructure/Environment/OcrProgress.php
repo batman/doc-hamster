@@ -32,7 +32,7 @@ final class OcrProgress
     /** Point 124/A259: who reads (server or browser); page and pages follow as the reading goes on. */
     public static function start(Document $document, string $engine = 'server'): void
     {
-        Cache::put(self::CURRENT_KEY, [
+        Cache::memo()->put(self::CURRENT_KEY, [
             'id' => $document->id,
             'org' => $document->org_id,
             'title' => $document->title,
@@ -47,10 +47,10 @@ final class OcrProgress
     /** Browser fallback only: the percent of the current page (tesseract.js logger), with page and pages when known. */
     public static function percent(Document $document, int $percent, ?int $page = null, ?int $pages = null): void
     {
-        $current = Cache::get(self::CURRENT_KEY);
+        $current = Cache::memo()->get(self::CURRENT_KEY);
         if (! is_array($current) || ($current['id'] ?? null) !== $document->id) {
             self::start($document, 'browser');
-            $current = Cache::get(self::CURRENT_KEY);
+            $current = Cache::memo()->get(self::CURRENT_KEY);
         }
         if (is_array($current)) {
             $current['percent'] = max(0, min(100, $percent));
@@ -58,31 +58,31 @@ final class OcrProgress
                 $current['page'] = max(1, $page);
                 $current['pages'] = $pages !== null ? max(1, $pages) : ($current['pages'] ?? null);
             }
-            Cache::put(self::CURRENT_KEY, $current, self::CURRENT_TTL);
+            Cache::memo()->put(self::CURRENT_KEY, $current, self::CURRENT_TTL);
         }
     }
 
     /** Point 124: the server job reached page `$page` (of `$pages`, when known) of the current document. */
     public static function page(string $documentId, int $page, ?int $pages = null): void
     {
-        $current = Cache::get(self::CURRENT_KEY);
+        $current = Cache::memo()->get(self::CURRENT_KEY);
         if (! is_array($current) || ($current['id'] ?? null) !== $documentId) {
             return;
         }
         $current['page'] = max(1, $page);
         $current['pages'] = $pages !== null ? max(1, $pages) : ($current['pages'] ?? null);
         $current['percent'] = null;
-        Cache::put(self::CURRENT_KEY, $current, self::CURRENT_TTL);
+        Cache::memo()->put(self::CURRENT_KEY, $current, self::CURRENT_TTL);
     }
 
     public static function finish(string $documentId, ?string $orgId = null): void
     {
-        $current = Cache::get(self::CURRENT_KEY);
+        $current = Cache::memo()->get(self::CURRENT_KEY);
         if (is_array($current) && ($current['id'] ?? null) === $documentId) {
-            Cache::forget(self::CURRENT_KEY);
+            Cache::memo()->forget(self::CURRENT_KEY);
         }
         if ($orgId !== null) {
-            Cache::forget(self::waitingKey($orgId));
+            Cache::memo()->forget(self::waitingKey($orgId));
         }
     }
 
@@ -91,7 +91,7 @@ final class OcrProgress
      */
     public static function current(string $orgId): ?array
     {
-        $current = Cache::get(self::CURRENT_KEY);
+        $current = Cache::memo()->get(self::CURRENT_KEY);
         if (! is_array($current) || ($current['org'] ?? null) !== $orgId) {
             return null;
         }
@@ -146,7 +146,7 @@ final class OcrProgress
      */
     public static function open(string $orgId): array
     {
-        return Cache::remember(self::waitingKey($orgId), self::WAITING_TTL, static function () use ($orgId): array {
+        return Cache::memo()->remember(self::waitingKey($orgId), self::WAITING_TTL, static function () use ($orgId): array {
             $row = self::query($orgId)
                 ->where(static fn ($w) => $w->whereNull('ocr_status')->orWhereIn('ocr_status', ['pending', 'done']))
                 ->selectRaw("sum(case when ocr_status is null or ocr_status = 'pending' then 1 else 0 end) as waiting")
@@ -161,7 +161,7 @@ final class OcrProgress
 
     public static function forgetWaiting(string $orgId): void
     {
-        Cache::forget(self::waitingKey($orgId));
+        Cache::memo()->forget(self::waitingKey($orgId));
     }
 
     /** @return Builder<Document> */
@@ -170,7 +170,7 @@ final class OcrProgress
         return Document::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $orgId);
     }
 
-    private static function waitingKey(string $orgId): string
+    public static function waitingKey(string $orgId): string
     {
         // Holds the open counts of point 57; v2 since point 130 (done instead of passes).
         return 'ocr.open.v2.'.$orgId;

@@ -28,7 +28,15 @@ final class Badges
     /** A274: open bookings without a document (main menu Bank → account row → the account's "offen" filter). */
     public const BANK = 'bank';
 
+    /** Point 164.4: the counts stay this long in the person's session (the poll and every page read them). */
+    public const int TTL = 10;
+
+    private const string SESSION_KEY = 'badges.cache';
+
     /**
+     * The counts, kept TTL seconds in the session per membership (no queries on most pages); markSeen() and
+     * forget() drop them at once.
+     *
      * @return array<string, int>
      */
     public static function counts(CurrentOrg $org): array
@@ -36,6 +44,30 @@ final class Badges
         if (! $org->isSet()) {
             return [];
         }
+        $session = request()->hasSession() ? request()->session() : null;
+        $cached = $session?->get(self::SESSION_KEY);
+        if (is_array($cached) && ($cached['m'] ?? null) === $org->membership()->id && ($cached['t'] ?? 0) > now()->getTimestamp() - self::TTL && is_array($cached['c'] ?? null)) {
+            return $cached['c'];
+        }
+        $counts = self::fresh($org);
+        $session?->put(self::SESSION_KEY, ['m' => $org->membership()->id, 't' => now()->getTimestamp(), 'c' => $counts]);
+
+        return $counts;
+    }
+
+    /** Something changed that the counts show (an upload, a match …): the next read counts again. */
+    public static function forget(): void
+    {
+        if (request()->hasSession()) {
+            request()->session()->forget(self::SESSION_KEY);
+        }
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private static function fresh(CurrentOrg $org): array
+    {
         $counts = [];
         if (Gate::allows(Permission::UploadDocuments->value)) {
             $seen = [];
@@ -82,6 +114,7 @@ final class Badges
             $seen[$area] = now()->toIso8601String();
         }
         $membership->forceFill(['seen_at' => $seen])->save();
+        self::forget();
     }
 
     /** When the person last opened the area (null: never). */

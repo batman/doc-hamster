@@ -322,8 +322,10 @@ final class BankController
             $counts[$name] = $filtered()->status($name)->count();
         }
         $shown = $filtered()->when($status !== null, static fn (Builder $q) => $q->status((string) $status))->where('currency', $account->currency);
-        $in = (int) (clone $shown)->where('amount_minor', '>', 0)->sum('amount_minor');
-        $out = (int) (clone $shown)->where('amount_minor', '<', 0)->sum('amount_minor');
+        // Point 164.4: in and out in one query.
+        $sums = (array) (clone $shown)->toBase()->selectRaw('sum(case when amount_minor > 0 then amount_minor else 0 end) as total_in, sum(case when amount_minor < 0 then amount_minor else 0 end) as total_out')->first();
+        $in = (int) ($sums['total_in'] ?? 0);
+        $out = (int) ($sums['total_out'] ?? 0);
         $listed = static fn (): Builder => $filtered()->withStatusCounts()->when($status !== null, static fn (Builder $q) => $q->status((string) $status));
 
         // 159.2, A332–A334: the calendar pages only over the months with bookings and shows one month at a time.
