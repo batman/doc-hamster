@@ -21,7 +21,10 @@ use Illuminate\Validation\Rule;
  */
 final class NoteColumnController
 {
-    /** "+" adds a column at once (point 94), named "Neue Spalte" unless a name is sent; the board starts its rename. */
+    /**
+     * The "Aufklapp-Plus" at the end of the board sends the name (point 178, A354). Without a name (no JavaScript)
+     * the column is called "Neue Spalte" and the board starts its rename (point 94).
+     */
     public function store(Request $request): RedirectResponse
     {
         $this->authorize();
@@ -32,7 +35,9 @@ final class NoteColumnController
             'sort' => (int) NoteColumn::query()->max('sort') + 1,
         ]);
 
-        return redirect()->route('home')->with('note_column_new', $column->id);
+        $back = redirect()->route('home');
+
+        return $name !== '' ? $back : $back->with('note_column_new', $column->id);
     }
 
     public function update(Request $request, string $id): JsonResponse|RedirectResponse
@@ -63,7 +68,7 @@ final class NoteColumnController
 
     /**
      * The look of a column from its ⋮ menu (points 66, A100, A101, A103): background colour, default colour of
-     * new notes ("none" = no own one) and the order of its notes. Only the fields sent change.
+     * new notes ("none" = no own one), the order of its notes and its width (point 179, A355). Only the fields sent change.
      */
     public function look(Request $request, string $id): JsonResponse|RedirectResponse
     {
@@ -74,8 +79,9 @@ final class NoteColumnController
             'color' => ['sometimes', 'string', Rule::in($colors($column->color))],
             'note_color' => ['sometimes', 'string', Rule::in($colors($column->note_color))],
             'sort' => ['sometimes', 'string', Rule::in(NoteColumn::SORTS)],
+            'width' => ['sometimes', 'string', Rule::in(NoteColumn::WIDTHS)],
         ]);
-        foreach (['color' => 'color', 'note_color' => 'note_color', 'sort' => 'note_sort'] as $field => $attribute) {
+        foreach (['color' => 'color', 'note_color' => 'note_color', 'sort' => 'note_sort', 'width' => 'width'] as $field => $attribute) {
             if (array_key_exists($field, $data)) {
                 $column->{$attribute} = $data[$field] === 'none' ? null : $data[$field];
             }

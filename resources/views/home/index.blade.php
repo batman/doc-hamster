@@ -11,7 +11,9 @@
     <x-window :title="__('home.notes')" icon="note" kind="notes" :url="route('home')" :close="route('home')" class="win-notes">
         <x-slot:actions>
             <div class="toolbar">
-                <button type="button" class="icon-button" data-dialog-open="note-new" data-note-column="{{ $columns->first()?->id }}" data-note-color="{{ $columns->first()?->newNoteColor() }}" aria-label="{{ __('home.new') }}" data-tooltip="{{ __('home.new') }}"><x-icon name="plus" /></button>
+                {{-- Point 177: no "+" here any more – a new note comes from its column's ⋮ menu. A356: columns share the
+                     window width or keep their own (sideways scroll); remembered per person (notes.js). --}}
+                <button type="button" class="icon-button" data-notes-fit aria-pressed="false" aria-label="{{ __('home.fit_width') }}" data-tooltip="{{ __('home.fit_width') }}"><x-icon name="arrow-autofit-width" /></button>
             </div>
         </x-slot:actions>
 
@@ -50,7 +52,7 @@
         @foreach ($columns as $column)
             @php($cards = $byColumn->get($column->id, collect()))
             {{-- Points 65-67, A100-A105, A115: everything a column does sits in its ⋮ menu; a double-click on free space adds a note. --}}
-            <section @class(['kanban-col', 'has-color' => $column->color !== null, \App\Domain\Palette\PaletteColor::cssClass($column->color)]) data-column-id="{{ $column->id }}" data-sort="{{ $column->note_sort }}" aria-labelledby="column-name-{{ $column->id }}">
+            <section @class(['kanban-col', 'is-narrow' => $column->width === 'narrow', 'is-wide' => $column->width === 'wide', 'has-color' => $column->color !== null, \App\Domain\Palette\PaletteColor::cssClass($column->color)]) data-column-id="{{ $column->id }}" data-sort="{{ $column->note_sort }}" aria-labelledby="column-name-{{ $column->id }}">
                 <header class="kanban-head" @if ($canShare) draggable="true" data-kanban-grip @endif>
                     @if ($canShare)
                         <x-edit-in-place id="column-name-{{ $column->id }}" class="kanban-name" name="name" :value="$column->name" :action="route('notes.columns.update', $column->id)" maxlength="60" :data-rename-now="session('note_column_new') === $column->id" />
@@ -64,6 +66,16 @@
                             <button type="button" class="menu-item" data-focus="column-name-{{ $column->id }}"><x-icon name="pencil" /><span>{{ __('home.column_rename') }}</span></button>
                             <button type="button" class="menu-item" data-dialog-open="column-color-{{ $column->id }}"><x-icon name="palette" /><span>{{ __('home.column_color') }}</span></button>
                             <button type="button" class="menu-item" data-dialog-open="column-note-color-{{ $column->id }}"><x-icon name="note" /><span>{{ __('home.column_note_color') }}</span></button>
+                            {{-- Point 179, A355: Schmal | Normal | Breit, saved at once (notes.js). --}}
+                            <p class="dropdown-title">{{ __('home.column_width') }}</p>
+                            <span class="button-choice kanban-width" data-choice>
+                                <input type="hidden" value="{{ $column->width }}" data-column-width="{{ route('notes.columns.look', $column->id) }}">
+                                <span class="button-group" role="group" aria-label="{{ __('home.column_width') }}">
+                                    @foreach (\App\Domain\Notes\NoteColumn::WIDTHS as $width)
+                                        <button type="button" class="button-quiet button-small" data-value="{{ $width }}" aria-pressed="{{ $column->width === $width ? 'true' : 'false' }}">{{ __('home.width_'.$width) }}</button>
+                                    @endforeach
+                                </span>
+                            </span>
                             <hr class="menu-separator">
                             <button type="button" class="menu-item" data-column-move="-1" @disabled($loop->first)><x-icon name="chevron-left" /><span>{{ __('home.column_left') }}</span></button>
                             <button type="button" class="menu-item" data-column-move="1" @disabled($loop->last)><x-icon name="chevron-right" /><span>{{ __('home.column_right') }}</span></button>
@@ -89,10 +101,14 @@
         @endforeach
 
         @if ($canShare)
-            {{-- Point 94: "+" adds a column named "Neue Spalte" at once; its rename starts right away (app.js). --}}
-            <form method="post" action="{{ route('notes.columns.store') }}" class="kanban-col kanban-new">
+            {{-- Point 178, A354: an "Aufklapp-Plus" – the plus opens into a name field with ✓; Enter or ✓ adds the column. --}}
+            <form method="post" action="{{ route('notes.columns.store') }}" class="kanban-new expand-plus" data-expand-plus>
                 @csrf
-                <button type="submit" class="button-quiet"><x-icon name="plus" />{{ __('home.add_column') }}</button>
+                <button type="button" class="icon-button expand-plus-open" aria-label="{{ __('home.add_column') }}" data-tooltip="{{ __('home.add_column') }}"><x-icon name="plus" /></button>
+                <div class="field-addon expand-plus-field">
+                    <input class="input-small" name="name" maxlength="60" autocomplete="off" placeholder="{{ __('home.column_name') }}" aria-label="{{ __('home.column_name') }}">
+                    <span class="addon-end"><button type="submit" class="control-button addon-button" aria-label="{{ __('home.add_column_save') }}" data-tooltip="{{ __('home.add_column_save') }}"><x-icon name="check" /></button></span>
+                </div>
             </form>
         @endif
     </div>

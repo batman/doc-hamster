@@ -35,8 +35,8 @@
 .kanban-menu { flex: none; opacity: 0; transition: opacity .15s; }
 .kanban-col:hover .kanban-menu, .kanban-menu:focus-within, .kanban-menu:has(> [aria-expanded="true"]) { opacity: 1; }
 @media (hover: none) { .kanban-menu { opacity: 1; } }
-.kanban-new { display: block; padding: .75rem; }
-.kanban-new button { display: inline-flex; align-items: center; gap: .4rem; }
+/* Point 178, A354: "Neue Spalte" is an Aufklapp-Plus at the end of the row; open, it is as wide as a column. */
+.kanban-new { --expand-plus-width: 18rem; flex: none; position: sticky; top: 0; padding: .5rem .25rem; }
 .kanban-cards > .note { min-height: 7.5rem; max-height: 24rem; overflow: hidden; }
 
 /* Height: dragged at the bottom-right corner; the width is the column's (A34). */
@@ -46,6 +46,16 @@
     /* Phones (A36): one column at a time, wiped sideways. */
     .kanban { scroll-snap-type: x mandatory; }
     .kanban-col { width: calc(100vw - 3rem); scroll-snap-align: start; }
+}
+
+/* Point 179, A355-A357: Schmal | Normal | Breit per column (14 / 18 / 26 rem). "An Fensterbreite anpassen" (html.notes-fit)
+   lets the columns share the window width in that ratio, without sideways scrolling. Phones ignore both (A357). */
+@media (min-width: 40.0625rem) {
+    .kanban-col.is-narrow { width: 14rem; }
+    .kanban-col.is-wide { width: 26rem; }
+    .notes-fit .kanban-col { flex: 18 1 0; width: auto; min-width: 0; }
+    .notes-fit .kanban-col.is-narrow { flex-grow: 14; }
+    .notes-fit .kanban-col.is-wide { flex-grow: 26; }
 }
 .note {
     --note: #fdd835; --note-ink: #2b2a1f; --note-alpha: 100%;

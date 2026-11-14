@@ -22,6 +22,7 @@ use Illuminate\Support\Collection as SupportCollection;
  * @property string|null $color background #rrggbb from the palette; null = none
  * @property string|null $note_color default colour of new notes in it; null = Note::DEFAULT_COLOR
  * @property string $note_sort order of its notes: manual (dragged), date (newest first) or title
+ * @property string $width narrow, normal or wide (point 179, A355)
  */
 final class NoteColumn extends Model
 {
@@ -30,9 +31,11 @@ final class NoteColumn extends Model
 
     public const SORTS = ['manual', 'date', 'title'];
 
-    protected $fillable = ['org_id', 'name', 'sort', 'color', 'note_color', 'note_sort'];
+    public const WIDTHS = ['narrow', 'normal', 'wide'];
 
-    protected $attributes = ['note_sort' => 'manual'];
+    protected $fillable = ['org_id', 'name', 'sort', 'color', 'note_color', 'note_sort', 'width'];
+
+    protected $attributes = ['note_sort' => 'manual', 'width' => 'normal'];
 
     /**
      * @return array<string, string>

@@ -183,6 +183,18 @@
                 saveColumns();
             }
         });
+        // Point 179, A355: Schmal | Normal | Breit in the column's ⋮ menu (a button group as a choice) saves at once.
+        board.addEventListener('change', event => {
+            const field = event.target.closest?.('[data-column-width]');
+            const column = field?.closest('.kanban-col');
+            if (!column) {
+                return;
+            }
+            column.classList.toggle('is-narrow', field.value === 'narrow');
+            column.classList.toggle('is-wide', field.value === 'wide');
+            send(field.dataset.columnWidth, { width: field.value })
+                .then(response => { if (!response.ok) { failed(); } }).catch(failed);
+        });
         // A115: a double-click on free space in a column (not a note, not the head) opens the new-note dialog for it.
         board.addEventListener('dblclick', event => {
             const column = event.target.closest('.kanban-col[data-column-id]');

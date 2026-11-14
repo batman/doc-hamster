@@ -75,6 +75,8 @@ code { word-break: break-all; background: var(--surface); padding: .1rem .3rem; 
 .dropdown-panel .dropdown-reset { width: 100%; margin: .25rem 0 0; min-height: 44px; background: none; color: var(--primary-ink); font-size: 1rem; letter-spacing: normal; }
 .dropdown-panel .dropdown-reset:hover { background: var(--surface); box-shadow: none; }
 .dropdown-title { margin: .25rem .5rem; font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+/* A button group as a choice inside a menu (point 179, A355: a column's width): below its .dropdown-title, saves at once. */
+.dropdown-panel > .button-choice { display: block; padding: 0 .5rem .5rem; }
 .preview-branches { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
 .preview-branches h2 { margin: 0 0 .5rem; font-size: 1.15rem; }
 .preview-list { margin: 1rem 0; padding: .75rem; border: 1px solid var(--border); border-radius: var(--radius); }
