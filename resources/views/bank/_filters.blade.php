@@ -3,14 +3,14 @@
      same block rides along in the window body as a template, so a search or reload of the body brings fresh counts
      (A326, point 149). --}}
 <div class="bank-filters" data-bank-filters>
-    <div class="button-group bank-filters-wide win-wide-only" role="group" aria-label="{{ __('bank.status_filter') }}">
+    <div class="switcher bank-filters-wide win-wide-only" data-switch-static role="group" aria-label="{{ __('bank.status_filter') }}">
         @foreach ($statusOptions as $value => [$label, $count])
-            <a class="button button-quiet button-small" href="{{ $with(['status' => $value === '' ? null : $value]) }}" data-bank-filter aria-pressed="{{ ($status ?? '') === $value ? 'true' : 'false' }}">{{ $label }}@if ($count) <span class="pill">{{ $count }}</span>@endif</a>
+            <a href="{{ $with(['status' => $value === '' ? null : $value]) }}" data-bank-filter aria-pressed="{{ ($status ?? '') === $value ? 'true' : 'false' }}">{{ $label }}@if ($count) <span class="pill">{{ $count }}</span>@endif</a>
         @endforeach
     </div>
-    <div class="button-group bank-filters-wide win-wide-only" role="group" aria-label="{{ __('bank.flow') }}">
+    <div class="switcher bank-filters-wide win-wide-only" data-switch-static role="group" aria-label="{{ __('bank.flow') }}">
         @foreach ($flowOptions as $value => $label)
-            <a class="button button-quiet button-small" href="{{ $with(['flow' => $value === '' ? null : $value]) }}" data-bank-filter aria-pressed="{{ ($flow ?? '') === $value ? 'true' : 'false' }}">{{ $label }}</a>
+            <a href="{{ $with(['flow' => $value === '' ? null : $value]) }}" data-bank-filter aria-pressed="{{ ($flow ?? '') === $value ? 'true' : 'false' }}">{{ $label }}</a>
         @endforeach
     </div>
     <div class="dropdown bank-filters-narrow win-narrow-only">
@@ -31,9 +31,9 @@
     </div>
     {{-- 159.2: Liste | Kalender like the view switch of Dokumente; narrow one dropdown button. --}}
     @php $viewNow = $calendar ? 'calendar' : 'list'; @endphp
-    <div class="button-group bank-filters-wide win-wide-only" role="group" aria-label="{{ __('bank.view') }}">
+    <div class="switcher bank-filters-wide win-wide-only" data-switch-static role="group" aria-label="{{ __('bank.view') }}">
         @foreach ($viewOptions as $value => $icon)
-            <a class="icon-button button-small" href="{{ $with(['view' => $value === 'list' ? null : $value, 'month' => null]) }}" data-bank-filter aria-pressed="{{ $viewNow === $value ? 'true' : 'false' }}" aria-label="{{ __('bank.view_'.$value) }}" data-tooltip="{{ __('bank.view_'.$value) }}"><x-icon :name="$icon" /></a>
+            <a href="{{ $with(['view' => $value === 'list' ? null : $value, 'month' => null]) }}" data-bank-filter aria-pressed="{{ $viewNow === $value ? 'true' : 'false' }}" aria-label="{{ __('bank.view_'.$value) }}" data-tooltip="{{ __('bank.view_'.$value) }}"><x-icon :name="$icon" /></a>
         @endforeach
     </div>
     <div class="dropdown bank-filters-narrow win-narrow-only">

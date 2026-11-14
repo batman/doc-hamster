@@ -16,9 +16,9 @@
 @endphp
 <x-window :title="$title" :icon="$icon" :url="$url" :close="$close" kind="menu" :min="$min" :optimal="$optimal" :max="$max" priority="1" {{ $attributes->class('win-menu-window') }}>
     <x-slot:actions>
-        <div class="button-group" role="group" aria-label="{{ __('app.menu_window.display') }}">
+        <div class="switcher" data-switch-static role="group" aria-label="{{ __('app.menu_window.display') }}">
             @foreach (['list' => 'list', 'tiles' => 'layout-grid'] as $mode => $modeIcon)
-                <button type="button" class="icon-button button-small" data-menu-display="{{ $mode }}" aria-pressed="{{ $mode === $shown ? 'true' : 'false' }}" aria-label="{{ __('app.menu_window.'.$mode) }}" data-tooltip="{{ __('app.menu_window.'.$mode) }}"><x-icon :name="$modeIcon" /></button>
+                <button type="button" data-menu-display="{{ $mode }}" aria-pressed="{{ $mode === $shown ? 'true' : 'false' }}" aria-label="{{ __('app.menu_window.'.$mode) }}" data-tooltip="{{ __('app.menu_window.'.$mode) }}"><x-icon :name="$modeIcon" /></button>
             @endforeach
         </div>
     </x-slot:actions>

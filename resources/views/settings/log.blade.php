@@ -58,9 +58,9 @@
                     <label class="check"><input type="checkbox" name="books[]" value="{{ $book }}" @checked(in_array($book, $filters['books'], true))> {{ __('log.books.'.$book) }}</label>
                 @endforeach
             </fieldset>
-            <div class="button-group" role="group" aria-label="{{ __('log.level_label') }}">
+            <div class="switcher" role="group" aria-label="{{ __('log.level_label') }}">
                 @foreach (__('log.level_filter') as $value => $label)
-                    <button type="submit" name="level" value="{{ $value }}" class="button-small button-quiet" aria-pressed="{{ $filters['level'] === $value ? 'true' : 'false' }}">{{ $label }}</button>
+                    <button type="submit" name="level" value="{{ $value }}" aria-pressed="{{ $filters['level'] === $value ? 'true' : 'false' }}">{{ $label }}</button>
                 @endforeach
             </div>
             <label class="log-date"><span>{{ __('log.from') }}</span><input type="date" class="input-small" name="from" value="{{ $filters['from'] }}"></label>

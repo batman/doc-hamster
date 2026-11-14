@@ -9,9 +9,9 @@
     <div class="dash-tools">
         <button type="button" class="icon-button button-small dash-grip" data-dash-grip aria-label="{{ __('dashboard.move') }}" data-tooltip="{{ __('dashboard.move') }}"><x-icon name="grip-vertical" /></button>
         <span class="dash-tools-name">{{ $name }}</span>
-        <span class="button-group" role="group" aria-label="{{ __('dashboard.size') }}">
+        <span class="switcher" data-switch-static role="group" aria-label="{{ __('dashboard.size') }}">
             @foreach (\App\Domain\Dashboard\DashboardLayout::SIZES as $size)
-                <button type="button" class="button-quiet button-small" data-dash-size="{{ $size }}" aria-pressed="{{ $size === $widget['size'] ? 'true' : 'false' }}" aria-label="{{ __('dashboard.sizes.'.$size) }}" data-tooltip="{{ __('dashboard.sizes.'.$size) }}">{{ strtoupper($size) }}</button>
+                <button type="button" data-dash-size="{{ $size }}" aria-pressed="{{ $size === $widget['size'] ? 'true' : 'false' }}" aria-label="{{ __('dashboard.sizes.'.$size) }}" data-tooltip="{{ __('dashboard.sizes.'.$size) }}">{{ strtoupper($size) }}</button>
             @endforeach
         </span>
         <button type="button" class="icon-button button-small" data-dash-remove aria-label="{{ __('dashboard.remove') }}" data-tooltip="{{ __('dashboard.remove') }}"><x-icon name="x" /></button>

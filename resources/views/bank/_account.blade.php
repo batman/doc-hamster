@@ -46,11 +46,11 @@
                     <span>{{ __('bank.period') }}</span>
                     <span class="button-choice" data-choice data-choice-toggle data-period-choice>
                         <input type="hidden" value="{{ $preset ?? '' }}">
-                        <span class="button-group" role="group" aria-label="{{ __('bank.period') }}">
+                        <span class="switcher" role="group" aria-label="{{ __('bank.period') }}">
                             @foreach ($ranges as $presetKey => $presetRange)
-                                <button type="button" class="button-quiet button-small" data-value="{{ $presetKey }}" data-range="{{ $presetRange }}" aria-pressed="{{ $preset === $presetKey ? 'true' : 'false' }}">{{ __('documents.adv.quick.'.$presetKey) }}</button>
+                                <button type="button" data-value="{{ $presetKey }}" data-range="{{ $presetRange }}" aria-pressed="{{ $preset === $presetKey ? 'true' : 'false' }}">{{ __('documents.adv.quick.'.$presetKey) }}</button>
                             @endforeach
-                            <button type="button" class="button-quiet button-small" data-value="custom" aria-pressed="{{ $preset === 'custom' ? 'true' : 'false' }}">{{ __('documents.adv.quick.custom') }}</button>
+                            <button type="button" data-value="custom" aria-pressed="{{ $preset === 'custom' ? 'true' : 'false' }}">{{ __('documents.adv.quick.custom') }}</button>
                         </span>
                     </span>
                 </div>

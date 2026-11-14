@@ -70,9 +70,9 @@
                             <p class="dropdown-title">{{ __('home.column_width') }}</p>
                             <span class="button-choice kanban-width" data-choice>
                                 <input type="hidden" value="{{ $column->width }}" data-column-width="{{ route('notes.columns.look', $column->id) }}">
-                                <span class="button-group" role="group" aria-label="{{ __('home.column_width') }}">
+                                <span class="switcher" role="group" aria-label="{{ __('home.column_width') }}">
                                     @foreach (\App\Domain\Notes\NoteColumn::WIDTHS as $width)
-                                        <button type="button" class="button-quiet button-small" data-value="{{ $width }}" aria-pressed="{{ $column->width === $width ? 'true' : 'false' }}">{{ __('home.width_'.$width) }}</button>
+                                        <button type="button" data-value="{{ $width }}" aria-pressed="{{ $column->width === $width ? 'true' : 'false' }}">{{ __('home.width_'.$width) }}</button>
                                     @endforeach
                                 </span>
                             </span>

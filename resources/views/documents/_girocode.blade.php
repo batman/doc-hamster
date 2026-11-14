@@ -79,9 +79,9 @@
     @else
         @if ($giro['skonto'] !== null && $giro['code'])
             <div class="girocode-skonto">
-                <div class="button-group" role="group" aria-label="{{ __('girocode.skonto') }}">
-                    <button type="button" class="button-quiet button-small" aria-pressed="true" data-giro-skonto="0">{{ __('girocode.skonto_full') }}</button>
-                    <button type="button" class="button-quiet button-small" aria-pressed="false" data-giro-skonto="1">{{ __('girocode.skonto_with', ['percent' => $giro['skonto']['percent']]) }}</button>
+                <div class="switcher" role="group" aria-label="{{ __('girocode.skonto') }}">
+                    <button type="button" aria-pressed="true" data-giro-skonto="0">{{ __('girocode.skonto_full') }}</button>
+                    <button type="button" aria-pressed="false" data-giro-skonto="1">{{ __('girocode.skonto_with', ['percent' => $giro['skonto']['percent']]) }}</button>
                 </div>
                 <p class="card-note" data-giro-pay data-full="{{ __('girocode.pay', ['amount' => $giro['skonto']['full']]) }}"
                     data-reduced="{{ __('girocode.pay', ['amount' => $giro['skonto']['reduced']]) }}{{ $giro['skonto']['until'] !== null ? ' · '.__('girocode.skonto_until', ['date' => $giro['skonto']['until']]) : '' }}">{{ __('girocode.pay', ['amount' => $giro['skonto']['full']]) }}</p>
