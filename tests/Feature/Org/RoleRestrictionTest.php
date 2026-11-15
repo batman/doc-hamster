@@ -168,7 +168,7 @@ it('pauses a role or a person: signed out at once, sign-in and upload keys refus
 });
 
 it('turns advisor accesses and accountant memberships into persons with a "Steuerberater" role', function (): void {
-    $migration = require database_path('migrations/2026_11_19_100000_roles_with_restrictions_and_person_access.php');
+    $migration = require database_path('migrations/2026_11_19_110000_roles_with_restrictions_and_person_access.php');
     $org = $this->orgId;
     $old = OrgRole::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $org)->where('name', 'Steuerberater')->firstOrFail();
     // The state before the update: the pre-installed accountant role, two accountants, one with an access row.
