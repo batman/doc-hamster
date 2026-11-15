@@ -255,7 +255,7 @@ Short entries for product decisions that were taken while building and were not 
 - **Reason:** one date everywhere instead of capture, upload and invoice dates competing; the invoice date is what the tax advisor needs.
 
 ### D-031 · Tax-advisor access and password reset — Owner: PO; amends D-012
-- **Status:** decided and built (2026-11-14, points 210, F29, A380)
+- **Status:** superseded by D-037 (2026-11-15); was decided and built (2026-11-14, points 210, F29, A380)
 - **Decision:** owners/admins create the access: user name, period (open ends allowed), accounts incl. cash boxes, optional expiry, optional e-mail. docHamster shows a **24-character one-time password once**; the advisor sets his own at the first sign-in. Lock after 10 failed sign-ins (15 min), 8-hour session, no "stay signed in"; every view and download is audited ("Zuletzt angesehen"). **Without mail** the owner/admin makes a new one-time password (all advisor sessions end). **With mail configured**, the login also offers "Passwort vergessen?" (reset link, sent by a `net` job). No categories in the scope.
 - **Reason:** the advisor installs nothing (D-012); a reset must work on servers without mail, mail is a convenience on top.
 
@@ -283,6 +283,11 @@ Short entries for product decisions that were taken while building and were not 
 - **Status:** decided as interim (Lead, since 2026-10-29, #27); D-012 stays the goal for owners/members
 - **Decision:** everyone signs in with user name + password (Argon2id, rate limit); owners and members may tick "Angemeldet bleiben". Owners/admins create people with a password shown once – no invitation links. Phones and programs that only send documents use **device keys** (upload only). "Angemeldete Geräte" lists the own sessions. Passkeys, pairing by link/QR/code and rotating device tokens (PLAN §11.1) are not built yet.
 - **Reason:** works everywhere at once (also before a fixed HTTPS domain); the security add-ons (D-029, session list, lockouts) cover the gap until passkeys come.
+
+### D-037 · No separate tax-advisor access: roles with restrictions — Owner: PO; replaces D-031
+- **Status:** decided and built (2026-11-15, points 215, 216, 218, 223, A384–A389, F36)
+- **Decision:** a tax advisor is an ordinary person with a role the Admin makes (e.g. "Steuerberater": see all documents, Belegpakete). Every role may carry **restrictions** – period (documents by Belegdatum, bookings by booking date), bank accounts incl. cash boxes, folder branches – all optional and all applying together; a folder restriction hides the Posteingang, a booking shows a linked document outside the restriction only as "Beleg vorhanden (nicht freigegeben)", a pack only when everything in it is allowed. Per person: optional "Zugang von / bis"; roles (not Admin) and persons (not oneself) can be **paused** (signed out at once, sign-in and upload keys refused). Kept for everyone: one-time password on create/reset (own password first), "Passwort vergessen?" by mail where mail works, the login lock, audit of views and downloads, the right "Belegpakete". Existing advisor accesses became persons with a "Steuerberater" role (scope → restrictions, expiry → "Zugang bis"). Restrictions, dates, pauses and finished Belegpakete are part of the backup.
+- **Reason:** one way to sign in and one rights model for everyone; the advisor needs nothing special.
 
 ## Decide before the relevant phase
 

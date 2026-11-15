@@ -42,7 +42,7 @@ Lizenz: **MIT**. Code, Kommentare und Commits: **Englisch**. Oberfläche: **Deut
 - Konten von Hand mit Art (Bank/Kasse), IBAN-Zuordnung beim Import, **Bargeldkasse**, Abgleich mit Score (Vorschlag + 1-Klick-Bestätigung), n:m-Verknüpfungen, Verknüpfen per Ziehen mit Rückgängig, **Dauerbeleg**, Gründe für „kein Beleg nötig“, MCC-Tags, Buchungsnotizen, Zeitraum-Schnellwahl und Kalender.
 
 **Steuerberater, Belegpaket, Sicherung**
-- **Steuerberater-Zugang** mit Einmal-Passwort, Umfang (Zeitraum, Konten, Ablauf), „Zuletzt angesehen“, optional „Passwort vergessen?“ per Mail (D-031).
+- **Steuerberater = Person mit Rolle** (D-037): Rollen mit Einschränkungen (Zeitraum, Konten, Ordner), Zugang von/bis und Pause je Person, Einmal-Passwort für jede neue Person, „Zuletzt angesehen“, optional „Passwort vergessen?“ per Mail.
 - **Belegpaket-PDF** (vorläufiges Layout, eigener PDF-Schreiber, eingefroren und versioniert, D-032).
 - **Backup herunterladen** für Owner/Admins + `php artisan dochamster:restore` (D-028).
 - **Bitte bestätigen:** frische Bestätigung (5 min) vor sensiblen Aktionen (D-029).
@@ -155,7 +155,7 @@ Legende: ✅ erlaubt · ❌ verboten · ⚙️ per Org-Einstellung · 🔶 einge
 
 **Freigabe-Modell Steuerberater:** Eine Freigabe (`share`) gilt für eine Organisation und optional eingeschränkt auf Zeitraum (`from`/`to`), Kategorien oder Bankkonten, optional mit Ablaufdatum. Ohne Freigabe sieht der Steuerberater nichts.
 
-> **Stand 2026-11-14 (geändert):** Gebaut als **Steuerberater-Zugang** (`advisor_accesses`, D-031): Zeitraum (offene Enden erlaubt), Konten inkl. Kassen, optionales Ablaufdatum; keine Kategorien. Ein Steuerberater ohne Zugangs-Zeile sieht alles nur lesend (Q-20).
+> **Stand 2026-11-15 (geändert, D-037):** Kein eigener Steuerberater-Zugang mehr. Der Steuerberater ist eine Person mit einer Rolle (z. B. „Steuerberater“: alle Dokumente sehen, Belegpakete). Jede Rolle kann eingeschränkt werden: Zeitraum (Belegdatum / Buchungsdatum), Konten inkl. Kassen, Ordner (mit Unterordnern; dann kein Posteingang) – alles zusammen; je Person „Zugang von / bis“ und „Pausiert“.
 
 ---
 
@@ -339,12 +339,12 @@ Details in [Kapitel 10](#10-berichte--export).
 - ~~AK-4.6.1: Eine Instanz hat mehrere Organisationen; jede Person kann Mitglied mehrerer Organisationen sein (Org-Wechsler).~~ – *entfällt: eine Organisation pro Installation, kein Org-Wechsler (D-027).*
 - [x] AK-4.6.2: Daten sind strikt pro Organisation getrennt (jede fachliche Tabelle hat `org_id`, globaler Org-Scope; Tests für Org-Isolation). Bleibt Pflicht, auch mit einer Organisation pro Installation.
 - ~~AK-4.6.3: Einladung per Link/QR-Code mit Rolle, einmalig nutzbar, Ablauf 7 Tage.~~ – *entfällt: keine Einladungslinks – der Owner/Admin legt Personen selbst an (AK-4.6.5).*
-- [x] AK-4.6.4 (geändert): Steuerberater-Zugang (Einstellungen → Personen → Steuerberater): Benutzername, Zeitraum (offene Enden), Konten inkl. Kassen, optionales Ablaufdatum, optional E-Mail. Die App erzeugt ein Einmal-Passwort (24 Zeichen), zeigt es **einmal** im Dialog; der Steuerberater setzt beim ersten Anmelden sein eigenes. Keine Selbstregistrierung. Neues Passwort und Ende des Zugangs jederzeit (mit „Bitte bestätigen“), beides wirkt sofort. Sperre nach 10 Fehlversuchen (15 min), Sitzung 8 h, kein „Angemeldet bleiben“; jede Ansicht und jeder Download im Audit-Log, „Zuletzt angesehen“ beim Zugang. „Passwort vergessen?“ nur, wenn Mail eingerichtet ist (F29). D-031.
+- [x] AK-4.6.4 (geändert 2026-11-15, D-037: jetzt Personen + Rollen mit Einschränkungen für alle): Steuerberater-Zugang (Einstellungen → Personen → Steuerberater): Benutzername, Zeitraum (offene Enden), Konten inkl. Kassen, optionales Ablaufdatum, optional E-Mail. Die App erzeugt ein Einmal-Passwort (24 Zeichen), zeigt es **einmal** im Dialog; der Steuerberater setzt beim ersten Anmelden sein eigenes. Keine Selbstregistrierung. Neues Passwort und Ende des Zugangs jederzeit (mit „Bitte bestätigen“), beides wirkt sofort. Sperre nach 10 Fehlversuchen (15 min), Sitzung 8 h, kein „Angemeldet bleiben“; jede Ansicht und jeder Download im Audit-Log, „Zuletzt angesehen“ beim Zugang. „Passwort vergessen?“ nur, wenn Mail eingerichtet ist (F29). D-031.
 
 Neu seit dem Plan (gebaut):
 - [x] AK-4.6.5: Personen (Einstellungen → Personen → Mitglieder): der Admin legt Name + Benutzername + Rolle an; die App zeigt ein Passwort einmal im Dialog; Passwort neu setzen (beendet alle Sitzungen), Rolle ändern, Zugang entziehen.
 - [x] AK-4.6.6: **Eigene Rollen** mit Rechte-Häkchen (Hochladen, alle sehen, bearbeiten, löschen, Bank, Export, Tags, Notizen teilen, Updates, Vorschauen); „Admin“ (`owner`) darf immer alles (Q-21).
-- [x] AK-4.6.7: Read-only-Oberfläche des Steuerberaters: Belegpakete, Buchungen und Dokumente in seinem Umfang, Downloads; alle Schreibwege gesperrt.
+- [x] AK-4.6.7 (geändert 2026-11-15, D-037): keine eigene Oberfläche mehr – der Steuerberater nutzt die normale App mit den Rechten und Einschränkungen seiner Rolle.
 
 ### 4.7 Sprachnotizen & Spracherkennung (lokal) – S
 
@@ -400,7 +400,7 @@ Ablauf (Entwurf, Reihenfolge und Technik legt der Lead fest):
 5. **E-Mail-Versand (optional):** SMTP-Daten vom Hoster, Test-Mail.
 6. **Hintergrundaufgaben:** Cron-Eintrag beim Hoster erklären und prüfen, ob er läuft.
 7. **Handy verbinden:** QR-Code scannen, App auf den Home-Bildschirm legen (eigene Anleitung für iPhone und Android), Kamera- und Standort-Erlaubnis erklären.
-8. **Fertig:** erste Schritte – erstes Foto, Kontoauszug importieren, Steuerberater-Zugang anlegen.
+8. **Fertig:** erste Schritte – erstes Foto, Kontoauszug importieren, Steuerberater als Person anlegen.
 
 Akzeptanzkriterien:
 - [x] AK-4.9.1: Einrichtung **ohne Shell** möglich: `install.php` hochladen (lädt das Release-Paket inkl. `vendor/`), Adresse öffnen, der Assistent führt durch alles.
