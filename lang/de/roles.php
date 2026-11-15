@@ -19,6 +19,7 @@ return [
         'view_all' => 'Alle Dokumente sehen (sonst nur die eigenen)',
         'edit' => 'Dokumente bearbeiten',
         'delete' => 'Dokumente löschen',
+        'bank_view' => 'Bank ansehen',
         'banking' => 'Bankdaten importieren und abgleichen',
         'export' => 'Exportieren',
         'packs' => 'Belegpakete sehen und herunterladen',
@@ -28,7 +29,7 @@ return [
         'update_preview' => 'Vorschau-Branches installieren (nur zusammen mit „System aktualisieren“)',
     ],
     'short' => [
-        'upload' => 'Hochladen', 'view_all' => 'Alle sehen', 'edit' => 'Bearbeiten', 'delete' => 'Löschen', 'banking' => 'Bank',
+        'upload' => 'Hochladen', 'view_all' => 'Alle sehen', 'edit' => 'Bearbeiten', 'delete' => 'Löschen', 'bank_view' => 'Bank ansehen', 'banking' => 'Bank',
         'export' => 'Export', 'packs' => 'Belegpakete', 'tags' => 'Tags', 'notes' => 'Notizen', 'update' => 'Update', 'update_preview' => 'Vorschau',
     ],
     'no_rights' => 'noch keine Rechte',

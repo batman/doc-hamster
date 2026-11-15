@@ -3,6 +3,8 @@
      198) open the one window beside it – a data-window link replaces whatever stood right of the booking (A371); from
      there documents are dragged onto the booking card. Forms with data-bank-action are sent by modules/bank.js. --}}
 @php
+    // F40: "Bank ansehen" only – values, note and links read-only, no matching changes.
+    $mayEdit = Gate::allows('banking.import');
     $state = $transaction->status();
     $statusClass = ['open' => 'pill-warning', 'suggested' => 'pill-new', 'linked' => 'pill-ok', 'none' => ''];
     $money = static fn (int $minor): string => \App\Domain\Banking\Transaction::money($minor, $transaction->currency);
@@ -19,7 +21,7 @@
     @endif
 
     {{-- Point 160: documents dropped onto the booking card link to it (like a booking row of the account window). --}}
-    <section class="card" data-doc-drop="{{ route('bank.link', $transaction->id) }}">
+    <section class="card" @if ($mayEdit) data-doc-drop="{{ route('bank.link', $transaction->id) }}" @endif>
         <h2 class="card-head"><x-icon name="receipt" />{{ __('bank.transaction') }} <span class="pill {{ $statusClass[$state] }}">{{ __('bank.status.'.$state) }}</span></h2>
         <ul class="prop-list">
             <li class="prop-row"><span class="prop-name">{{ __('bank.columns.date') }}</span><span class="prop-value">{{ $transaction->bookedOn() }}</span></li>
@@ -67,15 +69,22 @@
             @endif
         </ul>
         {{-- Point 147: a note on the booking, edited in place like the document's note. --}}
-        <section class="detail-section">
-            <h3 id="bank-note-{{ $transaction->id }}">{{ __('bank.note') }}</h3>
-            <x-edit-in-place name="note" :value="$transaction->note" :action="route('bank.note', $transaction->id)" multiline maxlength="5000"
-                :placeholder="__('bank.note_placeholder')" aria-labelledby="bank-note-{{ $transaction->id }}" />
-        </section>
+        @if ($mayEdit)
+            <section class="detail-section">
+                <h3 id="bank-note-{{ $transaction->id }}">{{ __('bank.note') }}</h3>
+                <x-edit-in-place name="note" :value="$transaction->note" :action="route('bank.note', $transaction->id)" multiline maxlength="5000"
+                    :placeholder="__('bank.note_placeholder')" aria-labelledby="bank-note-{{ $transaction->id }}" />
+            </section>
+        @elseif ($transaction->note)
+            <section class="detail-section">
+                <h3>{{ __('bank.note') }}</h3>
+                <p>{{ $transaction->note }}</p>
+            </section>
+        @endif
         @if ($parent)
             <p class="card-note">{{ __('bank.refund_hint') }}</p>
         @endif
-        @if ($suggestedReason && ! $transaction->no_receipt)
+        @if ($mayEdit && $suggestedReason && ! $transaction->no_receipt)
             {{-- A287: the counterparty was marked "kein Beleg nötig" before; one click confirms. --}}
             <div class="suggest-chips" role="group" aria-label="{{ __('bank.suggested_hint') }}">
                 <span class="suggest-chips-label">{{ __('bank.suggested_reason', ['reason' => $suggestedReason->name]) }}</span>
@@ -92,6 +101,7 @@
             </div>
         @endif
         {{-- Points 193, 198: the documents to link open beside the booking; A322: the next link (drop or link button) makes a Dauerbeleg. --}}
+        @if ($mayEdit)
         <div class="actions">
             <a class="button button-small" href="{{ route('bank.suggestions', $transaction->id) }}" data-window><x-icon name="file-invoice" /><span>{{ __('bank.suggestions') }}</span></a>
             <a class="icon-button" href="{{ route('documents.index') }}" data-window aria-label="{{ __('bank.open_folders') }}" data-tooltip="{{ __('bank.open_folders') }}"><x-icon name="layout-columns" /></a>
@@ -108,6 +118,7 @@
         <div class="bank-ticks">
             <label class="check" data-tooltip="{{ __('bank.standing_hint') }}"><input type="checkbox" data-bank-standing> {{ __('bank.standing_tick') }}</label>
         </div>
+        @endif
     </section>
 
     @if ($transaction->extra)
@@ -140,6 +151,7 @@
     @endif
 
     {{-- A286, A288: a click on a reason saves at once; only "Anderer Grund" opens a field (Enter or ✓). --}}
+    @if ($mayEdit)
     <div class="dialog-backdrop" data-dialog="no-receipt-{{ $transaction->id }}" hidden>
         <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="no-receipt-{{ $transaction->id }}-title">
             <h2 id="no-receipt-{{ $transaction->id }}-title">{{ __('bank.no_receipt_pick') }}</h2>
@@ -165,6 +177,7 @@
             </div>
         </div>
     </div>
+    @endif
     @if ($linked->isNotEmpty() || $hidden > 0)
         <section class="card">
             <h2 class="card-head"><x-icon name="link" />{{ __('bank.linked') }}</h2>
@@ -182,7 +195,7 @@
                                 @if ($match->isSuggested() && $match->reasons) · {{ $why($match->reasons) }}@endif
                             </small>
                             {{-- A300: the card's category suggests a tag for the document. --}}
-                            @if ($mccTag && ! $match->isSuggested() && ! $document->tags->contains(static fn ($t): bool => mb_strtolower($t->name) === mb_strtolower($mccTag)))
+                            @if ($mayEdit && $mccTag && ! $match->isSuggested() && ! $document->tags->contains(static fn ($t): bool => mb_strtolower($t->name) === mb_strtolower($mccTag)))
                                 <form method="post" action="{{ route('bank.tag', $transaction->id) }}" data-bank-action class="suggest-chips">
                                     @csrf
                                     <input type="hidden" name="document_id" value="{{ $document->id }}">
@@ -193,6 +206,7 @@
                         </span>
                         @if ($match->isSuggested())
                             <span class="pill pill-new">{{ __('bank.status.suggested') }}@if ($match->score) · {{ __('bank.score', ['score' => $match->score]) }}@endif</span>
+                            @if ($mayEdit)
                             <form method="post" action="{{ route('bank.confirm', $transaction->id) }}" data-bank-action>
                                 @csrf
                                 <input type="hidden" name="document_id" value="{{ $document->id }}">
@@ -203,7 +217,8 @@
                                 <input type="hidden" name="document_id" value="{{ $document->id }}">
                                 <button type="submit" class="control-button control-danger" aria-label="{{ __('bank.reject') }}" data-tooltip="{{ __('bank.reject') }}"><x-icon name="x" /></button>
                             </form>
-                        @else
+                            @endif
+                        @elseif ($mayEdit)
                             <span class="row-actions">
                                 <form method="post" action="{{ route('bank.unmatch', $transaction->id) }}" data-bank-action>
                                     @csrf

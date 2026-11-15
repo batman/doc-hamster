@@ -220,7 +220,7 @@ final class DashboardController
     {
         return array_values(array_filter(array_keys(DashboardLayout::WIDGETS), static fn (string $type): bool => match ($type) {
             'inbox', 'drop' => Gate::allows(Permission::UploadDocuments->value),
-            'bookings' => Gate::allows(Permission::ImportBanking->value),
+            'bookings' => Gate::allows(Permission::ViewBanking->value),
             default => true,
         }));
     }
@@ -268,7 +268,7 @@ final class DashboardController
         }
         $due = $widgets->dueSoon();
         $parts[] = trans_choice('dashboard.summary.due', $due, ['count' => $due]);
-        if (Gate::allows(Permission::ImportBanking->value)) {
+        if (Gate::allows(Permission::ViewBanking->value)) {
             $open = $badges[Badges::BANK] ?? 0;
             $parts[] = trans_choice('dashboard.summary.open', $open, ['count' => $open]);
         }

@@ -65,7 +65,7 @@
             }
         }
         $prefetchSmall[] = route('documents.index');
-        if (Gate::allows('banking.import')) {
+        if (Gate::allows('banking.view')) {
             $prefetchSmall[] = route('bank.index');
         }
     }
@@ -100,7 +100,7 @@
                             ['notes.index', 'note', 'home.notes', null, ['notes.*'], null],
                             ['documents.index', 'file-text', 'documents.title', null, ['documents.*', 'folders.*'], null],
                             ['inbox.index', 'inbox', 'inbox.title', 'documents.upload', ['inbox.index'], \App\Http\Badges::INBOX],
-                            ['bank.index', 'building-bank', 'bank.title', 'banking.import', ['bank.index', 'bank.show', 'bank.account', 'bank.receipts', 'bank.import.columns'], \App\Http\Badges::BANK],
+                            ['bank.index', 'building-bank', 'bank.title', 'banking.view', ['bank.index', 'bank.show', 'bank.account', 'bank.receipts', 'bank.import.columns'], \App\Http\Badges::BANK],
                             ['settings.index', 'settings', 'settings.title', null, ['settings.*', 'members.*', 'roles.*', 'tags.*', 'exports.*', 'updates.*', 'ocr.show', 'palette.*', 'bank.import', 'bank.accounts.*', 'phone-check*', 'log.*', 'printers.*', 'inbox.mail'], \App\Http\Badges::SETTINGS_ALL],
                         ] as [$route, $icon, $label, $ability, $active, $badge])
                             @if (($ability === null || Gate::allows($ability)) && ! ($route === 'inbox.index' && $noInbox))

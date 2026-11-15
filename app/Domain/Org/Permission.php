@@ -18,6 +18,9 @@ enum Permission: string
     case TrashDocuments = 'documents.trash';
     case DeleteDocumentsForever = 'documents.delete_forever';
     case ImportBanking = 'banking.import';
+
+    /** F40: see the Bank module read-only (accounts, bookings, links); "Bank" (ImportBanking) includes it. */
+    case ViewBanking = 'banking.view';
     case CreateReports = 'reports.create';
     case Export = 'exports.create';
     case ManageTags = 'tags.manage';
@@ -47,6 +50,7 @@ enum Permission: string
             self::EditDocuments => RoleRight::Edit,
             self::TrashDocuments => RoleRight::Delete,
             self::ImportBanking => RoleRight::Banking,
+            self::ViewBanking => RoleRight::BankView,
             self::CreateReports, self::Export => RoleRight::Export,
             self::ViewPacks => RoleRight::Packs,
             self::ManageTags => RoleRight::Tags,

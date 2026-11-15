@@ -86,6 +86,11 @@ final class CurrentOrg
             return false;
         }
 
+        // F40: "Bank" (import, edit, match) includes "Bank ansehen".
+        if ($permission === Permission::ViewBanking && $this->allows(Permission::ImportBanking)) {
+            return true;
+        }
+
         return $right !== null && $this->membership()->orgRole?->has($right) === true;
     }
 }

@@ -11,6 +11,7 @@ use App\Domain\Documents\Inbox;
 use App\Domain\Log\LogEntry;
 use App\Domain\Notes\Note;
 use App\Domain\Notes\NoteColumn;
+use App\Domain\Org\RoleRestriction;
 use App\Domain\Properties\DocumentProperty;
 use App\Domain\Properties\Property;
 use Illuminate\Database\Eloquent\Builder;
@@ -138,6 +139,10 @@ final class DashboardWidgets
             ->whereIn('event', array_keys(self::ACTIVITY))->latest('created_at')->orderByDesc('id')->limit($limit)->get();
         $ids = $entries->pluck('document_id')->filter()->unique()->values()->all();
         $visible = $ids === [] ? [] : Document::query()->visibleTo($this->userId, $this->seesAll)->whereKey($ids)->pluck('id')->all();
+        // F39: the messages name folders ("verschoben nach …"); a folder-restricted role keeps only those of documents it sees.
+        if (RoleRestriction::current()->hidesInbox()) {
+            $entries = $entries->filter(static fn (LogEntry $entry): bool => ! str_starts_with((string) $entry->event, 'document.') || in_array($entry->document_id, $visible, true));
+        }
 
         return array_values($entries->map(static fn (LogEntry $entry): array => [
             'message' => $entry->message,

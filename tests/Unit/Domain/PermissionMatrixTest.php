@@ -16,6 +16,7 @@ dataset('rights', [
     'Beleg löschen (Papierkorb)' => [Permission::TrashDocuments, RoleRight::Delete],
     'Endgültig löschen' => [Permission::DeleteDocumentsForever, null],
     'Bankdaten' => [Permission::ImportBanking, RoleRight::Banking],
+    'Bank ansehen' => [Permission::ViewBanking, RoleRight::BankView],
     'Berichte' => [Permission::CreateReports, RoleRight::Export],
     'Export' => [Permission::Export, RoleRight::Export],
     'Tags' => [Permission::ManageTags, RoleRight::Tags],
@@ -34,7 +35,7 @@ it('maps every permission to its checkbox', function (Permission $permission, ?R
 })->with('rights');
 
 it('covers every permission', function (): void {
-    expect(Permission::cases())->toHaveCount(18);
+    expect(Permission::cases())->toHaveCount(19);
 });
 
 it('has the agreed defaults for the roles of a new organisation', function (): void {

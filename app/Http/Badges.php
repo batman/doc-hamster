@@ -85,7 +85,7 @@ final class Badges
         }
 
         // A274: open bookings without a document – a plain count, not "new since the last visit": they stay until handled.
-        if (Gate::allows(Permission::ImportBanking->value)) {
+        if (Gate::allows(Permission::ViewBanking->value)) {
             $counts[self::BANK] = Transaction::query()->status(Transaction::OPEN)->count();
         }
 

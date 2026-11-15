@@ -9,6 +9,7 @@ use App\Domain\Auth\User;
 use App\Domain\Documents\DocumentIntake;
 use App\Domain\Documents\Folder;
 use App\Domain\Org\CurrentOrg;
+use App\Domain\Org\RoleRestriction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -29,7 +30,8 @@ final class FolderImportController
             'parent_id' => ['nullable', 'string'],
         ]);
         $parent = isset($data['parent_id']) ? Folder::query()->whereKey($data['parent_id'])->first() : null;
-        if (isset($data['parent_id']) && ($parent === null || $parent->depth() >= Folder::MAX_DEPTH)) {
+        // F39: a folder-restricted role imports only into its branches.
+        if (isset($data['parent_id']) && ($parent === null || $parent->depth() >= Folder::MAX_DEPTH) || ! RoleRestriction::current()->allowsFolderTarget($parent?->id)) {
             return response()->json(['message' => __('folders.parent_invalid')], 422);
         }
 
@@ -52,6 +54,7 @@ final class FolderImportController
     public function file(Request $request, string $id, CurrentOrg $org, AuditLog $audit): JsonResponse
     {
         $root = Folder::query()->whereKey($id)->firstOrFail();
+        abort_unless(RoleRestriction::current()->allowsFolderTarget($root->id), 403);
         $data = $request->validate([
             'file' => ['required', 'file', 'max:25600'],
             'path' => ['required', 'string', 'max:1000'],

@@ -2,7 +2,9 @@
      (A269); Ctrl/Shift picks several (A132), they are linked together. --}}
 <x-window :title="__('bank.free_receipts')" icon="file-off" kind="bank-receipts" :url="route('bank.receipts', request()->only('q'))" :close="route('bank.index')"
           :search="__('bank.search_receipts')">
-    <p class="card-note">{{ __('bank.receipts_hint') }}</p>
+    @can('banking.import')
+        <p class="card-note">{{ __('bank.receipts_hint') }}</p>
+    @endcan
     <ul class="pick-list">
         @forelse ($receipts as $document)
             <li class="pick-row is-static" data-doc="{{ $document->id }}" data-doc-file="{{ $document->dragFile() }}" data-folder="{{ $document->folder_id }}">

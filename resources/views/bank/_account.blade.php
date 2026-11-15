@@ -6,7 +6,9 @@
      pending/reverted state as small pills (A293), amounts always with sign (A309). A statement dropped onto the window
      imports into this account; a document dragged onto a booking row links it (A269, data-doc-drop). --}}
 @php
-    $statusClass = ['open' => 'pill-warning', 'suggested' => 'pill-new', 'linked' => 'pill-ok', 'none' => ''];
+    // F40: "Bank ansehen" only – no statement drop, no cash entries, no links.
+    $mayEdit = Gate::allows('banking.import');
+    $statusClass =['open' => 'pill-warning', 'suggested' => 'pill-new', 'linked' => 'pill-ok', 'none' => ''];
     $query = array_filter(['status' => $status, 'flow' => $flow, 'q' => $accountSearch !== '' ? $accountSearch : null, 'from' => $from, 'to' => $to,
         'view' => $calendar ? 'calendar' : null, 'month' => $calendar ? $calendar['month']->format('Y-m') : null]);
     $accountUrl = route('bank.account', [$account->id, ...$query]);
@@ -34,7 +36,7 @@
 <x-window :title="$account->name" :icon="$account->icon()" kind="bank-account" min="24rem" optimal="38rem" max="56rem"
           :url="$accountUrl" :close="route('bank.index')"
           :search="__('bank.search')" search-params="from to" :search-count="($from ? 1 : 0) + ($to ? 1 : 0)"
-          :data-statement-drop="$account->isCash() ? null : route('bank.import.upload')" data-account="{{ $account->id }}" data-drop-label="{{ __('bank.drop_into', ['name' => $account->name]) }}">
+          :data-statement-drop="$account->isCash() || ! $mayEdit ? null : route('bank.import.upload')" data-account="{{ $account->id }}" data-drop-label="{{ __('bank.drop_into', ['name' => $account->name]) }}">
     <x-slot:actions>
         @include('bank._filters')
     </x-slot:actions>
@@ -77,7 +79,7 @@
     @endif
     {{-- Fresh filters with counts for the toolbar after a reload of only the body (search, point 149, A326). --}}
     <template data-bank-filters-fresh>@include('bank._filters')</template>
-    @if ($account->isCash())
+    @if ($account->isCash() && $mayEdit)
         {{-- Point 190: a cash entry, saved at once; the window reloads with it. --}}
         <form class="cash-entry" method="post" action="{{ route('bank.cash.store', $account->id) }}" data-bank-action>
             @csrf
@@ -104,7 +106,7 @@
     <ul class="pick-list">
         @forelse ($transactions as $entry)
             @php $state = $entry->status(); @endphp
-            <li class="pick-row is-static @if ($transaction?->id === $entry->id) is-marked @endif @if ($entry->isUnsettled()) is-off @endif" data-doc-drop="{{ route('bank.link', $entry->id) }}" data-booking-drag="{{ route('bank.link', $entry->id) }}" data-booking-label="{{ $entry->counterparty ?? $entry->purpose ?? '–' }} · {{ $entry->signedAmount() }}">
+            <li class="pick-row is-static @if ($transaction?->id === $entry->id) is-marked @endif @if ($entry->isUnsettled()) is-off @endif" @if ($mayEdit) data-doc-drop="{{ route('bank.link', $entry->id) }}" data-booking-drag="{{ route('bank.link', $entry->id) }}" @endif data-booking-label="{{ $entry->counterparty ?? $entry->purpose ?? '–' }} · {{ $entry->signedAmount() }}">
                 <span class="row-icon" data-tooltip="{{ __('bank.nature.'.$entry->nature()) }}"><x-icon :name="$entry->natureIcon()" /></span>
                 <span>
                     <strong><a href="{{ route('bank.show', $entry->id) }}" data-window>{{ $entry->counterparty ?? $entry->purpose ?? '–' }}</a></strong>
@@ -126,7 +128,7 @@
                     <span class="pill {{ $statusClass[$state] }}">{{ __('bank.status.'.$state) }}</span>
                 @endif
                 <span class="row-amount @if ($entry->amount_minor > 0) is-income @endif">{{ $entry->signedAmount() }}</span>
-                @if ($entry->isManual())
+                @if ($entry->isManual() && $mayEdit)
                     @include('bank._cash-entry')
                 @endif
             </li>

@@ -86,7 +86,8 @@ it('combines period, accounts and folders for documents and bookings (A387)', fu
     $bookings = asRestricted(fn () => Transaction::query()->count());
     $accounts = asRestricted(fn () => BankAccount::query()->pluck('name')->all());
 
-    expect($titles)->toBe(['Giro', 'in Unterordner'])
+    // F41: with an account restriction a document without a booking is hidden too.
+    expect($titles)->toBe(['Giro'])
         ->and($bookings)->toBe(1)
         ->and($accounts)->toBe(['Giro'])
         ->and($inSub->exists)->toBeTrue();
@@ -109,6 +110,7 @@ it('hides the Posteingang from a role restricted to folders (A384) and refuses t
 it('shows a receipt pack only when everything in it is allowed (A386)', function (): void {
     $inside = restrictedDoc('drin', $this->top->id, '2026-02-01');
     $outside = restrictedDoc('draußen', $this->other->id, '2026-02-02');
+    booking($this->giro, '2026-02-01', $inside);
     $pack = fn (array $docs, array $accounts = []) => new ReceiptPack(['period_from' => '2026-01-01', 'period_to' => '2026-03-31', 'account_ids' => $accounts ?: [$this->giro->id], 'summary' => ['documents' => $docs]]);
 
     $restriction = new RoleRestriction(CarbonImmutable::parse('2026-01-01'), CarbonImmutable::parse('2026-12-31'), [$this->giro->id], [$this->top->id]);

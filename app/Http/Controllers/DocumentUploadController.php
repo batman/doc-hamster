@@ -8,6 +8,7 @@ use App\Domain\Audit\AuditLog;
 use App\Domain\Documents\DocumentIntake;
 use App\Domain\Documents\Folder;
 use App\Domain\Org\CurrentOrg;
+use App\Domain\Org\RoleRestriction;
 use App\Http\Controllers\Concerns\ScopesDocuments;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -43,6 +44,8 @@ final class DocumentUploadController
         }
 
         $userId = $this->userId($request);
+        // F39: without a Posteingang a folder-restricted role's upload lands in its first folder.
+        $data['folder'] ??= RoleRestriction::current()->homeFolder();
         /** @var list<string> $tagIds */
         $tagIds = array_values($data['tags'] ?? []);
         foreach ($checked as [$upload, $mime, $extension]) {

@@ -314,7 +314,7 @@ final class Matcher
     {
         return Document::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $orgId)
             ->where(static fn (Builder $q) => $q->whereNull('folder_id')
-                ->orWhereIn('folder_id', Folder::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $orgId)->where('bank_matching', true)->select('id')))
+                ->orWhereIn('folder_id', Folder::query()->withoutGlobalScopes()->where('org_id', $orgId)->where('bank_matching', true)->select('id')))
             ->whereDoesntHave('matches', self::anyOrg(...));
     }
 }

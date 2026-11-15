@@ -303,8 +303,15 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('folders/{id}/delete', [FolderController::class, 'destroy'])->name('folders.destroy');
     });
 
-    Route::middleware('can:banking.import')->prefix('bank')->name('bank.')->group(function (): void {
+    // F40: "Bank ansehen" opens the Bank module read-only; everything that imports, edits or matches needs "Bank".
+    Route::middleware('can:banking.view')->prefix('bank')->name('bank.')->group(function (): void {
         Route::get('/', [BankController::class, 'index'])->name('index');
+        Route::get('accounts/{id}', [BankController::class, 'account'])->name('account');
+        Route::get('receipts', [BankController::class, 'receipts'])->name('receipts');
+        Route::get('transactions/{id}', [BankController::class, 'show'])->name('show');
+    });
+
+    Route::middleware('can:banking.import')->prefix('bank')->name('bank.')->group(function (): void {
         Route::get('import', [BankImportController::class, 'form'])->name('import');
         Route::post('import', [BankImportController::class, 'upload'])->name('import.upload');
         Route::get('import/columns', [BankImportController::class, 'columns'])->name('import.columns');
@@ -328,9 +335,6 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('mcc', [BankSettingsController::class, 'storeMcc'])->name('mcc.store');
         Route::post('mcc/{id}/delete', [BankSettingsController::class, 'destroyMcc'])->name('mcc.destroy');
         Route::post('accounts/{id}/delete', [BankImportController::class, 'destroyAccount'])->name('accounts.destroy');
-        Route::get('accounts/{id}', [BankController::class, 'account'])->name('account');
-        Route::get('receipts', [BankController::class, 'receipts'])->name('receipts');
-        Route::get('transactions/{id}', [BankController::class, 'show'])->name('show');
         Route::get('transactions/{id}/suggestions', [BankSuggestionsController::class, 'show'])->name('suggestions');
         Route::post('transactions/{id}/match', [BankController::class, 'match'])->name('match');
         Route::post('transactions/{id}/link', [BankController::class, 'link'])->name('link');

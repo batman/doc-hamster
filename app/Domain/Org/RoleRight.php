@@ -17,6 +17,8 @@ enum RoleRight: string
     case ViewAll = 'view_all';
     case Edit = 'edit';
     case Delete = 'delete';
+    /** F40: "Bank ansehen" – accounts, bookings and links read-only; "Bank" includes it. */
+    case BankView = 'bank_view';
     case Banking = 'banking';
     case Export = 'export';
     case Packs = 'packs';
@@ -30,7 +32,7 @@ enum RoleRight: string
     {
         return match ($this) {
             self::Upload, self::ViewAll, self::Edit, self::Delete, self::Tags, self::Notes => 'documents',
-            self::Banking => 'bank',
+            self::BankView, self::Banking => 'bank',
             self::Export, self::Packs => 'export',
             self::Update, self::UpdatePreview => 'system',
         };

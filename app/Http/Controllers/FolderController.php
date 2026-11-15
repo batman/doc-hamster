@@ -10,6 +10,7 @@ use App\Domain\Documents\Folder;
 use App\Domain\Documents\TrashSettings;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
+use App\Domain\Org\RoleRestriction;
 use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -19,13 +20,15 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Folders for receipts (issue #77): create, rename, move, colour, symbol,
  * order, delete. Anyone who may edit receipts may manage folders. Deleting a
  * folder moves its receipts and subfolders up one level; "Mit Inhalt löschen"
  * also deletes the subfolders and puts the receipts into the Papierkorb.
- * "Belege allgemein" keeps its name and place (PO, 2026-11-07).
+ * "Belege allgemein" keeps its name and place (PO, 2026-11-07). F39: a folder-restricted role changes only folders
+ * below its ticked ones and creates folders only inside its branches.
  */
 final class FolderController
 {
@@ -75,7 +78,7 @@ final class FolderController
 
     public function update(Request $request, string $id, CurrentOrg $org, AuditLog $audit): RedirectResponse|JsonResponse
     {
-        $folder = Folder::query()->whereKey($id)->firstOrFail();
+        $folder = $this->changeable($id);
         // Renamed by its window title (points 185.2, A364): only the name changes, place and bank matching stay as they are.
         if ($request->boolean('only_name')) {
             $request->merge(['parent_id' => $folder->parent_id, 'bank_matching' => $folder->bank_matching ? '1' : null]);
@@ -119,7 +122,7 @@ final class FolderController
      */
     public function move(Request $request, string $id, CurrentOrg $org, AuditLog $audit): JsonResponse
     {
-        $folder = Folder::query()->whereKey($id)->firstOrFail();
+        $folder = $this->changeable($id);
         if ($folder->is_default) {
             return response()->json(['message' => __('folders.default_fixed')], 422);
         }
@@ -132,6 +135,9 @@ final class FolderController
         if ($validator->fails()) {
             return response()->json(['message' => $validator->errors()->first()], 422);
         }
+        if (! RoleRestriction::current()->allowsFolderTarget(is_string($parent) ? $parent : null)) {
+            return response()->json(['message' => __('folders.parent_invalid')], 422);
+        }
         $folder->update(['parent_id' => is_string($parent) ? $parent : null, 'position' => null]);
         $this->log($audit, $request, $org, 'folder.moved', $folder);
         $target = is_string($parent) ? (string) Folder::query()->whereKey($parent)->value('name') : __('folders.top');
@@ -142,7 +148,7 @@ final class FolderController
     /** "Nach oben" / "Nach unten" in the folder's properties (A163): one step among its siblings, the Papierkorb counted. */
     public function step(Request $request, string $id, CurrentOrg $org): RedirectResponse
     {
-        $folder = Folder::query()->whereKey($id)->firstOrFail();
+        $folder = $this->changeable($id);
         $order = $this->levelOrder($folder->parent_id, $org);
         $at = array_search($folder->id, $order, true);
         $to = is_int($at) ? $at + ($request->input('direction') === 'up' ? -1 : 1) : -1;
@@ -198,6 +204,8 @@ final class FolderController
         /** @var list<string> $order */
         $order = array_values(array_unique($data['order']));
 
+        // F39: a folder-restricted role orders only the subfolders of its branches (it sees no whole level above them).
+        abort_unless(RoleRestriction::current()->allowsFolderTarget(is_string($parent) ? $parent : null), 403);
         $siblings = Folder::query()->where('parent_id', is_string($parent) ? $parent : null)->pluck('id')->all();
         $ids = array_values(array_filter($order, static fn (string $id): bool => $id !== 'trash'));
         if (array_diff($ids, $siblings) !== [] || ($parent !== null && in_array('trash', $order, true))) {
@@ -252,7 +260,7 @@ final class FolderController
 
     public function destroy(Request $request, string $id, CurrentOrg $org, AuditLog $audit): RedirectResponse|JsonResponse
     {
-        $folder = Folder::query()->whereKey($id)->firstOrFail();
+        $folder = $this->changeable($id);
 
         if ($folder->is_default) {
             return $request->wantsJson()
@@ -339,6 +347,9 @@ final class FolderController
             'color' => ['nullable', 'string', 'regex:/^#[0-9a-f]{6}$/'],
             'icon' => ['nullable', 'string', Rule::in(Folder::ICONS)],
         ]);
+        if (! RoleRestriction::current()->allowsFolderTarget($data['parent_id'] ?? null)) {
+            throw ValidationException::withMessages(['parent_id' => __('folders.parent_invalid')]);
+        }
 
         return [
             'name' => $data['name'],
@@ -370,6 +381,12 @@ final class FolderController
             if (! is_string($value)) {
                 return;
             }
+            // F39: a folder-restricted role keeps its folders inside its branches (no path folder above them).
+            if (! RoleRestriction::current()->allowsFolderTarget($value)) {
+                $fail(__('folders.parent_invalid'));
+
+                return;
+            }
             $rows = collect(Folder::flat())->keyBy(static fn (array $row): string => $row['folder']->id);
             $parent = $rows->get($value);
             if ($parent === null) {
@@ -387,6 +404,15 @@ final class FolderController
                 $fail(__('folders.too_deep', ['max' => Folder::MAX_DEPTH + 1]));
             }
         };
+    }
+
+    /** F39: the folder, when the role may change it (a folder-restricted role only below its ticked folders). */
+    private function changeable(string $id): Folder
+    {
+        $folder = Folder::query()->whereKey($id)->firstOrFail();
+        abort_unless(RoleRestriction::current()->allowsFolderChange($folder->id), 403);
+
+        return $folder;
     }
 
     private function log(AuditLog $audit, Request $request, CurrentOrg $org, string $action, Folder $folder): void

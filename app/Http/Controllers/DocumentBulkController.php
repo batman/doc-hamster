@@ -12,6 +12,7 @@ use App\Domain\Documents\Folder;
 use App\Domain\Documents\TrashSettings;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
+use App\Domain\Org\RoleRestriction;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -42,7 +43,8 @@ final class DocumentBulkController
     {
         $data = $request->validate([
             ...$this->idRules(),
-            'folder' => ['present', 'nullable', 'string', Rule::in(Folder::query()->pluck('id')->all())],
+            // F39: a folder-restricted role files only into its branches, never back into a Posteingang.
+            'folder' => ['present', RoleRestriction::current()->hidesInbox() ? 'required' : 'nullable', 'string', Rule::in(Folder::targetIds())],
         ]);
         $mayTrash = Gate::allows(Permission::TrashDocuments->value);
         $documents = $this->visible($request, $mayTrash)->whereKey($data['ids'])->get();

@@ -5,7 +5,7 @@
     <ul class="pick-list dash-list">
         @foreach ($rows as $row)
             @php
-                $href = $row['document'] !== null ? route('documents.show', $row['document']) : ($row['bank'] && Gate::allows('banking.import') ? route('bank.index') : null);
+                $href = $row['document'] !== null ? route('documents.show', $row['document']) : ($row['bank'] && Gate::allows('banking.view') ? route('bank.index') : null);
             @endphp
             <li class="pick-row is-static">
                 <span class="row-icon"><x-icon :name="$row['icon']" /></span>

@@ -19,6 +19,7 @@ return [
         'view_all' => 'See all documents (otherwise only their own)',
         'edit' => 'Edit documents',
         'delete' => 'Delete documents',
+        'bank_view' => 'View bank',
         'banking' => 'Import and match bank data',
         'export' => 'Export',
         'packs' => 'See and download receipt packs',
@@ -28,7 +29,7 @@ return [
         'update_preview' => 'Install preview branches (only together with "Update the system")',
     ],
     'short' => [
-        'upload' => 'Upload', 'view_all' => 'See all', 'edit' => 'Edit', 'delete' => 'Delete', 'banking' => 'Bank',
+        'upload' => 'Upload', 'view_all' => 'See all', 'edit' => 'Edit', 'delete' => 'Delete', 'bank_view' => 'View bank', 'banking' => 'Bank',
         'export' => 'Export', 'packs' => 'Receipt packs', 'tags' => 'Tags', 'notes' => 'Notes', 'update' => 'Update', 'update_preview' => 'Preview',
     ],
     'no_rights' => 'no rights yet',

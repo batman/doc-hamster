@@ -11,6 +11,7 @@ use App\Domain\Documents\Tag;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Organization;
 use App\Domain\Org\Permission;
+use App\Domain\Org\RoleRestriction;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -45,13 +46,14 @@ trait ScopesDocuments
     }
 
     /**
-     * Only an existing folder of the active organisation (Folder is org-scoped); empty means "Belege".
+     * Only an existing folder of the active organisation (Folder is org-scoped); empty means the Posteingang. F39: a
+     * folder-restricted role files only into its branches and never empties the folder (it has no Posteingang).
      *
      * @return array<string, mixed>
      */
     private static function folderRule(): array
     {
-        return ['folder' => ['nullable', 'string', Rule::in(Folder::query()->pluck('id')->all())]];
+        return ['folder' => [...(RoleRestriction::current()->hidesInbox() ? ['sometimes', 'required'] : ['nullable']), 'string', Rule::in(Folder::targetIds())]];
     }
 
     private function userId(Request $request): string

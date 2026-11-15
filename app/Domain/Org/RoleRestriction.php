@@ -19,12 +19,16 @@ use Illuminate\Database\Eloquent\Model;
  * (A387): a period (documents by Belegdatum, bookings by booking date), bank accounts incl. cash boxes and folder
  * branches (a ticked folder includes its subfolders). Enforced centrally: Document::visibleTo() (every document list,
  * search, file, thumbnail and download), the global scopes on Transaction and BankAccount (RestrictedScope) and the
- * receipt packs (A386). A folder restriction hides the Posteingang (A384).
+ * receipt packs (A386). A folder restriction hides the Posteingang (A384) and every folder outside the branches except
+ * the path to them (F39, RestrictedScope on Folder).
  */
 final class RoleRestriction
 {
     /** @var list<string>|null */
     private ?array $branch = null;
+
+    /** @var list<string>|null */
+    private ?array $visibleFolders = null;
 
     /**
      * @param  list<string>|null  $accountIds
@@ -84,7 +88,7 @@ final class RoleRestriction
         if ($this->branch !== null) {
             return $this->branch;
         }
-        $children = Folder::query()->get(['id', 'parent_id'])->groupBy(static fn (Folder $f): string => (string) $f->parent_id);
+        $children = Folder::query()->withoutGlobalScope(RestrictedScope::class)->get(['id', 'parent_id'])->groupBy(static fn (Folder $f): string => (string) $f->parent_id);
         $ids = [];
         $walk = static function (string $id) use (&$walk, &$ids, $children): void {
             if (in_array($id, $ids, true)) {
@@ -103,8 +107,69 @@ final class RoleRestriction
     }
 
     /**
-     * Documents: in the period (Belegdatum), in the folder branches, and – with an account restriction – not linked
-     * only to bookings of other accounts (a document without a booking stays visible).
+     * F39: the folders a folder-restricted role may see at all – its branches and the folders above them as the path
+     * to them (no siblings). Folder carries RestrictedScope, so every tree, menu, picker and breadcrumb follows.
+     *
+     * @return list<string>
+     */
+    public function visibleFolders(): array
+    {
+        if ($this->folderIds === null) {
+            return [];
+        }
+        if ($this->visibleFolders !== null) {
+            return $this->visibleFolders;
+        }
+        $parents = Folder::query()->withoutGlobalScope(RestrictedScope::class)->pluck('parent_id', 'id');
+        $ids = $this->folderBranch();
+        foreach ($this->folderIds as $id) {
+            $parent = $parents->get($id);
+            while (is_string($parent) && ! in_array($parent, $ids, true)) {
+                $ids[] = $parent;
+                $parent = $parents->get($parent);
+            }
+        }
+
+        return $this->visibleFolders = $ids;
+    }
+
+    /**
+     * F39: whether documents may be filed into the folder (null = no folder). The folders above a branch only show
+     * the way; a restricted role files into its branches.
+     */
+    public function allowsFolderTarget(?string $id): bool
+    {
+        return $this->folderIds === null || ($id !== null && in_array($id, $this->folderBranch(), true));
+    }
+
+    /** F39: where a document without a folder lands for a folder-restricted role (it has no Posteingang): its first ticked folder. */
+    public function homeFolder(): ?string
+    {
+        return $this->folderIds[0] ?? null;
+    }
+
+    /**
+     * F39: whether the role may change the folder itself (rename, move, delete, order): only folders below its ticked
+     * ones – the ticked folders and the path above them stay as the Admin set them.
+     */
+    public function allowsFolderChange(?string $id): bool
+    {
+        return $this->folderIds === null || ($id !== null && ! in_array($id, $this->folderIds, true) && in_array($id, $this->folderBranch(), true));
+    }
+
+    /**
+     * @param  Builder<covariant Model>  $query
+     */
+    public function folders(Builder $query): void
+    {
+        if ($this->folderIds !== null) {
+            $query->whereIn($query->getModel()->qualifyColumn('id'), $this->visibleFolders());
+        }
+    }
+
+    /**
+     * Documents: in the period (Belegdatum), in the folder branches, and – with an account restriction – linked to a
+     * booking of an allowed account (F41: a document without a booking is hidden as well).
      *
      * @param  Builder<Document>  $query
      * @return Builder<Document>
@@ -127,8 +192,8 @@ final class RoleRestriction
         if ($this->accountIds !== null) {
             $allowed = Transaction::query()->withoutGlobalScope(RestrictedScope::class)->select('id')->whereIn('bank_account_id', $this->accountIds);
             $confirmed = static fn (Builder $m) => $m->where('state', TransactionMatch::CONFIRMED);
-            $query->where(static fn (Builder $w) => $w->whereDoesntHave('matches', $confirmed)
-                ->orWhereHas('matches', static fn (Builder $m) => $confirmed($m)->whereIn('transaction_id', $allowed)));
+            // F41: only documents linked to a booking of an allowed account; one without a booking is hidden too.
+            $query->whereHas('matches', static fn (Builder $m) => $confirmed($m)->whereIn('transaction_id', $allowed));
         }
 
         return $query;

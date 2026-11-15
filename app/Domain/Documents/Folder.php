@@ -6,7 +6,8 @@ namespace App\Domain\Documents;
 
 use App\Domain\Org\BelongsToOrg;
 use App\Domain\Org\Organization;
-use App\Domain\Org\OrgScope;
+use App\Domain\Org\RestrictedByRole;
+use App\Domain\Org\RoleRestriction;
 use App\Domain\Palette\PaletteColor;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -15,7 +16,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * A folder for receipts, nested up to MAX_DEPTH levels (issue #77).
+ * A folder for receipts, nested up to MAX_DEPTH levels (issue #77). A folder-restricted role sees only its branches
+ * and the path to them (F39, RestrictedByRole).
  *
  * @property string $id
  * @property string $org_id
@@ -31,6 +33,7 @@ final class Folder extends Model
 {
     use BelongsToOrg;
     use HasUlids;
+    use RestrictedByRole;
 
     /** Levels below the top: a deeper tree is hard to use on a phone. */
     public const MAX_DEPTH = 4;
@@ -111,7 +114,7 @@ final class Folder extends Model
     /** The "Belege allgemein" folder of an organisation; made if an old organisation has none yet. */
     public static function defaultIdFor(string $orgId): string
     {
-        $existing = self::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $orgId)->where('is_default', true)->value('id');
+        $existing = self::query()->withoutGlobalScopes()->where('org_id', $orgId)->where('is_default', true)->value('id');
         if (is_string($existing)) {
             return $existing;
         }
@@ -133,6 +136,20 @@ final class Folder extends Model
     public function documents(): HasMany
     {
         return $this->hasMany(Document::class);
+    }
+
+    /**
+     * The folders documents may be filed into: every folder, or with a folder restriction only the role's branches
+     * (F39; the folders above them are shown as the path but take nothing).
+     *
+     * @return list<string>
+     */
+    public static function targetIds(): array
+    {
+        $restriction = RoleRestriction::current();
+
+        return array_values(array_filter(self::query()->pluck('id')->map(static fn (mixed $id): string => (string) $id)->all(),
+            static fn (string $id): bool => $restriction->allowsFolderTarget($id)));
     }
 
     /**

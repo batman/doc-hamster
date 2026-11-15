@@ -8,25 +8,35 @@
 @section('main_class', 'page-windows')
 
 @section('content')
+    {{-- F40: with "Bank ansehen" only, everything shows read-only: no import, no account by hand, no link, no edit. --}}
+    @php
+        $mayEdit = Gate::allows('banking.import');
+    @endphp
     <div class="windows" data-windows>
         <x-window :title="__('bank.title')" icon="building-bank" kind="bank" :url="route('bank.index')" :close="route('home')"
-                  data-statement-drop="{{ route('bank.import.upload') }}" data-drop-label="{{ __('bank.drop_here') }}">
+                  :data-statement-drop="$mayEdit ? route('bank.import.upload') : null" data-drop-label="{{ __('bank.drop_here') }}">
             <x-slot:actions>
-                {{-- Points 189, 190: an account by hand, also before any import (bank._add-account). --}}
-                <button type="button" class="icon-button" data-dialog-open="add-account" aria-label="{{ __('bank.add_account') }}" data-tooltip="{{ __('bank.add_account') }}"><x-icon name="plus" /></button>
+                @if ($mayEdit)
+                    {{-- Points 189, 190: an account by hand, also before any import (bank._add-account). --}}
+                    <button type="button" class="icon-button" data-dialog-open="add-account" aria-label="{{ __('bank.add_account') }}" data-tooltip="{{ __('bank.add_account') }}"><x-icon name="plus" /></button>
+                @endif
             </x-slot:actions>
             <x-slot:menu>
-                <a class="menu-item" href="{{ route('bank.import') }}"><x-icon name="settings" /><span>{{ __('bank.manage') }}</span></a>
+                @if ($mayEdit)
+                    <a class="menu-item" href="{{ route('bank.import') }}"><x-icon name="settings" /><span>{{ __('bank.manage') }}</span></a>
+                @endif
             </x-slot:menu>
-            @include('bank._add-account')
+            @if ($mayEdit)
+                @include('bank._add-account')
+            @endif
             @if (session('status') && ! $account)
                 <p class="check-ok" role="status">{{ session('status') }}</p>
             @endif
             <ul class="pick-list">
                 @forelse ($accounts as $entry)
                     @php $open = (int) $entry->open_count; $last = $entry->transactions_max_created_at; @endphp
-                    <li class="pick-row is-static @if ($account?->id === $entry->id) is-marked @endif" @unless ($entry->isCash()) data-statement-drop="{{ route('bank.import.upload') }}" data-account="{{ $entry->id }}"
-                        data-upload-label="{{ __('bank.drop_into', ['name' => $entry->name]) }}" @endunless>
+                    <li class="pick-row is-static @if ($account?->id === $entry->id) is-marked @endif" @if ($mayEdit && ! $entry->isCash()) data-statement-drop="{{ route('bank.import.upload') }}" data-account="{{ $entry->id }}"
+                        data-upload-label="{{ __('bank.drop_into', ['name' => $entry->name]) }}" @endif>
                         <span class="row-icon" data-tooltip="{{ __('bank.kinds.'.$entry->kind) }}"><x-icon :name="$entry->icon()" /></span>
                         <span>
                             <strong><a href="{{ route('bank.account', $open > 0 ? [$entry->id, 'status' => 'open'] : [$entry->id]) }}" data-window>{{ $entry->name }}</a></strong>
@@ -44,7 +54,9 @@
                     </li>
                 @empty
                     <x-empty tag="li" icon="building-bank" :text="__('empty.accounts')">
-                        <a class="button button-small button-quiet" href="{{ route('bank.import') }}" data-window><x-icon name="upload" />{{ __('empty.import') }}</a>
+                        @if ($mayEdit)
+                            <a class="button button-small button-quiet" href="{{ route('bank.import') }}" data-window><x-icon name="upload" />{{ __('empty.import') }}</a>
+                        @endif
                     </x-empty>
                 @endforelse
                 <li class="pick-row is-static @if ($receipts) is-marked @endif">
@@ -55,7 +67,9 @@
                     </span>
                 </li>
             </ul>
-            <p class="card-note">{{ __('bank.drop_hint') }}</p>
+            @if ($mayEdit)
+                <p class="card-note">{{ __('bank.drop_hint') }}</p>
+            @endif
             <div hidden data-bank-texts data-drop-one="{{ __('bank.drop_one') }}" data-importing="{{ __('bank.importing') }}"></div>
         </x-window>
 

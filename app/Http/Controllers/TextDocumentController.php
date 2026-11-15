@@ -12,6 +12,7 @@ use App\Domain\Documents\Folder;
 use App\Domain\Documents\TextDocument;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
+use App\Domain\Org\RoleRestriction;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -30,8 +31,10 @@ final class TextDocumentController
         $data = $request->validate([
             'name' => ['required', 'string', 'max:250'],
             'kind' => ['required', Rule::in(['plain', 'rich'])],
-            'folder' => ['nullable', 'string', Rule::in(Folder::query()->pluck('id')->all())],
+            'folder' => ['nullable', 'string', Rule::in(Folder::targetIds())],
         ]);
+        // F39: a folder-restricted role's new document lands in its first folder, not in "Belege allgemein".
+        $data['folder'] ??= RoleRestriction::current()->homeFolder();
         $userId = $this->user($request)->id;
         $document = TextDocument::create($org->id(), $userId, (string) $data['name'], $data['kind'] === 'rich', $data['folder'] ?? null);
         $audit->record('document.created', orgId: $org->id(), userId: $userId, subject: $document, ip: $request->ip());
