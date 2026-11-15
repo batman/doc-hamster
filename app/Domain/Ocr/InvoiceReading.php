@@ -27,6 +27,8 @@ final readonly class InvoiceReading
         public ?InvoiceProposal $discountPercent = null,
         public ?InvoiceProposal $discountUntil = null,
         public ?string $currency = null,
+        /** Point 219: the time printed on the receipt ("H:i"); not a property, stored as documents.doc_time. */
+        public ?InvoiceProposal $receiptTime = null,
     ) {}
 
     /**

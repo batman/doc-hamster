@@ -108,7 +108,7 @@
                 <span class="row-icon" data-tooltip="{{ __('bank.nature.'.$entry->nature()) }}"><x-icon :name="$entry->natureIcon()" /></span>
                 <span>
                     <strong><a href="{{ route('bank.show', $entry->id) }}" data-window>{{ $entry->counterparty ?? $entry->purpose ?? '–' }}</a></strong>
-                    <small>{{ $entry->booking_date->format('d.m.Y') }}@if ($entry->purpose && $entry->counterparty) · {{ \Illuminate\Support\Str::limit($entry->purpose, 80) }}@endif</small>
+                    <small>{{ $entry->bookedOn() }}@if ($entry->purpose && $entry->counterparty) · {{ \Illuminate\Support\Str::limit($entry->purpose, 80) }}@endif</small>
                 </span>
                 @if ($entry->kind)
                     <span class="pill">{{ \Illuminate\Support\Str::limit(ucfirst(mb_strtolower(str_replace('_', ' ', $entry->kind))), 24) }}</span>

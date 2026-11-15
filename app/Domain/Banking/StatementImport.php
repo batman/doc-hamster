@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\DB;
 final class StatementImport
 {
     /** Fields a re-import may fill when they are empty (A302). */
-    private const FILLABLE = ['booking_id', 'value_date', 'counterparty', 'purpose', 'purpose2', 'counterparty_iban', 'counterparty_bic', 'kind', 'reference', 'creditor_id',
+    private const FILLABLE = ['booking_id', 'value_date', 'booked_time', 'counterparty', 'purpose', 'purpose2', 'counterparty_iban', 'counterparty_bic', 'kind', 'reference', 'creditor_id',
         'orig_amount_minor', 'orig_currency', 'fee_minor', 'fee_currency', 'balance_minor', 'category', 'card_last4', 'sub_account', 'related_id', 'mcc'];
 
     /** Of those, the ones whose difference is worth showing ("abweichend"). */
@@ -65,6 +65,8 @@ final class StatementImport
             $valueDate = CsvStatement::normaliseDate($cell('value_date'));
             $date = CsvStatement::normaliseDate($cell('date')) ?? ($cell('date') === '' ? $valueDate : null);
             $amount = CsvStatement::amountToMinor($cell('amount'));
+            // Point 219: the time stands in the cell the date came from.
+            $time = $cell('date') !== '' ? self::time($row, $columns['date'] ?? null, $statement->header) : self::time($row, $columns['value_date'] ?? null, $statement->header);
 
             if ($date === null || $amount === null) {
                 $unreadable++;
@@ -100,6 +102,7 @@ final class StatementImport
 
             $lines[] = [
                 'booking_date' => $date,
+                'booked_time' => $time,
                 'amount_minor' => $amount,
                 'counterparty' => $counterparty,
                 'purpose' => $purpose,
@@ -131,6 +134,25 @@ final class StatementImport
         }
 
         return ['lines' => self::fixSigns($lines), 'unreadable' => $unreadable];
+    }
+
+    /**
+     * Point 219: the time in the first filled cell of these columns; a column named "… (UTC)" is converted to local time.
+     *
+     * @param  list<string>  $row
+     * @param  int|list<int>|null  $indexes
+     * @param  list<string>  $header
+     */
+    private static function time(array $row, int|array|null $indexes, array $header): ?string
+    {
+        foreach ((array) $indexes as $index) {
+            $value = trim((string) preg_replace('/\s+/u', ' ', $row[$index] ?? ''));
+            if ($value !== '') {
+                return CsvStatement::normaliseTime($value, preg_match('/\butc\b/i', $header[$index] ?? '') === 1);
+            }
+        }
+
+        return null;
     }
 
     /**

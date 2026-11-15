@@ -26,6 +26,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $uploaded_by
  * @property string $title
  * @property Carbon|null $doc_date the Belegdatum (point 214, ReceiptDate)
+ * @property string|null $doc_time Point 219: the time printed on the receipt ("H:i", OCR), null = none read
  * @property string|null $doc_date_source confirmed|recognised|exif|pdf|upload, null = not worked out yet
  * @property string|null $note
  * @property bool $in_print_tray came from the printer "Hamster" (the source before the source column)

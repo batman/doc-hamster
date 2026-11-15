@@ -70,7 +70,7 @@ final readonly class PackContents
                 $bookings[] = new PackBooking(
                     $t->id, CarbonImmutable::parse($t->booking_date), $t->amount_minor, $t->currency,
                     trim((string) $t->counterparty), trim(trim((string) $t->purpose).' '.trim((string) $t->purpose2)),
-                    array_keys($tags), $receipts, $t->no_receipt, $t->no_receipt_reason,
+                    array_keys($tags), $receipts, $t->no_receipt, $t->no_receipt_reason, $t->booked_time,
                 );
             });
 

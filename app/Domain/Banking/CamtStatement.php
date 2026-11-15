@@ -65,8 +65,9 @@ final class CamtStatement
         $status = self::text($entry, 'Sts/Cd') ?: self::text($entry, 'Sts');
 
         return [
-            self::text($entry, 'BookgDt/Dt') ?: substr(self::text($entry, 'BookgDt/DtTm'), 0, 10),
-            self::text($entry, 'ValDt/Dt') ?: substr(self::text($entry, 'ValDt/DtTm'), 0, 10),
+            // Point 219: a date with time (DtTm) is kept whole, the import reads the time from it.
+            self::text($entry, 'BookgDt/Dt') ?: self::text($entry, 'BookgDt/DtTm'),
+            self::text($entry, 'ValDt/Dt') ?: self::text($entry, 'ValDt/DtTm'),
             ($debit ? '-' : '').$amount,
             (string) ($entry->Amt['Ccy'] ?? ''),
             match ($status) {

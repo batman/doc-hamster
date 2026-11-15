@@ -24,7 +24,7 @@
             <li class="prop-row"><span class="prop-name">{{ __('advisor.doc_date') }}</span><span class="prop-value">{{ $document->dateBy('doc')->format('d.m.Y') }}</span></li>
             @foreach ($document->matches as $match)
                 @if ($match->transaction)
-                    <li class="prop-row"><span class="prop-name">{{ __('advisor.booking') }}</span><span class="prop-value">{{ $match->transaction->booking_date->format('d.m.Y') }} · {{ $match->transaction->signedAmount() }} · {{ $match->transaction->account->name }} · {{ $match->transaction->counterparty }}</span></li>
+                    <li class="prop-row"><span class="prop-name">{{ __('advisor.booking') }}</span><span class="prop-value">{{ $match->transaction->bookedOn() }} · {{ $match->transaction->signedAmount() }} · {{ $match->transaction->account->name }} · {{ $match->transaction->counterparty }}</span></li>
                 @endif
             @endforeach
             @if ($document->tags->isNotEmpty())

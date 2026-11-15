@@ -57,6 +57,7 @@ return [
         'invoice_number' => 'Rechnungsnummer',
         'sender' => 'Absender',
         'standing' => 'Dauerdokument',
+        'time' => 'Uhrzeit',
     ],
     'why' => 'Passt: :reasons',
     'confirm' => 'Bestätigen',

@@ -11,6 +11,7 @@ use App\Domain\Ocr\Invoice\InvoiceLines;
 use App\Domain\Ocr\Invoice\NumberReader;
 use App\Domain\Ocr\Invoice\SenderReader;
 use App\Domain\Ocr\Invoice\SkontoReader;
+use App\Domain\Ocr\Invoice\TimeReader;
 use Closure;
 
 /**
@@ -18,7 +19,7 @@ use Closure;
  * IBAN (mod-97, the organisation's own skipped, an OCR swap O↔0, I/l↔1, S↔5, B↔8, Z↔2 repaired), BIC, the amount by
  * weight (Zahlbetrag … beats Brutto, beats the largest amount low on the page; Netto, MwSt, Zwischensumme, Rabatt and
  * line items lose; netto + tax = brutto makes it sure), invoice and customer number, invoice and due date ("zahlbar
- * bis …", "innerhalb N Tagen"), the payee (bank block, else the letterhead), Skonto and the currency. Pure: the words
+ * bis …", "innerhalb N Tagen"), the receipt's time (point 219), the payee (bank block, else the letterhead), Skonto and the currency. Pure: the words
  * (OcrWords JSON) or plain text in, proposals with confidence and place out. What a sender taught before (A236)
  * comes in through the `hints` closure: fn (string $sender): ?array{iban?: ?string, amount_keyword?: ?string,
  * amount_page?: ?int, amount_box?: ?array{x: float, y: float, w: float, h: float}}.
@@ -75,6 +76,7 @@ final class InvoiceReader
             discountPercent: $percent,
             discountUntil: $until,
             currency: $amount->currency ?? $currency,
+            receiptTime: TimeReader::read($lines, $invoiceDate),
         );
     }
 

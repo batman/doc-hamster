@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Banking;
 
 use DateTimeImmutable;
+use DateTimeZone;
 use RuntimeException;
 
 /**
@@ -14,6 +15,9 @@ use RuntimeException;
 final readonly class CsvStatement
 {
     private const DELIMITERS = [';', ',', "\t", '|'];
+
+    /** Point 219: booking times are shown and matched in this zone (Revolut Business gives UTC, CAMT may carry an offset). */
+    public const LOCAL_ZONE = 'Europe/Berlin';
 
     /**
      * @param  list<string>  $header
@@ -205,5 +209,36 @@ final readonly class CsvStatement
         }
 
         return null;
+    }
+
+    /**
+     * Point 219: the time behind a date – "14.03.2026 09:41", "2026-03-14 09:41:12", "2026-03-14T09:41:00+01:00" –
+     * as local "H:i". $utc: the column is labelled UTC (Revolut Business). Null without a time, at exactly midnight
+     * (a date-only export) or when the local time falls on another day than the date (the date stays as the bank
+     * gave it).
+     */
+    public static function normaliseTime(string $value, bool $utc = false): ?string
+    {
+        $pattern = '/^(.+?)[ T](\d{1,2}):(\d{2})(?::(\d{2})(?:[.,]\d+)?)?\s*(Z|UTC|[+-]\d{2}:?\d{2})?(?:\s*uhr)?$/i';
+        if (preg_match($pattern, trim($value), $m) !== 1) {
+            return null;
+        }
+        $date = self::normaliseDate($m[1]);
+        [$hour, $minute, $second] = [(int) $m[2], (int) $m[3], (int) ($m[4] ?? 0)];
+        if ($date === null || $hour > 23 || $minute > 59 || $second > 59 || $hour + $minute + $second === 0) {
+            return null;
+        }
+        $zone = strtoupper($m[5] ?? '');
+        if ($zone === '' && ! $utc) {
+            return sprintf('%02d:%02d', $hour, $minute);
+        }
+        $offset = in_array($zone, ['', 'Z', 'UTC'], true) ? '+00:00' : substr($zone, 0, 3).':'.substr(str_replace(':', '', $zone), 3, 2);
+        $moment = DateTimeImmutable::createFromFormat('!Y-m-d H:i:s P', sprintf('%s %02d:%02d:%02d %s', $date, $hour, $minute, $second, $offset));
+        if ($moment === false) {
+            return null;
+        }
+        $local = $moment->setTimezone(new DateTimeZone(self::LOCAL_ZONE));
+
+        return $local->format('Y-m-d') === $date ? $local->format('H:i') : null;
     }
 }

@@ -22,7 +22,7 @@
     <section class="card" data-doc-drop="{{ route('bank.link', $transaction->id) }}">
         <h2 class="card-head"><x-icon name="receipt" />{{ __('bank.transaction') }} <span class="pill {{ $statusClass[$state] }}">{{ __('bank.status.'.$state) }}</span></h2>
         <ul class="prop-list">
-            <li class="prop-row"><span class="prop-name">{{ __('bank.columns.date') }}</span><span class="prop-value">{{ $transaction->booking_date->format('d.m.Y') }}</span></li>
+            <li class="prop-row"><span class="prop-name">{{ __('bank.columns.date') }}</span><span class="prop-value">{{ $transaction->bookedOn() }}</span></li>
             <li class="prop-row"><span class="prop-name">{{ __('bank.columns.amount') }}</span><span class="prop-value row-amount @if ($transaction->amount_minor > 0) is-income @endif">{{ $transaction->signedAmount() }}</span></li>
             @if ($transaction->isUnsettled())
                 <li class="prop-row"><span class="prop-name">{{ __('bank.columns.state') }}</span><span class="prop-value"><span class="pill pill-warning">{{ __('bank.bank_state.'.$transaction->bank_state) }}</span></span></li>
@@ -59,7 +59,7 @@
                 @endif
             @endforeach
             @if ($parent)
-                <li class="prop-row"><span class="prop-name">{{ __('bank.refund_of') }}</span><span class="prop-value"><a href="{{ route('bank.show', $parent->id) }}" data-window>{{ $parent->booking_date->format('d.m.Y') }} · {{ $parent->counterparty ?? $parent->purpose ?? '–' }} · {{ $parent->signedAmount() }}</a></span></li>
+                <li class="prop-row"><span class="prop-name">{{ __('bank.refund_of') }}</span><span class="prop-value"><a href="{{ route('bank.show', $parent->id) }}" data-window>{{ $parent->bookedOn() }} · {{ $parent->counterparty ?? $parent->purpose ?? '–' }} · {{ $parent->signedAmount() }}</a></span></li>
             @endif
             <li class="prop-row"><span class="prop-name">{{ __('bank.account') }}</span><span class="prop-value">{{ $transaction->account->name }}</span></li>
             @if ($transaction->no_receipt && ! $parent)
@@ -130,7 +130,7 @@
                         <span class="row-icon"><x-icon :name="$child->natureIcon()" /></span>
                         <span>
                             <strong><a href="{{ route('bank.show', $child->id) }}" data-window>{{ $child->counterparty ?? $child->purpose ?? '–' }}</a></strong>
-                            <small>{{ $child->booking_date->format('d.m.Y') }}@if ($child->kind) · {{ $child->kind }}@endif</small>
+                            <small>{{ $child->bookedOn() }}@if ($child->kind) · {{ $child->kind }}@endif</small>
                         </span>
                         <span class="row-amount @if ($child->amount_minor > 0) is-income @endif">{{ $child->signedAmount() }}</span>
                     </li>

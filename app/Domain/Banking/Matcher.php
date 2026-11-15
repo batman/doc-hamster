@@ -127,7 +127,7 @@ final class Matcher
      * A291: purpose 2 and the reference count as purpose (invoice number, IBAN, sender), the original amount as a
      * second amount.
      *
-     * @return array{date: string, amount: int, orig_amount: ?int, counterparty: ?string, purpose: ?string, iban: ?string}
+     * @return array{date: string, time: ?string, amount: int, orig_amount: ?int, counterparty: ?string, purpose: ?string, iban: ?string}
      */
     public static function transactionFacts(Transaction $transaction): array
     {
@@ -135,6 +135,7 @@ final class Matcher
 
         return [
             'date' => $transaction->booking_date->format('Y-m-d'),
+            'time' => $transaction->booked_time,
             'amount' => $transaction->amount_minor,
             'orig_amount' => $transaction->orig_currency !== null && $transaction->orig_currency !== $transaction->currency ? $transaction->orig_amount_minor : null,
             'counterparty' => $transaction->counterparty,
@@ -148,7 +149,7 @@ final class Matcher
      * the InvoiceReader sees in its text.
      *
      * @param  Collection<int, Document>  $documents
-     * @return array<string, array{amount: ?int, amounts: list<int>, invoice_date: ?string, due_date: ?string, uploaded: ?string, iban: ?string, sender: ?string, invoice_number: ?string}>
+     * @return array<string, array{amount: ?int, amounts: list<int>, invoice_date: ?string, time: ?string, due_date: ?string, uploaded: ?string, iban: ?string, sender: ?string, invoice_number: ?string}>
      */
     public function facts(Collection $documents, bool $read): array
     {
@@ -177,6 +178,8 @@ final class Matcher
                     ReceiptDate::missing($document) => null,
                     default => $document->doc_date?->format('Y-m-d'),
                 },
+                // Point 219: the time printed on the receipt, compared with the booking's time.
+                'time' => $document->doc_time,
                 'due_date' => isset($own['due_date']) ? $own['due_date']->value_date?->format('Y-m-d') : null,
                 'uploaded' => $document->created_at->format('Y-m-d'),
                 'iban' => isset($own['iban']) ? $own['iban']->value_text : null,

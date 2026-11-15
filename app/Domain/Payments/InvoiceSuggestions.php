@@ -14,6 +14,7 @@ use App\Domain\Org\OrgScope;
 use App\Domain\Properties\DocumentProperty;
 use App\Domain\Properties\Property;
 use App\Domain\Properties\PropertyValues;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -73,6 +74,11 @@ final class InvoiceSuggestions
             } catch (ValidationException) {
                 // A value the property refuses stays a proposal only.
             }
+        }
+        // Point 219: the receipt's time, for matching against the booking's time.
+        $time = $reading->receiptTime !== null && $reading->receiptTime->confidence >= self::MIN_CONFIDENCE ? $reading->receiptTime->value : null;
+        if ($document->doc_time !== $time) {
+            DB::table('documents')->where('id', $document->id)->update(['doc_time' => $time]);
         }
     }
 

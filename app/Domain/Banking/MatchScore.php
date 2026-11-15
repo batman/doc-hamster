@@ -18,6 +18,7 @@ use DateTimeImmutable;
  * - IBAN (25): the document's IBAN is the counterparty's, or stands in the purpose.
  * - Invoice number (25): stands in the purpose.
  * - Sender (20): the sender's name words stand in counterparty or purpose.
+ * - Time (10, point 219): booking and receipt both have a time – within 15 minutes 10, an hour 6, two hours 3.
  *
  * At most 100. AUTO and above, with no close second, links as "vorgeschlagen"; SUGGEST and above is offered; SHOW and
  * above appears in the booking's "Belegvorschläge" window (A367).
@@ -35,8 +36,8 @@ final class MatchScore
     public const UNIQUE_GAP = 15;
 
     /**
-     * @param  array{date: string, amount: int, orig_amount?: ?int, counterparty?: ?string, purpose?: ?string, iban?: ?string}  $tx
-     * @param  array{amount?: ?int, amounts?: list<int>, invoice_date?: ?string, due_date?: ?string, uploaded?: ?string, iban?: ?string, sender?: ?string, invoice_number?: ?string}  $doc
+     * @param  array{date: string, time?: ?string, amount: int, orig_amount?: ?int, counterparty?: ?string, purpose?: ?string, iban?: ?string}  $tx
+     * @param  array{amount?: ?int, amounts?: list<int>, invoice_date?: ?string, time?: ?string, due_date?: ?string, uploaded?: ?string, iban?: ?string, sender?: ?string, invoice_number?: ?string}  $doc
      * @return array{score: int, reasons: array<string, int>}
      */
     public static function score(array $tx, array $doc): array
@@ -48,6 +49,7 @@ final class MatchScore
             'iban' => self::iban($tx, $doc['iban'] ?? null),
             'invoice_number' => self::invoiceNumber($tx['purpose'] ?? null, $doc['invoice_number'] ?? null),
             'sender' => self::sender(trim(($tx['counterparty'] ?? '').' '.($tx['purpose'] ?? '')), $doc['sender'] ?? null),
+            'time' => self::time($tx['date'], $tx['time'] ?? null, $doc['invoice_date'] ?? null, $doc['time'] ?? null),
         ]);
 
         return ['score' => min(100, array_sum($reasons)), 'reasons' => $reasons];
@@ -57,8 +59,8 @@ final class MatchScore
      * Cheap pre-check before scoring many pairs: an amount within 1 %, the same IBAN, or – a document without
      * amount – a date within a week.
      *
-     * @param  array{date: string, amount: int, orig_amount?: ?int, counterparty?: ?string, purpose?: ?string, iban?: ?string}  $tx
-     * @param  array{amount?: ?int, amounts?: list<int>, invoice_date?: ?string, due_date?: ?string, uploaded?: ?string, iban?: ?string, sender?: ?string, invoice_number?: ?string}  $doc
+     * @param  array{date: string, time?: ?string, amount: int, orig_amount?: ?int, counterparty?: ?string, purpose?: ?string, iban?: ?string}  $tx
+     * @param  array{amount?: ?int, amounts?: list<int>, invoice_date?: ?string, time?: ?string, due_date?: ?string, uploaded?: ?string, iban?: ?string, sender?: ?string, invoice_number?: ?string}  $doc
      */
     public static function worthScoring(array $tx, array $doc): bool
     {
@@ -148,6 +150,30 @@ final class MatchScore
         }
 
         return $points;
+    }
+
+    /**
+     * Point 219: the booking's time against the receipt's (both "H:i" on their own day; a card payment may be booked
+     * the next day, so the full moments are compared).
+     */
+    private static function time(string $bookedOn, ?string $bookedAt, ?string $receiptOn, ?string $receiptAt): int
+    {
+        if ($bookedAt === null || $receiptOn === null || $receiptAt === null) {
+            return 0;
+        }
+        $a = DateTimeImmutable::createFromFormat('!Y-m-d H:i', substr($bookedOn, 0, 10).' '.substr($bookedAt, 0, 5));
+        $b = DateTimeImmutable::createFromFormat('!Y-m-d H:i', substr($receiptOn, 0, 10).' '.substr($receiptAt, 0, 5));
+        if ($a === false || $b === false) {
+            return 0;
+        }
+        $minutes = abs($a->getTimestamp() - $b->getTimestamp()) / 60;
+
+        return match (true) {
+            $minutes <= 15 => 10,
+            $minutes <= 60 => 6,
+            $minutes <= 120 => 3,
+            default => 0,
+        };
     }
 
     /** Days from $from to $to (positive: $to is later); null when one is missing. */

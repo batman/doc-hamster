@@ -35,7 +35,7 @@
                                 <li class="pick-row is-static">
                                     <span>
                                         <strong>{{ $line['counterparty'] ?? $line['purpose'] ?? '–' }}</strong>
-                                        <small>{{ \Illuminate\Support\Carbon::parse($line['booking_date'])->format('d.m.Y') }} · {{ \Illuminate\Support\Str::limit((string) $line['purpose'], 60) }}</small>
+                                        <small>{{ \App\Domain\Banking\Transaction::dateAndTime(\Illuminate\Support\Carbon::parse($line['booking_date'])->format('d.m.Y'), $line['booked_time'] ?? null) }} · {{ \Illuminate\Support\Str::limit((string) $line['purpose'], 60) }}</small>
                                         @if ($old)
                                             <small>{{ __('bank.existing_label') }}: {{ $old->counterparty ?? '–' }} · {{ \Illuminate\Support\Str::limit((string) $old->purpose, 60) }}</small>
                                         @endif

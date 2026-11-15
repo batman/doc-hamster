@@ -5,7 +5,7 @@
     $file = $document->files->first();
     $close = route('documents.index', request()->query());
     $when = fn ($date) => $date?->format('d.m.Y H:i') ?? __('documents.never');
-    $booking = $document->matches->map(fn ($match) => $match->transaction->booking_date->format('d.m.Y').' · '.$match->transaction->formattedAmount())->implode(', ');
+    $booking = $document->matches->map(fn ($match) => $match->transaction->bookedOn().' · '.$match->transaction->formattedAmount())->implode(', ');
     $shareUrl = session('share_url');
     $tagSummary = $document->tags->pluck('name')->implode(', ');
     $isText = \App\Domain\Documents\TextDocument::isText($file);

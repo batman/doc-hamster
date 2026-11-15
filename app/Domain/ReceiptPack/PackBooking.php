@@ -8,7 +8,8 @@ use Carbon\CarbonImmutable;
 
 /**
  * One booking of a receipt pack, already read from the database: what the overview row and its own page show.
- * `receipts` are the confirmed linked documents; "kein Beleg nötig" bookings are never missing.
+ * `receipts` are the confirmed linked documents; "kein Beleg nötig" bookings are never missing. `time`: the booking's
+ * time of day when the bank gave one ("H:i", point 219).
  */
 final readonly class PackBooking
 {
@@ -27,6 +28,7 @@ final readonly class PackBooking
         public array $receipts = [],
         public bool $noReceipt = false,
         public ?string $noReceiptReason = null,
+        public ?string $time = null,
     ) {}
 
     public function hasReceipt(): bool

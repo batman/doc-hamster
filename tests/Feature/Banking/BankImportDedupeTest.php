@@ -122,3 +122,26 @@ it('marks "kein Beleg nötig" with a listed reason, suggests it for the next boo
     $this->postJson('/bank/transactions/'.$first->id.'/no-receipt', ['reason' => 'Sonstwas'])->assertOk();
     expect($first->fresh()->no_receipt_reason)->toBe('Sonstwas');
 });
+
+it('fills the time into a booking imported before without one, without a second row (point 219)', function (): void {
+    $row = ['ID' => 't1', 'Type' => 'CARD_PAYMENT', 'State' => 'COMPLETED', 'Description' => 'Cafe', 'Payment currency' => 'EUR', 'Amount' => '-3.50', 'Total amount' => '-3.50', 'Account' => 'Main'];
+    revolutUpload($this, revolutRow(['Date completed (UTC)' => '2026-03-02', ...$row]))->assertRedirectContains('/bank/accounts/');
+    $booking = importedBookings()->firstOrFail();
+    expect($booking->booked_time)->toBeNull();
+
+    $account = BankAccount::query()->firstOrFail();
+    revolutUpload($this, revolutRow(['Date completed (UTC)' => '2026-03-02 08:41:00', ...$row]), ['account' => $account->id])->assertRedirectContains('/bank/accounts/');
+
+    expect(importedBookings()->count())->toBe(1)
+        ->and($booking->fresh())->booked_time->toBe('09:41')
+        ->and($booking->fresh()->bookedOn())->toBe('02.03.2026, 09:41');
+
+    // Without ID, found by its fingerprint: the time does not change it.
+    $plain = BankAccount::query()->create(['org_id' => $this->orgId, 'name' => 'Girokonto', 'currency' => 'EUR']);
+    $upload = fn (string $date) => $this->post('/bank/import', ['account' => $plain->id, 'file' => UploadedFile::fake()->createWithContent('umsaetze.csv', "Buchungstag;Betrag;Verwendungszweck\n{$date};-12,30;Baeckerei\n")]);
+    $upload('14.03.2026')->assertRedirectContains('/bank/accounts/');
+    $upload('14.03.2026 09:38')->assertRedirectContains('/bank/accounts/');
+
+    expect(importedBookings()->where('bank_account_id', $plain->id)->count())->toBe(1)
+        ->and(importedBookings()->where('bank_account_id', $plain->id)->value('booked_time'))->toBe('09:38');
+});

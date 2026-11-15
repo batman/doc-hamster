@@ -64,7 +64,7 @@
                     <li class="pick-row is-static">
                         <span class="row-icon"><x-icon :name="$booking->account->icon()" /></span>
                         <span><strong>{{ $booking->counterparty ?: ($booking->purpose ?: '–') }}</strong>
-                            <small>{{ $booking->booking_date->format('d.m.Y') }} · {{ $booking->account->name }}@if ($booking->purpose && $booking->counterparty) · {{ \Illuminate\Support\Str::limit($booking->purpose, 80) }}@endif</small></span>
+                            <small>{{ $booking->bookedOn() }} · {{ $booking->account->name }}@if ($booking->purpose && $booking->counterparty) · {{ \Illuminate\Support\Str::limit($booking->purpose, 80) }}@endif</small></span>
                         <span class="pill">{{ $booking->signedAmount() }}</span>
                         @forelse ($booking->matches as $match)
                             @if ($match->document)

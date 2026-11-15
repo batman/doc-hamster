@@ -174,8 +174,10 @@ final class XlsxSheet
         if ($isDate) {
             // Excel day 25569 = 1970-01-01 (the 1900 system, which every bank export uses).
             $date = (new DateTimeImmutable('@0'))->modify('+'.((int) floor($value) - 25569).' days');
+            // Point 219: a date with a time of day keeps it ("14.03.2026 09:41").
+            $minutes = (int) round(($value - floor($value)) * 1440);
 
-            return $date->format('d.m.Y');
+            return $minutes > 0 && $minutes < 1440 ? $date->format('d.m.Y').sprintf(' %02d:%02d', intdiv($minutes, 60), $minutes % 60) : $date->format('d.m.Y');
         }
         if (floor($value) === $value && abs($value) < 1e15) {
             return (string) (int) $value;

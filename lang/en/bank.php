@@ -54,6 +54,7 @@ return [
         'invoice_number' => 'invoice number',
         'sender' => 'sender',
         'standing' => 'standing document',
+        'time' => 'time',
     ],
     'why' => 'Matches: :reasons',
     'confirm' => 'Confirm',

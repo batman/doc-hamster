@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
  * @property string $org_id
  * @property string $bank_account_id
  * @property Carbon $booking_date
+ * @property string|null $booked_time Point 219: the time of the booking ("H:i", local) when the bank delivers one.
  * @property int $amount_minor
  * @property string $currency
  * @property string|null $counterparty
@@ -79,7 +80,7 @@ final class Transaction extends Model
 
     protected $fillable = ['org_id', 'bank_account_id', 'booking_date', 'amount_minor', 'currency', 'counterparty', 'counterparty_iban', 'purpose', 'fingerprint', 'no_receipt', 'no_receipt_reason',
         'no_receipt_reason_id', 'suggested_reason_id', 'booking_id', 'value_date', 'purpose2', 'kind', 'reference', 'creditor_id', 'counterparty_bic', 'orig_amount_minor', 'orig_currency',
-        'fee_minor', 'fee_currency', 'balance_minor', 'category', 'card_last4', 'bank_state', 'sub_account', 'related_id', 'mcc', 'extra', 'raw', 'parent_id', 'note', 'source'];
+        'fee_minor', 'fee_currency', 'balance_minor', 'category', 'card_last4', 'bank_state', 'sub_account', 'related_id', 'mcc', 'extra', 'raw', 'parent_id', 'note', 'source', 'booked_time'];
 
     /**
      * @return array<string, string>
@@ -96,6 +97,17 @@ final class Transaction extends Model
     public function parent(): BelongsTo
     {
         return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    /** Point 219: "14.03.2026, 09:41" when the bank gave a time, else "14.03.2026". */
+    public function bookedOn(): string
+    {
+        return self::dateAndTime($this->booking_date->format('d.m.Y'), $this->booked_time);
+    }
+
+    public static function dateAndTime(string $date, ?string $time): string
+    {
+        return $time === null || $time === '' ? $date : $date.', '.substr($time, 0, 5);
     }
 
     public function isManual(): bool

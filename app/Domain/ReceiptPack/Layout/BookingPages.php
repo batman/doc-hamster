@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\ReceiptPack\Layout;
 
+use App\Domain\Banking\Transaction;
 use App\Domain\ReceiptPack\PackBooking;
 use App\Domain\ReceiptPack\PackPicture;
 use App\Domain\ReceiptPack\PackReceipt;
@@ -31,7 +32,7 @@ final class BookingPages
         $c->textFit(PageFrame::LEFT, $y + 16, $booking->counterparty !== '' ? $booking->counterparty : __('receipt_pack.pdf.no_counterparty'), 330, 15, true);
         $y += 42;
         $rows = [
-            [__('receipt_pack.pdf.date'), $booking->date->format('d.m.Y')],
+            [__('receipt_pack.pdf.date'), Transaction::dateAndTime($booking->date->format('d.m.Y'), $booking->time)],
             [__('receipt_pack.pdf.amount'), PageFrame::money($booking->amountMinor, $booking->currency)],
             [__('receipt_pack.pdf.account'), $section->name.($section->maskedIban() !== '' ? '  ·  '.$section->maskedIban() : '')],
             [__('receipt_pack.pdf.purpose'), $booking->purpose !== '' ? $booking->purpose : '–'],
