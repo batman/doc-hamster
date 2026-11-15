@@ -10,6 +10,8 @@ return [
     'name' => 'Name',
     'hex' => 'Colour',
     'add' => 'Add colour',
+    'new_name' => 'Name of the colour',
+    'create' => 'Create colour',
     'save' => 'Save',
     'delete' => 'Delete',
     'drag' => 'Move :name',

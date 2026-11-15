@@ -2,7 +2,7 @@
 label { display: block; margin-top: var(--space); font-weight: 600; }
 label:not(:has(input[type="checkbox"])) { color: var(--primary); }
 .rights { max-width: 40rem; margin-top: var(--space); border: 1px solid var(--border); border-radius: var(--radius); }
-.rights label { margin-top: .25rem; font-weight: 400; }
+.rights label { margin-top: 0; font-weight: 400; }
 .chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
 .chips .chip { position: relative; margin: 0; font-weight: 400; }
 .chip input { position: absolute; opacity: 0; }
@@ -44,9 +44,14 @@ input[type="checkbox"]:checked { background: var(--primary); }
 input[type="checkbox"]:checked::before { transform: scale(1); }
 input[type="checkbox"]:hover:not(:disabled) { box-shadow: var(--shadow); }
 input[type="checkbox"]:disabled { opacity: .5; cursor: not-allowed; }
+/* Checkbox row (point 217): no top margin (that is for a label above a field), compact 36 px rows on desktop, the
+   48 px touch target only for a finger (pointer: coarse). A lone checkbox – or the first of a run – after other form
+   parts keeps a small gap; in a list of checkboxes the rows sit close together. */
 label:not(.chip):has(> input[type="checkbox"]) {
-    display: flex; align-items: center; gap: .6rem; min-height: 48px; font-weight: 400; cursor: pointer;
+    display: flex; align-items: center; gap: .6rem; min-height: 36px; margin-top: 0; font-weight: 400; cursor: pointer;
 }
+@media (pointer: coarse) { label:not(.chip):has(> input[type="checkbox"]) { min-height: 48px; } }
+:not(label, legend, input[type="hidden"]) + label:not(.chip, .tag-choice):has(> input[type="checkbox"]) { margin-top: .5rem; }
 
 button, .button {
     display: inline-flex; align-items: center; justify-content: center;
@@ -109,7 +114,7 @@ fieldset { min-width: 0; max-width: 40rem; margin: 1rem 0 0; padding: 0; border:
 fieldset > legend { float: left; width: 100%; margin: 0 0 .4rem; padding: 0; font-size: .875rem; font-weight: 600; line-height: 1.2; color: var(--primary-ink); }
 fieldset > legend + * { clear: both; }
 .rights, .tag-color-field, .note-color-field, .note-tag-field { border: 0; padding: 0; border-radius: 0; }
-.rights label { display: flex; align-items: center; gap: .5rem; margin-top: .35rem; font-size: 1rem; color: var(--text); }
+.rights label { display: flex; align-items: center; gap: .5rem; margin-top: 0; font-size: 1rem; color: var(--text); }
 
 /* A90: small field for tight spots – 40 px like small buttons, no label above. Every search field is small. */
 input.input-small, input[type="search"] { min-height: 40px; padding: 0 .75rem; font-size: .9375rem; }
@@ -195,3 +200,24 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
 .expand-plus > .expand-plus-field > input { max-width: none; }
 @keyframes expand-plus { from { width: 2.5rem; opacity: .5; } }
 @media (prefers-reduced-motion: reduce) { .expand-plus > .expand-plus-field { animation: none; } }
+/* Row variant (points 220, 221, A388): "+ Eigenschaft hinzufügen" as the first line above a list. At rest a quiet list
+   entry with a plus; open (click, tap, focus – never hover) a row in the list-row look with the name field (its ✓ only
+   while a name is typed) and the record's other fields side by side, wrapping in a narrow window. */
+.expand-plus.is-row { display: block; margin: .75rem 0 0; }
+.expand-plus.is-row + .pick-list { margin-top: .4rem; }
+.expand-plus.is-row > .expand-plus-open { color: var(--primary-ink); font-weight: 600; }
+.expand-plus.is-row > .expand-plus-open .icon { color: var(--primary); }
+.expand-plus.is-row > .expand-plus-row { flex-wrap: wrap; gap: .5rem .75rem; padding: .5rem .85rem; animation: expand-row .15s ease-out; }
+.expand-plus.is-row:not(.is-open, .is-filled, :has(.expand-plus-row :focus)) > .expand-plus-row,
+.expand-plus.is-row:is(.is-open, .is-filled, :has(.expand-plus-row :focus)) > .expand-plus-open { display: none; }
+.expand-plus-row > .expand-plus-field { flex: 1 1 12rem; width: auto; max-width: none; }
+.expand-plus-row > .expand-plus-field > input { max-width: none; }
+.expand-plus-row > input:not([type="color"]) { flex: 0 1 8rem; min-width: 5rem; margin: 0; }
+.expand-plus-row > .field { flex: 1 1 100%; max-width: none; margin: 0; }
+.expand-plus-row > .field[hidden] { display: none; }
+.expand-plus-row > .button-choice { flex: none; max-width: 100%; }
+.expand-plus.is-row .expand-plus-row button { margin: 0; }
+.expand-plus-row .switcher { background: var(--bg); }
+.expand-plus-row > input[type="color"] { flex: none; width: 2.5rem; height: 2.5rem; min-height: 0; margin: 0; padding: 0; border-radius: 50%; }
+@keyframes expand-row { from { opacity: .4; transform: translateY(-2px); } }
+@media (prefers-reduced-motion: reduce) { .expand-plus.is-row > .expand-plus-row { animation: none; } }

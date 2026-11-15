@@ -13,6 +13,20 @@
         <p class="error" role="alert">{{ $errors->first() }}</p>
     @endif
 
+    {{-- A388: "+ Kartenkategorie hinzufügen" at the top (Aufklapp-Plus, row variant): the code, then the tag with ✓. --}}
+    @php $adding = $errors->any() && (old('mcc') !== null || old('tag') !== null); @endphp
+    <form method="post" action="{{ route('bank.mcc.store') }}" class="expand-plus is-row @if ($adding) is-open is-filled @endif" data-expand-plus>
+        @csrf
+        <button type="button" class="list-entry expand-plus-open"><x-icon name="plus" /><span>{{ __('bank.mcc_new') }}</span></button>
+        <div class="pick-row is-static expand-plus-row">
+            <input class="input-small mcc-code" name="mcc" inputmode="numeric" pattern="\d{4}" maxlength="4" required value="{{ old('mcc') }}" placeholder="{{ __('bank.mcc_code') }}" aria-label="{{ __('bank.mcc_code') }}" autocomplete="off" data-expand-focus>
+            <div class="field-addon expand-plus-field">
+                <input class="input-small" name="tag" maxlength="60" value="{{ old('tag') }}" placeholder="{{ __('bank.mcc_tag') }}" aria-label="{{ __('bank.mcc_tag') }}" autocomplete="off">
+                <span class="addon-end"><button type="submit" class="control-button addon-button" aria-label="{{ __('bank.mcc_create') }}" data-tooltip="{{ __('bank.mcc_create') }}" @unless ($adding) hidden @endunless><x-icon name="check" /></button></span>
+            </div>
+        </div>
+    </form>
+
     <ul class="pick-list">
         @foreach ($entries as $entry)
             <li class="pick-row is-static">
@@ -28,17 +42,4 @@
             </li>
         @endforeach
     </ul>
-
-    <form method="post" action="{{ route('bank.mcc.store') }}">
-        @csrf
-        <div class="field">
-            <label for="mcc-code">{{ __('bank.mcc_code') }}</label>
-            <input id="mcc-code" name="mcc" inputmode="numeric" pattern="\d{4}" maxlength="4" required value="{{ old('mcc') }}">
-        </div>
-        <div class="field">
-            <label for="mcc-tag">{{ __('bank.mcc_tag') }}</label>
-            <input id="mcc-tag" name="tag" maxlength="60" required value="{{ old('tag') }}">
-        </div>
-        <button type="submit"><x-icon name="plus" /> {{ __('bank.mcc_add') }}</button>
-    </form>
 @endsection

@@ -10,6 +10,8 @@ return [
     'name' => 'Name',
     'hex' => 'Farbe',
     'add' => 'Farbe hinzufügen',
+    'new_name' => 'Name der Farbe',
+    'create' => 'Farbe anlegen',
     'save' => 'Speichern',
     'delete' => 'Löschen',
     'drag' => ':name verschieben',

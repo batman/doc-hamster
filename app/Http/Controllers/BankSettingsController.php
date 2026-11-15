@@ -28,7 +28,9 @@ final class BankSettingsController
     public function storeReason(Request $request): RedirectResponse
     {
         $data = $request->validate(['name' => ['required', 'string', 'max:100']]);
-        NoReceiptReason::query()->create(['name' => trim($data['name']), 'sort' => (int) NoReceiptReason::query()->max('sort') + 1, 'active' => true]);
+        // A388: the new reason comes first, right below the "+" row it was added in.
+        NoReceiptReason::query()->increment('sort');
+        NoReceiptReason::query()->create(['name' => trim($data['name']), 'sort' => 0, 'active' => true]);
 
         return redirect()->route('bank.reasons')->with('status', __('bank.reason_added'));
     }

@@ -13,6 +13,19 @@
         <p class="error" role="alert">{{ $errors->first() }}</p>
     @endif
 
+    {{-- A388: "+ Grund hinzufügen" at the top (Aufklapp-Plus, row variant); the new reason comes first. --}}
+    @php $adding = $errors->any() && old('name') !== null; @endphp
+    <form method="post" action="{{ route('bank.reasons.store') }}" class="expand-plus is-row @if ($adding) is-open is-filled @endif" data-expand-plus>
+        @csrf
+        <button type="button" class="list-entry expand-plus-open"><x-icon name="plus" /><span>{{ __('bank.reason_add') }}</span></button>
+        <div class="pick-row is-static expand-plus-row">
+            <div class="field-addon expand-plus-field">
+                <input class="input-small" name="name" maxlength="100" value="{{ old('name') }}" placeholder="{{ __('bank.reason_name') }}" aria-label="{{ __('bank.reason_name') }}" autocomplete="off">
+                <span class="addon-end"><button type="submit" class="control-button addon-button" aria-label="{{ __('bank.reason_create') }}" data-tooltip="{{ __('bank.reason_create') }}" @unless ($adding) hidden @endunless><x-icon name="check" /></button></span>
+            </div>
+        </div>
+    </form>
+
     <ul class="pick-list" data-sortable data-bank-order="{{ route('bank.reasons.order') }}" data-order-failed="{{ __('bank.order_failed') }}">
         @foreach ($reasons as $reason)
             <li class="pick-row is-static @unless ($reason->active) is-off @endunless" data-id="{{ $reason->id }}">
@@ -47,15 +60,4 @@
             </li>
         @endforeach
     </ul>
-
-    <form method="post" action="{{ route('bank.reasons.store') }}">
-        @csrf
-        <div class="field">
-            <label for="reason-new">{{ __('bank.reason_add') }}</label>
-            <div class="field-addon">
-                <input id="reason-new" name="name" maxlength="100" required value="{{ old('name') }}">
-                <span class="addon-end"><button type="submit" class="control-button addon-button" aria-label="{{ __('bank.reason_add') }}" data-tooltip="{{ __('bank.reason_add') }}"><x-icon name="plus" /></button></span>
-            </div>
-        </div>
-    </form>
 @endsection

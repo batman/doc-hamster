@@ -40,6 +40,8 @@ return [
     'all_documents' => 'alle Dokumente',
     'only_tags' => 'nur :tags',
     'add' => 'Eigenschaft hinzufügen',
+    'new_name' => 'Name der Eigenschaft',
+    'create' => 'Eigenschaft anlegen',
     'edit' => 'Bearbeiten',
     'edit_title' => 'Eigenschaft bearbeiten',
     'save' => 'Speichern',

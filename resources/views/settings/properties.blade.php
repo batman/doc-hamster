@@ -13,6 +13,31 @@
         <p class="error" role="alert">{{ $errors->first() }}</p>
     @endif
 
+    {{-- Point 220: "+ Eigenschaft hinzufügen" at the top (Aufklapp-Plus, row variant); the new property comes first. --}}
+    @php
+        $adding = $errors->any() && old('name') !== null;
+        $newType = (string) old('type', 'text');
+        $typeNames = collect(['text', 'number', 'amount', 'date', 'iban', 'choice'])
+            ->filter(static fn (string $type): bool => in_array($type, \App\Domain\Properties\Property::TYPES, true))
+            ->mapWithKeys(static fn (string $type): array => [$type => __('properties.types.'.$type)])->all();
+    @endphp
+    <form method="post" action="{{ route('properties.store') }}" class="expand-plus is-row @if ($adding) is-open is-filled @endif" data-expand-plus>
+        @csrf
+        <button type="button" class="list-entry expand-plus-open"><x-icon name="plus" /><span>{{ __('properties.add') }}</span></button>
+        <div class="pick-row is-static expand-plus-row">
+            <div class="field-addon expand-plus-field">
+                <input class="input-small" name="name" maxlength="60" value="{{ old('name') }}" placeholder="{{ __('properties.new_name') }}" aria-label="{{ __('properties.name') }}" autocomplete="off">
+                <span class="addon-end"><button type="submit" class="control-button addon-button" aria-label="{{ __('properties.create') }}" data-tooltip="{{ __('properties.create') }}" @unless ($adding) hidden @endunless><x-icon name="check" /></button></span>
+            </div>
+            @include('documents._search-choice', ['name' => 'type', 'value' => $newType, 'options' => $typeNames, 'toggle' => false, 'label' => __('properties.type')])
+            <div class="field" data-show-when="type:choice" @if ($newType !== 'choice') hidden @endif>
+                <label for="property-new-options">{{ __('properties.options') }}</label>
+                <textarea id="property-new-options" name="options" rows="3">{{ old('options') }}</textarea>
+                <p class="field-hint">{{ __('properties.options_hint') }}</p>
+            </div>
+        </div>
+    </form>
+
     @if ($properties->isEmpty())
         <x-empty icon="list-details" :text="__('empty.properties')" />
     @else
@@ -100,26 +125,4 @@
         @endunless
     @endforeach
 
-    <form method="post" action="{{ route('properties.store') }}" class="property-add">
-        @csrf
-        <h2>{{ __('properties.add') }}</h2>
-        <div class="field">
-            <label for="property-new-name">{{ __('properties.name') }}</label>
-            <input id="property-new-name" name="name" maxlength="60" required value="{{ old('name') }}">
-        </div>
-        <div class="field">
-            <label for="property-new-type">{{ __('properties.type') }}</label>
-            <select id="property-new-type" name="type">
-                @foreach (\App\Domain\Properties\Property::TYPES as $type)
-                    <option value="{{ $type }}" @selected(old('type') === $type)>{{ __('properties.types.'.$type) }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div class="field">
-            <label for="property-new-options">{{ __('properties.options') }}</label>
-            <textarea id="property-new-options" name="options" rows="3">{{ old('options') }}</textarea>
-            <p class="field-hint">{{ __('properties.options_hint') }}</p>
-        </div>
-        <button type="submit"><x-icon name="plus" /> {{ __('properties.add') }}</button>
-    </form>
 @endsection

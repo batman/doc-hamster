@@ -38,9 +38,11 @@ final class PropertyController
             throw ValidationException::withMessages(['options' => __('properties.errors.options')]);
         }
 
+        // Point 220: the new property comes first, right below the "+" row it was added in.
+        Property::query()->increment('sort');
         Property::query()->create([
             'name' => trim($data['name']), 'type' => $data['type'], 'options' => $data['type'] === 'choice' ? $options : null,
-            'tag_ids' => $this->tagIds($data), 'sort' => (int) Property::query()->max('sort') + 1, 'active' => true,
+            'tag_ids' => $this->tagIds($data), 'sort' => 0, 'active' => true,
         ]);
 
         return redirect()->route('properties.index')->with('status', __('properties.created'));

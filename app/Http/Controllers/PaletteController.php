@@ -25,15 +25,22 @@ final class PaletteController
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validated($request);
-        PaletteColor::query()->create([...$data, 'position' => (int) PaletteColor::query()->max('position') + 1]);
+        // Point 221: the new colour comes first, right below the "+" row it was added in.
+        PaletteColor::query()->increment('position');
+        PaletteColor::query()->create([...$data, 'position' => 0]);
 
         return redirect()->route('palette.index')->with('status', __('palette.saved'));
     }
 
-    public function update(Request $request, string $id): RedirectResponse
+    /** A row saves itself (FRAMEWORK.md "Properties module"): the circle on pick, the name on Enter or ✓. */
+    public function update(Request $request, string $id): JsonResponse|RedirectResponse
     {
         $color = PaletteColor::query()->whereKey($id)->firstOrFail();
         $color->update($this->validated($request));
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => __('palette.saved'), 'color' => ['id' => $color->id, 'name' => $color->name, 'hex' => $color->hex]]);
+        }
 
         return redirect()->route('palette.index')->with('status', __('palette.saved'));
     }

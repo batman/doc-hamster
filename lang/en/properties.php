@@ -40,6 +40,8 @@ return [
     'all_documents' => 'all documents',
     'only_tags' => 'only :tags',
     'add' => 'Add property',
+    'new_name' => 'Name of the property',
+    'create' => 'Create property',
     'edit' => 'Edit',
     'edit_title' => 'Edit property',
     'save' => 'Save',

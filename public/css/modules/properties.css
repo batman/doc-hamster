@@ -33,8 +33,6 @@
 .property-row.is-off strong, .property-row.is-off .row-icon { color: var(--muted); }
 .property-switch { display: flex; align-items: center; }
 .property-switch .check { margin: 0; }
-.property-add { max-width: 40rem; margin-top: 2rem; }
-.property-add h2 { font-size: 1.1rem; }
 
 /* Advanced search (122.6): one row per property – name, its fields by type, "hat Wert / fehlt" */
 /* Point 135 (A283): one row per added property filter – name, the input of its type, "Alle | hat Wert | fehlt", X. */
