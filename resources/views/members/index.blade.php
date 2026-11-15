@@ -1,15 +1,21 @@
+{{-- Einstellungen → Personen (points 215, 218, 223) as an Aufklappliste (FRAMEWORK.md): "+ Person hinzufügen" (Aufklapp-
+     Plus als Zeile: name, user name, role, optional access dates) → the one-time password in a dialog (ShownOnce). A click
+     opens a person: role, "Zugang von / bis", a new one-time password, "Pausiert", "Zuletzt angesehen", "Zugang entfernen".
+     The own row only shows. --}}
 @extends('layouts.settings')
 
 @section('title', __('members.title'))
 
 @section('page')
-
     @if (session('status'))
-        <p class="check-ok" role="status">{{ session('status') }}</p>
+        <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
+    @endif
+    @if ($errors->any())
+        <p class="error" role="alert">{{ $errors->first() }}</p>
     @endif
 
     @if ($fresh !== null)
-        {{-- The new password at once in an open dialog with copy fields (no flash: other requests would eat it). --}}
+        {{-- The one-time password at once in an open dialog with copy fields (no flash: other requests would eat it). --}}
         <div class="dialog-backdrop" data-dialog="member-password">
             <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="member-password-title">
                 <h2 id="member-password-title">{{ __('members.password_title', ['name' => $fresh['name']]) }}</h2>
@@ -23,54 +29,29 @@
         </div>
     @endif
 
-    @if ($errors->any())
-        <p class="error" role="alert">{{ $errors->first() }}</p>
-    @endif
+    @php
+        $adding = old('display_name') !== null && $errors->any();
+        $roleOptions = [$adminValue => __('members.roles.owner'), ...$roles->pluck('name', 'id')->all()];
+        $newRole = (string) old('role', $roles->first()?->id ?? $adminValue);
+    @endphp
+    <form method="post" action="{{ route('members.store') }}" class="expand-plus is-row @if ($adding) is-open is-filled @endif" data-expand-plus data-confirm-sudo>
+        @csrf
+        <button type="button" class="list-entry expand-plus-open"><x-icon name="plus" /><span>{{ __('members.add') }}</span></button>
+        <div class="pick-row is-static expand-plus-row">
+            <div class="field-addon expand-plus-field">
+                <input class="input-small" name="display_name" maxlength="100" value="{{ old('display_name') }}" placeholder="{{ __('members.name') }}" aria-label="{{ __('members.name') }}" autocomplete="off" data-username-from="username">
+                <span class="addon-end"><button type="submit" class="control-button addon-button" aria-label="{{ __('members.create') }}" data-tooltip="{{ __('members.create') }}" @unless ($adding) hidden @endunless><x-icon name="check" /></button></span>
+            </div>
+            <input class="input-small" name="username" maxlength="64" value="{{ old('username') }}" placeholder="{{ __('members.username_hint') }}" aria-label="{{ __('auth.username') }}" autocomplete="off" data-username-field>
+            @include('documents._search-choice', ['name' => 'role', 'value' => $newRole, 'options' => $roleOptions, 'toggle' => false, 'label' => __('members.role')])
+            <input class="input-small" type="date" name="access_from" value="{{ old('access_from') }}" aria-label="{{ __('members.access_from') }}" data-tooltip="{{ __('members.access_from') }}">
+            <input class="input-small" type="date" name="access_until" value="{{ old('access_until') }}" aria-label="{{ __('members.access_until') }}" data-tooltip="{{ __('members.access_until') }}">
+        </div>
+    </form>
 
-    <ul class="documents">
+    <ul class="accordion-list">
         @foreach ($memberships as $membership)
-            <li>
-                <strong>{{ $membership->user?->display_name }}</strong>
-                <span class="muted">{{ $membership->roleName() }} · {{ $membership->user?->username }}</span>
-                {{-- A378: restored from a backup without any way to sign in – "Passwort zurücksetzen" sets it up again. --}}
-                @if ($membership->isActive() && $membership->user !== null && $membership->user->password_hash === null && ! $membership->user->passkeys()->exists())
-                    <span class="pill pill-warning">{{ __('members.no_access') }}</span>
-                @endif
-                @if (! $membership->isActive())
-                    <span class="muted">· {{ __('members.removed') }}</span>
-                @elseif ($membership->user_id !== $selfId)
-                    <form method="post" action="{{ route('members.reset', $membership->id) }}" data-confirm-sudo>
-                        @csrf
-                        <label for="role-{{ $membership->id }}">{{ __('members.role') }}</label>
-                        <select id="role-{{ $membership->id }}" name="role">
-                            <option value="{{ $adminValue }}" @selected($membership->org_role_id === null)>{{ __('members.roles.owner') }}</option>
-                            @foreach ($roles as $role)
-                                <option value="{{ $role->id }}" @selected($membership->org_role_id === $role->id)>{{ $role->name }}</option>
-                            @endforeach
-                        </select>
-                        <button type="submit" formaction="{{ route('members.role', $membership->id) }}">{{ __('members.change_role') }}</button>
-                        <button type="submit">{{ __('members.reset') }}</button>
-                        <button type="submit" formaction="{{ route('members.revoke', $membership->id) }}">{{ __('members.revoke') }}</button>
-                    </form>
-                @endif
-            </li>
+            @include('members._person', ['isOpen' => $open === $membership->id])
         @endforeach
     </ul>
-
-    <h2>{{ __('members.add') }}</h2>
-    <form method="post" action="{{ route('members.store') }}" data-confirm-sudo>
-        @csrf
-        <label for="display_name">{{ __('members.name') }}</label>
-        <input id="display_name" name="display_name" value="{{ old('display_name') }}" required>
-        <label for="username">{{ __('auth.username') }}</label>
-        <input id="username" name="username" value="{{ old('username') }}" autocomplete="off" required>
-        <label for="role">{{ __('members.role') }}</label>
-        <select id="role" name="role">
-            @foreach ($roles as $role)
-                <option value="{{ $role->id }}" @selected(old('role') === $role->id)>{{ $role->name }}</option>
-            @endforeach
-            <option value="{{ $adminValue }}" @selected(old('role') === $adminValue)>{{ __('members.roles.owner') }}</option>
-        </select>
-        <button type="submit">{{ __('members.create') }}</button>
-    </form>
 @endsection

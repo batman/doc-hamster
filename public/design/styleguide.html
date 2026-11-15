@@ -211,6 +211,38 @@
                 <form class="expand-plus is-row" data-expand-plus onsubmit="return false"><button type="button" class="list-entry expand-plus-open"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg><span>Farbe hinzufügen</span></button><div class="pick-row is-static expand-plus-row"><input type="color" name="hex" value="#ff7622" aria-label="Farbe"><div class="field-addon expand-plus-field"><input class="input-small" name="name" placeholder="Name der Farbe" aria-label="Name" autocomplete="off"><span class="addon-end"><button type="submit" class="control-button addon-button" aria-label="Farbe anlegen" data-tooltip="Farbe anlegen" hidden><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l10 -10"/></svg></button></span></div></div></form>
             </div>
 
+            <h3 class="sg-pad" id="accordion-list">Aufklappliste, Initialen-Kreis, Schalter</h3>
+            <p class="sg-note">Punkte 216, 218, 223: <code>ul.accordion-list</code> &gt; <code>li.accordion-row</code>; der Kopf ist ein Listeneintrag-Button (<code>data-accordion-toggle</code>), ein Klick öffnet den Körper (weiß markiert), die anderen schließen (<code>core/accordion.js</code>). Darin speichert jedes Feld sofort. <code>.initials</code> statt Zeilen-Symbol bei Personen (grau: <code>is-paused</code>), <code>.switch</code> für Ein/Aus, <code>button-link is-danger</code> als leiser roter Link.</p>
+            <div class="sg-pad" style="max-width: 40rem;">
+                <ul class="accordion-list">
+                    <li class="accordion-row is-open">
+                        <div class="accordion-head">
+                            <button type="button" class="list-entry accordion-toggle" data-accordion-toggle aria-expanded="true"><span class="initials">MM</span><span><strong>Max Mustermann</strong><small>max.mustermann · zuletzt aktiv vor 2 Stunden</small></span><span class="accordion-pills"><span class="pill">Steuerberater</span><span class="pill">01.03.–31.05.</span></span></button>
+                        </div>
+                        <div class="accordion-body">
+                            <ul class="prop-list">
+                                <li class="prop-row"><span class="prop-name">Rolle</span><span class="prop-value"><span class="switcher" role="group" aria-label="Rolle"><button type="button" aria-pressed="false">Admin</button><button type="button" aria-pressed="false">Mitarbeiter</button><button type="button" aria-pressed="true">Steuerberater</button></span></span></li>
+                                <li class="prop-row"><span class="prop-name">Pausiert</span><span class="prop-value"><label class="switch"><input type="checkbox" role="switch" aria-label="Pausiert"></label></span></li>
+                            </ul>
+                            <p><button type="button" class="button-link is-danger">Zugang entfernen</button></p>
+                        </div>
+                    </li>
+                    <li class="accordion-row">
+                        <div class="accordion-head">
+                            <button type="button" class="list-entry accordion-toggle" data-accordion-toggle aria-expanded="false"><span class="initials is-paused">EM</span><span><strong>Erika Musterfrau</strong><small>erika · noch nie angemeldet</small></span><span class="accordion-pills"><span class="pill">Mitarbeiter</span><span class="pill">pausiert</span></span></button>
+                        </div>
+                        <div class="accordion-body" hidden></div>
+                    </li>
+                    <li class="accordion-row">
+                        <div class="accordion-head">
+                            <button type="button" class="list-entry accordion-toggle" data-accordion-toggle aria-expanded="false"><span class="row-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21v-2a4 4 0 0 1 4 -4h2"/><path d="M22 16c0 4 -2.5 6 -3.5 6s-3.5 -2 -3.5 -6c1 0 2.5 -.5 3.5 -1.5c1 1 2.5 1.5 3.5 1.5z"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/></svg></span><span><strong>Steuerberater</strong><small>1 Person · Alle sehen, Belegpakete</small></span><span class="accordion-pills"><span class="pill">nur 2026</span><span class="pill">2 Konten</span></span></button>
+                            <span class="row-actions"><button type="button" class="control-button" aria-label="Mehr" data-tooltip="Mehr"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M19 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/></svg></button></span>
+                        </div>
+                        <div class="accordion-body" hidden></div>
+                    </li>
+                </ul>
+            </div>
+
             <h3 class="sg-pad">Umbenennen in der Zeile</h3>
             <p class="sg-note">Stift oder langes Drücken auf den Namen (Maus ~2 s, Finger ~1 s; dabei füllt sich eine dünne orange Linie unter dem Namen). Enter oder ✓ speichert, Esc oder ein Klick außerhalb der Zeile bricht ab – kein X.</p>
             <ul class="pick-list folder-rows sg-rows" style="max-width: 26rem;">
@@ -1594,6 +1626,7 @@
 <script src="../js/core/card-fold.js"></script>
 <script src="../js/core/button-choice.js"></script>
 <script src="../js/core/expand-plus.js"></script>
+<script src="../js/core/accordion.js"></script>
 <script src="styleguide.js"></script>
 </body>
 </html>

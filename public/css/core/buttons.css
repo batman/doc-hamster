@@ -53,6 +53,9 @@ button .icon, .button .icon { width: 1.25rem; height: 1.25rem; }
    muted text, orange on hover. */
 :is(button, .button).button-link.is-quiet { color: var(--muted); font-weight: 500; }
 :is(button, .button).button-link.is-quiet:hover { color: var(--primary-ink); }
+/* Quiet red link (point 218): a destructive side action that should not draw the eye ("Zugang entfernen"); it asks first. */
+:is(button, .button).button-link.is-danger { color: var(--danger); font-weight: 500; }
+:is(button, .button).button-link.is-danger:hover { color: var(--danger-hover); }
 
 /* Sizes: 48 px, small 40 px; icon buttons are square */
 :is(button, .button).button-small { min-height: 40px; padding: 0 .9rem; font-size: .95rem; }
