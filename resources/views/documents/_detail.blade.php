@@ -262,6 +262,13 @@
             @endif
             <dt>{{ __('documents.facts.type') }}</dt><dd>{{ $file?->mime ?? '–' }}</dd>
             <dt>{{ __('documents.facts.booking') }}</dt><dd>{{ $booking !== '' ? $booking : '–' }}</dd>
+            @if ($file?->getAttribute('optimize') === 'done')
+                {{-- Point 236: made smaller by "Dokumentgröße optimieren". --}}
+                <dt>{{ __('documents.facts.optimized') }}</dt><dd>{{ \App\Http\Controllers\OptimizeController::size((int) $file->getAttribute('original_size')) }} → {{ \App\Http\Controllers\OptimizeController::size($file->size) }}</dd>
+            @endif
+            @if ($document->getAttribute('original_of'))
+                <dt>{{ __('documents.facts.original_of') }}</dt><dd><a href="{{ route('documents.show', $document->getAttribute('original_of')) }}" data-window>{{ __('documents.facts.original_link') }}</a></dd>
+            @endif
         </dl>
     </x-fold-card>
 

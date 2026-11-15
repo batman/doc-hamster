@@ -41,6 +41,10 @@ final class SettingsMenu
         'ocr' => ['text-scan-2', [
             ['ocr', 'ocr.show', 'text-scan-2', 'settings.manage', ['ocr.show']],
         ], true],
+        // Point 236: the optional module "Dokumentgröße optimieren" (off after install, F46).
+        'optimize' => ['arrows-minimize', [
+            ['optimize', 'optimize.show', 'arrows-minimize', 'settings.manage', ['optimize.*']],
+        ], true],
         // Point 173: everything optional – OCR languages, later translation packs and modules.
         'extensions' => ['puzzle', [
             ['extensions', 'extensions.index', 'puzzle', 'settings.manage', ['extensions.*']],

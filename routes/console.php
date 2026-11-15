@@ -6,6 +6,7 @@ use App\Domain\Backup\Backup;
 use App\Domain\Documents\TrashSweeper;
 use App\Domain\Log\LogEntry;
 use App\Domain\Ocr\OcrLog;
+use App\Domain\Optimize\OptimizeQueue;
 use App\Infrastructure\Environment\NativeSystemProbe;
 use App\Queue\QueueName;
 use Illuminate\Support\Facades\Cache;
@@ -48,3 +49,8 @@ Schedule::call(static fn () => app(TrashSweeper::class)->run())
 Schedule::call(static fn () => Backup::prune())
     ->name('backup-prune')
     ->hourly();
+
+// Point 236: "Dokumentgröße optimieren" works off the older files by itself while it is on, a few at a time (low queue).
+Schedule::call(static fn () => OptimizeQueue::sweep())
+    ->name('optimize-sweep')
+    ->everyFiveMinutes();

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Payments;
 
+use App\Domain\Optimize\OriginalKeeper;
 use App\Events\TextRecognized;
 use Throwable;
 
@@ -17,6 +18,10 @@ final class SuggestInvoiceProperties
 
     public function handle(TextRecognized $event): void
     {
+        // Point 236: the kept original of an optimised document is no receipt of its own.
+        if (OriginalKeeper::isOriginal($event->documentId)) {
+            return;
+        }
         try {
             $this->suggestions->suggest($event->documentId);
         } catch (Throwable $e) {

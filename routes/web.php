@@ -39,6 +39,7 @@ use App\Http\Controllers\OcrBrowserController;
 use App\Http\Controllers\OcrController;
 use App\Http\Controllers\OcrServerController;
 use App\Http\Controllers\OcrStatusController;
+use App\Http\Controllers\OptimizeController;
 use App\Http\Controllers\PaletteController;
 use App\Http\Controllers\PhoneCheckController;
 use App\Http\Controllers\PrinterSettingsController;
@@ -155,6 +156,12 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('settings/ocr/server', [OcrServerController::class, 'toggle'])->middleware('can:settings.manage')->name('ocr.server');
     Route::post('settings/ocr/test', [OcrServerController::class, 'test'])->middleware(['can:settings.manage', 'throttle:10,1'])->name('ocr.test');
     Route::post('documents/{id}/ocr/server', [OcrServerController::class, 'redo'])->middleware('can:documents.edit')->name('ocr.redo-server');
+    // Point 236: "Dokumentgröße optimieren" – settings (saved at once) and its progress.
+    Route::middleware('can:settings.manage')->prefix('settings/optimize')->name('optimize.')->controller(OptimizeController::class)->group(function (): void {
+        Route::get('/', 'show')->name('show');
+        Route::post('/', 'save')->name('save');
+        Route::get('status', 'status')->name('status');
+    });
     // Point 123: the same page as a module of its own (the OCR widget below Abmelden), without the settings columns.
     Route::get('ocr', [OcrController::class, 'show'])->middleware('can:settings.manage')->name('ocr.live');
     Route::get('ocr/status', [OcrStatusController::class, 'status'])->name('ocr.status');

@@ -12,6 +12,7 @@ use App\Domain\Ocr\OcrFixes;
 use App\Domain\Ocr\OcrLog;
 use App\Domain\Ocr\OcrServerSwitch;
 use App\Domain\Ocr\OcrWords;
+use App\Domain\Optimize\OptimizeQueue;
 use App\Domain\Org\OrgScope;
 use App\Events\TextRecognized;
 use App\Infrastructure\Environment\LocalOcr;
@@ -116,6 +117,10 @@ final class RecognizeText implements ShouldQueue
         $hasText = ($rescan || $this->server) && $document->getAttribute('ocr_status') === 'done';
         $file = DocumentFile::query()->withoutGlobalScope(OrgScope::class)
             ->where('document_id', $document->id)->orderBy('page_no')->first();
+        // Point 236: the file is about to be optimised – OptimizeDocument starts the recognition again afterwards.
+        if ($file !== null && $file->getAttribute('optimize') === OptimizeQueue::QUEUED && ! $hasText) {
+            return;
+        }
         // A text document written in the app: its text is known, nothing to read.
         if ($file !== null && TextDocument::isText($file)) {
             $display = TextDocument::display($file);

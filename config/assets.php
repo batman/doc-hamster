@@ -24,7 +24,7 @@ return [
         'core/pane-edge', 'modules/document-viewer', 'modules/doc-fullscreen', 'modules/ocr-text', 'modules/translate', 'modules/palette', 'modules/ocr-ink', 'modules/ocr-browser', 'modules/documents', 'modules/documents-rows', 'modules/documents-forms',
         'modules/documents-rename', 'modules/documents-trash', 'modules/documents-select', 'modules/documents-pick', 'modules/documents-columns', 'modules/documents-dnd', 'modules/documents-dnd-native', 'modules/documents-upload', 'modules/documents-search',
         'modules/updates',
-        'modules/text-editor', 'core/edit-in-place', 'modules/ocr-progress', 'modules/ocr-live', 'modules/ocr-server', 'modules/note-options',
+        'modules/text-editor', 'core/edit-in-place', 'modules/ocr-progress', 'modules/ocr-live', 'modules/ocr-server', 'modules/optimize', 'modules/note-options',
         'modules/properties', 'modules/girocode', 'modules/bank', 'modules/inbox', 'core/window-edge', 'core/top-layer', 'core/layout-debug',
         'core/pwa', 'modules/share', 'modules/speed', 'core/window-pin', 'modules/dashboard', 'modules/notes-pins', 'modules/devices', 'modules/backup',
         'core/accordion', 'core/switch', 'modules/people',

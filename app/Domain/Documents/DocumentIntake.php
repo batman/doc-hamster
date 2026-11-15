@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Documents;
 
+use App\Domain\Optimize\OptimizeQueue;
+use App\Domain\Org\Organization;
 use App\Jobs\Local\RecognizeText;
 use finfo;
 use Illuminate\Http\UploadedFile;
@@ -76,9 +78,13 @@ final class DocumentIntake
         // Point 214: until the text names a date, the photo's or PDF's own date (else the upload day).
         app(ReceiptDate::class)->sync($document);
 
-        // Text for the search, in the background (cron worker, local queue).
+        // Text for the search, in the background (cron worker, local queue). Point 236: with "Dokumentgröße
+        // optimieren" on, a big file is optimised first and the recognition reads the smaller one.
         $document->forceFill(['ocr_status' => 'pending'])->save();
-        RecognizeText::dispatch($document->id);
+        $organization = Organization::query()->find($orgId);
+        if ($organization === null || ! OptimizeQueue::first($file, $organization)) {
+            RecognizeText::dispatch($document->id);
+        }
 
         return $document;
     }

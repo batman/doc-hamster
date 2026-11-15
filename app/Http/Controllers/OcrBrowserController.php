@@ -50,7 +50,9 @@ final class OcrBrowserController extends Controller
         $open = fn (): Builder => OcrAccess::editable($request)
             ->where(static fn ($w) => $w->whereNull('ocr_status')->orWhereIn('ocr_status', ['pending', 'unavailable'])->orWhere('ocr_rescan', true))
             ->whereNotIn('id', $skip)
-            ->whereHas('files', $readable);
+            ->whereHas('files', $readable)
+            // Point 236: a file about to be optimised is read once it is smaller.
+            ->whereDoesntHave('files', static fn (Builder $f) => $f->where('optimize', 'queued'));
         // Documents without text before re-reads of read ones; a document that failed lately goes behind the others,
         // so one bad file does not block the rest.
         $read = "case when ocr_status = 'done' then 1 else 0 end";

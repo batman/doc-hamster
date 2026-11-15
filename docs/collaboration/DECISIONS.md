@@ -295,6 +295,11 @@ Short entries for product decisions that were taken while building and were not 
 - **Decision:** every German UI text addresses the user with **Sie** (Sie/Ihnen/Ihr capitalised), never "du". Where a neutral form without address reads better, it is used: buttons stay short infinitives ("Hochladen"), hints may be infinitives ("Datei hierher ziehen").
 - **Reason:** one consistent tone; the app also faces tax advisors and businesses.
 
+### D-039 · "Dokumentgröße optimieren": originals to the Papierkorb or an archive folder; born-digital PDFs never touched — Owner: PO (F45, F46, A406)
+- **Status:** decided and built (2026-11-21, point 236)
+- **Decision:** an optional built-in module, off after install. Switched on, it shrinks photos and pure scan PDFs (every page one JPEG picture, no fonts) to 300 dpi, JPEG quality 80, gray pages gray, when the average size per page is over the threshold (default 2 MB) and the result is at least 30 % smaller. Born-digital PDFs, PDFs with embedded files (ZUGFeRD / XRechnung / Factur-X), signed, encrypted or edited PDFs are never changed. The optimised document keeps its id, tags, properties, bank links and text; the original becomes a document of its own (`original_of`) – in the Papierkorb (default, purged with it) or in an archive folder ("Originale"); it never takes part in matching or invoice reading.
+- **Reason:** big scans fill the server; nothing that carries legal meaning in the file itself (e-invoice data, signatures) may change.
+
 ## Decide before the relevant phase
 
 | ID | Topic | Owner | Needed by | Status | Input |

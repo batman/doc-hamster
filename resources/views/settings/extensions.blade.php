@@ -65,6 +65,19 @@
         <h2 class="card-head"><x-icon name="puzzle" />{{ __('extensions.kinds.module') }}</h2>
         <p class="card-text">{{ __('extensions.kind_texts.module') }}</p>
         <ul class="pick-list">
+            {{-- Point 236: built in, off after install (F46); switched on and set up on its own page. --}}
+            @php($optimizeOn = \App\Domain\Optimize\OptimizeSettings::enabled(app(\App\Domain\Org\CurrentOrg::class)->organization()))
+            <li class="pick-row is-static">
+                <x-icon name="arrows-minimize" />
+                <span>
+                    <strong>{{ __('optimize.title') }}</strong>
+                    <small>{{ __('optimize.module_text') }}</small>
+                </span>
+                <span @class(['pill', 'pill-ok' => $optimizeOn])>{{ __($optimizeOn ? 'optimize.on_pill' : 'extensions.off_pill') }}</span>
+                <span class="row-actions">
+                    <a class="control-button" href="{{ route('optimize.show') }}" aria-label="{{ __('optimize.module_settings') }}" data-tooltip="{{ __('optimize.module_settings') }}"><x-icon name="settings" /></a>
+                </span>
+            </li>
             @foreach ($modules as $row)
                 <li class="pick-row is-static">
                     <x-icon name="puzzle" />
