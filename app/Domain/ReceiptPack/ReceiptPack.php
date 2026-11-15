@@ -111,6 +111,18 @@ final class ReceiptPack extends Model
         return new PackPeriod($this->period_from, $this->period_to);
     }
 
+    /**
+     * The documents frozen into the pack (summary.documents, since point 215); null for older packs.
+     *
+     * @return list<string>|null
+     */
+    public function documentIds(): ?array
+    {
+        $ids = $this->summary['documents'] ?? null;
+
+        return is_array($ids) ? array_values(array_map('strval', $ids)) : null;
+    }
+
     public function isReady(): bool
     {
         return $this->status === self::DONE && $this->path !== null && Storage::disk('local')->exists($this->path);

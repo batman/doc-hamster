@@ -63,7 +63,7 @@ return [
         'done' => 'Restored: :org (:files files).',
         'skipped' => 'Restored without access: :names. Set up their access again under Members with "Reset password".',
         'missing' => ':count files were missing in the backup.',
-        'next' => 'Next: php artisan dochamster:thumbnails (thumbnails), pair devices again, set tax advisor passwords again.',
+        'next' => 'Next: php artisan dochamster:thumbnails (thumbnails), pair devices again, make a new one-time password for the other people under People.',
         'errors' => [
             'owner' => 'Give a username (3–64 characters: a–z, 0–9, . _ -) and a password of at least 12 characters.',
             'not_empty' => 'This instance is not empty – a restore only goes into an empty instance.',

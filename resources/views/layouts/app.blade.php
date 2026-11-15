@@ -50,15 +50,14 @@
 </head>
 {{-- Browser OCR fallback (point 18): only when the server can't read text itself (in mode app: the PDFs, point 69). Without cron the open app works off the queue (A69/A74). --}}
 @php
-    // Point 210: the tax advisor (accountant with an access) sees only his own view – no OCR loop, no prefetch, one menu entry.
-    $advisorView = auth()->check() && isset($layoutOrg) && $layoutOrg->isSet() && $layoutOrg->role() === \App\Domain\Org\Role::Accountant
-        && \App\Domain\Advisor\AdvisorAccess::forMembership($layoutOrg->membership()) !== null;
-    $ocrBrowser = auth()->check() && ! $advisorView && app(\App\Infrastructure\Environment\LocalOcr::class)->browserLoop();
+    // A384: a role restricted to some folders has no Posteingang.
+    $noInbox = auth()->check() && isset($layoutOrg) && $layoutOrg->isSet() && $layoutOrg->restriction()->hidesInbox();
+    $ocrBrowser = auth()->check() && app(\App\Infrastructure\Environment\LocalOcr::class)->browserLoop();
     $ocrEngineError = $ocrBrowser ? app(\App\Infrastructure\Environment\LocalOcr::class)->browserError() : null;
     $queueTick = auth()->check() && ! \App\Queue\CronClock::running();
     // Point 164.8g: the small windows the browser loads once after sign-in (menu windows, Dokumente, Bank).
     $prefetchSmall = [];
-    if (auth()->check() && isset($layoutOrg) && $layoutOrg->isSet() && ! $advisorView) {
+    if (auth()->check() && isset($layoutOrg) && $layoutOrg->isSet()) {
         $prefetchSmall[] = route('settings.index');
         foreach (\App\Http\SettingsMenu::groups() as $key => $each) {
             if (! $each['leaf'] && count($each['items']) > 1) {
@@ -96,7 +95,7 @@
                     @endcan
                     <ul class="nav-list">
                         {{-- Everything else (people, roles, tags, bank import, export, update, phone test) sits under Einstellungen. --}}
-                        @foreach ($advisorView ? [['advisor.index', 'briefcase', 'advisor.view_title', null, ['advisor.*'], null]] : [
+                        @foreach ([
                             ['home', 'home', 'dashboard.title', null, ['home'], null],
                             ['notes.index', 'note', 'home.notes', null, ['notes.*'], null],
                             ['documents.index', 'file-text', 'documents.title', null, ['documents.*', 'folders.*'], null],
@@ -104,7 +103,7 @@
                             ['bank.index', 'building-bank', 'bank.title', 'banking.import', ['bank.index', 'bank.show', 'bank.account', 'bank.receipts', 'bank.import.columns'], \App\Http\Badges::BANK],
                             ['settings.index', 'settings', 'settings.title', null, ['settings.*', 'members.*', 'roles.*', 'tags.*', 'exports.*', 'updates.*', 'ocr.show', 'palette.*', 'bank.import', 'bank.accounts.*', 'phone-check*', 'log.*', 'printers.*', 'inbox.mail'], \App\Http\Badges::SETTINGS_ALL],
                         ] as [$route, $icon, $label, $ability, $active, $badge])
-                            @if ($ability === null || Gate::allows($ability))
+                            @if (($ability === null || Gate::allows($ability)) && ! ($route === 'inbox.index' && $noInbox))
                                 <li><a class="nav-item tooltip-right" href="{{ route($route) }}" data-tooltip="{{ __($label) }}" @if ($route === 'inbox.index') data-no-prefetch @endif @if (request()->routeIs(...$active) || ($route === 'settings.index' && \App\Http\SettingsMenu::owns(request()))) aria-current="page" @endif><x-icon :name="$icon" /><span class="nav-text">{{ __($label) }}</span> @if ($badge !== null) @php $count = $badges[$badge] ?? 0; @endphp <span class="badge badge-alert" data-badge="{{ $badge }}" @if ($count === 0) hidden @endif>{{ $count > 99 ? '99+' : $count }}</span> @endif</a></li>
                             @endif
                         @endforeach

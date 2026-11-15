@@ -38,6 +38,7 @@ return [
     'transaction' => 'Transaction',
     'iban_of' => 'IBAN',
     'linked' => 'Linked documents',
+    'hidden_row' => 'Receipt there (not released)',
     'hidden' => '{1} 1 more document belongs to it that you may not see.|[2,*] :count more documents belong to it that you may not see.',
     'sums' => 'Totals',
     'sum_documents' => 'Documents',

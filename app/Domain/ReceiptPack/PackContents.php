@@ -39,6 +39,25 @@ final readonly class PackContents
         return new self($period, $sections, self::loose($period));
     }
 
+    /**
+     * Every document in the pack (booking receipts and "Belege ohne Buchung"), once each – A386 checks them.
+     *
+     * @return list<string>
+     */
+    public function documentIds(): array
+    {
+        $ids = array_map(static fn (PackReceipt $r): string => $r->id, $this->loose);
+        foreach ($this->sections as $section) {
+            foreach ($section->bookings as $booking) {
+                foreach ($booking->receipts as $receipt) {
+                    $ids[] = $receipt->id;
+                }
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }
+
     public function figures(): PackFigures
     {
         return PackFigures::total(...$this->sections);

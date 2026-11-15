@@ -62,7 +62,6 @@ return [
         'log_updates' => ['title' => 'Updates', 'text' => 'Installationen und Wechsel'],
         'speed' => ['title' => 'Geschwindigkeit', 'text' => 'Messwerte, Prüfungen und Vorladen'],
         'backup' => ['title' => 'Backup', 'text' => 'Alle Daten als ZIP herunterladen'],
-        'advisors' => ['title' => 'Steuerberater-Zugang', 'text' => 'Benutzername, Freigabe und Einmalpasswort'],
         'packs' => ['title' => 'Belegpaket', 'text' => 'PDF mit Übersicht und Belegen je Zeitraum'],
     ],
 ];

@@ -82,7 +82,7 @@ it('needs banking.import to link or undo by drop (160)', function (): void {
     $doc = dropDocument();
     $this->postJson("/bank/transactions/{$booking->id}/link", ['ids' => [$doc->id]])->assertOk();
 
-    $advisor = Membership::factory()->accountant()->create(['org_id' => $this->admin->org_id]);
+    $advisor = Membership::factory()->viewer()->create(['org_id' => $this->admin->org_id]);
     $this->actingAs($advisor->user);
     $this->postJson("/bank/transactions/{$booking->id}/link", ['ids' => [$doc->id]])->assertForbidden();
     $this->postJson("/bank/transactions/{$booking->id}/unlink", ['ids' => [$doc->id]])->assertForbidden();

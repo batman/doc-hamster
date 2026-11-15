@@ -98,7 +98,7 @@ it('lets those who may edit a receipt change its tags, limited to what they can 
     $ownOnly = Membership::factory()->withRights(RoleRight::Edit)->create(['org_id' => $this->orgId]);
     $this->actingAs($ownOnly->user)->post('/documents/'.$document->id.'/tags', ['tags' => []])->assertNotFound();
 
-    $advisor = Membership::factory()->accountant()->create(['org_id' => $this->orgId]);
+    $advisor = Membership::factory()->viewer()->create(['org_id' => $this->orgId]);
     $this->actingAs($advisor->user)->post('/documents/'.$document->id.'/tags', ['tags' => []])->assertForbidden();
     $this->get('/documents?'.http_build_query(['folder' => Folder::defaultIdFor($this->orgId), 'tags' => [$invoice->id]]))->assertOk()->assertSee('bon.jpg');
 
@@ -115,7 +115,7 @@ it('lets Admins and the checkbox manage the list, nobody else', function (): voi
     $this->actingAs($manager->user)->post('/tags/'.tagNamed($this->orgId, 'Tanken')->id, ['name' => 'Sprit'])->assertRedirect();
     expect(tagNamed($this->orgId, 'Sprit')->name)->toBe('Sprit');
 
-    $other = Membership::factory()->accountant()->create(['org_id' => $this->orgId]);
+    $other = Membership::factory()->viewer()->create(['org_id' => $this->orgId]);
     $this->actingAs($other->user)->get('/tags')->assertForbidden();
     $this->post('/tags', ['name' => 'Nein'])->assertForbidden();
 });

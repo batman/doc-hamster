@@ -14,14 +14,30 @@ final class CurrentOrg
 {
     private ?Membership $membership = null;
 
+    private ?RoleRestriction $restriction = null;
+
+    /** Setting a membership drops any restriction: jobs and the upload API see everything of the organisation. */
     public function set(Membership $membership): void
     {
         $this->membership = $membership;
+        $this->restriction = null;
     }
 
     public function clear(): void
     {
         $this->membership = null;
+        $this->restriction = null;
+    }
+
+    /** Point 215.3: the request's role restriction (ResolveCurrentOrg); Admins never have one. */
+    public function restrictTo(?RoleRestriction $restriction): void
+    {
+        $this->restriction = $restriction;
+    }
+
+    public function restriction(): RoleRestriction
+    {
+        return $this->restriction ?? new RoleRestriction;
     }
 
     public function isSet(): bool

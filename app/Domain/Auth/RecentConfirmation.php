@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domain\Auth;
 
-use App\Domain\Org\Role;
 use Illuminate\Contracts\Session\Session;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
@@ -39,12 +38,12 @@ final class RecentConfirmation
     }
 
     /**
-     * Whether this person has to confirm now. The tax advisor never does (he has no such actions); nor does somebody
-     * without any way to confirm (no password, no passkey assertion yet) – there is nothing to ask for.
+     * Whether this person has to confirm now. Somebody without any way to confirm (no password, no passkey assertion
+     * yet) never does – there is nothing to ask for.
      */
-    public static function required(?User $user, ?Role $role, Session $session): bool
+    public static function required(?User $user, Session $session): bool
     {
-        if ($user === null || $role === Role::Accountant || self::methods($user) === []) {
+        if ($user === null || self::methods($user) === []) {
             return false;
         }
 

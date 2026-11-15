@@ -6,6 +6,7 @@ namespace App\Domain\Documents;
 
 use App\Domain\Banking\TransactionMatch;
 use App\Domain\Org\BelongsToOrg;
+use App\Domain\Org\CurrentOrg;
 use App\Domain\Properties\DocumentProperty;
 use App\Domain\Translate\DocumentTranslation;
 use Illuminate\Database\Eloquent\Builder;
@@ -200,13 +201,17 @@ final class Document extends Model
     }
 
     /**
-     * Everything for those who may see all documents, otherwise only the user's own.
+     * Everything for those who may see all documents, otherwise only the user's own – and, for the person of the current
+     * request, only what their role's restriction allows (point 215.3: period, accounts, folders; RoleRestriction).
      *
      * @param  Builder<Document>  $query
      * @return Builder<Document>
      */
     public function scopeVisibleTo(Builder $query, string $userId, bool $seesAll): Builder
     {
-        return $seesAll ? $query : $query->where('uploaded_by', $userId);
+        $query = $seesAll ? $query : $query->where('uploaded_by', $userId);
+        $org = app(CurrentOrg::class);
+
+        return $org->isSet() && $org->membership()->user_id === $userId ? $org->restriction()->documents($query) : $query;
     }
 }

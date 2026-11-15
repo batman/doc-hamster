@@ -29,9 +29,11 @@ final class DocumentController
     }
 
     /** The list with one receipt opened beside it (design point 17), with its own address. */
-    public function show(Request $request, string $id): View
+    public function show(Request $request, string $id, AuditLog $audit, CurrentOrg $org): View
     {
         $open = $this->visible($request)->with(['files', 'tags', 'matches.transaction'])->whereKey($id)->firstOrFail();
+        // Point 215: every view goes into the audit trail ("Zuletzt angesehen" on the Personen page).
+        $audit->record('document.viewed', orgId: $org->id(), userId: $this->userId($request), subject: $open, ip: $request->ip());
 
         return view('documents.index', [...$this->listing($request), 'open' => $open]);
     }

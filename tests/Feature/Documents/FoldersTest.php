@@ -242,7 +242,7 @@ it('never shows, uses or changes folders of another organisation', function (): 
 });
 
 it('keeps folder management to people who may edit receipts', function (): void {
-    $viewer = Membership::factory()->accountant()->create(['org_id' => $this->orgId]);
+    $viewer = Membership::factory()->viewer()->create(['org_id' => $this->orgId]);
     $editor = Membership::factory()->withRights(RoleRight::Edit)->create(['org_id' => $this->orgId]);
 
     $this->actingAs($viewer->user)->get('/folders')->assertForbidden();
@@ -385,7 +385,7 @@ it('imports a folder as a new folder with the same name, subfolders and all', fu
 });
 
 it('keeps the folder import to people who may upload and edit, and to the own organisation', function (): void {
-    $viewer = Membership::factory()->accountant()->create(['org_id' => $this->orgId]);
+    $viewer = Membership::factory()->viewer()->create(['org_id' => $this->orgId]);
     $foreign = makeFolder(Organization::factory()->create()->id, 'Fremd');
 
     $this->actingAs($viewer->user)->postJson('/folders/import', ['name' => 'X'])->assertForbidden();

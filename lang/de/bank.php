@@ -41,6 +41,7 @@ return [
     'transaction' => 'Buchung',
     'iban_of' => 'IBAN',
     'linked' => 'Zugeordnete Dokumente',
+    'hidden_row' => 'Beleg vorhanden (nicht freigegeben)',
     'hidden' => '{1} Dazu gehört 1 Dokument, das Sie nicht sehen dürfen.|[2,*] Dazu gehören :count Dokumente, die Sie nicht sehen dürfen.',
     'sums' => 'Summen',
     'sum_documents' => 'Dokumente',

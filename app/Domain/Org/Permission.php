@@ -31,6 +31,9 @@ enum Permission: string
     /** Point 206 (F23): "Backup herunterladen" – Admins (owners) only, like the other org-wide settings. */
     case CreateBackup = 'backup.create';
 
+    /** Point 215: see and download the finished Belegpakete (Einstellungen → Export → Belegpaket). */
+    case ViewPacks = 'packs.view';
+
     /**
      * The checkbox that grants this permission; null means Admins only.
      * Editing and trashing act on what the person can see, so resource checks
@@ -45,6 +48,7 @@ enum Permission: string
             self::TrashDocuments => RoleRight::Delete,
             self::ImportBanking => RoleRight::Banking,
             self::CreateReports, self::Export => RoleRight::Export,
+            self::ViewPacks => RoleRight::Packs,
             self::ManageTags => RoleRight::Tags,
             self::ShareNotes => RoleRight::Notes,
             self::UpdateSystem => RoleRight::Update,

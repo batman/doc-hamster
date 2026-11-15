@@ -10,6 +10,7 @@ use App\Domain\Documents\ShareIntake;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Membership;
 use App\Domain\Org\Permission;
+use App\Domain\Org\PersonAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -77,7 +78,8 @@ final class UploadApiController
 
         // The person must still be in the organisation and allowed to upload.
         $membership = Membership::query()->where('org_id', $device->org_id)->where('user_id', $device->user_id)->whereNull('revoked_at')->first();
-        abort_if($membership === null, 403);
+        // Points 218, 223: a paused person or one outside "Zugang von / bis" can't upload with a key either.
+        abort_if($membership === null || ! PersonAccess::allows($membership), 403);
         $org->set($membership);
         abort_unless($org->allows(Permission::UploadDocuments), 403);
 

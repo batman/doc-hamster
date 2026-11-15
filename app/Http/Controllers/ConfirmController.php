@@ -22,7 +22,7 @@ final class ConfirmController
     public function status(Request $request, CurrentOrg $org): JsonResponse
     {
         $user = self::user($request);
-        $required = RecentConfirmation::required($user, $org->isSet() ? $org->role() : null, $request->session());
+        $required = RecentConfirmation::required($user, $request->session());
 
         return response()->json([
             'fresh' => ! $required,

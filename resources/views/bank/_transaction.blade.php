@@ -216,7 +216,12 @@
                 @endforeach
             </ul>
             @if ($hidden > 0)
-                <p class="card-note">{{ trans_choice('bank.hidden', $hidden, ['count' => $hidden]) }}</p>
+                {{-- A385: a linked document outside what this person may see shows without any content. --}}
+                <ul class="pick-list">
+                    @for ($i = 0; $i < $hidden; $i++)
+                        <li class="pick-row is-static"><span class="row-icon"><x-icon name="lock" /></span><span><strong>{{ __('bank.hidden_row') }}</strong></span></li>
+                    @endfor
+                </ul>
             @endif
             @if ($linked->isNotEmpty())
                 {{-- A271: what the documents add up to against the booking; a difference stands out. --}}

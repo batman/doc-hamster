@@ -22,7 +22,7 @@
         <button type="submit">{{ __('auth.login') }}</button>
     </form>
     @if ($forgot ?? false)
-        {{-- Point 210.3: for tax advisors with a stored e-mail (only where mail works). --}}
-        <p><a href="{{ route('password.request') }}">{{ __('advisor.forgot_link') }}</a></p>
+        {{-- Points 210.3, 215: for everyone with a stored e-mail (only where mail works). --}}
+        <p><a href="{{ route('password.request') }}">{{ __('auth.forgot.link') }}</a></p>
     @endif
 @endsection

@@ -100,7 +100,7 @@ it('shows Einstellungen → Drucker to people who may upload, with their own com
     $this->actingAs($owner->user)->get('/settings/eingang/printer')->assertOk()->assertSee('BUERO-PC')->assertSee('gekoppelt am');
     $this->get('/settings/printer')->assertRedirect('/settings/eingang/printer');
     $this->actingAs($colleague->user)->get('/settings/eingang/printer')->assertOk()->assertDontSee('BUERO-PC');
-    $this->actingAs(Membership::factory()->accountant()->create()->user)->get('/settings/eingang/printer')->assertForbidden();
+    $this->actingAs(Membership::factory()->viewer()->create()->user)->get('/settings/eingang/printer')->assertForbidden();
 });
 
 it('deletes only own pairings and keeps the row for the audit trail', function (): void {

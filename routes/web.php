@@ -3,10 +3,8 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\AccountController;
-use App\Http\Controllers\Advisor\AdvisorController;
-use App\Http\Controllers\Advisor\AdvisorPasswordController;
-use App\Http\Controllers\AdvisorAccessController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\BankAccountController;
@@ -252,11 +250,17 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('members/{id}/reset', [MemberController::class, 'resetPassword'])->name('members.reset');
         Route::post('members/{id}/revoke', [MemberController::class, 'revoke'])->name('members.revoke');
         Route::post('members/{id}/role', [MemberController::class, 'changeRole'])->name('members.role');
+        // Points 218, 223: "Zugang von / bis" and "Pausiert" of one person.
+        Route::post('members/{id}/access', [MemberController::class, 'access'])->name('members.access');
+        Route::post('members/{id}/pause', [MemberController::class, 'pause'])->name('members.pause');
 
         Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
         Route::post('roles', [RoleController::class, 'store'])->name('roles.store');
         Route::post('roles/{id}', [RoleController::class, 'update'])->name('roles.update');
         Route::post('roles/{id}/delete', [RoleController::class, 'destroy'])->name('roles.destroy');
+        // Points 215.3, 223: the restrictions and the pause of a role.
+        Route::post('roles/{id}/restrict', [RoleController::class, 'restrict'])->name('roles.restrict');
+        Route::post('roles/{id}/pause', [RoleController::class, 'pause'])->name('roles.pause');
     });
 
     Route::middleware('can:system.update')->group(function (): void {
@@ -385,35 +389,21 @@ Route::middleware(['auth', 'org', 'can:backup.create'])->prefix('backup')->name(
     Route::post('{id}/download', 'download')->middleware('throttle:10,1')->name('download');
 });
 
-// Points 210, 211: Steuerberater-Zugang (Admins set it up; the advisor's own read-only view) and the Belegpaket.
+// Points 211, 215: the Belegpaket – seen and downloaded with "Belegpakete", made with "Exportieren" + "Alle Dokumente sehen".
 Route::middleware(['auth', 'org'])->group(function (): void {
-    Route::middleware('can:members.manage')->prefix('advisors')->name('advisors.')->controller(AdvisorAccessController::class)->group(function (): void {
+    Route::middleware('can:packs.view')->prefix('export/packs')->name('packs.')->controller(ReceiptPackController::class)->group(function (): void {
         Route::get('/', 'index')->name('index');
-        Route::post('/', 'store')->middleware('confirmed')->name('store');
-        Route::post('{id}', 'update')->middleware('confirmed')->name('update');
-        Route::post('{id}/reset', 'reset')->middleware('confirmed')->name('reset');
-        Route::post('{id}/revoke', 'revoke')->middleware('confirmed')->name('revoke');
-    });
-    Route::middleware(['can:exports.create', 'can:documents.view_all'])->prefix('export/packs')->name('packs.')->controller(ReceiptPackController::class)->group(function (): void {
-        Route::get('/', 'index')->name('index');
-        Route::post('/', 'store')->middleware(['throttle:10,1', 'confirmed'])->name('store');
+        Route::post('/', 'store')->middleware(['can:exports.create', 'can:documents.view_all', 'throttle:10,1', 'confirmed'])->name('store');
         Route::get('{id}/download', 'download')->name('download');
     });
     Route::post('documents/{id}/receipt-pack', DocumentPackController::class)->middleware('can:documents.edit')->name('documents.receipt-pack');
-    Route::prefix('advisor')->name('advisor.')->group(function (): void {
-        Route::get('/', [AdvisorController::class, 'index'])->name('index');
-        Route::get('documents/{id}', [AdvisorController::class, 'document'])->name('document');
-        Route::get('files/{id}', [AdvisorController::class, 'file'])->name('file');
-        Route::get('packs/{id}', [AdvisorController::class, 'pack'])->name('pack');
-        Route::get('password', [AdvisorPasswordController::class, 'edit'])->name('password');
-        Route::post('password', [AdvisorPasswordController::class, 'update'])->middleware('throttle:10,1')->name('password.update');
-    });
 });
-Route::middleware('guest')->group(function (): void {
-    Route::get('password/forgot', [AdvisorPasswordController::class, 'forgot'])->name('password.request');
-    Route::post('password/forgot', [AdvisorPasswordController::class, 'send'])->middleware('throttle:5,1')->name('password.email');
-    Route::get('password/reset/{token}', [AdvisorPasswordController::class, 'resetForm'])->name('password.reset');
-    Route::post('password/reset', [AdvisorPasswordController::class, 'reset'])->middleware('throttle:10,1')->name('password.store');
+// Points 210.3, 215: "Passwort vergessen?" for everyone with an e-mail (only where mail works).
+Route::middleware('guest')->controller(PasswordResetController::class)->group(function (): void {
+    Route::get('password/forgot', 'forgot')->name('password.request');
+    Route::post('password/forgot', 'send')->middleware('throttle:5,1')->name('password.email');
+    Route::get('password/reset/{token}', 'resetForm')->name('password.reset');
+    Route::post('password/reset', 'reset')->middleware('throttle:10,1')->name('password.store');
 });
 // Point 212: "Bitte bestätigen" (sudo mode) – the dialog's two routes, and the middleware `confirmed` on every
 // sensitive action listed in RequireRecentConfirmation::ROUTES (new routes may also add ->middleware('confirmed')).

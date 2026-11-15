@@ -192,7 +192,7 @@ it('keeps other organisations out', function (): void {
 });
 
 it('needs the checkbox, and without "Alle Belege sehen" only own receipts can be linked', function (): void {
-    $advisor = Membership::factory()->accountant()->create(['org_id' => $this->orgId]);
+    $advisor = Membership::factory()->viewer()->create(['org_id' => $this->orgId]);
     $this->actingAs($advisor->user)->get('/bank')->assertForbidden();
     $this->post('/bank/import', ['file' => statementFile(), 'name' => 'Konto'])->assertForbidden();
 
@@ -208,7 +208,7 @@ it('needs the checkbox, and without "Alle Belege sehen" only own receipts can be
     $second = transactions()->whereKeyNot($transaction->id)->firstOrFail();
     $this->actingAs($clerk->user)->get('/bank/transactions/'.$second->id.'/suggestions?q=jpg')->assertSee('meins.jpg')->assertDontSee('chef.jpg');
     $this->get('/bank/receipts')->assertSee('meins.jpg');
-    $this->get('/bank/transactions/'.$transaction->id)->assertDontSee('chef.jpg')->assertSee('1 Dokument, das Sie nicht sehen');
+    $this->get('/bank/transactions/'.$transaction->id)->assertDontSee('chef.jpg')->assertSee('Beleg vorhanden (nicht freigegeben)');
 
     $this->post('/bank/transactions/'.$second->id.'/match', ['document_id' => $foreign->id])->assertSessionHasErrors('document_id');
     $this->post('/bank/transactions/'.$transaction->id.'/unmatch', ['document_id' => $foreign->id])->assertNotFound();

@@ -11,7 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 
 /*
-| Point 212: "Bitte bestätigen" (sudo mode) – the five-minute window, which routes need it, the tax advisor exempt.
+| Point 212: "Bitte bestätigen" (sudo mode) – the five-minute window, which routes need it, nobody without a password asked.
 */
 uses(RefreshDatabase::class)->group('db');
 
@@ -57,11 +57,9 @@ it('asks a fetch with 423, a form by going back, and lets it pass once confirmed
     $this->postJson('/settings/devices', ['name' => 'iPad', 'kind' => 'iphone'])->assertStatus(423);
 });
 
-it('never asks the tax advisor', function (): void {
+it('asks everyone with a password, nobody without one', function (): void {
     $user = User::factory()->create(['password_hash' => 'ein-langes-test-passwort']);
-    $membership = Membership::factory()->create(['user_id' => $user->id, 'role' => Role::Accountant]);
 
-    expect(RecentConfirmation::required($user, Role::Accountant, app('session.store')))->toBeFalse()
-        ->and(RecentConfirmation::required($user, Role::Owner, app('session.store')))->toBeTrue()
-        ->and($membership->role)->toBe(Role::Accountant);
+    expect(RecentConfirmation::required($user, app('session.store')))->toBeTrue()
+        ->and(RecentConfirmation::required(User::factory()->create(), app('session.store')))->toBeFalse();
 });

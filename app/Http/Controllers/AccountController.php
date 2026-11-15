@@ -68,7 +68,8 @@ final class AccountController
         $data = $request->validate($rules);
 
         // The `hashed` cast makes the Argon2id hash.
-        $user->forceFill(['password_hash' => $data['password']])->save();
+        // Point 215: an own password ends the one-time password.
+        $user->forceFill(['password_hash' => $data['password'], 'must_change_password' => false])->save();
         $count = UserSessions::endOthers($user->id, $request->session()->getId());
         $token = UserSessions::rotateRememberToken($user);
         SessionSettingsController::keepRememberCookie($request, $user, $token);

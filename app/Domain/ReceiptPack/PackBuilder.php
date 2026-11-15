@@ -87,6 +87,7 @@ final class PackBuilder
                     'bookings' => $figures->count, 'with_receipt' => $figures->withReceipt, 'no_receipt' => $figures->noReceipt,
                     'missing' => $figures->missingCount(), 'expenses' => $figures->expenses, 'income' => $figures->income,
                     'loose' => count($contents->loose), 'not_shown' => count($images->notShown),
+                    'documents' => $contents->documentIds(),
                 ],
             ])->save();
         } finally {

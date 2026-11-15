@@ -42,6 +42,8 @@ final class BackupTables
         'transactions' => ['transactions', [BackupOptions::BANK]],
         'matches' => ['tx_docs', [BackupOptions::BANK, BackupOptions::DOCUMENTS]],
         'match_rejections' => ['tx_docs', [BackupOptions::BANK, BackupOptions::DOCUMENTS]],
+        // F36 (point 215): the finished Belegpakete – rows and PDFs (BackupWriter, BackupRestorer).
+        'receipt_packs' => ['packs', [BackupOptions::BANK, BackupOptions::DOCUMENTS]],
         'note_columns' => ['org', [BackupOptions::NOTES]],
         'notes' => ['org', [BackupOptions::NOTES]],
         'note_documents' => ['note_docs', [BackupOptions::NOTES, BackupOptions::DOCUMENTS]],
@@ -95,6 +97,7 @@ final class BackupTables
             'note_docs' => $query->whereIn('note_id', DB::table('notes')->select('id')->where('org_id', $orgId))
                 ->whereIn('document_id', self::documentIds($orgId, $options)),
             'note_pivot' => $query->whereIn('note_id', DB::table('notes')->select('id')->where('org_id', $orgId)),
+            'packs' => $query->where('org_id', $orgId)->where('status', 'done')->whereNotNull('path'),
         };
 
         $columns = Schema::getColumnListing($table);

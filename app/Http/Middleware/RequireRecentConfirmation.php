@@ -6,7 +6,6 @@ namespace App\Http\Middleware;
 
 use App\Domain\Auth\RecentConfirmation;
 use App\Domain\Auth\User;
-use App\Domain\Org\CurrentOrg;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -27,20 +26,17 @@ final class RequireRecentConfirmation
         'exports.store',
         'backup.store', 'backup.download',
         'documents.bulk.purge', 'documents.trash.empty',
-        'roles.store', 'roles.update', 'roles.destroy',
-        'members.store', 'members.reset', 'members.revoke', 'members.role',
+        'roles.store', 'roles.update', 'roles.destroy', 'roles.restrict', 'roles.pause',
+        'members.store', 'members.reset', 'members.revoke', 'members.role', 'members.access', 'members.pause',
         'devices.store', 'devices.rekey', 'devices.destroy',
         'sessions.end', 'sessions.others',
         'updates.install', 'updates.install-main', 'updates.install-preview',
     ];
 
-    public function __construct(private readonly CurrentOrg $org) {}
-
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
-        $role = $this->org->isSet() ? $this->org->role() : null;
-        if (! RecentConfirmation::required($user instanceof User ? $user : null, $role, $request->session())) {
+        if (! RecentConfirmation::required($user instanceof User ? $user : null, $request->session())) {
             return $next($request);
         }
 

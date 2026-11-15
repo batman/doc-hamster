@@ -36,16 +36,21 @@ function roleOf(string $orgId, Role $key): OrgRole
     return OrgRole::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $orgId)->where('system_key', $key->value)->firstOrFail();
 }
 
-it('gives a new organisation the two pre-installed roles with the agreed checkboxes', function (): void {
+function advisorRole(string $orgId): OrgRole
+{
+    return OrgRole::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $orgId)->where('name', 'Steuerberater')->firstOrFail();
+}
+
+it('gives a new organisation the pre-installed role and an ordinary read-only "Steuerberater"', function (): void {
     $org = Organization::factory()->create();
 
     $employee = roleOf($org->id, Role::Member);
-    $advisor = roleOf($org->id, Role::Accountant);
+    $advisor = advisorRole($org->id);
 
     expect($employee->name)->toBe('Mitarbeiter')
-        ->and($employee->rights)->toBe(['upload', 'view_all', 'edit', 'delete', 'banking', 'export', 'tags', 'notes'])
-        ->and($advisor->name)->toBe('Steuerberater')
-        ->and($advisor->rights)->toBe(['view_all', 'export']);
+        ->and($employee->rights)->toBe(['upload', 'view_all', 'edit', 'delete', 'banking', 'export', 'packs', 'tags', 'notes'])
+        ->and($advisor->isPreinstalled())->toBeFalse()
+        ->and($advisor->rights)->toBe(['view_all', 'packs']);
 });
 
 it('answers the Gate from the checkboxes, and Admins may everything', function (): void {
@@ -72,11 +77,11 @@ it('gives nobody but Admins people, roles and updates, whatever the checkboxes s
 });
 
 it('lets an Admin create a role and give it to a new person', function (): void {
-    $this->actingAs($this->admin)
-        ->post('/roles', ['name' => 'Aushilfe', 'rights' => ['upload', 'tags']])
-        ->assertRedirect(route('roles.index'));
-
+    $this->actingAs($this->admin)->post('/roles', ['name' => 'Aushilfe'])->assertRedirectContains('/roles?open=');
     $role = OrgRole::query()->withoutGlobalScope(OrgScope::class)->where('name', 'Aushilfe')->firstOrFail();
+    // Point 216: the rights are ticked in the opened row, each saves at once.
+    $this->postJson('/roles/'.$role->id, ['name' => 'Aushilfe', 'rights' => ['upload', 'tags']])->assertOk()->assertJsonPath('role.name', 'Aushilfe');
+    $role->refresh();
 
     expect($role->org_id)->toBe($this->adminship->org_id)
         ->and($role->rights)->toBe(['upload', 'tags'])
@@ -98,11 +103,12 @@ it('refuses taken names in any case, the Admin name and unknown checkboxes', fun
         $this->post('/roles', ['name' => $name])->assertSessionHasErrors('name');
     }
 
-    $this->post('/roles', ['name' => 'Neu', 'rights' => ['members.manage']])->assertSessionHasErrors('rights.0');
+    $role = roleOf($this->adminship->org_id, Role::Member);
+    $this->post('/roles/'.$role->id, ['name' => 'Neu', 'rights' => ['members.manage']])->assertSessionHasErrors('rights.0');
 });
 
 it('changes name and checkboxes of a pre-installed role, but never deletes it', function (): void {
-    $role = roleOf($this->adminship->org_id, Role::Accountant);
+    $role = roleOf($this->adminship->org_id, Role::Member);
 
     $this->actingAs($this->admin)
         ->post('/roles/'.$role->id, ['name' => 'Kanzlei', 'rights' => ['view_all']])
@@ -133,13 +139,13 @@ it('deletes an own role only while nobody active has it', function (): void {
 
 it('changes the role of a person, and the new rights apply at once', function (): void {
     $member = Membership::factory()->create(['org_id' => $this->adminship->org_id]);
-    $advisorRole = roleOf($this->adminship->org_id, Role::Accountant);
+    $advisorRole = advisorRole($this->adminship->org_id);
 
     $this->actingAs($this->admin)
         ->post('/members/'.$member->id.'/role', ['role' => $advisorRole->id])
-        ->assertRedirect(route('members.index'));
+        ->assertRedirect(route('members.index', ['open' => $member->id]));
 
-    expect($member->fresh()?->role)->toBe(Role::Accountant)
+    expect($member->fresh()?->role)->toBe(Role::Member)
         ->and($member->fresh()?->org_role_id)->toBe($advisorRole->id);
 
     $this->actingAs($member->user)->post('/documents', ['file' => UploadedFile::fake()->image('bon.jpg')])->assertForbidden();
@@ -162,7 +168,7 @@ it('allows several Admins and always keeps at least one', function (): void {
 
     $this->actingAs($second)
         ->post('/members/'.$this->adminship->id.'/role', ['role' => $employeeRole->id])
-        ->assertRedirect(route('members.index'));
+        ->assertRedirect(route('members.index', ['open' => $this->adminship->id]));
 
     expect($this->adminship->fresh()?->role)->toBe(Role::Member);
 
@@ -210,7 +216,6 @@ it('keeps the rights of people who exist before the update', function (): void {
     $migration = require database_path('migrations/2026_10_31_100000_create_roles_table.php');
     $seesAll = Organization::factory()->create(['settings_json' => ['members_see_all_documents' => true, 'members_may_trash_own_documents' => false]]);
     $member = Membership::factory()->create();
-    $advisor = Membership::factory()->accountant()->create(['org_id' => $member->org_id]);
     $owner = Membership::factory()->owner()->create(['org_id' => $member->org_id]);
 
     // Only the data step: schema changes would end the test's transaction on MariaDB/MySQL.
@@ -220,7 +225,6 @@ it('keeps the rights of people who exist before the update', function (): void {
 
     $member = $member->fresh();
     expect($member?->orgRole?->rights)->toBe(['upload', 'edit', 'delete'])
-        ->and($advisor->fresh()?->orgRole?->rights)->toBe(['view_all', 'export'])
         ->and($owner->fresh()?->org_role_id)->toBeNull()
         ->and(roleOf($seesAll->id, Role::Member)->rights)->toBe(['upload', 'edit', 'view_all'])
         ->and(DB::table('roles')->where('org_id', $member?->org_id)->count())->toBe(2);

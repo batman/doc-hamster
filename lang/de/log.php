@@ -31,12 +31,13 @@ return [
     'browser' => 'Browser: :message',
     'columns' => ['time' => 'Zeit', 'book' => 'Logbuch', 'level' => 'Art', 'message' => 'Meldung', 'person' => 'Person', 'document' => 'Dokument'],
     'actions' => [
-        'auth' => ['login' => 'Angemeldet', 'logout' => 'Abgemeldet', 'failed' => 'Anmeldung fehlgeschlagen (:name)', 'session_ended' => 'Gerät abgemeldet', 'sessions_ended' => 'Alle anderen Geräte abgemeldet'],
+        'auth' => ['login' => 'Angemeldet', 'logout' => 'Abgemeldet', 'failed' => 'Anmeldung fehlgeschlagen (:name)', 'session_ended' => 'Gerät abgemeldet', 'password_reset_by_mail' => 'Passwort per E-Mail-Link neu gesetzt', 'sessions_ended' => 'Alle anderen Geräte abgemeldet'],
         'log' => ['cleared' => 'Logbücher geleert: :books'],
         'document' => [
             'uploaded' => 'Dokument hochgeladen', 'created' => 'Dokument angelegt', 'changed' => 'Dokument geändert',
             'moved' => 'Dokument verschoben', 'trashed' => 'In den Papierkorb gelegt', 'restored' => 'Aus dem Papierkorb geholt',
             'purged' => 'Endgültig gelöscht', 'tags_changed' => 'Tags geändert', 'taken_over' => 'Dokument übernommen',
+            'viewed' => 'Angesehen', 'file_downloaded' => 'Datei heruntergeladen',
             'printed' => 'Gedruckt', 'shared' => 'Link erstellt', 'share_revoked' => 'Link zurückgezogen', 'share_opened' => 'Link geöffnet',
             'paid' => 'Als bezahlt markiert',
             'trash_emptied' => 'Papierkorb geleert', 'trash_unemptied' => 'Leerung rückgängig gemacht', 'trash_swept' => 'Papierkorb aufgeräumt',
@@ -47,12 +48,6 @@ return [
         'backup' => ['started' => 'Backup gestartet', 'downloaded' => 'Backup heruntergeladen'],
         'printer' => ['paired' => 'Drucker verbunden', 'revoked' => 'Drucker getrennt', 'setup_started' => 'Drucker-Einrichtung gestartet'],
         'update' => ['started' => 'Update gestartet'],
-        // Points 210, 211: Steuerberater-Zugang and Belegpaket.
-        'advisor' => [
-            'access_created' => 'Steuerberater-Zugang angelegt', 'access_changed' => 'Steuerberater-Freigabe geändert', 'access_revoked' => 'Steuerberater-Zugang beendet',
-            'password_reset' => 'Steuerberater: neues Einmalpasswort', 'password_changed' => 'Steuerberater: Passwort geändert', 'password_reset_by_mail' => 'Steuerberater: Passwort per E-Mail-Link neu gesetzt',
-            'list_viewed' => 'Steuerberater: Liste angesehen', 'document_viewed' => 'Steuerberater: Beleg angesehen', 'file_downloaded' => 'Steuerberater: Datei heruntergeladen', 'pack_downloaded' => 'Steuerberater: Belegpaket heruntergeladen',
-        ],
         'pack' => ['created' => 'Belegpaket erstellt', 'downloaded' => 'Belegpaket heruntergeladen', 'document_added' => 'Ins Belegpaket aufgenommen', 'document_removed' => 'Aus dem Belegpaket genommen'],
     ],
     'new' => 'Neu',

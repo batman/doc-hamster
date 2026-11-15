@@ -12,6 +12,7 @@
         <p class="error" role="alert">{{ $errors->first() }}</p>
     @endif
 
+    @if ($canCreate)
     <section class="card">
         <h2 class="card-head"><x-icon name="file-type-pdf" />{{ __('receipt_pack.create_title') }}</h2>
         <p class="card-text">{{ __('receipt_pack.intro') }}</p>
@@ -85,6 +86,7 @@
                 <button type="submit"><x-icon name="file-type-pdf" />{{ __('receipt_pack.create') }}</button>
             </form>
         </section>
+    @endif
     @endif
 
     <section class="card">

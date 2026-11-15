@@ -13,6 +13,7 @@ use App\Domain\Org\Role;
 use App\Domain\Org\RoleRight;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * @extends Factory<Membership>
@@ -66,11 +67,21 @@ final class MembershipFactory extends Factory
         return $this->state(fn (): array => ['role' => Role::Owner]);
     }
 
-    public function accountant(): self
+    /**
+     * A read-only person (point 215: what the tax advisor was): sign-in with a password and an own role that may
+     * only see all documents and export.
+     */
+    public function viewer(): self
     {
-        return $this->state(fn (): array => [
-            'role' => Role::Accountant,
-            'user_id' => User::factory()->accountant(),
-        ]);
+        return $this->state(fn (): array => ['role' => Role::Member, 'user_id' => User::factory()->withPassword()])
+            ->afterMaking(static function (Membership $membership): void {
+                // Plain insert: the test may have another organisation active right now.
+                $id = Str::lower((string) Str::ulid());
+                DB::table('roles')->insert([
+                    'id' => $id, 'org_id' => $membership->org_id, 'name' => 'Lesen '.Str::lower(Str::random(6)),
+                    'rights' => json_encode([RoleRight::ViewAll->value, RoleRight::Export->value]), 'created_at' => now(), 'updated_at' => now(),
+                ]);
+                $membership->org_role_id = $id;
+            });
     }
 }

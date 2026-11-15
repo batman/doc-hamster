@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Domain\Org\Permission;
-use App\Domain\Org\Role;
 use App\Domain\Org\RoleRight;
 
 /*
@@ -27,6 +26,7 @@ dataset('rights', [
     'Vorschau-Branches' => [Permission::InstallPreviews, RoleRight::UpdatePreview],
     'Audit-Log' => [Permission::ViewAuditLog, null],
     'Backup' => [Permission::CreateBackup, null],
+    'Belegpakete' => [Permission::ViewPacks, RoleRight::Packs],
 ]);
 
 it('maps every permission to its checkbox', function (Permission $permission, ?RoleRight $right): void {
@@ -34,12 +34,12 @@ it('maps every permission to its checkbox', function (Permission $permission, ?R
 })->with('rights');
 
 it('covers every permission', function (): void {
-    expect(Permission::cases())->toHaveCount(17);
+    expect(Permission::cases())->toHaveCount(18);
 });
 
-it('has the agreed defaults for the pre-installed roles', function (): void {
-    expect(RoleRight::defaultsFor(Role::Member))->toBe([RoleRight::Upload, RoleRight::ViewAll, RoleRight::Edit, RoleRight::Delete, RoleRight::Banking, RoleRight::Export, RoleRight::Tags, RoleRight::Notes])
-        ->and(RoleRight::defaultsFor(Role::Accountant))->toBe([RoleRight::ViewAll, RoleRight::Export]);
+it('has the agreed defaults for the roles of a new organisation', function (): void {
+    expect(RoleRight::defaults())->toBe([RoleRight::Upload, RoleRight::ViewAll, RoleRight::Edit, RoleRight::Delete, RoleRight::Banking, RoleRight::Export, RoleRight::Packs, RoleRight::Tags, RoleRight::Notes])
+        ->and(RoleRight::advisor())->toBe([RoleRight::ViewAll, RoleRight::Packs]);
 });
 
 it('requires a step-up exactly where the matrix says "mit Bestätigung"', function (): void {

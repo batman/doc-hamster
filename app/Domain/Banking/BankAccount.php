@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Banking;
 
 use App\Domain\Org\BelongsToOrg;
+use App\Domain\Org\RestrictedByRole;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -24,6 +25,7 @@ final class BankAccount extends Model
 {
     use BelongsToOrg;
     use HasUlids;
+    use RestrictedByRole;
 
     public const BUSINESS = 'business';
 

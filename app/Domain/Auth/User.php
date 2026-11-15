@@ -13,9 +13,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 /**
- * A person using DocHamster (D-012). Owners and members have no password –
- * they sign in with passkeys and a device token. Only tax advisor accounts
- * carry a username and an Argon2id password hash (config/hashing.php).
+ * A person using docHamster (D-012, D-036): user name and an Argon2id password hash (config/hashing.php) for now,
+ * passkeys later. `must_change_password` (point 215): the password is a one-time password docHamster made – the
+ * person sets an own one before anything else.
  *
  * @property string $id
  * @property string|null $username
@@ -27,6 +27,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property string|null $folder_view The last display mode of the folder view (App\Http\Documents\DocumentListing::FOLDER_VIEWS).
  * @property string|null $receipt_dates The date timeline and calendar go by: doc (receipt date) or upload.
  * @property list<string>|null $document_columns Property ids shown as columns of the details view (A244).
+ * @property bool $must_change_password
  */
 #[UseFactory(UserFactory::class)]
 final class User extends Authenticatable
@@ -48,7 +49,7 @@ final class User extends Authenticatable
      */
     protected function casts(): array
     {
-        return ['password_hash' => 'hashed', 'document_columns' => 'array'];
+        return ['password_hash' => 'hashed', 'document_columns' => 'array', 'must_change_password' => 'boolean'];
     }
 
     /**

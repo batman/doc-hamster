@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Domain\Audit\AuditLog;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
 use App\Domain\Documents\TextDocument;
+use App\Domain\Org\CurrentOrg;
 use App\Http\Controllers\Concerns\ScopesDocuments;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -27,10 +29,11 @@ final class DocumentFileController
         return Storage::disk('local')->response($file->path, null, ['Content-Type' => $type, 'X-Content-Type-Options' => 'nosniff']);
     }
 
-    public function download(Request $request, string $id): Response
+    public function download(Request $request, string $id, AuditLog $audit, CurrentOrg $org): Response
     {
         [$file, $document] = $this->visibleFile($request, $id);
         $document->forceFill(['last_downloaded_at' => now()])->saveQuietly();
+        $audit->record('document.file_downloaded', orgId: $org->id(), userId: $this->userId($request), subject: $document, meta: ['file' => $file->id], ip: $request->ip());
 
         return Storage::disk('local')->download($file->path, $file->downloadName($document->title), ['Content-Type' => $file->mime]);
     }

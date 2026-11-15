@@ -252,7 +252,7 @@ it('needs banking.import for every bank route and the badge', function (): void 
     $payment = bookings()->firstOrFail();
     $doc = invoice($this);
 
-    $advisor = Membership::factory()->accountant()->create(['org_id' => $this->orgId]);
+    $advisor = Membership::factory()->viewer()->create(['org_id' => $this->orgId]);
     $this->actingAs($advisor->user);
     $this->get('/bank/accounts/'.$payment->bank_account_id)->assertForbidden();
     $this->get('/bank/receipts')->assertForbidden();

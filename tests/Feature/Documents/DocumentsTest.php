@@ -77,7 +77,7 @@ it('keeps files of other organisations and other members out of reach', function
 });
 
 it('does not let tax advisors upload', function (): void {
-    $advisor = Membership::factory()->accountant()->create();
+    $advisor = Membership::factory()->viewer()->create();
 
     $this->actingAs($advisor->user)
         ->post('/documents', ['file' => UploadedFile::fake()->image('bon.jpg')])

@@ -63,7 +63,7 @@ return [
         'done' => 'Wiederhergestellt: :org (:files Dateien).',
         'skipped' => 'Ohne Zugang zurückgeholt: :names. Ihren Zugang richten Sie unter Mitglieder mit „Passwort zurücksetzen“ neu ein.',
         'missing' => ':count Dateien fehlten im Backup.',
-        'next' => 'Als Nächstes: php artisan dochamster:thumbnails (Vorschaubilder), Geräte neu verbinden, Steuerberater-Passwörter neu setzen.',
+        'next' => 'Als Nächstes: php artisan dochamster:thumbnails (Vorschaubilder), Geräte neu verbinden, für die anderen Personen unter Personen ein neues Einmalpasswort erzeugen.',
         'errors' => [
             'owner' => 'Benutzername (3–64 Zeichen: a–z, 0–9, . _ -) und ein Passwort mit mindestens 12 Zeichen angeben.',
             'not_empty' => 'Diese Instanz ist nicht leer – wiederherstellen geht nur in eine leere Instanz.',

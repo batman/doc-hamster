@@ -11,10 +11,13 @@ use App\Domain\Banking\BankAccount;
 use App\Domain\Banking\Transaction;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
+use App\Domain\Documents\Folder;
 use App\Domain\Documents\Tag;
 use App\Domain\Notes\Note;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Membership;
+use App\Domain\Org\OrgRole;
+use App\Domain\ReceiptPack\ReceiptPack;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -141,4 +144,33 @@ it('keeps a period backup to the documents and bookings of that period', functio
     $read->close();
 
     expect($manifest['full'])->toBeFalse()->and($documents)->toBe([])->and($transactions)->toBe([]);
+});
+
+it('keeps role restrictions, access dates, pauses and finished Belegpakete (F36)', function (): void {
+    $orgId = $this->owner->org_id;
+    $role = OrgRole::query()->create(['name' => 'Kanzlei', 'rights' => ['view_all', 'packs'], 'period_from' => '2026-01-01', 'period_to' => '2026-12-31',
+        'account_ids' => [$this->transaction->bank_account_id], 'folder_ids' => [Folder::defaultIdFor($orgId)], 'paused_at' => now()]);
+    $this->member->update(['org_role_id' => $role->id, 'access_from' => '2026-02-01', 'access_until' => '2026-06-30', 'paused_at' => now()]);
+    Storage::disk('local')->put('receipt-packs/pack.pdf', BACKUP_PDF);
+    $pack = ReceiptPack::query()->create(['org_id' => $orgId, 'created_by' => $this->owner->user_id, 'period_from' => '2026-01-01', 'period_to' => '2026-03-31',
+        'period_label' => '2026-Q1', 'version' => 1, 'account_ids' => [$this->transaction->bank_account_id], 'status' => 'done', 'path' => 'receipt-packs/pack.pdf', 'size' => strlen(BACKUP_PDF)]);
+    ReceiptPack::query()->create(['org_id' => $orgId, 'period_from' => '2026-04-01', 'period_to' => '2026-04-30',
+        'period_label' => '2026-04', 'version' => 1, 'account_ids' => [], 'status' => 'failed']);
+
+    $zip = backupAndWipe();
+    app(BackupRestorer::class)->restore($zip, null, 'inhaberin', 'neues-passwort-1234');
+    unlink($zip);
+
+    $restoredRole = DB::table('roles')->where('id', $role->id)->first();
+    $member = DB::table('memberships')->where('id', $this->member->id)->first();
+    $packs = DB::table('receipt_packs')->get();
+    expect((string) $restoredRole?->period_from)->toStartWith('2026-01-01')
+        ->and(json_decode((string) $restoredRole?->account_ids, true))->toBe([$this->transaction->bank_account_id])
+        ->and($restoredRole?->paused_at)->not->toBeNull()
+        ->and((string) $member?->access_from)->toStartWith('2026-02-01')
+        ->and((string) $member?->access_until)->toStartWith('2026-06-30')
+        ->and($member?->paused_at)->not->toBeNull()
+        ->and($packs)->toHaveCount(1)
+        ->and($packs[0]->id)->toBe($pack->id)
+        ->and(Storage::disk('local')->get((string) $packs[0]->path))->toBe(BACKUP_PDF);
 });

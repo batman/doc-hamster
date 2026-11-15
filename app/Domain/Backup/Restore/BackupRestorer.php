@@ -65,6 +65,9 @@ final class BackupRestorer
             $tables['folders'] = RestoreRows::parentsFirst($tables['folders'] ?? []);
 
             [$tables['document_files'], $missing] = $this->files($source, $tables['document_files'] ?? [], $orgId, $written);
+            if (isset($tables['receipt_packs'])) {
+                $tables['receipt_packs'] = $this->packs($source, $tables['receipt_packs'], $written);
+            }
 
             DB::transaction(static function () use ($tables): void {
                 self::ensureEmpty();
@@ -119,6 +122,48 @@ final class BackupRestorer
         }
 
         return [$owner, $others];
+    }
+
+    /**
+     * F36: the finished Belegpakete come back with their PDF (checked by its bytes); a pack without its file is left out.
+     *
+     * @param  list<array<string, scalar|null>>  $rows
+     * @param  list<string>  $written
+     * @return list<array<string, scalar|null>>
+     */
+    private function packs(RestoreSource $source, array $rows, array &$written): array
+    {
+        $byId = [];
+        foreach ($source->manifest->files as $name => $file) {
+            if ($file['type'] === 'pack' && $file['file_id'] !== null) {
+                $byId[$file['file_id']] = $name;
+            }
+        }
+        $disk = Storage::disk('local');
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $kept = [];
+        foreach ($rows as $row) {
+            $id = (string) $row['id'];
+            if (! isset($byId[$id])) {
+                continue;
+            }
+            $staged = $source->path($byId[$id]);
+            if ((string) $finfo->file($staged) !== 'application/pdf') {
+                throw new RestoreFailed('file_type', ['name' => $byId[$id]]);
+            }
+            $path = 'receipt-packs/'.strtolower($id).'.pdf';
+            $stream = fopen($staged, 'rb');
+            if ($stream === false || ! $disk->writeStream($path, $stream)) {
+                throw new RestoreFailed('unreadable');
+            }
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+            $written[] = $path;
+            $kept[] = [...$row, 'path' => $path, 'size' => (int) filesize($staged)];
+        }
+
+        return $kept;
     }
 
     /**

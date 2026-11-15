@@ -47,6 +47,7 @@ final class BackupWriter
         try {
             $tables = BackupTables::chosen($this->options);
             $files = $this->options->has(BackupOptions::DOCUMENTS) ? $this->fileRows() : [];
+            $packs = in_array('receipt_packs', $tables, true) ? $this->packRows() : [];
             $total = count($tables) + count($files) * ($this->options->derived ? 2 : 1) + 3;
             $done = 0;
             $step = function () use (&$done, $total): void {
@@ -66,6 +67,9 @@ final class BackupWriter
                     $this->addStored($file, 'thumb_path', 'derived');
                     $step();
                 }
+            }
+            foreach ($packs as $pack) {
+                $this->addPack($pack);
             }
             if ($this->options->has(BackupOptions::DOCUMENTS)) {
                 $this->addString('csv/dokumente.csv', BackupCsv::documents($this->orgId, $this->options), 'csv');
@@ -169,6 +173,34 @@ final class BackupWriter
 
         [$size, $sha] = $this->zip->addFile($name, $disk->path($stored));
         $this->files[] = ['path' => $name, 'size' => $size, 'sha256' => $sha, 'type' => $type, 'file_id' => $file->id];
+    }
+
+    /**
+     * @return list<object{id: string, path: ?string, period_label: string, version: int}>
+     */
+    private function packRows(): array
+    {
+        /** @var list<object{id: string, path: ?string, period_label: string, version: int}> */
+        return BackupTables::query('receipt_packs', $this->orgId, $this->options)->get()->all();
+    }
+
+    /**
+     * F36: a finished Belegpaket's PDF (type `pack`, file_id = the pack's id); a missing file is reported.
+     *
+     * @param  object{id: string, path: ?string, period_label: string, version: int}  $pack
+     */
+    private function addPack(object $pack): void
+    {
+        $disk = Storage::disk('local');
+        $stored = (string) ($pack->path ?? '');
+        if ($stored === '' || ! $disk->exists($stored)) {
+            $this->missing[] = $pack->id.':pack';
+
+            return;
+        }
+        $name = 'belegpakete/'.Str::slug((string) $pack->period_label).'_v'.(int) $pack->version.'_'.$pack->id.'.pdf';
+        [$size, $sha] = $this->zip->addFile($name, $disk->path($stored));
+        $this->files[] = ['path' => $name, 'size' => $size, 'sha256' => $sha, 'type' => 'pack', 'file_id' => (string) $pack->id];
     }
 
     private function add(string $name, string $path, string $type): void

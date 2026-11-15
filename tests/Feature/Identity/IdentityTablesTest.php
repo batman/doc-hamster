@@ -33,9 +33,9 @@ it('uses ULIDs as primary keys', function (): void {
         ->and($membership->user_id)->toMatch('/^[0-9a-z]{26}$/');
 });
 
-it('gives owners and members no password and tax advisors an Argon2id hash (D-012)', function (): void {
+it('gives people without a password none and the others an Argon2id hash (D-012)', function (): void {
     $owner = User::factory()->create();
-    $advisor = User::factory()->accountant('ein-langes-test-passwort')->create();
+    $advisor = User::factory()->withPassword('ein-langes-test-passwort')->create();
 
     expect($owner->hasPassword())->toBeFalse()
         ->and($advisor->hasPassword())->toBeTrue()
@@ -52,9 +52,9 @@ it('keeps usernames and e-mail addresses unique but allows many users without th
     expect(fn () => User::factory()->create(['email' => 'max@example.com']))
         ->toThrow(UniqueConstraintViolationException::class);
 
-    User::factory()->accountant()->create(['username' => 'stb-test']);
+    User::factory()->withPassword()->create(['username' => 'stb-test']);
 
-    expect(fn () => User::factory()->accountant()->create(['username' => 'stb-test']))
+    expect(fn () => User::factory()->withPassword()->create(['username' => 'stb-test']))
         ->toThrow(UniqueConstraintViolationException::class);
 });
 
@@ -71,10 +71,7 @@ it('allows one membership per user and organisation', function (): void {
     ]))->toThrow(UniqueConstraintViolationException::class);
 });
 
-it('refuses invitations for the tax advisor role (D-012)', function (): void {
-    expect(fn () => Invitation::factory()->create(['role' => Role::Accountant]))
-        ->toThrow(InvalidArgumentException::class);
-
+it('invites members by default', function (): void {
     expect(Invitation::factory()->create()->role)->toBe(Role::Member);
 });
 

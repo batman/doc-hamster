@@ -14,11 +14,11 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Mail;
 
 /**
- * Point 210.3: the "Passwort vergessen?" mail of a tax advisor – a plain text with the reset link (valid 60 minutes,
+ * Point 210.3: the "Passwort vergessen?" mail (point 215: anyone with an e-mail) – a plain text with the reset link (valid 60 minutes,
  * config/auth.php). Mail leaves only from a net job (D-020); the request dispatches it after its response, so the
  * answer takes the same time whether the address exists or not.
  */
-final class SendAdvisorResetLink implements ShouldBeEncrypted, ShouldQueue
+final class SendPasswordResetLink implements ShouldBeEncrypted, ShouldQueue
 {
     use Dispatchable;
     use InteractsWithQueue;
@@ -33,8 +33,8 @@ final class SendAdvisorResetLink implements ShouldBeEncrypted, ShouldQueue
 
     public function handle(): void
     {
-        Mail::raw((string) __('advisor.mail.body', ['url' => $this->url, 'minutes' => config('auth.passwords.users.expire', 60)]), function (Message $message): void {
-            $message->to($this->email)->subject((string) __('advisor.mail.subject'));
+        Mail::raw((string) __('auth.forgot.mail_body', ['url' => $this->url, 'minutes' => config('auth.passwords.users.expire', 60)]), function (Message $message): void {
+            $message->to($this->email)->subject((string) __('auth.forgot.mail_subject'));
         });
     }
 }

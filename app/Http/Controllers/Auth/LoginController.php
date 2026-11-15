@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Auth;
 
-use App\Domain\Advisor\AdvisorAccess;
-use App\Domain\Advisor\AdvisorMail;
+use App\Domain\Auth\MailReady;
 use App\Domain\Auth\RecentConfirmation;
 use App\Domain\Auth\User;
-use App\Http\AdvisorGate;
+use App\Domain\Org\PersonAccess;
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,15 +21,15 @@ use Illuminate\View\View;
 
 final class LoginController extends Controller
 {
-    /** Point 210: after this many failed sign-ins of one user name it is locked for LOCK_SECONDS (on top of the rate limit). */
+    /** Points 210, 215: after this many failed sign-ins of one user name it is locked for LOCK_SECONDS (on top of the rate limit) – for everyone. */
     private const int LOCK_AFTER = 10;
 
     private const int LOCK_SECONDS = 900;
 
     public function show(): View
     {
-        // Point 210.3: "Passwort vergessen?" only where mail works (it is for tax advisors with an e-mail).
-        return view('auth.login', ['forgot' => AdvisorMail::ready()]);
+        // Points 210.3, 215: "Passwort vergessen?" only where mail works (for everyone with an e-mail).
+        return view('auth.login', ['forgot' => MailReady::ready()]);
     }
 
     public function login(Request $request): RedirectResponse
@@ -40,13 +40,11 @@ final class LoginController extends Controller
         if (RateLimiter::tooManyAttempts($lock, self::LOCK_AFTER)) {
             return back()->withErrors(['username' => __('auth.locked', ['minutes' => max(1, (int) ceil(RateLimiter::availableIn($lock) / 60))])])->onlyInput('username');
         }
-        // The tax advisor never stays signed in (PLAN §11.1 point 8): 8 hours, no long-lived token.
         $known = User::query()->where('username', $username)->first();
-        $advisor = $known !== null && AdvisorAccess::isAdvisor($known);
 
         // "Angemeldet bleiben" keeps the login for 30 days on this device (A11).
         Auth::guard('web')->setRememberDuration(60 * 24 * 30);
-        if (! Auth::attempt(['username' => $username, 'password' => $data['password']], $request->boolean('remember') && ! $advisor)) {
+        if (! Auth::attempt(['username' => $username, 'password' => $data['password']], $request->boolean('remember'))) {
             RateLimiter::hit($lock, self::LOCK_SECONDS);
             // Auth::attempt() only hashes when the user exists and has a
             // password – without this, the response time reveals whether a
@@ -61,22 +59,23 @@ final class LoginController extends Controller
         }
 
         RateLimiter::clear($lock);
-        // Point 210.6: past the expiry date the advisor's sign-in is refused with a clear message.
+        // Points 218, 223: paused, not yet or no longer – refused with a clear message.
         $user = Auth::user();
-        $expired = $user instanceof User ? AdvisorAccess::expiredOn($user) : null;
-        if ($expired !== null) {
+        $refusal = $user instanceof User ? PersonAccess::refusalFor($user) : null;
+        if ($refusal !== null) {
             Auth::guard('web')->logout();
 
-            return back()->withErrors(['username' => __('advisor.expired', ['date' => $expired->format('d.m.Y')])])->onlyInput('username');
+            return back()->withErrors(['username' => $refusal])->onlyInput('username');
         }
 
         $request->session()->regenerate();
         // Point 212: the sign-in itself counts as a fresh confirmation (five minutes without a second ask).
         RecentConfirmation::mark($request->session());
-        if ($advisor) {
-            $request->session()->put(AdvisorGate::SINCE, now()->getTimestamp());
+        // Point 215: a one-time password is replaced first (Mein Konto → Passwort).
+        if ($user instanceof User && $user->must_change_password) {
+            $request->session()->put(AccountController::ONETIME, true);
 
-            return redirect()->route('advisor.index');
+            return redirect()->route('account.password');
         }
 
         return redirect()->intended(route('home'));

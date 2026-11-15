@@ -57,7 +57,7 @@ it('verifies a password hash even when the username does not exist', function ()
 });
 
 it('fails identically for an unknown username and a wrong password', function (): void {
-    User::factory()->accountant('correct-horse-battery')->create(['username' => 'stb-example']);
+    User::factory()->withPassword('correct-horse-battery')->create(['username' => 'stb-example']);
 
     $unknown = $this->post('/login', ['username' => 'no-such-user', 'password' => 'correct-horse-battery']);
     $wrong = $this->post('/login', ['username' => 'stb-example', 'password' => 'wrong-password-123']);

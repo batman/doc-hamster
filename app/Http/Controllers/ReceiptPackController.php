@@ -9,6 +9,7 @@ use App\Domain\Banking\BankAccount;
 use App\Domain\Banking\Transaction;
 use App\Domain\Documents\Document;
 use App\Domain\Org\CurrentOrg;
+use App\Domain\Org\Permission;
 use App\Domain\ReceiptPack\PackBuilder;
 use App\Domain\ReceiptPack\PackContents;
 use App\Domain\ReceiptPack\PackPeriod;
@@ -18,6 +19,7 @@ use App\Jobs\Local\BuildReceiptPack;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,6 +28,8 @@ use Symfony\Component\HttpFoundation\Response;
  * Einstellungen → Export → Belegpaket (point 211, D-018): period + accounts → "Vorschau" (counts, missing) →
  * "Belegpaket erstellen" → download; at most three clicks. Small packs are built in the request, large ones by a job
  * (red badge when ready). Every pack is frozen and versioned per period.
+ * Point 215: "Belegpakete" sees and downloads the finished packs; making one needs "Exportieren" + "Alle Dokumente
+ * sehen" and no role restriction. A restricted role sees a pack only when everything in it is allowed (A386).
  */
 final class ReceiptPackController
 {
@@ -34,7 +38,7 @@ final class ReceiptPackController
         $accounts = BankAccount::query()->orderByRaw("kind = 'cash'")->orderBy('name')->get();
         [$period, $preset] = $this->period($request);
         $chosen = $this->accounts($request, array_values(array_map('strval', $accounts->pluck('id')->all())));
-        $preview = $request->boolean('preview') && $chosen !== [] ? PackContents::load($period, $chosen) : null;
+        $preview = self::canCreate($org) && $request->boolean('preview') && $chosen !== [] ? PackContents::load($period, $chosen) : null;
 
         return view('settings.packs', [
             'accounts' => $accounts,
@@ -43,7 +47,8 @@ final class ReceiptPackController
             'chosen' => $chosen,
             'preview' => $preview,
             'background' => $preview !== null && self::size($preview) > PackBuilder::DIRECT_LIMIT,
-            'packs' => ReceiptPack::ofOrg($org->id())->latest()->limit(20)->get(),
+            'packs' => self::packs($org),
+            'canCreate' => self::canCreate($org),
             'accountNames' => $accounts->pluck('name', 'id')->all(),
         ]);
     }
@@ -56,6 +61,7 @@ final class ReceiptPackController
             'accounts' => ['required', 'array', 'min:1'],
             'accounts.*' => ['string', Rule::in(BankAccount::query()->pluck('id')->all())],
         ]);
+        abort_unless(self::canCreate($org), 403);
         $period = PackPeriod::of($data['from'], $data['to']);
         /** @var list<string> $accounts */
         $accounts = array_values(array_unique($data['accounts']));
@@ -82,7 +88,7 @@ final class ReceiptPackController
     public function download(Request $request, string $id, CurrentOrg $org, AuditLog $audit): Response
     {
         $pack = ReceiptPack::ofOrg($org->id())->whereKey($id)->firstOrFail();
-        abort_unless($pack->isReady(), 404);
+        abort_unless($pack->isReady() && $org->restriction()->allowsPack($pack), 404);
         $userId = $org->membership()->user_id;
         $audit->record('pack.downloaded', orgId: $org->id(), userId: $userId, subject: $pack, meta: ['file' => $pack->fileName()], ip: $request->ip());
         if ($pack->created_by === $userId && $pack->downloaded_at === null) {
@@ -91,6 +97,27 @@ final class ReceiptPackController
         }
 
         return Storage::disk('local')->download((string) $pack->path, $pack->fileName(), ['Content-Type' => 'application/pdf', 'Cache-Control' => 'no-store']);
+    }
+
+    /**
+     * The last packs this person may see (A386: a restricted role only packs entirely inside its restriction).
+     *
+     * @return list<ReceiptPack>
+     */
+    private static function packs(CurrentOrg $org): array
+    {
+        $restriction = $org->restriction();
+        $query = ReceiptPack::ofOrg($org->id())->latest()->limit(20);
+        if (! $restriction->isEmpty()) {
+            $query->where('status', ReceiptPack::DONE);
+        }
+
+        return array_values($query->get()->filter(static fn (ReceiptPack $p): bool => $restriction->allowsPack($p))->all());
+    }
+
+    private static function canCreate(CurrentOrg $org): bool
+    {
+        return Gate::allows(Permission::Export->value) && Gate::allows(Permission::ViewAllDocuments->value) && $org->restriction()->isEmpty();
     }
 
     /**

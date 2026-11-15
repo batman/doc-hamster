@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 
 /**
  * Synthetic users only (AGENTS.md). Default = owner/member style account
- * without password; `accountant()` = tax advisor with username + password.
+ * without password; `withPassword()` = username + password.
  *
  * @extends Factory<User>
  */
@@ -30,7 +30,7 @@ final class UserFactory extends Factory
         ];
     }
 
-    public function accountant(?string $password = null): self
+    public function withPassword(?string $password = null): self
     {
         return $this->state(fn (): array => [
             'username' => 'stb-'.Str::lower(Str::random(8)),

@@ -2,26 +2,24 @@
 
 declare(strict_types=1);
 
-namespace App\Domain\Advisor;
+namespace App\Domain\Audit;
 
-use App\Domain\Audit\AuditLogEntry;
 use App\Domain\Documents\Document;
 use App\Domain\ReceiptPack\ReceiptPack;
 use Carbon\CarbonInterface;
 
 /**
- * A380 "Zuletzt angesehen": what the tax advisor opened or downloaded last, read from the audit trail (every view
- * and download of the advisor is recorded there, point 210.5).
+ * A380 "Zuletzt angesehen" (Personen page): what a person opened or downloaded last, read from the audit trail
+ * (every document view and download is recorded there, point 215).
  */
 final class RecentViews
 {
-    /** The audit actions shown (list pages, "advisor.list_viewed", are recorded but not listed here). */
-    public const array ACTIONS = ['advisor.document_viewed', 'advisor.file_downloaded', 'advisor.pack_downloaded'];
+    public const array ACTIONS = ['document.viewed', 'document.file_downloaded', 'pack.downloaded'];
 
     /**
      * @return list<array{action: string, title: string, at: CarbonInterface}>
      */
-    public static function of(string $orgId, string $userId, int $limit = 10): array
+    public static function of(string $orgId, string $userId, int $limit = 5): array
     {
         $entries = AuditLogEntry::query()->where('org_id', $orgId)->where('user_id', $userId)->whereIn('action', self::ACTIONS)
             ->latest()->orderByDesc('id')->limit($limit)->get();

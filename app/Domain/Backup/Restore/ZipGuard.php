@@ -16,7 +16,7 @@ use ZipArchive;
 final class ZipGuard
 {
     /** Top-level names of a backup; files only at the root, folders below. */
-    public const array BACKUP_ROOT = ['manifest.json', 'LIESMICH.txt', 'data/', 'csv/', 'dokumente/', 'abgeleitet/'];
+    public const array BACKUP_ROOT = ['manifest.json', 'LIESMICH.txt', 'data/', 'csv/', 'dokumente/', 'abgeleitet/', 'belegpakete/'];
 
     /** A password-protected backup: a note and the encrypted inner ZIP (D-023). */
     public const array PROTECTED_ROOT = ['LIESMICH.txt', 'backup.zip'];

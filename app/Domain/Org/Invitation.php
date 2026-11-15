@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use InvalidArgumentException;
 
 /**
  * A one-time link/QR code to join an organisation (PLAN §11.1). Only the
@@ -50,15 +49,6 @@ final class Invitation extends Model
             'expires_at' => 'immutable_datetime',
             'used_at' => 'immutable_datetime',
         ];
-    }
-
-    protected static function booted(): void
-    {
-        self::saving(function (self $invitation): void {
-            if (! $invitation->role->canBeInvited()) {
-                throw new InvalidArgumentException('Tax advisor accounts are created by the owner, not invited (D-012).');
-            }
-        });
     }
 
     /**

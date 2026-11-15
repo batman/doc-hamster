@@ -15,7 +15,7 @@ final readonly class Manifest
 {
     public const string ULID = '/^[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}$/';
 
-    private const array TYPES = ['data', 'csv', 'readme', 'original', 'derived'];
+    private const array TYPES = ['data', 'csv', 'readme', 'original', 'derived', 'pack'];
 
     /**
      * @param  array<string, array{size: int, sha256: string, type: string, file_id: ?string}>  $files

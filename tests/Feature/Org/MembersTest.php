@@ -24,9 +24,9 @@ beforeEach(function (): void {
     $this->confirmed();
 });
 
-it('creates a tax advisor who can log in with the password shown once', function (): void {
+it('creates a person who signs in with the one-time password shown once and sets an own one first', function (): void {
     $advisorRole = OrgRole::query()->withoutGlobalScope(OrgScope::class)
-        ->where('org_id', $this->ownership->org_id)->where('system_key', 'accountant')->firstOrFail();
+        ->where('org_id', $this->ownership->org_id)->where('name', 'Steuerberater')->firstOrFail();
 
     $response = $this->actingAs($this->owner)->post('/members', [
         'display_name' => 'Kanzlei Muster', 'username' => 'Kanzlei', 'role' => $advisorRole->id,
@@ -40,14 +40,16 @@ it('creates a tax advisor who can log in with the password shown once', function
     $advisor = User::query()->where('username', 'kanzlei')->firstOrFail();
 
     expect(strlen($shown))->toBeGreaterThanOrEqual(20)
-        ->and($advisor->memberships()->firstOrFail()->role)->toBe(Role::Accountant)
+        ->and($advisor->memberships()->firstOrFail()->role)->toBe(Role::Member)
+        ->and($advisor->must_change_password)->toBeTrue()
         ->and($advisor->memberships()->firstOrFail()->org_id)->toBe($this->ownership->org_id);
 
     $this->get('/members')->assertDontSee($shown);
     $this->get('/members?shown=falsch')->assertDontSee($shown);
 
     $this->post('/logout');
-    $this->post('/login', ['username' => 'kanzlei', 'password' => $shown])->assertRedirect('/');
+    $this->post('/login', ['username' => 'kanzlei', 'password' => $shown])->assertRedirect('/settings/account/password');
+    $this->get('/documents')->assertRedirect('/settings/account/password');
     $this->assertAuthenticatedAs($advisor);
 });
 

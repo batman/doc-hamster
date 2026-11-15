@@ -8,7 +8,8 @@ namespace App\Domain\Org;
  * The checkboxes of a role, in plain words (#30). Managing people and roles
  * has no checkbox on purpose: someone could promote themselves. Updates do
  * (PO 2026-11-07): "System aktualisieren", and on top "Vorschau-Branches
- * installieren", which only counts together with it.
+ * installieren", which only counts together with it. Point 215: "Belegpakete"
+ * (see and download the finished receipt packs).
  */
 enum RoleRight: string
 {
@@ -18,21 +19,53 @@ enum RoleRight: string
     case Delete = 'delete';
     case Banking = 'banking';
     case Export = 'export';
+    case Packs = 'packs';
     case Tags = 'tags';
     case Notes = 'notes';
     case Update = 'update';
     case UpdatePreview = 'update_preview';
 
+    /** Point 216: the groups of the Rollen page (Dokumente, Bank, Export, System). */
+    public function group(): string
+    {
+        return match ($this) {
+            self::Upload, self::ViewAll, self::Edit, self::Delete, self::Tags, self::Notes => 'documents',
+            self::Banking => 'bank',
+            self::Export, self::Packs => 'export',
+            self::Update, self::UpdatePreview => 'system',
+        };
+    }
+
     /**
-     * Checkboxes of a pre-installed role in a new organisation.
+     * @return array<string, list<self>>
+     */
+    public static function grouped(): array
+    {
+        $groups = ['documents' => [], 'bank' => [], 'export' => [], 'system' => []];
+        foreach (self::cases() as $right) {
+            $groups[$right->group()][] = $right;
+        }
+
+        return $groups;
+    }
+
+    /**
+     * Checkboxes of the pre-installed role in a new organisation ("Mitarbeiter"); updates are never ticked by default.
      *
      * @return list<self>
      */
-    public static function defaultsFor(Role $role): array
+    public static function defaults(): array
     {
-        // Updates are never ticked by default; an Admin gives them on purpose.
-        return $role === Role::Accountant
-            ? [self::ViewAll, self::Export]
-            : [self::Upload, self::ViewAll, self::Edit, self::Delete, self::Banking, self::Export, self::Tags, self::Notes];
+        return [self::Upload, self::ViewAll, self::Edit, self::Delete, self::Banking, self::Export, self::Packs, self::Tags, self::Notes];
+    }
+
+    /**
+     * The read-only "Steuerberater" role a new organisation starts with (point 215).
+     *
+     * @return list<self>
+     */
+    public static function advisor(): array
+    {
+        return [self::ViewAll, self::Packs];
     }
 }

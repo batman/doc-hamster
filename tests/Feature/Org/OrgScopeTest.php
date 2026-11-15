@@ -134,7 +134,7 @@ it('gives a membership without a role no rights at all', function (): void {
 });
 
 it('lets tax advisors read and export everything, but change nothing (Q-20)', function (): void {
-    $advisor = Membership::factory()->accountant()->create();
+    $advisor = Membership::factory()->viewer()->create();
     app(CurrentOrg::class)->set($advisor);
 
     $allowed = array_filter(Permission::cases(), fn (Permission $p): bool => Gate::forUser($advisor->user)->allows($p->value));
