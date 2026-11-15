@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 return [
     'title' => 'Settings',
+    'support' => 'Support docHamster',
     'groups' => [
         'properties' => 'Properties',
         'people' => 'People & roles',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 return [
     'title' => 'Einstellungen',
+    'support' => 'docHamster unterstützen',
     'groups' => [
         'account' => 'Mein Konto',
         'properties' => 'Eigenschaften',

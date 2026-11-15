@@ -43,6 +43,11 @@
     <div class="windows" data-windows>
         <x-menu-window :title="__('settings.title')" icon="settings" :url="route('settings.index')" :close="route('home')" view="settings" display="tiles" :entries="$groupEntries">
             @yield('nav_footer')
+            @php $support = config('dochamster.support_url'); @endphp
+            @if (is_string($support) && str_starts_with($support, 'https://'))
+                {{-- Point 227: a quiet "Unterstützen" link below the groups, only once a support page is set. --}}
+                <a class="list-entry support-link" href="{{ $support }}" target="_blank" rel="noopener noreferrer"><x-icon name="heart" /><span>{{ __('settings.support') }}</span></a>
+            @endif
         </x-menu-window>
 
         @if ($withEntries)

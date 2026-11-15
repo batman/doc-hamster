@@ -31,6 +31,11 @@ return [
     'photo_shortcut' => '',
 
     /*
+    | Point 227: the project's support page (GitHub Sponsors or similar). Empty: no "Unterstützen" link in Einstellungen.
+    */
+    'support_url' => '',
+
+    /*
     | Point 206 (D-023): "Backup herunterladen". Up to stream_limit bytes the ZIP streams at once; larger ones are
     | built in the background and kept keep_hours. Restore limits guard against zip bombs (untrusted ZIP).
     */
