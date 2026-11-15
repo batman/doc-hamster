@@ -47,9 +47,6 @@
 
 <x-color-picker name="color" :value="$note?->color ?? \App\Domain\Notes\Note::DEFAULT_COLOR" :key="$key" :legend="__('home.color')" />
 
-<label for="opacity-{{ $key }}">{{ __('home.opacity') }}</label>
-<input id="opacity-{{ $key }}" class="note-opacity" type="range" name="opacity" min="30" max="100" step="5" value="{{ $note?->opacity ?? 100 }}">
-
 @if ($canShare && ($note === null || $note->user_id === $userId))
     {{-- A new note is for everyone and changeable by default (Go of 2026-11-07). --}}
     <label><input type="checkbox" name="shared" value="1" @checked($note?->shared ?? true)> {{ __('home.share') }}</label>

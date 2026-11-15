@@ -30,7 +30,8 @@
     const order = grid => [...grid.querySelectorAll(':scope > [data-widget]')];
 
     // --- Saving ------------------------------------------------------------------------------------------------
-    const save = dash => send(dash.dataset.layout, { widgets: order(gridOf(dash)).map(li => ({ type: li.dataset.widget, size: li.dataset.size })) })
+    // A pinned notes column or note (point 233) carries its id (data-ref).
+    const save = dash => send(dash.dataset.layout, { widgets: order(gridOf(dash)).map(li => ({ type: li.dataset.widget, size: li.dataset.size, ...(li.dataset.ref ? { ref: li.dataset.ref } : {}) })) })
         .then(json => toast(json.message))
         .catch(error => fail(dash, error));
 
@@ -51,6 +52,23 @@
             });
     };
     DocHamster.on('dashboard:pinned', () => document.querySelectorAll('[data-dash]').forEach(dash => redraw(dash, 'quick').catch(() => {})));
+    // Point 233: a notes column or note pinned or taken off on the board – every open Home draws its widgets again.
+    // A text being written on Home right now stays as it is (that Home is left alone).
+    DocHamster.on('dashboard:widgets', () => document.querySelectorAll('[data-dash]').forEach(dash => {
+        if (dash.contains(document.activeElement) && document.activeElement.matches('textarea, input')) {
+            return;
+        }
+        const win = dash.closest('section[data-window]');
+        fetch(win?.dataset.windowUrl ?? window.location.href, { credentials: 'same-origin', headers: { 'X-DocHamster-Window': '1', Accept: 'text/html' } })
+            .then(response => response.text())
+            .then(text => {
+                const fresh = new DOMParser().parseFromString(text, 'text/html').querySelector('[data-dash-grid]');
+                if (fresh) {
+                    gridOf(dash).replaceChildren(...[...fresh.children].map(li => document.adoptNode(li)));
+                }
+            })
+            .catch(() => {});
+    }));
 
     // --- Edit mode ---------------------------------------------------------------------------------------------
     const setEditing = (dash, on) => {

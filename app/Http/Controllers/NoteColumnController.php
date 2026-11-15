@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Domain\Dashboard\NotePins;
 use App\Domain\Notes\Note;
 use App\Domain\Notes\NoteColumn;
 use App\Domain\Org\Permission;
@@ -104,6 +105,8 @@ final class NoteColumnController
             Note::query()->whereKey($noteId)->update(['column_id' => $target->id, 'sort' => ++$sort]);
         }
         $column->delete();
+        // A397: its widget leaves every Home; its notes moved, so their own widgets stay.
+        NotePins::forget(NotePins::COLUMN, $column->id);
 
         return redirect()->route('notes.index');
     }

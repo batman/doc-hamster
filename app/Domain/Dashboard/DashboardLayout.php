@@ -9,7 +9,7 @@ namespace App\Domain\Dashboard;
  * places of "Schnellzugriff". Everything that comes from a request runs through normalize()/pin(), so the stored
  * layout only ever holds known widgets, known sizes and safe addresses.
  *
- * @phpstan-type Widget array{type: string, size: string}
+ * @phpstan-type Widget array{type: string, size: string, ref?: string}
  * @phpstan-type Pin array{url: string, title: string, icon: string}
  * @phpstan-type Layout array{widgets: list<Widget>, pins: list<Pin>}
  */
@@ -27,6 +27,17 @@ final class DashboardLayout
         'notes' => ['icon' => 'note', 'size' => 'm'],
         'ocr' => ['icon' => 'text-scan-2', 'size' => 's'],
         'drop' => ['icon' => 'upload', 'size' => 's'],
+    ];
+
+    /**
+     * Point 233, A395-A397: widgets pinned from the notes board, one per column or note; `ref` is its id. They come
+     * only from the pin buttons on the board, never from "+".
+     *
+     * @var array<string, array{icon: string, size: string}>
+     */
+    public const array PINNED = [
+        'note_column' => ['icon' => 'layout-columns', 'size' => 'm'],
+        'note' => ['icon' => 'note', 'size' => 'm'],
     ];
 
     public const array SIZES = ['s', 'm', 'l'];
@@ -68,14 +79,63 @@ final class DashboardLayout
         $clean = [];
         foreach (is_array($widgets) ? $widgets : [] as $widget) {
             $type = is_array($widget) ? ($widget['type'] ?? null) : $widget;
-            if (! is_string($type) || ! isset(self::WIDGETS[$type]) || isset($clean[$type])) {
+            if (! is_string($type) || (! isset(self::WIDGETS[$type]) && ! isset(self::PINNED[$type]))) {
+                continue;
+            }
+            $ref = null;
+            if (isset(self::PINNED[$type])) {
+                $ref = is_array($widget) ? ($widget['ref'] ?? null) : null;
+                if (! is_string($ref) || preg_match('/^[0-9a-z]{26}$/i', $ref) !== 1) {
+                    continue;
+                }
+                $ref = strtolower($ref);
+            }
+            $key = self::key($type, $ref);
+            if (isset($clean[$key])) {
                 continue;
             }
             $size = is_array($widget) ? ($widget['size'] ?? null) : null;
-            $clean[$type] = ['type' => $type, 'size' => is_string($size) && in_array($size, self::SIZES, true) ? $size : self::WIDGETS[$type]['size']];
+            $clean[$key] = ['type' => $type, 'size' => is_string($size) && in_array($size, self::SIZES, true) ? $size : self::meta($type)['size']]
+                + ($ref === null ? [] : ['ref' => $ref]);
         }
 
         return array_values($clean);
+    }
+
+    /**
+     * Symbol and default size of any widget type, also a pinned one.
+     *
+     * @return array{icon: string, size: string}
+     */
+    public static function meta(string $type): array
+    {
+        return self::WIDGETS[$type] ?? self::PINNED[$type] ?? ['icon' => 'note', 'size' => 'm'];
+    }
+
+    /** One widget's place in a layout: its type, for a pinned one type and id ("note:01h…"). */
+    public static function key(string $type, ?string $ref = null): string
+    {
+        return $ref === null ? $type : $type.':'.$ref;
+    }
+
+    /**
+     * The layout with a pinned widget added (at the end, default size) or taken out.
+     *
+     * @param  Layout  $layout
+     * @return Layout
+     */
+    public static function withPinned(array $layout, string $type, string $ref, bool $on): array
+    {
+        $key = self::key($type, $ref);
+        $others = array_values(array_filter($layout['widgets'], static fn (array $w): bool => self::key($w['type'], $w['ref'] ?? null) !== $key));
+        $shown = count($others) !== count($layout['widgets']);
+        $layout['widgets'] = match (true) {
+            ! $on => $others,
+            $shown => $layout['widgets'],
+            default => [...$layout['widgets'], ['type' => $type, 'size' => self::meta($type)['size'], 'ref' => $ref]],
+        };
+
+        return $layout;
     }
 
     /** @return list<Pin> */

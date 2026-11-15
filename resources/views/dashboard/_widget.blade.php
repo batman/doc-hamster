@@ -1,11 +1,12 @@
 {{-- One Home widget (A349, A350): a card; in edit mode its tool line (drag handle itself: name, size S/M/L, X) shows on top.
-     $widget = ['type', 'size', 'data']. The body is dashboard/widgets/<type>. --}}
+     $widget = ['type', 'size', 'ref'?, 'data']. The body is dashboard/widgets/<type>. A pinned notes column or note
+     (point 233, A395, A396) carries its id in data-ref and its own name. --}}
 @php
     $type = $widget['type'];
-    $meta = \App\Domain\Dashboard\DashboardLayout::WIDGETS[$type];
-    $name = __('dashboard.widgets.'.$type);
+    $meta = \App\Domain\Dashboard\DashboardLayout::meta($type);
+    $name = $widget['data']['name'] ?? __('dashboard.widgets.'.$type);
 @endphp
-<li class="card dash-widget dash-{{ $type }} is-{{ $widget['size'] }}" data-widget="{{ $type }}" data-size="{{ $widget['size'] }}" aria-label="{{ $name }}">
+<li class="card dash-widget dash-{{ str_replace('_', '-', $type) }} is-{{ $widget['size'] }}" data-widget="{{ $type }}" @isset($widget['ref']) data-ref="{{ $widget['ref'] }}" @endisset data-size="{{ $widget['size'] }}" aria-label="{{ $name }}">
     {{-- Point 192: no grip – the whole tool line drags (and takes the arrow keys when focused). --}}
     <div class="dash-tools dash-grip" data-dash-grip tabindex="0" aria-label="{{ __('dashboard.move') }}">
         <span class="dash-tools-name">{{ $name }}</span>
@@ -19,5 +20,5 @@
     @unless (in_array($type, ['photo', 'greeting', 'drop'], true))
         <h2 class="card-head"><x-icon :name="$meta['icon']" />{{ $name }}</h2>
     @endunless
-    @include('dashboard.widgets.'.$type, $widget['data'])
+    @include('dashboard.widgets.'.str_replace('_', '-', $type), $widget['data'])
 </li>

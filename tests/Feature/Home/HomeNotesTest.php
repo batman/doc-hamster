@@ -126,15 +126,15 @@ it('lists and revokes only links to receipts the person may see, and only Admins
     expect($link->fresh()->revoked_at)->not->toBeNull();
 });
 
-it('keeps title, colour, opacity and place of a note, and a locked note stays as it is', function (): void {
+it('keeps title, colour and place of a note, and a locked note stays as it is', function (): void {
     $this->actingAs($this->admin->user)->post('/notes', ['title' => 'Einkauf', 'body' => 'Milch'])->assertRedirect();
     $note = Note::query()->withoutGlobalScope(OrgScope::class)->firstOrFail();
 
     $this->postJson('/notes/'.$note->id.'/look', ['x' => 120, 'y' => 40])->assertOk();
-    $this->post('/notes/'.$note->id, ['title' => 'Einkauf', 'body' => 'Milch', 'color' => '#0d1b4c', 'opacity' => 60])->assertRedirect(route('notes.index'));
+    $this->post('/notes/'.$note->id, ['title' => 'Einkauf', 'body' => 'Milch', 'color' => '#0d1b4c'])->assertRedirect(route('notes.index'));
     $this->post('/notes/'.$note->id.'/look', ['color' => 'rainbow'])->assertSessionHasErrors('color');
-    expect($note->fresh()->only(['title', 'color', 'opacity', 'pos_x', 'pos_y']))
-        ->toBe(['title' => 'Einkauf', 'color' => '#0d1b4c', 'opacity' => 60, 'pos_x' => 120, 'pos_y' => 40]);
+    expect($note->fresh()->only(['title', 'color', 'pos_x', 'pos_y']))
+        ->toBe(['title' => 'Einkauf', 'color' => '#0d1b4c', 'pos_x' => 120, 'pos_y' => 40]);
     $this->get('/notes')->assertSee('Einkauf')->assertSee('c-0d1b4c');
 
     // Locked in the edit dialog (A13): the fields stay as they are, only the lock can change.

@@ -22,7 +22,6 @@ return [
     'delete_title' => 'Delete note?',
     'untitled' => 'Note',
     'color' => 'Colour',
-    'opacity' => 'Opacity',
     'locked' => 'Locked',
     'note_title' => 'Title',
     'first_column' => 'Notes',

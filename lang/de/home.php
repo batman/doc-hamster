@@ -22,7 +22,6 @@ return [
     'delete_title' => 'Notiz löschen?',
     'untitled' => 'Notiz',
     'color' => 'Farbe',
-    'opacity' => 'Deckkraft',
     'locked' => 'Gesperrt',
     'note_title' => 'Titel',
     'first_column' => 'Notizen',

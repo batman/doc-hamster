@@ -9,9 +9,6 @@
         const scope = board.closest('section[data-window]') ?? document;
         const notes = [...board.querySelectorAll('.note')];
         notes.forEach(note => {
-            if (note.dataset.opacity) {
-                note.style.setProperty('--note-alpha', `${note.dataset.opacity}%`);
-            }
             if (note.dataset.h) {
                 note.style.height = `${note.dataset.h}px`;
             }
@@ -197,7 +194,7 @@
         });
         // A362: no double-click on free space any more (it was A115); a note is added through the column's ⋯ menu.
 
-        // Edit dialog: colour and opacity show on the note right away; closing without saving puts the old look back (A9).
+        // Edit dialog: the colour shows on the note right away; closing without saving puts the old look back (A9).
         scope.querySelectorAll('[data-note-preview]').forEach(dialog => {
             const note = board.querySelector(`[data-note-id="${dialog.dataset.notePreview}"]`);
             const form = dialog.querySelector('form');
@@ -207,23 +204,21 @@
             const colors = [...form.querySelectorAll('input[name="color"]')].map(input => `note-${input.value}`);
             let before = null;
             let saved = false;
-            const show = (color, alpha) => {
+            const show = color => {
                 note.classList.remove(...colors);
                 note.classList.add(color);
-                note.style.setProperty('--note-alpha', alpha);
             };
             form.addEventListener('input', () => {
                 const color = form.querySelector('input[name="color"]:checked');
-                const opacity = form.querySelector('input[name="opacity"]');
-                show(color ? `note-${color.value}` : before.color, opacity ? `${opacity.value}%` : before.alpha);
+                show(color ? `note-${color.value}` : before.color);
             });
             form.addEventListener('submit', () => { saved = true; });
             new MutationObserver(() => {
                 if (!dialog.hidden) {
-                    before = { color: colors.find(c => note.classList.contains(c)) ?? 'note-yellow', alpha: note.style.getPropertyValue('--note-alpha') || '100%' };
+                    before = { color: colors.find(c => note.classList.contains(c)) ?? 'note-yellow' };
                     saved = false;
                 } else if (before && !saved) {
-                    show(before.color, before.alpha);
+                    show(before.color);
                     form.reset();
                 }
             }).observe(dialog, { attributes: true, attributeFilter: ['hidden'] });

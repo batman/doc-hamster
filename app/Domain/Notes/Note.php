@@ -29,7 +29,6 @@ use Illuminate\Support\Carbon;
  * @property bool $editable
  * @property string|null $title
  * @property string|null $color #rrggbb from the palette; null = DEFAULT_COLOR
- * @property int|null $opacity percent, 30-100; null = 100
  * @property bool $locked nobody changes, moves or deletes it until it is unlocked
  * @property int|null $pos_x place on the board in px; null = next free slot
  * @property int|null $pos_y
@@ -49,14 +48,14 @@ final class Note extends Model
     /** Colour of a note without one (yellow). Notes pick from the shared palette (points 14-15) and store the hex. */
     public const DEFAULT_COLOR = '#fdd835';
 
-    protected $fillable = ['org_id', 'user_id', 'body', 'checklist', 'shared', 'editable', 'title', 'color', 'opacity', 'locked', 'pos_x', 'pos_y', 'width', 'height', 'column_id', 'sort'];
+    protected $fillable = ['org_id', 'user_id', 'body', 'checklist', 'shared', 'editable', 'title', 'color', 'locked', 'pos_x', 'pos_y', 'width', 'height', 'column_id', 'sort'];
 
     /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
-        return ['checklist' => 'array', 'shared' => 'boolean', 'editable' => 'boolean', 'locked' => 'boolean', 'opacity' => 'integer', 'pos_x' => 'integer', 'pos_y' => 'integer', 'width' => 'integer', 'height' => 'integer', 'sort' => 'integer', 'archived_at' => 'datetime'];
+        return ['checklist' => 'array', 'shared' => 'boolean', 'editable' => 'boolean', 'locked' => 'boolean', 'pos_x' => 'integer', 'pos_y' => 'integer', 'width' => 'integer', 'height' => 'integer', 'sort' => 'integer', 'archived_at' => 'datetime'];
     }
 
     /**

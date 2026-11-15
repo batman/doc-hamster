@@ -48,7 +48,8 @@
     </div>
 
     {{-- The board (Go of 2026-11-08, like Trello): columns side by side, notes dragged by their head between and within them. --}}
-    <div class="kanban" data-notes data-csrf="{{ csrf_token() }}" @if ($canShare) data-columns-order="{{ route('notes.columns.order') }}" @endif>
+    {{-- data-focus-note: opened from a pinned column or note on Home (A395), the board scrolls to that note and lights it up. --}}
+    <div class="kanban" data-notes data-csrf="{{ csrf_token() }}" @if ($focus !== null) data-focus-note="{{ $focus }}" @endif @if ($canShare) data-columns-order="{{ route('notes.columns.order') }}" @endif>
         @foreach ($columns as $column)
             @php($cards = $byColumn->get($column->id, collect()))
             {{-- Points 65-67, A100-A105, A362: everything a column does sits in its ⋮ menu, also adding a note (no double-click). --}}
@@ -60,6 +61,7 @@
                         <h2 id="column-name-{{ $column->id }}" class="kanban-name">{{ $column->name }}</h2>
                     @endif
                     <span class="kanban-count">{{ $cards->count() }}</span>
+                    @include('home._pin', ['type' => \App\Domain\Dashboard\NotePins::COLUMN, 'id' => $column->id])
                     <x-more-menu class="kanban-menu" icon="dots-vertical" :label="__('home.column_menu')">
                         <button type="button" class="menu-item" data-dialog-open="note-new" data-note-column="{{ $column->id }}" data-note-color="{{ $column->newNoteColor() }}" data-kanban-add><x-icon name="plus" /><span>{{ __('home.add_note_menu') }}</span></button>
                         @if ($canShare)

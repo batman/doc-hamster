@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Domain\Dashboard\NotePins;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\Tag;
 use App\Domain\Notes\Note;
@@ -30,7 +31,7 @@ use Illuminate\Validation\Rule;
  */
 final class HomeController
 {
-    public function index(CurrentOrg $org): View
+    public function index(Request $request, CurrentOrg $org): View
     {
         $userId = $org->membership()->user_id;
         $columns = NoteColumn::board();
@@ -49,6 +50,9 @@ final class HomeController
             'notes' => $notes,
             'tags' => $tags,
             'userId' => $userId,
+            // Point 233, A395, A396: what this person pinned to Home; ?note= comes from a pinned widget on Home.
+            'pinned' => NotePins::of($userId),
+            'focus' => is_string($request->query('note')) && $notes->contains('id', $request->query('note')) ? $request->query('note') : null,
             'canShare' => Gate::allows(Permission::ShareNotes->value),
             'documents' => $this->visibleDocuments()->latest()->limit(500)->get(['id', 'title']),
         ]);
@@ -104,7 +108,7 @@ final class HomeController
 
     /**
      * The look of a note: place and size on the board (dragged), colour,
-     * opacity, lock. Only the fields sent change. A locked note only unlocks.
+     * lock. Only the fields sent change. A locked note only unlocks.
      */
     public function look(Request $request, string $id, CurrentOrg $org): JsonResponse|RedirectResponse
     {
@@ -115,7 +119,6 @@ final class HomeController
             'w' => ['sometimes', 'integer', 'min:160', 'max:4000'],
             'h' => ['sometimes', 'integer', 'min:120', 'max:4000'],
             'color' => ['sometimes', 'string', Rule::in($this->colors($note))],
-            'opacity' => ['sometimes', 'integer', 'min:30', 'max:100'],
             'locked' => ['sometimes', 'boolean'],
         ]);
         abort_if($note->locked && array_diff(array_keys($data), ['locked']) !== [], 423);
@@ -126,7 +129,6 @@ final class HomeController
             'width' => $data['w'] ?? null,
             'height' => $data['h'] ?? null,
             'color' => $data['color'] ?? null,
-            'opacity' => $data['opacity'] ?? null,
         ], static fn (mixed $value): bool => $value !== null));
         if (array_key_exists('locked', $data)) {
             $note->locked = $request->boolean('locked');
@@ -152,6 +154,8 @@ final class HomeController
     public function destroy(string $id, CurrentOrg $org): RedirectResponse
     {
         $this->editable($id, $org, unlocked: true)->delete();
+        // A397: its widget leaves every Home.
+        NotePins::forget(NotePins::NOTE, $id);
 
         return redirect()->route('notes.index');
     }
@@ -174,7 +178,6 @@ final class HomeController
             'link' => ['nullable', 'string', 'max:250'],
             'unlink' => ['array'],
             'color' => ['nullable', 'string', Rule::in($this->colors($note))],
-            'opacity' => ['nullable', 'integer', 'min:30', 'max:100'],
             'column' => ['nullable', 'string', Rule::in(NoteColumn::query()->pluck('id')->all())],
             'tags' => ['array'],
             'tags.*' => ['string', Rule::in(Tag::query()->pluck('id')->all())],
@@ -187,7 +190,7 @@ final class HomeController
         }
         $note->fill([
             'title' => $data['title'] ?? null,
-            'color' => $data['color'] ?? $note->color, 'opacity' => $data['opacity'] ?? $note->opacity, 'locked' => $request->boolean('locked'),
+            'color' => $data['color'] ?? $note->color, 'locked' => $request->boolean('locked'),
         ]);
         // A new note goes to the end of its column; the column field (phones, A36) moves it to the end of another.
         $column = $data['column'] ?? null;

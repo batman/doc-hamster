@@ -8,7 +8,10 @@ use App\Domain\Backup\Backup;
 use App\Domain\Dashboard\DashboardLayout;
 use App\Domain\Dashboard\DashboardWidgets;
 use App\Domain\Dashboard\FirstSteps;
+use App\Domain\Dashboard\NotePins;
 use App\Domain\Dashboard\UserDashboard;
+use App\Domain\Notes\Note;
+use App\Domain\Notes\NoteColumn;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
 use App\Http\Badges;
@@ -35,10 +38,17 @@ final class DashboardController
         $dashboard = UserDashboard::of($this->userId($org));
         $layout = $dashboard->cleanLayout();
         $available = $this->available();
-        $widgets = array_values(array_filter($layout['widgets'], static fn (array $w): bool => in_array($w['type'], $available, true)));
+        $widgets = [];
+        foreach ($layout['widgets'] as $widget) {
+            // A pinned column or note that is gone (or no longer visible) shows nothing (A397).
+            $data = $this->shows($widget['type']) ? $this->data($widget, $org, $dashboard) : null;
+            if ($data !== null) {
+                $widgets[] = $widget + ['data' => $data];
+            }
+        }
 
         return view('dashboard.index', [
-            'widgets' => array_map(fn (array $w): array => $w + ['data' => $this->data($w['type'], $org, $dashboard)], $widgets),
+            'widgets' => $widgets,
             'available' => $available,
             'addable' => array_values(array_diff($available, array_column($widgets, 'type'))),
             'backupHint' => $this->backupHint($org),
@@ -93,12 +103,16 @@ final class DashboardController
     /** A350: order, sizes and removals – the whole list of widgets as the person sees it now. */
     public function layout(Request $request, CurrentOrg $org): JsonResponse|RedirectResponse
     {
-        $request->validate(['widgets' => ['present', 'array'], 'widgets.*.type' => ['required', 'string'], 'widgets.*.size' => ['nullable', 'string']]);
+        $request->validate(['widgets' => ['present', 'array'], 'widgets.*.type' => ['required', 'string'], 'widgets.*.size' => ['nullable', 'string'], 'widgets.*.ref' => ['nullable', 'string']]);
         $dashboard = UserDashboard::of($this->userId($org));
         $layout = $dashboard->cleanLayout();
         // Widgets the person may not see right now (a right taken away) keep their place at the end.
-        $hidden = array_values(array_filter($layout['widgets'], fn (array $w): bool => ! in_array($w['type'], $this->available(), true)));
-        $sent = array_values(array_filter(DashboardLayout::widgets($request->input('widgets')), fn (array $w): bool => in_array($w['type'], $this->available(), true)));
+        $hidden = array_values(array_filter($layout['widgets'], fn (array $w): bool => ! $this->shows($w['type'])));
+        // A pinned column or note only comes from its pin button, so only the ones pinned before stay.
+        $pinned = array_map(static fn (array $w): string => DashboardLayout::key($w['type'], $w['ref'] ?? null), $layout['widgets']);
+        $sent = array_values(array_filter(DashboardLayout::widgets($request->input('widgets')), fn (array $w): bool => isset($w['ref'])
+            ? in_array(DashboardLayout::key($w['type'], $w['ref']), $pinned, true)
+            : $this->shows($w['type'])));
         $dashboard->layout = ['widgets' => DashboardLayout::widgets([...$sent, ...$hidden]), 'pins' => $layout['pins']];
         $dashboard->save();
 
@@ -116,15 +130,40 @@ final class DashboardController
             $dashboard->layout = $layout;
             $dashboard->save();
         }
-        $widget = collect($layout['widgets'])->firstWhere('type', $data['type']);
         if (! $request->expectsJson()) {
             return redirect()->route('home');
+        }
+        $type = (string) $data['type'];
+        $widget = ['type' => $type, 'size' => DashboardLayout::WIDGETS[$type]['size']];
+        foreach ($layout['widgets'] as $shown) {
+            if ($shown['type'] === $type) {
+                $widget = $shown;
+            }
         }
 
         return response()->json([
             'message' => __('dashboard.added'),
-            'html' => view('dashboard._widget', ['widget' => $widget + ['data' => $this->data($data['type'], $org, $dashboard)]])->render(),
+            'html' => view('dashboard._widget', ['widget' => $widget + ['data' => $this->data($widget, $org, $dashboard) ?? []]])->render(),
         ]);
+    }
+
+    /**
+     * Point 233, A395, A396: the pin on a notes column's head or on a note pins it to Home as its own widget, or
+     * takes it off again. Any column of the organisation; a note only when the person sees it.
+     */
+    public function pinNote(Request $request, CurrentOrg $org): JsonResponse|RedirectResponse
+    {
+        $data = $request->validate(['type' => ['required', 'string', Rule::in([NotePins::COLUMN, NotePins::NOTE])], 'id' => ['required', 'string', 'max:26'], 'pinned' => ['required', 'boolean']]);
+        $userId = $this->userId($org);
+        $exists = $data['type'] === NotePins::COLUMN
+            ? NoteColumn::query()->whereKey($data['id'])->exists()
+            : Note::query()->visibleTo($userId)->whereKey($data['id'])->exists();
+        abort_unless($exists, 404);
+        $on = $request->boolean('pinned');
+        NotePins::set($userId, $data['type'], strtolower($data['id']), $on);
+        $message = __($on ? 'dashboard.note_pinned' : 'dashboard.unpinned');
+
+        return $request->expectsJson() ? response()->json(['message' => $message, 'pinned' => $on]) : back()->with('status', $message);
     }
 
     /** A351: "Auf Home anheften" from a window's ⋯ menu, or "+ Link" in Schnellzugriff (an https address). */
@@ -166,6 +205,12 @@ final class DashboardController
         return $this->answer($request, __('dashboard.unpinned'));
     }
 
+    /** Whether this person may see a widget of this type; pinned notes widgets check their note themselves. */
+    private function shows(string $type): bool
+    {
+        return isset(DashboardLayout::PINNED[$type]) || in_array($type, $this->available(), true);
+    }
+
     /**
      * The widget types this person may use (rights of the area they show).
      *
@@ -181,10 +226,12 @@ final class DashboardController
     }
 
     /**
-     * @return array<string, mixed>
+     * @param  array{type: string, size: string, ref?: string}  $widget
+     * @return array<string, mixed>|null null = a pinned column or note that is gone or not visible
      */
-    private function data(string $type, CurrentOrg $org, UserDashboard $dashboard): array
+    private function data(array $widget, CurrentOrg $org, UserDashboard $dashboard): ?array
     {
+        $type = $widget['type'];
         // One instance per request: the property ids are read once for every widget.
         $widgets = $this->widgets ??= new DashboardWidgets($this->userId($org), Gate::allows(Permission::ViewAllDocuments->value));
 
@@ -198,6 +245,8 @@ final class DashboardController
             'activity' => ['rows' => $widgets->activity($org->id())],
             'notes' => ['notes' => $widgets->notes()],
             'ocr' => OcrProgress::open($org->id()),
+            NotePins::COLUMN => $widgets->noteColumn($widget['ref'] ?? ''),
+            NotePins::NOTE => $widgets->note($widget['ref'] ?? ''),
             default => [],
         };
     }

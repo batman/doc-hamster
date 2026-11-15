@@ -67,6 +67,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('dashboard/widgets', [DashboardController::class, 'add'])->name('dashboard.widgets.store');
     Route::post('dashboard/pins', [DashboardController::class, 'pin'])->name('dashboard.pins.store');
     Route::post('dashboard/pins/delete', [DashboardController::class, 'unpin'])->name('dashboard.pins.destroy');
+    Route::post('dashboard/notes/pin', [DashboardController::class, 'pinNote'])->name('dashboard.notes.pin');
     Route::post('dashboard/first-steps/hide', [DashboardController::class, 'hideFirstSteps'])->name('dashboard.first-steps.hide');
     Route::get('dashboard/photo', [DashboardPhotoController::class, 'show'])->name('dashboard.photo');
     Route::post('dashboard/photo', [DashboardPhotoController::class, 'store'])->name('dashboard.photo.store');

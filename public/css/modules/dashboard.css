@@ -66,3 +66,9 @@
 .first-steps { max-width: none; margin: 0 0 1rem; }
 .first-steps .pick-list { margin-bottom: 0; }
 .first-steps [data-done] strong { color: var(--muted); font-weight: 500; }
+
+/* Angeheftete Notiz (point 233, A396): the note's colour (c-rrggbb from tags.css) fills the field; whoever may change
+   the note writes right here. */
+.dash-note { border-radius: calc(var(--radius) / 2); background: var(--row-bg); color: var(--row-ink); }
+.dash-note .dash-note-text { display: block; width: 100%; min-height: 6rem; margin: 0; padding: .75rem; border: 0; border-radius: inherit; background: transparent; color: inherit; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; box-shadow: none; resize: vertical; }
+.dash-note .dash-note-text:focus-visible { outline: 2px solid var(--primary); outline-offset: 0; }

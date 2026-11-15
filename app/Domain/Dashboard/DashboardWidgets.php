@@ -10,11 +10,13 @@ use App\Domain\Documents\Document;
 use App\Domain\Documents\Inbox;
 use App\Domain\Log\LogEntry;
 use App\Domain\Notes\Note;
+use App\Domain\Notes\NoteColumn;
 use App\Domain\Properties\DocumentProperty;
 use App\Domain\Properties\Property;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection as SupportCollection;
 
 /**
  * What the Home widgets show (A349), for one person in the current organisation. Every query stays inside what the
@@ -154,6 +156,43 @@ final class DashboardWidgets
     public function notes(int $limit = 3): Collection
     {
         return Note::query()->where('user_id', $this->userId)->latest()->orderByDesc('id')->limit($limit)->get();
+    }
+
+    /**
+     * A pinned notes column (point 233, A395): its name and the notes this person sees in it, in the column's order.
+     * Notes without a (living) column lie in the first one, like on the board. Null = the column is gone.
+     *
+     * @return array{name: string, column: NoteColumn, notes: SupportCollection<int, Note>}|null
+     */
+    public function noteColumn(string $id): ?array
+    {
+        $column = NoteColumn::query()->find($id);
+        if (! $column instanceof NoteColumn) {
+            return null;
+        }
+        $ids = NoteColumn::query()->orderBy('sort')->orderBy('created_at')->pluck('id')->all();
+        $first = ($ids[0] ?? null) === $column->id;
+        $notes = Note::query()->visibleTo($this->userId)
+            ->where(static fn (Builder $q) => $q->where('column_id', $column->id)
+                ->when($first, static fn (Builder $q) => $q->orWhereNull('column_id')->orWhereNotIn('column_id', $ids)))
+            ->orderBy('sort')->orderBy('created_at')->get();
+
+        return ['name' => $column->name, 'column' => $column, 'notes' => $column->order($notes)];
+    }
+
+    /**
+     * A pinned note (A396): the whole text, editable here when the person may change it. Null = gone or not visible.
+     *
+     * @return array{name: string, note: Note, editable: bool}|null
+     */
+    public function note(string $id): ?array
+    {
+        $note = Note::query()->visibleTo($this->userId)->find($id);
+        if (! $note instanceof Note) {
+            return null;
+        }
+
+        return ['name' => $note->title ?: __('home.untitled'), 'note' => $note, 'editable' => $note->editableBy($this->userId) && ! $note->locked];
     }
 
     /** @return array<string, string> */

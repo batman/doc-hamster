@@ -5,10 +5,10 @@
 {{-- One note on the board: dragged by its head (app.js), text always a field with a mirror of our own checkboxes. --}}
 <li class="note {{ $note->colorClass() }} @if ($note->locked) is-locked @endif" data-note-id="{{ $note->id }}"
     @if ($open) data-note-look="{{ route('notes.look', $note->id) }}" data-note-move="{{ route('notes.move', $note->id) }}" @endif
-    @if ($note->height !== null) data-h="{{ $note->height }}" @endif
-    @if ($note->opacity !== null) data-opacity="{{ $note->opacity }}" @endif>
+    @if ($note->height !== null) data-h="{{ $note->height }}" @endif>
     <div class="note-head">
         <span class="note-title">{{ $note->title ?: __('home.untitled') }}</span>
+        @include('home._pin', ['type' => \App\Domain\Dashboard\NotePins::NOTE, 'id' => $note->id])
         @if ($canEdit)
             <button type="button" class="note-tool" data-dialog-open="edit-note-{{ $note->id }}" aria-label="{{ __('home.edit') }}" data-tooltip="{{ __('home.edit') }}"><x-icon name="pencil" /></button>
         @endif

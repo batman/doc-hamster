@@ -58,15 +58,14 @@
     .notes-fit .kanban-col.is-wide { flex-grow: 26; }
 }
 .note {
-    --note: #fdd835; --note-ink: #2b2a1f; --note-alpha: 100%;
-    --note-bg: color-mix(in srgb, var(--note) var(--note-alpha), transparent);
+    --note: #fdd835; --note-ink: #2b2a1f;
     display: flex; flex-direction: column; padding: 0;
-    background: var(--note-bg); color: var(--note-ink);
+    background: var(--note); color: var(--note-ink);
     box-shadow: 2px 4px 12px rgb(0 0 0 / .2); overflow-wrap: anywhere;
 }
 .note:hover, .note:focus-within { z-index: 5; }
 
-/* Edit dialog: colour as round swatches, opacity slider, lock (A13) */
+/* Edit dialog: colour as round swatches, lock (A13) */
 .dialog { max-height: calc(100dvh - 2rem); overflow-y: auto; }
 .note-fields { margin: 0; padding: 0; border: 0; min-width: 0; }
 .note-fields:disabled { opacity: .55; }
@@ -76,7 +75,6 @@
 .note-swatch { display: block; width: 2.25rem; height: 2.25rem; border: 2px solid rgb(0 0 0 / .15); border-radius: 50%; background: var(--note); cursor: pointer; }
 .note-swatch-choice input:checked + .note-swatch { border-color: var(--text); box-shadow: inset 0 0 0 3px var(--bg); }
 .note-swatch-choice input:focus-visible + .note-swatch { outline: 2px solid var(--primary); outline-offset: 2px; }
-.note-opacity { min-height: 0; padding: 0; accent-color: var(--primary); }
 .note-lock-choice { margin-top: .25rem; }
 .note-lock { display: inline-flex; vertical-align: -.15em; margin-right: .25rem; }
 .note-lock .icon { width: 1em; height: 1em; }
@@ -168,3 +166,13 @@
 /* Point 213: an empty column says how a note gets in; gone as soon as the column holds one. */
 .kanban-empty { margin: .25rem .75rem 0; }
 .kanban-col:has(.kanban-cards > li) .kanban-empty { display: none; }
+
+/* Point 233, A395, A396: the pin to Home on a column's head and on a note. Not pinned it shows while the column or
+   note is hovered or focused (always on touch); pinned it stays, filled. */
+.note-pin:not([aria-pressed="true"]) { opacity: 0; transition: opacity .15s; }
+.kanban-head:hover .note-pin, .note:hover .note-pin, .note-pin:focus-visible { opacity: 1; }
+@media (hover: none) { .note-pin:not([aria-pressed="true"]) { opacity: 1; } }
+.note-pin[aria-pressed="true"] .icon { fill: currentColor; }
+.kanban-head .note-pin[aria-pressed="true"] { color: var(--primary); }
+/* Opened from a pinned widget on Home: the note lights up for a moment. */
+.note.is-found { outline: 3px solid var(--primary); outline-offset: 2px; }
