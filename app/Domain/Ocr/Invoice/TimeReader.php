@@ -44,11 +44,11 @@ final class TimeReader
     /**
      * @param  list<Line>  $lines
      */
-    public static function read(array $lines, ?InvoiceProposal $invoiceDate): ?InvoiceProposal
+    public static function read(array $lines, ?InvoiceProposal $invoiceDate, string $order = 'dmy'): ?InvoiceProposal
     {
         $dateLines = [];
         foreach ($lines as $n => $line) {
-            foreach (DateReader::dates($line['text']) as $date) {
+            foreach (DateReader::dates($line['text'], $order) as $date) {
                 if ($invoiceDate === null || $date[0] === $invoiceDate->value) {
                     $dateLines[] = $n;
                     break;

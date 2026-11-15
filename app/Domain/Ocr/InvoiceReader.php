@@ -25,7 +25,8 @@ use Closure;
  * amount_page?: ?int, amount_box?: ?array{x: float, y: float, w: float, h: float}}.
  *
  * A315: a facade over the small readers in App\Domain\Ocr\Invoice (IbanReader, AmountReader, DateReader, NumberReader,
- * SenderReader, SkontoReader). Point 133: the sender skips label and term lines and prefers the letterhead.
+ * SenderReader, SkontoReader). Point 133: the sender skips label and term lines and prefers the letterhead. Points 234,
+ * 235: dates and amounts in many formats and languages, ranked by label, place and the arithmetic check.
  */
 final class InvoiceReader
 {
@@ -52,7 +53,8 @@ final class InvoiceReader
             return new InvoiceReading;
         }
         $currency = AmountReader::documentCurrency($lines);
-        $invoiceDate = DateReader::invoiceDate($lines);
+        $order = DateReader::slashOrder($lines);
+        $invoiceDate = DateReader::invoiceDate($lines, $order);
         $payee = SenderReader::read($lines);
         $name = $sender ?? $payee?->value;
         $hint = ($name !== null && $this->hints !== null) ? ($this->hints)($name) : null;
@@ -60,7 +62,7 @@ final class InvoiceReader
 
         [$iban, $swap, $ibanLine] = $this->ibans->iban($lines, is_string($hint['iban'] ?? null) ? $hint['iban'] : null);
         [$amount, $others] = AmountReader::amounts($lines, $currency, $hint);
-        [$percent, $until] = SkontoReader::read($lines, $invoiceDate);
+        [$percent, $until] = SkontoReader::read($lines, $invoiceDate, $order);
 
         return new InvoiceReading(
             iban: $iban,
@@ -71,12 +73,12 @@ final class InvoiceReader
             invoiceNumber: NumberReader::labelled($lines, NumberReader::INVOICE),
             customerNumber: NumberReader::labelled($lines, NumberReader::CUSTOMER),
             invoiceDate: $invoiceDate,
-            dueDate: DateReader::dueDate($lines, $invoiceDate),
+            dueDate: DateReader::dueDate($lines, $invoiceDate, $order),
             sender: $payee,
             discountPercent: $percent,
             discountUntil: $until,
             currency: $amount->currency ?? $currency,
-            receiptTime: TimeReader::read($lines, $invoiceDate),
+            receiptTime: TimeReader::read($lines, $invoiceDate, $order),
         );
     }
 

@@ -20,13 +20,25 @@ use Illuminate\Validation\ValidationException;
 /**
  * Turns a recognised document into property suggestions (points 122.5, A253) and learns per sender (A236).
  * suggest(): runs InvoiceReader with the organisation's own IBANs and the sender hints and stores what it finds as
- * suggested values – never over a confirmed one (PropertyValues). learn(): a confirmed IBAN or amount of a document
+ * suggested values – never over a confirmed one (PropertyValues); a sure invoice date or amount (A401) is stored
+ * confirmed. learn(): a confirmed IBAN or amount of a document
  * with a known sender is remembered in sender_hints and preferred next time.
  */
 final class InvoiceSuggestions
 {
     /** Below this a proposal is not stored (only shown as a chip in the GiroCode card). */
     public const MIN_CONFIDENCE = 0.35;
+
+    /**
+     * A401: from here an invoice date or amount is sure (net + tax = gross, or an unambiguous label) and is stored
+     * confirmed right away – no ✓ needed; below it stays "vorgeschlagen". A value a person confirmed stays.
+     */
+    public const SURE = 0.9;
+
+    private const DIRECT = ['invoice_date', 'invoice_amount'];
+
+    /** While suggest() stores a sure value: not a person's confirmation, nothing to learn from. */
+    private static bool $applying = false;
 
     public function __construct(private readonly PropertyValues $values) {}
 
@@ -69,10 +81,18 @@ final class InvoiceSuggestions
             if (! $property instanceof Property || $proposal->confidence < self::MIN_CONFIDENCE) {
                 continue;
             }
+            $sure = in_array($key, self::DIRECT, true) && $proposal->confidence >= self::SURE;
+            $existing = $sure ? $this->values->get($document, $key) : null;
+            if ($existing !== null && ! $existing->isSuggested()) {
+                continue;
+            }
+            self::$applying = true;
             try {
-                $this->values->set($document, $property, $proposal->value, DocumentProperty::SUGGESTED, $proposal->page, $proposal->box);
+                $this->values->set($document, $property, $proposal->value, $sure ? DocumentProperty::CONFIRMED : DocumentProperty::SUGGESTED, $proposal->page, $proposal->box);
             } catch (ValidationException) {
                 // A value the property refuses stays a proposal only.
+            } finally {
+                self::$applying = false;
             }
         }
         // Point 219: the receipt's time, for matching against the booking's time.
@@ -85,7 +105,7 @@ final class InvoiceSuggestions
     /** A236: remember the IBAN or where the amount stood, when a person confirmed it for a known sender. */
     public function learn(DocumentProperty $value): void
     {
-        if ($value->state !== DocumentProperty::CONFIRMED) {
+        if ($value->state !== DocumentProperty::CONFIRMED || self::$applying) {
             return;
         }
         $key = Property::query()->withoutGlobalScope(OrgScope::class)->whereKey($value->property_id)->value('key');

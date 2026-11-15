@@ -44,7 +44,10 @@ it('writes suggestions after recognition without touching confirmed values or th
     expect($this->values->get($doc, 'invoice_number')?->value_text)->toBe('RE-SELBST')
         ->and($this->values->get($doc, 'invoice_number')?->state)->toBe('confirmed')
         ->and($this->values->get($doc, 'invoice_amount')?->value_int)->toBe(40460)
-        ->and($this->values->get($doc, 'invoice_amount')?->state)->toBe('suggested')
+        // A401: net + tax = gross and a labelled date are sure – applied directly; the due date stays a suggestion.
+        ->and($this->values->get($doc, 'invoice_amount')?->state)->toBe('confirmed')
+        ->and($this->values->get($doc, 'invoice_date')?->state)->toBe('confirmed')
+        ->and($this->values->get($doc, 'due_date')?->state)->toBe('suggested')
         ->and($this->values->get($doc, 'iban')?->value_text)->toBe('DE02120300000000202051')
         ->and($this->values->get($doc, 'sender')?->value_text)->toBe('Muster Handwerk GmbH')
         ->and($this->values->get($doc, 'due_date')?->value_date?->format('Y-m-d'))->toBe('2026-11-17');

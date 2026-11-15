@@ -19,7 +19,7 @@ final class SkontoReader
      * @param  list<Line>  $lines
      * @return array{InvoiceProposal|null, InvoiceProposal|null}
      */
-    public static function read(array $lines, ?InvoiceProposal $invoiceDate): array
+    public static function read(array $lines, ?InvoiceProposal $invoiceDate, string $order = 'dmy'): array
     {
         foreach ($lines as $line) {
             if (preg_match('/skonto/iu', $line['text']) !== 1 || preg_match('/(\d{1,2}(?:[.,]\d{1,2})?)\s*%/u', $line['text'], $p, PREG_OFFSET_CAPTURE) !== 1) {
@@ -31,7 +31,7 @@ final class SkontoReader
             }
             $percent = InvoiceLines::proposal($value, 0.8, $line, InvoiceLines::box($line, $p[0][1], $p[0][1] + strlen($p[0][0])));
             $until = null;
-            $dates = DateReader::dates($line['text']);
+            $dates = DateReader::dates($line['text'], $order);
             if ($dates !== []) {
                 $until = InvoiceLines::proposal($dates[0][0], 0.8, $line, InvoiceLines::box($line, $dates[0][1], $dates[0][2]));
             } elseif ($invoiceDate !== null && preg_match('/(?:innerhalb|binnen|within)?\s*(?:von\s*)?(\d{1,3})\s*(?:tage?n?|days)/iu', $line['text'], $d, PREG_OFFSET_CAPTURE) === 1 && (int) $d[1][0] > 0 && (int) $d[1][0] <= 120) {

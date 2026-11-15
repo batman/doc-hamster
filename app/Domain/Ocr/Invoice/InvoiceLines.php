@@ -109,4 +109,43 @@ final class InvoiceLines
     {
         return mb_strtolower($text);
     }
+
+    /**
+     * A398, A399: a copy of a line with the usual OCR slips inside digit groups repaired (O/o → 0, I/l/| → 1) – the
+     * same length in bytes, so offsets still point into the original text. A group needs two real digits.
+     */
+    public static function digits(string $text): string
+    {
+        return (string) preg_replace_callback('/(?<!\p{L})[\dOoIl|]+(?:(?:[.,\/\-\'’:]\s?|\s)[\dOoIl|]+)*(?!\p{L})/u', static function (array $m): string {
+            $group = $m[0];
+            if (preg_match_all('/\d/', $group) < 2 || preg_match('/[OoIl|]/', $group) !== 1) {
+                return $group;
+            }
+
+            return strtr($group, ['O' => '0', 'o' => '0', 'I' => '1', 'l' => '1', '|' => '1']);
+        }, $text);
+    }
+
+    /**
+     * The median word height of the document (0 without word positions).
+     *
+     * @param  list<Line>  $lines
+     */
+    public static function medianHeight(array $lines): float
+    {
+        $heights = [];
+        foreach ($lines as $line) {
+            foreach ($line['spans'] as $span) {
+                if ($span['h'] > 0) {
+                    $heights[] = $span['h'];
+                }
+            }
+        }
+        if ($heights === []) {
+            return 0.0;
+        }
+        sort($heights);
+
+        return $heights[intdiv(count($heights), 2)];
+    }
 }
