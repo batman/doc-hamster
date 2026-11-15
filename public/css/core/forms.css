@@ -159,6 +159,8 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
 .toast.toast-error { border-color: var(--danger); }
 .toast.toast-error::before { content: ""; flex: none; width: .5rem; height: .5rem; border-radius: 50%; background: var(--danger); }
 .win-detail form > button[type="submit"] { margin-top: 1rem; }
+/* Point 232: a button closing a form keeps some air above the last field. */
+form > .field + :is(button, .button, .actions) { margin-top: 1.5rem; }
 
 /* Field with symbol ("Feld mit Symbol", A195-A199), like input groups: a leading symbol or text (@, €, search), a
    button inside the field on the right (✓ save, X clear, eye) and/or a state symbol (green ✓, red !). The field keeps
@@ -195,8 +197,8 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
    focused or tapped; a field with text stays open. The module sets the open width with --expand-plus-width. */
 .expand-plus { display: inline-flex; align-items: center; margin: 0; }
 .expand-plus > .expand-plus-field { width: var(--expand-plus-width, 16rem); max-width: 100%; animation: expand-plus .15s ease-out; }
-.expand-plus:not(:hover, .is-open, .is-filled, :has(.expand-plus-field :focus)) > .expand-plus-field,
-.expand-plus:is(:hover, .is-open, .is-filled, :has(.expand-plus-field :focus)) > .expand-plus-open { display: none; }
+.expand-plus:not(.is-row):not(:hover, .is-open, .is-filled, :has(.expand-plus-field :focus)) > .expand-plus-field,
+.expand-plus:not(.is-row):is(:hover, .is-open, .is-filled, :has(.expand-plus-field :focus)) > .expand-plus-open { display: none; }
 .expand-plus > .expand-plus-field > input { max-width: none; }
 @keyframes expand-plus { from { width: 2.5rem; opacity: .5; } }
 @media (prefers-reduced-motion: reduce) { .expand-plus > .expand-plus-field { animation: none; } }
