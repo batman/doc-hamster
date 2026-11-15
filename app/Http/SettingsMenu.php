@@ -16,6 +16,10 @@ final class SettingsMenu
 {
     /** group => [icon, entries [key, route, icon, ability (null = everyone), routes that belong to it], leaf = one page] */
     private const GROUPS = [
+        // Point 222: everybody's own account – name, password, signed-in devices.
+        'account' => ['user', [
+            ['account', 'account.show', 'user', null, ['account.*']],
+        ], true],
         'people' => ['users', [
             ['members', 'members.index', 'users', 'members.manage', ['members.*']],
             ['roles', 'roles.index', 'user-shield', 'members.manage', ['roles.*']],

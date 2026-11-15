@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'title' => 'Einstellungen',
     'groups' => [
+        'account' => 'Mein Konto',
         'properties' => 'Eigenschaften',
         'people' => 'Personen & Rollen',
         'bank' => 'Bank',
@@ -21,6 +22,7 @@ return [
     ],
     // Point 156: the short description of each group on its tile.
     'group_texts' => [
+        'account' => 'Name, Passwort und angemeldete Geräte',
         'properties' => 'Felder wie Rechnungsbetrag, Datum oder IBAN',
         'people' => 'Wer Zugang hat und was er darf',
         'bank' => 'Konten, Import, Gründe und Kartenkategorien',
@@ -36,6 +38,7 @@ return [
         'backup' => 'Alle Daten als ZIP herunterladen',
     ],
     'links' => [
+        'account' => ['title' => 'Mein Konto', 'text' => 'Name, Passwort und angemeldete Geräte'],
         'properties' => ['title' => 'Eigenschaften', 'text' => 'Felder wie Rechnungsbetrag, Datum oder IBAN'],
         'members' => ['title' => 'Personen', 'text' => 'Wer Zugang hat'],
         'roles' => ['title' => 'Rollen', 'text' => 'Was eine Rolle darf'],

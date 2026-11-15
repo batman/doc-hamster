@@ -49,8 +49,6 @@ final class DeviceSettingsController
             // Point 204: the second shortcut, from config until its checked link is there.
             'photoUrl' => $photo = (is_string($p = config('dochamster.photo_shortcut')) && $p !== '' ? $p : null),
             'photoQr' => $photo === null ? null : self::qr($photo),
-            // Point 208: the card "Angemeldete Geräte".
-            'sessions' => SessionSettingsController::rows($request, $org->membership()->user_id),
         ]);
     }
 

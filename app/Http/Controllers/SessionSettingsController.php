@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 
 /**
- * Einstellungen → Geräte, card "Angemeldete Geräte" (point 208): the person's own sign-ins, end one, end all others.
+ * Einstellungen → Mein Konto, card "Angemeldete Geräte" (points 208, 222): the person's own sign-ins, end one, end all others.
  */
 final class SessionSettingsController
 {
@@ -56,7 +56,7 @@ final class SessionSettingsController
         abort_unless(UserSessions::end($userId, $id), 404);
         $audit->record('auth.session_ended', orgId: $org->id(), userId: $userId, ip: $request->ip());
 
-        return redirect()->route('devices.index')->with('status', __('devices.sessions.ended'));
+        return redirect()->route('account.show')->with('status', __('devices.sessions.ended'));
     }
 
     public function destroyOthers(Request $request, AuditLog $audit, CurrentOrg $org): RedirectResponse
@@ -65,14 +65,14 @@ final class SessionSettingsController
         abort_unless($user instanceof User, 403);
         $count = UserSessions::endOthers($user->id, $request->session()->getId());
         $token = UserSessions::rotateRememberToken($user);
-        $this->keepRememberCookie($request, $user, $token);
+        self::keepRememberCookie($request, $user, $token);
         $audit->record('auth.sessions_ended', orgId: $org->id(), userId: $user->id, meta: ['count' => $count], ip: $request->ip());
 
-        return redirect()->route('devices.index')->with('status', trans_choice('devices.sessions.others_ended', $count, ['count' => $count]));
+        return redirect()->route('account.show')->with('status', trans_choice('devices.sessions.others_ended', $count, ['count' => $count]));
     }
 
     /** This device keeps its "Angemeldet bleiben" cookie, now with the new token. */
-    private function keepRememberCookie(Request $request, User $user, string $token): void
+    public static function keepRememberCookie(Request $request, User $user, string $token): void
     {
         $guard = Auth::guard();
         if (! $request->cookies->has($guard->getRecallerName())) {

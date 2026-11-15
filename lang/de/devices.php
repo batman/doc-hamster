@@ -100,7 +100,7 @@ return [
     // Point 208: Angemeldete Geräte.
     'sessions' => [
         'title' => 'Angemeldete Geräte',
-        'note' => 'Hier sind Sie gerade angemeldet. Ein fremdes Gerät? Abmelden – und am besten das Passwort ändern lassen.',
+        'note' => 'Hier sind Sie gerade angemeldet. Ein fremdes Gerät? Abmelden – und am besten das Passwort ändern.',
         'name' => ':browser auf :system',
         'unknown' => 'Unbekanntes Gerät',
         'current' => 'Dieses Gerät',

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Advisor\AdvisorController;
 use App\Http\Controllers\Advisor\AdvisorPasswordController;
 use App\Http\Controllers\AdvisorAccessController;
@@ -192,10 +193,16 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('{id}/delete', [DeviceSettingsController::class, 'destroy'])->name('destroy');
         Route::post('{id}/rekey', [DeviceSettingsController::class, 'rekey'])->name('rekey');
     });
-    // Point 208: Angemeldete Geräte – end one sign-in or all others (the person's own sessions only).
-    Route::middleware('can:documents.upload')->prefix('settings/devices/sessions')->name('sessions.')->group(function (): void {
-        Route::post('others', [SessionSettingsController::class, 'destroyOthers'])->middleware('throttle:10,1')->name('others');
-        Route::post('{id}/end', [SessionSettingsController::class, 'destroy'])->name('end');
+    // Einstellungen → Mein Konto (point 222; before settings/{group}): own name, password and sign-ins – everyone.
+    Route::prefix('settings/account')->group(function (): void {
+        Route::get('/', [AccountController::class, 'show'])->name('account.show');
+        Route::post('name', [AccountController::class, 'name'])->name('account.name');
+        // The redirect target after a sign-in with a one-time password (point 222.4).
+        Route::get('password', [AccountController::class, 'password'])->name('account.password');
+        Route::post('password', [AccountController::class, 'updatePassword'])->middleware('throttle:10,1')->name('account.password.update');
+        // Point 208: Angemeldete Geräte – end one sign-in or all others (the person's own sessions only).
+        Route::post('sessions/others', [SessionSettingsController::class, 'destroyOthers'])->middleware('throttle:10,1')->name('sessions.others');
+        Route::post('sessions/{id}/end', [SessionSettingsController::class, 'destroy'])->name('sessions.end');
     });
 
     // "Teilen → DocHamster" (points 151, A328): the service worker keeps the share, this page sends it (also after login).
