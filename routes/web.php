@@ -19,6 +19,7 @@ use App\Http\Controllers\DeviceSettingsController;
 use App\Http\Controllers\DocumentBulkController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DocumentFileController;
+use App\Http\Controllers\DocumentZipController;
 use App\Http\Controllers\DocumentPackController;
 use App\Http\Controllers\DocumentPropertyController;
 use App\Http\Controllers\DocumentUploadController;
@@ -130,6 +131,9 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('documents/{id}/move', [DocumentController::class, 'move'])->middleware('can:documents.edit')->name('documents.move');
     Route::post('documents/{id}/delete', [DocumentController::class, 'destroy'])->middleware('can:documents.trash')->name('documents.destroy');
     Route::get('files/{id}/download', [DocumentFileController::class, 'download'])->name('documents.download');
+    // Point 237: a folder branch or the picked documents as one streamed ZIP.
+    Route::get('zip/folders/{id}', [DocumentZipController::class, 'folder'])->middleware('throttle:20,1')->name('folders.zip');
+    Route::post('zip/documents', [DocumentZipController::class, 'picked'])->middleware('throttle:20,1')->name('documents.zip');
     Route::get('files/{id}/thumb', [DocumentFileController::class, 'thumb'])->name('documents.thumb');
     Route::get('tags.css', [TagController::class, 'css'])->name('tags.css');
     // Einstellungen → Log (point 115, A229-A234): all logbooks, one entry per logbook, export, reset; browser errors.

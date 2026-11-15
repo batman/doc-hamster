@@ -148,3 +148,22 @@ it('hides documents without a booking from a role restricted to accounts (F41)',
     $this->role->forceFill(['account_ids' => null])->save();
     expect($titles())->toBe(['Beide Konten', 'Giro-Beleg', 'Kassen-Beleg', 'Ohne Buchung']);
 });
+
+it('puts only what the role may see into a folder or selection ZIP, keeping the tree (point 237)', function (): void {
+    $this->role->forceFill(['folder_ids' => [$this->sub->id]])->save();
+    $files = [];
+    foreach ([['Hotel', $this->deep->id], ['Hotel', $this->sub->id], ['Geheim', $this->sibling->id]] as [$title, $folder]) {
+        $doc = scopedDoc($title, $folder);
+        $path = 'documents/'.$doc->id.'.pdf';
+        Illuminate\Support\Facades\Storage::disk('local')->put($path, '%PDF-1.4 '.$title);
+        App\Domain\Documents\DocumentFile::query()->withoutGlobalScopes()->create(['org_id' => $this->orgId, 'document_id' => $doc->id, 'path' => $path, 'mime' => 'application/pdf', 'size' => 12, 'sha256' => str_repeat('0', 64)]);
+        $files[] = $doc;
+    }
+    $this->actingAs($this->person->user);
+
+    $zip = $this->get('/zip/folders/'.$this->top->id)->assertOk()->streamedContent();
+    expect($zip)->toContain('Firma/Projekt Nord/Reisen/Hotel.pdf')->toContain('Firma/Projekt Nord/Hotel.pdf')->not->toContain('Geheim');
+
+    $picked = $this->post('/zip/documents', ['ids' => [$files[0]->id, $files[1]->id, $files[2]->id]])->assertOk()->streamedContent();
+    expect($picked)->toContain('Hotel.pdf')->toContain('Hotel (2).pdf')->not->toContain('Geheim');
+});

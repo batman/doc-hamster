@@ -9,6 +9,8 @@
         <button type="button" class="control-button" aria-expanded="false" data-folder-menu aria-label="{{ $moveLabel }}" data-tooltip="{{ $moveLabel }}"><x-icon name="folder" /></button>
         <div class="dropdown-panel folder-menu" hidden></div>
     </div>
+    {{-- Point 237: the picked documents as one ZIP (documents-pick.js posts their ids). --}}
+    <button type="button" class="control-button" data-pick-zip="{{ route('documents.zip') }}" aria-label="{{ __('documents.zip.picked') }}" data-tooltip="{{ __('documents.zip.picked') }}"><x-icon name="download" /></button>
     @if (($doneUrl ?? null) !== null)
         <button type="button" class="control-button" data-pick-done="{{ $doneUrl }}" aria-label="{{ __('inbox.done') }}" data-tooltip="{{ __('inbox.done') }}"><x-icon name="check" /></button>
     @endif

@@ -157,6 +157,11 @@ return [
     ],
     // Drag and drop, several at once, the Papierkorb (points 75-77, 85, A131-A137).
     // Points 196, A369, A370: checkboxes before the rows and the selection bar.
+    'zip' => [
+        'folder' => 'Als ZIP herunterladen',
+        'picked' => 'Als ZIP herunterladen',
+        'picked_name' => 'Dokumente',
+    ],
     'pick' => [
         'one' => 'Auswählen',
         'toggle' => 'Auswählen',

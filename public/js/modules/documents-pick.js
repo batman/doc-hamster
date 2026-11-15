@@ -61,7 +61,26 @@
         const cfg = docs.config();
         const folder = event.target.closest('.folder-menu [data-file-into]');
         const done = event.target.closest('[data-pick-done]');
-        if (event.target.closest('[data-pick-clear]')) {
+        const zip = event.target.closest('[data-pick-zip]');
+        if (zip && rows.length > 0) {
+            // Point 237: a plain form post, so the browser saves the streamed ZIP itself; the page stays.
+            const form = document.createElement('form');
+            form.method = 'post';
+            form.action = zip.dataset.pickZip;
+            form.hidden = true;
+            const field = (name, value) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = name;
+                input.value = value;
+                form.append(input);
+            };
+            field('_token', document.querySelector('meta[name="csrf-token"]')?.content ?? '');
+            rows.forEach(row => field('ids[]', row.dataset.doc));
+            document.body.append(form);
+            form.submit();
+            form.remove();
+        } else if (event.target.closest('[data-pick-clear]')) {
             rows.forEach(row => docs.pick(row, false));
         } else if (folder && cfg.move && rows.length > 0) {
             const inbox = scope.dataset?.windowKind === 'inbox';

@@ -257,6 +257,11 @@
                             @endforeach
                         </form>
                     @endif
+                    @if ($openFolder)
+                        {{-- Point 237: this folder with all subfolders as one ZIP. --}}
+                        <hr class="menu-separator">
+                        <a class="menu-item" href="{{ route('folders.zip', $openFolder->id) }}" download><x-icon name="download" /><span>{{ __('documents.zip.folder') }}</span></a>
+                    @endif
                     @if ($canEditFolder)
                         @if ($canUpload || $canFolder)
                             <hr class="menu-separator win-narrow-only">
@@ -335,11 +340,15 @@
                                     <input class="input-small" name="name" value="{{ $f->name }}" maxlength="100" required aria-label="{{ __('folders.name') }}">
                                     <button type="submit" class="control-button" aria-label="{{ __('folders.save') }}" data-tooltip="{{ __('folders.save') }}"><x-icon name="check" /></button>
                                 </form>
-                                <span class="row-actions">
+                            @endif
+                            <span class="row-actions">
+                                {{-- Point 237: the folder with all subfolders as one ZIP. --}}
+                                <a class="control-button" href="{{ route('folders.zip', $f->id) }}" download aria-label="{{ __('documents.zip.folder') }}: {{ $f->name }}" data-tooltip="{{ __('documents.zip.folder') }}"><x-icon name="download" /></a>
+                                @if ($canEdit)
                                     <button type="button" class="control-button" data-folder-rename aria-label="{{ __('folders.rename') }}: {{ $f->name }}" data-tooltip="{{ __('folders.rename') }}"><x-icon name="pencil" /></button>
                                     <a class="control-button" href="{{ route('folders.index', ['folder' => $f->id]) }}" data-window aria-label="{{ __('folders.properties') }}: {{ $f->name }}" data-tooltip="{{ __('folders.properties') }}"><x-icon name="settings" /></a>
-                                </span>
-                            @endif
+                                @endif
+                            </span>
                         </li>
                     @endif
                 @endforeach

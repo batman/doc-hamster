@@ -157,6 +157,11 @@ return [
     ],
     // Drag and drop, several at once, the trash (points 75-77, 85, A131-A137).
     // Points 196, A369, A370: checkboxes before the rows and the selection bar.
+    'zip' => [
+        'folder' => 'Download as ZIP',
+        'picked' => 'Download as ZIP',
+        'picked_name' => 'Documents',
+    ],
     'pick' => [
         'one' => 'Select',
         'toggle' => 'Select',
