@@ -22,7 +22,7 @@ return [
         'core/badges', 'modules/notes', 'modules/tags-search', 'core/toasts', 'core/selection-bar', 'core/ajax-forms',
         'modules/updates-preview-pick', 'core/color-field', 'modules/folder-import', 'core/start',
         'core/pane-edge', 'modules/document-viewer', 'modules/doc-fullscreen', 'modules/ocr-text', 'modules/translate', 'modules/palette', 'modules/ocr-ink', 'modules/ocr-browser', 'modules/documents', 'modules/documents-rows', 'modules/documents-forms',
-        'modules/documents-rename', 'modules/documents-trash', 'modules/documents-select', 'modules/documents-pick', 'modules/documents-dnd', 'modules/documents-dnd-native', 'modules/documents-upload', 'modules/documents-search',
+        'modules/documents-rename', 'modules/documents-trash', 'modules/documents-select', 'modules/documents-pick', 'modules/documents-columns', 'modules/documents-dnd', 'modules/documents-dnd-native', 'modules/documents-upload', 'modules/documents-search',
         'modules/updates',
         'modules/text-editor', 'core/edit-in-place', 'modules/ocr-progress', 'modules/ocr-live', 'modules/ocr-server', 'modules/note-options',
         'modules/properties', 'modules/girocode', 'modules/bank', 'modules/inbox', 'core/window-edge', 'core/top-layer', 'core/layout-debug',

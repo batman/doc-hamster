@@ -28,6 +28,9 @@
 .page { padding: 1.5rem 2rem 3rem; }
 @media (max-width: 63.99rem) { .page { padding-inline: var(--space); } }
 .muted { color: var(--muted); }
+/* Eine Zeile (point 224): text that ends in "…" instead of wrapping; with data-tooltip + data-tooltip-overflow the full
+   text shows on hover only when it is cut off. */
+.one-line { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
 /* Messages and check lists */
 .error { color: var(--error); border: 1px solid var(--error); border-radius: 10px; padding: .4rem .6rem; }

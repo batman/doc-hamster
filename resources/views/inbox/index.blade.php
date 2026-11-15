@@ -15,6 +15,10 @@
         <x-slot:actions>
             <div class="toolbar">
                 {{-- A359: Dokumente as the next window on the right; rows dragged onto its folder rows are filed there. --}}
+                {{-- Point 226: "Auswählen" shows the checkboxes (documents-pick.js). --}}
+                @if ($documents->isNotEmpty() && Gate::allows('documents.edit'))
+                    <span class="switcher is-actions"><button type="button" data-pick-toggle aria-pressed="false" aria-label="{{ __('documents.pick.toggle') }}" data-tooltip="{{ __('documents.pick.toggle') }}"><x-icon name="square-check" /></button></span>
+                @endif
                 <a class="icon-button" href="{{ route('documents.index') }}" data-window aria-label="{{ __('inbox.open_folders') }}" data-tooltip="{{ __('inbox.open_folders') }}"><x-icon name="layout-columns" /></a>
                 @if ($documents->isNotEmpty())
                     <form method="post" action="{{ route('inbox.done-all') }}" data-inbox-action>
@@ -58,9 +62,8 @@
             @if ($source !== null && $source !== 'api')
                 <x-empty :icon="\App\Domain\Documents\Inbox::ICONS[$source]" :text="__('inbox.empty_source.'.$source)" />
             @else
-                <x-empty icon="inbox" :text="__('empty.inbox')">
-                    @include('documents._upload-button')
-                </x-empty>
+                {{-- Point 230: the upload sits in the toolbar; the empty state only says so. --}}
+                <x-empty icon="inbox" :text="__('empty.inbox')" />
             @endif
             @unless ($hasPrinter)
                 {{-- A266: gone once a computer is paired. --}}

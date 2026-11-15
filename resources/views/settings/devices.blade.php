@@ -55,9 +55,7 @@
                     </span>
                 </li>
             @empty
-                <x-empty tag="li" icon="device-mobile" :text="__('empty.devices')">
-                    <button type="button" class="button-small" data-dialog-open="add-device"><x-icon name="plus" />{{ __('devices.add') }}</button>
-                </x-empty>
+                <x-empty tag="li" icon="device-mobile" :text="__('empty.devices')" />
             @endforelse
         </ul>
     </section>

@@ -1,7 +1,7 @@
 (() => {
     const root = document.documentElement;
     // Tooltips (A103): one layer on <body> above everything, so cards, columns and scrolling windows can't cut
-    // them off. The element's ::after rules still decide whether its tooltip shows at all; the side comes
+    // them off. `data-tooltip-overflow` shows it only while the text is cut off (.one-line). The element's ::after rules still decide whether its tooltip shows at all; the side comes
     // from .tooltip-right (else below, or above when there is no room). Mouse and keyboard only, not touch.
     const setupTips = () => {
         const tip = document.createElement('div');
@@ -46,7 +46,9 @@
                 return;
             }
             hide();
-            if (!el.dataset.tooltip || getComputedStyle(el, '::after').display === 'none') {
+            // Point 224: data-tooltip-overflow – the full text only when the element is cut off with "…".
+            const whole = el.hasAttribute('data-tooltip-overflow') && el.scrollWidth <= el.clientWidth;
+            if (!el.dataset.tooltip || whole || getComputedStyle(el, '::after').display === 'none') {
                 return;
             }
             owner = el;

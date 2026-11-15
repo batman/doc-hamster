@@ -45,7 +45,6 @@
                 @empty
                     <x-empty tag="li" icon="building-bank" :text="__('empty.accounts')">
                         <a class="button button-small button-quiet" href="{{ route('bank.import') }}" data-window><x-icon name="upload" />{{ __('empty.import') }}</a>
-                        <button type="button" class="button-small" data-dialog-open="add-account"><x-icon name="plus" />{{ __('bank.add_account') }}</button>
                     </x-empty>
                 @endforelse
                 <li class="pick-row is-static @if ($receipts) is-marked @endif">

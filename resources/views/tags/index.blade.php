@@ -17,9 +17,7 @@
         @endforeach
     </ul>
     @if ($tags->isEmpty())
-        <x-empty icon="tags" :text="__('empty.tags')">
-            <a class="button button-small" href="{{ route('tags.index', ['new' => 1]) }}" data-window><x-icon name="plus" />{{ __('tags.new') }}</a>
-        </x-empty>
+        <x-empty icon="tags" :text="__('empty.tags')" />
     @endif
 @endsection
 

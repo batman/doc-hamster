@@ -1,7 +1,10 @@
-{{-- Point 113: no own scroll box – the table always fits the window; A222: the Tags column only when a row has tags;
+{{-- Point 225: heads carry data-col; the line between two heads is dragged to change the widths (documents-columns.js).
+     Point 113: no own scroll box – the table always fits the window; A222: the Tags column only when a row has tags;
      A220: narrow windows drop Tags first, then the time (container queries in css/modules/documents.css).
      A244: the property columns this person chose (⋯ menu → Spalten); a click on a head sorts on the server. --}}
 @php
+    // Point 225: the drag handle at a head's right edge (documents-columns.js).
+    $grip = '<span class="col-resize" data-col-resize aria-hidden="true"></span>';
     $withTags = $documents->contains(fn ($d) => $d->tags->isNotEmpty());
     $propertyFormat = app(\App\Domain\Properties\PropertyValues::class);
     // The head of a sortable column: a link that sorts by it (again: the other way round) and shows the direction.
@@ -21,21 +24,21 @@
                 @endif
                 @foreach ([['name', __('documents.name'), ''], ['date', __('receipt_date.label'), 'col-date']] as [$key, $label, $class])
                     @if ($key === 'date' && $searching)
-                        <th scope="col" class="col-folder">{{ __('documents.folder') }}</th>
+                        <th scope="col" class="col-folder" data-col="folder">{{ __('documents.folder') }}{!! $grip !!}</th>
                     @endif
                     @php $head = $sortHead($key, $label); @endphp
-                    <th scope="col" @if ($class) class="{{ $class }}" @endif @if ($head['current']) aria-sort="{{ $dir === 'asc' ? 'ascending' : 'descending' }}" @endif>
-                        <a href="{{ $head['href'] }}" data-doc-sort aria-label="{{ __('properties.sort', ['name' => $label]) }}">{{ $label }}@if ($head['current'])<x-icon :name="$dir === 'asc' ? 'arrow-up' : 'arrow-down'" />@endif</a>
+                    <th scope="col" data-col="{{ $key }}" @if ($class) class="{{ $class }}" @endif @if ($head['current']) aria-sort="{{ $dir === 'asc' ? 'ascending' : 'descending' }}" @endif>
+                        <a href="{{ $head['href'] }}" data-doc-sort aria-label="{{ __('properties.sort', ['name' => $label]) }}">{{ $label }}@if ($head['current'])<x-icon :name="$dir === 'asc' ? 'arrow-up' : 'arrow-down'" />@endif</a>{!! $grip !!}
                     </th>
                 @endforeach
                 @foreach ($columns as $column)
                     @php $head = $sortHead('prop:'.$column->id, $column->name); @endphp
-                    <th scope="col" class="col-prop @if (in_array($column->type, ['amount', 'number'], true)) col-prop-num @endif" @if ($head['current']) aria-sort="{{ $dir === 'asc' ? 'ascending' : 'descending' }}" @endif>
-                        <a href="{{ $head['href'] }}" data-doc-sort aria-label="{{ __('properties.sort', ['name' => $column->name]) }}">{{ $column->name }}@if ($head['current'])<x-icon :name="$dir === 'asc' ? 'arrow-up' : 'arrow-down'" />@endif</a>
+                    <th scope="col" data-col="prop:{{ $column->id }}" class="col-prop @if (in_array($column->type, ['amount', 'number'], true)) col-prop-num @endif" @if ($head['current']) aria-sort="{{ $dir === 'asc' ? 'ascending' : 'descending' }}" @endif>
+                        <a href="{{ $head['href'] }}" data-doc-sort aria-label="{{ __('properties.sort', ['name' => $column->name]) }}">{{ $column->name }}@if ($head['current'])<x-icon :name="$dir === 'asc' ? 'arrow-up' : 'arrow-down'" />@endif</a>{!! $grip !!}
                     </th>
                 @endforeach
                 @if ($withTags)
-                    <th scope="col" class="col-tags">{{ __('documents.tags') }}</th>
+                    <th scope="col" class="col-tags" data-col="tags">{{ __('documents.tags') }}{!! $grip !!}</th>
                 @endif
                 <th scope="col" class="col-actions"><span class="visually-hidden">{{ __('folders.properties') }}</span></th>
             </tr>
@@ -48,7 +51,7 @@
                     @if ($canPick ?? false)
                         <td class="col-pick">@include('documents._pick')</td>
                     @endif
-                    <td><a href="{{ route('documents.show', [$document->id, ...request()->query()]) }}" data-window tabindex="-1">@include('documents._type-icon')<span data-doc-title>{{ $document->title }}</span></a></td>
+                    <td><a href="{{ route('documents.show', [$document->id, ...request()->query()]) }}" data-window tabindex="-1">@include('documents._type-icon')<span class="one-line" data-doc-title data-tooltip="{{ $document->title }}" data-tooltip-overflow>{{ $document->title }}</span></a></td>
                     @if ($searching)
                         <td>@include('documents._folder-link')</td>
                     @endif

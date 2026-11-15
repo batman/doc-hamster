@@ -3,6 +3,30 @@
 // [data-pick-all] picks every row or none; the bar's Ordner-Menü moves all picked rows in one request (bulk move route;
 // in the Posteingang as filing, "N Dokumente in „X“ abgelegt"); ✓ [data-pick-done] marks them done (Posteingang);
 // X [data-pick-clear] clears the selection. Dragging a picked row carries the whole selection (documents-dnd.js).
+// Point 226 (A392-A394): the checkboxes show only while "Auswählen" [data-pick-toggle] is on (remembered in this browser,
+// for every folder) or while a row is picked with Ctrl/Shift (CSS :has). Switching off drops the selection.
+(() => {
+    const KEY = 'dh-pick-boxes';
+    const root = document.documentElement;
+    try {
+        root.classList.toggle('show-picks', localStorage.getItem(KEY) === '1');
+    } catch { /* no storage: boxes stay off */ }
+    const pressed = () => document.querySelectorAll('[data-pick-toggle]').forEach(button => {
+        button.setAttribute('aria-pressed', root.classList.contains('show-picks') ? 'true' : 'false');
+    });
+    document.addEventListener('DOMContentLoaded', pressed);
+    document.addEventListener('click', event => {
+        if (!event.target.closest?.('[data-pick-toggle]')) return;
+        const on = !root.classList.contains('show-picks');
+        root.classList.toggle('show-picks', on);
+        try {
+            localStorage.setItem(KEY, on ? '1' : '0');
+        } catch { /* only for this page */ }
+        if (!on) document.querySelectorAll('[data-doc].is-selected').forEach(row => window.DocHamster?.docs?.pick?.(row, false));
+        pressed();
+    });
+})();
+
 (() => {
     const DocHamster = window.DocHamster;
     const docs = DocHamster?.docs;

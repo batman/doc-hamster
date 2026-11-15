@@ -165,8 +165,10 @@ html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
    second line; small inline symbols, each part with its words as tooltip (it lies above the row's link area for that). */
 .row-stats, .pick-row small.row-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 0 .3rem; }
 .row-stat { position: relative; z-index: 1; display: inline-flex; align-items: center; }
-.row-stat > [aria-hidden] { display: inline-flex; align-items: center; gap: .1rem; }
-.row-stat .icon { width: .95em; height: .95em; color: inherit; }
+/* Point 229: the symbol as tall as the digits, on their middle (digits have no descender, so a box centred on the line
+   sat low), with an even small gap. */
+.row-stat > [aria-hidden] { display: inline-flex; align-items: center; gap: .2rem; line-height: 1; }
+.row-stat .icon { width: 1.1em; height: 1.1em; color: inherit; translate: 0 -.04em; }
 /* Tags in a row's second line (document rows, point 166): small pills that fit the line. */
 .row-stats .tag { min-height: 1.25rem; padding: 0 .45rem; border-width: 1.5px; font-size: .75rem; }
 
@@ -196,6 +198,10 @@ html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
 .row-pick { position: relative; z-index: 1; }
 label.pick-all:not(.chip):has(> input[type="checkbox"]) { min-height: 36px; margin: .5rem 0 0; padding: 0 .6rem; gap: .75rem; font-size: .875rem; color: var(--muted); }
 .view-details :is(th, td).col-pick { width: 2.25rem; padding-right: 0; }
+/* Point 226: the checkboxes only while "Auswählen" is on (html.show-picks) or a row of the window is picked. */
+:root:not(.show-picks) section[data-window]:not(:has([data-doc].is-selected)) :is(.row-pick, label.pick-all, .col-pick) { display: none; }
+:root.show-picks .switcher > [data-pick-toggle] { background: var(--mark-surface); box-shadow: var(--mark-shadow); color: var(--text); }
+:root.show-picks .switcher > [data-pick-toggle] .icon { color: var(--primary); }
 [data-doc], [data-drag-folder] { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .drag-ghost { position: fixed; left: 0; top: 0; z-index: 70; max-width: 18rem; padding: .4rem .8rem; border-radius: var(--row-radius); background: var(--primary); color: var(--primary-text);
     font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: var(--shadow); pointer-events: none; }
@@ -300,3 +306,5 @@ html.is-carrying, html.is-carrying * { cursor: grabbing !important; }
 .initials { flex: none; display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 50%;
     background: color-mix(in srgb, var(--primary) 16%, transparent); color: var(--primary-ink); font-size: .85rem; font-weight: 600; letter-spacing: .02em; }
 .initials.is-paused { background: color-mix(in srgb, var(--muted) 18%, transparent); color: var(--muted); }
+.support-link { margin-top: 1rem; color: var(--muted); }
+.support-link .icon { color: var(--danger); }

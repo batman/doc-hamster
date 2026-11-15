@@ -17,7 +17,7 @@
             @endif
             <span class="row-icon"><x-icon :name="$document->files->first()?->typeIcon() ?? 'file-text'" /></span>
             <span class="doc-row-text">
-                <strong><a href="{{ route('documents.show', [$document->id, ...request()->query()]) }}" data-window tabindex="-1"><span data-doc-title>{{ $document->title }}</span></a></strong>
+                <strong class="one-line" data-tooltip="{{ $document->title }}" data-tooltip-overflow><a href="{{ route('documents.show', [$document->id, ...request()->query()]) }}" data-window tabindex="-1"><span data-doc-title>{{ $document->title }}</span></a></strong>
                 <small class="row-stats">
                     <span @if (\App\Domain\Documents\ReceiptDate::missing($document)) class="muted" data-tooltip="{{ __('receipt_date.missing') }}" @endif>{{ $document->dateBy('doc')->format('d.m.Y') }}</span>
                     @if ($bytes > 0)

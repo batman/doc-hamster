@@ -125,8 +125,19 @@
 .view-details .col-actions, .view-details td.row-actions-cell { width: 0; padding: 0; border-left: 0; }
 .view-details td.row-actions-cell { position: relative; overflow: visible; }
 .view-details td.row-actions-cell .row-actions { position: absolute; right: .5rem; top: 50%; translate: 0 -50%; background: var(--surface); border-radius: var(--radius); }
-.view-details td:is(:first-child, .col-pick + td) a { display: flex; align-items: flex-start; gap: .75rem; min-width: 0; overflow-wrap: anywhere; }
+.view-details td:is(:first-child, .col-pick + td) a { display: flex; align-items: center; gap: .75rem; min-width: 0; }
+/* Point 224: names stay on one line in the list and details views and end in "…" (full name as tooltip). */
+.doc-row-text { min-width: 0; }
+.doc-row-text > strong.one-line { display: block; }
 .view-details td:is(:first-child, .col-pick + td) .type-icon { flex: none; margin: 0; }
 .view-details .col-date { white-space: nowrap; }
+/* Point 225: the drag handle on a head's right edge; the line shows on hover and while dragging. */
+.view-details th[data-col] { position: relative; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.view-details .col-resize { position: absolute; inset: 0 0 0 auto; z-index: 2; width: 9px; cursor: col-resize; touch-action: none; }
+.view-details .col-resize::after { content: ""; position: absolute; inset: 20% 0 20% auto; width: 2px; border-radius: 1px; background: var(--border); opacity: 0; transition: opacity .15s; }
+.view-details thead:hover .col-resize::after { opacity: 1; }
+.view-details .col-resize:hover::after, .is-col-resizing .view-details .col-resize::after { background: var(--primary); opacity: 1; }
+.is-col-resizing, .is-col-resizing * { cursor: col-resize !important; user-select: none; }
+.view-details td:not(.row-actions-cell) { overflow: hidden; text-overflow: ellipsis; }
 @container win (width < 36rem) { .view-details .col-tags { display: none; } }
 @container win (width < 28rem) { .view-details .col-time { display: none; } .view-details .col-date { width: 6.5rem; } }

@@ -202,9 +202,14 @@
                     $addLabel = $openFolder ? __('folders.add_sub_short') : __('folders.add');
                     $addUrl = route('folders.index', $openFolder ? ['parent' => $openFolder->id] : ['new' => 1]);
                 @endphp
-                @if ($canUpload || $canFolder)
-                    {{-- Point 200: the two "new" actions share one Knopfgruppe (grey rail, no frame). --}}
+                @php $canPickHere = Gate::allows('documents.edit') && in_array($view, ['list', 'details'], true); @endphp
+                @if ($canUpload || $canFolder || $canPickHere)
+                    {{-- Point 200: the two "new" actions share one Knopfgruppe (grey rail, no frame); point 226: "Auswählen"
+                         shows the checkboxes (documents-pick.js). --}}
                     <span class="switcher is-actions win-wide-only" role="group" aria-label="{{ __('documents.new_group') }}">
+                        @if ($canPickHere)
+                            <button type="button" data-pick-toggle aria-pressed="false" aria-label="{{ __('documents.pick.toggle') }}" data-tooltip="{{ __('documents.pick.toggle') }}"><x-icon name="square-check" /></button>
+                        @endif
                         @if ($canUpload)
                             {{-- A text document written in the app, in this folder (point 21). --}}
                             <button type="button" data-dialog-open="new-text-{{ $openFolder?->id ?? 'top' }}" aria-label="{{ __('documents.text.new') }}" data-tooltip="{{ __('documents.text.new') }}"><x-icon name="file-plus" /></button>
@@ -237,6 +242,9 @@
                     @endif
                     @if ($canFolder)
                         <a class="menu-item win-narrow-only" href="{{ $addUrl }}" data-window><x-icon name="folder-plus" /><span>{{ $addLabel }}</span></a>
+                    @endif
+                    @if ($canPickHere)
+                        <button type="button" class="menu-item win-narrow-only" data-pick-toggle><x-icon name="square-check" /><span>{{ __('documents.pick.toggle') }}</span></button>
                     @endif
                     @if ($view === 'details' && $properties->isNotEmpty())
                         {{-- A244: property columns of the details view, remembered per person; this window reloads. --}}
@@ -377,11 +385,8 @@
                 @if ($searching)
                     <x-empty icon="search" :text="__('empty.search')" />
                 @else
-                    <x-empty icon="folder" :text="__('empty.documents')">
-                        @if ($canUpload)
-                            @include('documents._upload-button', ['folder' => $openFolder?->id])
-                        @endif
-                    </x-empty>
+                    {{-- Point 230: no second upload button; the toolbar has one. --}}
+                    <x-empty icon="folder" :text="__('empty.documents')" />
                 @endif
             @endif
         @else

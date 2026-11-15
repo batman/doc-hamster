@@ -159,6 +159,7 @@ return [
     // Points 196, A369, A370: checkboxes before the rows and the selection bar.
     'pick' => [
         'one' => 'Auswählen',
+        'toggle' => 'Auswählen',
         'all' => 'Alle auswählen',
         'count' => ':count ausgewählt',
         'bar' => 'Auswahl',
