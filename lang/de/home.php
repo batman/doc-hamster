@@ -7,7 +7,7 @@ return [
     'notes' => 'Notizen',
     'new' => 'Neue Notiz',
     'body' => 'Text',
-    'text_hint' => 'Den Text schreibst du direkt auf der Notiz. Listen setzt sie beim Verlassen untereinander.',
+    'text_hint' => 'Den Text schreiben Sie direkt auf der Notiz. Listen setzt sie beim Verlassen untereinander.',
     'list_hint' => 'Liste: [Eintrag 1, Eintrag 2, #erledigter Eintrag] – an beliebiger Stelle im Text, auch mehrere. Ein Klick auf das Kästchen hakt ab.',
     'link' => 'Dokument verknüpfen',
     'link_hint' => 'Namen eintippen',

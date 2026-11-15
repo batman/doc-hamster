@@ -36,7 +36,7 @@ return [
     'start' => 'Backup erstellen',
     'running' => 'Es läuft schon ein Backup.',
     'queued' => 'Das Backup entsteht im Hintergrund. Wenn es fertig ist, zeigt ein roter Punkt bei Einstellungen es an.',
-    'list' => 'Deine Backups',
+    'list' => 'Ihre Backups',
     'list_note' => 'Fertige Backups liegen :hours Stunden bereit und werden danach gelöscht.',
     'none' => 'Noch kein Backup im Hintergrund.',
     'status' => [

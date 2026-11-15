@@ -289,6 +289,11 @@ Short entries for product decisions that were taken while building and were not 
 - **Decision:** a tax advisor is an ordinary person with a role the Admin makes (e.g. "Steuerberater": see all documents, Belegpakete). Every role may carry **restrictions** – period (documents by Belegdatum, bookings by booking date), bank accounts incl. cash boxes, folder branches – all optional and all applying together; a folder restriction hides the Posteingang, a booking shows a linked document outside the restriction only as "Beleg vorhanden (nicht freigegeben)", a pack only when everything in it is allowed. Per person: optional "Zugang von / bis"; roles (not Admin) and persons (not oneself) can be **paused** (signed out at once, sign-in and upload keys refused). Kept for everyone: one-time password on create/reset (own password first), "Passwort vergessen?" by mail where mail works, the login lock, audit of views and downloads, the right "Belegpakete". Existing advisor accesses became persons with a "Steuerberater" role (scope → restrictions, expiry → "Zugang bis"). Restrictions, dates, pauses and finished Belegpakete are part of the backup.
 - **Reason:** one way to sign in and one rights model for everyone; the advisor needs nothing special.
 
+### D-038 · German UI addresses users with "Sie" (F43) — Owner: PO
+- **Status:** decided (PO, 2026-11-15, F43)
+- **Decision:** every German UI text addresses the user with **Sie** (Sie/Ihnen/Ihr capitalised), never "du". Where a neutral form without address reads better, it is used: buttons stay short infinitives ("Hochladen"), hints may be infinitives ("Datei hierher ziehen").
+- **Reason:** one consistent tone; the app also faces tax advisors and businesses.
+
 ## Decide before the relevant phase
 
 | ID | Topic | Owner | Needed by | Status | Input |

@@ -13,7 +13,7 @@ return [
     'to' => 'Bis',
     'accounts' => 'Konten',
     'cash' => 'Kasse',
-    'no_accounts' => 'Noch keine Konten. Lege unter Bank ein Konto an oder importiere einen Kontoauszug.',
+    'no_accounts' => 'Noch keine Konten. Legen Sie unter Bank ein Konto an oder importieren Sie einen Kontoauszug.',
     'preview' => 'Vorschau',
     'preview_title' => 'Vorschau: :period',
     'bookings' => '{0} keine Buchungen|{1} 1 Buchung|[2,*] :count Buchungen',

@@ -9,13 +9,13 @@ return [
     'password' => 'Passwort',
     'remember' => 'Angemeldet bleiben',
     'failed' => 'Benutzername oder Passwort ist falsch.',
-    'throttle' => 'Zu viele Versuche. Bitte warte kurz.',
+    'throttle' => 'Zu viele Versuche. Bitte warten Sie kurz.',
     'locked' => 'Zu viele falsche Versuche. Die Anmeldung ist für :minutes Minuten gesperrt.',
     'owner' => [
         'org' => 'Name der Organisation',
         'invalid' => 'Alle Angaben sind nötig, das Passwort mindestens 12 Zeichen.',
         'exists' => 'Diesen Benutzernamen gibt es schon.',
-        'created' => 'Inhaber angelegt. Du kannst dich jetzt anmelden.',
+        'created' => 'Inhaber angelegt. Sie können sich jetzt anmelden.',
     ],
     // Point 215: person access (dates, pause), one-time password and "Passwort vergessen?" for everyone.
     'access' => [

@@ -53,7 +53,7 @@ return [
         'export' => ['title' => 'Export', 'text' => 'Dokumente als ZIP, zum Beispiel für den Steuerberater'],
         'shares' => ['title' => 'Links', 'text' => 'Gültigkeit und gültige Links zum Versenden'],
         'update' => ['title' => 'Update', 'text' => 'Neue Version suchen und installieren'],
-        'phone' => ['title' => 'Handy-Test', 'text' => 'Prüfen, ob dein Handy alles kann'],
+        'phone' => ['title' => 'Handy-Test', 'text' => 'Prüfen, ob Ihr Handy alles kann'],
         'printer' => ['title' => 'Drucker', 'text' => 'Drucker „Hamster“ einrichten, verbundene Computer'],
         'mail' => ['title' => 'E-Mail', 'text' => 'Dokumente per E-Mail in den Posteingang (kommt bald)'],
         'devices' => ['title' => 'Geräte', 'text' => 'Handys, die Dokumente in den Posteingang teilen'],

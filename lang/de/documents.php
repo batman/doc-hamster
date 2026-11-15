@@ -177,7 +177,7 @@ return [
         'count' => '{1} :count Dokument|[2,*] :count Dokumente',
         'undo' => 'Rückgängig',
         'undone' => 'Rückgängig gemacht',
-        'failed' => 'Das hat nicht geklappt. Lade die Seite neu und versuche es noch einmal.',
+        'failed' => 'Das hat nicht geklappt. Bitte laden Sie die Seite neu und versuchen Sie es noch einmal.',
         'drop_upload' => 'Loslassen zum Hochladen in „:name“',
         'rename' => 'Umbenennen',
         'details' => 'Details öffnen',
