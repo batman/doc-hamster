@@ -47,9 +47,17 @@ it('empties the ticked logbooks and notes who did it', function (): void {
     expect(DB::table('log_entries')->pluck('message')->sort()->values()->all())->toBe(['Logbücher geleert: Allgemein', 'bleibt']);
 });
 
-it('takes browser errors and counts new errors on the menu', function (): void {
+it('takes browser errors as hints, drops browser noise and counts only critical ones on the menu', function (): void {
+    // Batch 16: a plain browser error is a "Hinweis" – no badge; harmless noise is not stored at all.
     $this->postJson('/log/client', ['message' => 'TypeError: x is undefined', 'where' => 'app.js:12'])->assertOk();
-    expect(DB::table('log_entries')->where('level', 'error')->value('message'))->toBe('Browser: TypeError: x is undefined (app.js:12)');
+    $this->postJson('/log/client', ['message' => 'ResizeObserver loop completed with undelivered notifications.'])->assertOk();
+    expect(DB::table('log_entries')->where('level', 'warning')->value('message'))->toBe('Browser: TypeError: x is undefined (app.js:12)')
+        ->and(DB::table('log_entries')->where('message', 'like', '%ResizeObserver%')->exists())->toBeFalse()
+        ->and(Badges::counts(app(CurrentOrg::class))[Badges::LOG] ?? 0)->toBe(0);
+
+    // A request or action that failed for the person is "Kritisch" and counts.
+    $this->postJson('/log/client', ['message' => 'HTTP 500: upload', 'where' => 'Promise', 'critical' => true])->assertOk();
+    expect(DB::table('log_entries')->where('level', 'error')->value('message'))->toBe('Browser: HTTP 500: upload (Promise)');
 
     $this->get('/documents')->assertSee('badge-alert', false);
     $this->get('/settings/log');
