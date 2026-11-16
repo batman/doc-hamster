@@ -41,7 +41,8 @@
     };
     const railsOf = new WeakMap();
     const resize = typeof ResizeObserver === 'function'
-        ? new ResizeObserver(entries => entries.forEach(entry => railsOf.get(entry.target)?.forEach(fit)))
+        // Batch 16: fitted in the next frame, so a class change never resizes within the observer's round (loop warning).
+        ? new ResizeObserver(entries => requestAnimationFrame(() => entries.forEach(entry => railsOf.get(entry.target)?.forEach(fit))))
         : null;
     const scan = root => root?.querySelectorAll?.('.switcher:not([data-switch-static])').forEach(rail => {
         const parent = rail.parentElement;

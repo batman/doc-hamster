@@ -6,8 +6,21 @@ declare(strict_types=1);
 return [
     'title' => 'Log',
     'books' => ['general' => 'Allgemein', 'ocr' => 'Texterkennung', 'updates' => 'Updates'],
-    'levels' => ['event' => 'Ereignis', 'warning' => 'Warnung', 'error' => 'Fehler'],
-    'level_filter' => ['' => 'Alle', 'problems' => 'Fehler und Warnungen', 'errors' => 'Nur Fehler'],
+    // Batch 16: "Kritisch" = something failed for the person (only these count for the red badge); "Hinweis" = harmless or
+    // technical; "Ereignis" = what happened.
+    'levels' => ['event' => 'Ereignis', 'warning' => 'Hinweis', 'error' => 'Kritisch'],
+    'level_filter' => ['' => 'Alle', 'errors' => 'Kritisch', 'hints' => 'Hinweise'],
+    // Batch 16 (2.5): one line "what it means / what to do" per critical event (event with "." as "_"; OCR events as ocr_…).
+    'help' => [
+        'server_error' => 'Der Server konnte eine Aktion nicht ausführen; sie wurde nicht gespeichert. Bitte noch einmal versuchen – bleibt es, die Meldung an den Admin geben.',
+        'browser_error' => 'Eine Aktion im Browser wurde nicht abgeschlossen. Seite neu laden und noch einmal versuchen.',
+        'ocr_timeout' => 'Die Texterkennung hat zu lange gebraucht. Sie versucht es später von selbst noch einmal.',
+        'ocr_failed' => 'Die Texterkennung ist an diesem Dokument gescheitert. Im Dokument „Neu erkennen“ versuchen.',
+        'ocr_engine_failed' => 'Die Erkennung im Browser startet nicht. Seite neu laden; bleibt es, auf Server-Erkennung umstellen.',
+        'ocr_setup_failed' => 'Die Einrichtung der Texterkennung ist fehlgeschlagen. Unter Einstellungen → Texterkennung erneut starten.',
+        'ocr_cron_missing' => 'Der Cronjob läuft nicht, deshalb wird nichts im Hintergrund erkannt. Den Cronjob auf dem Server prüfen.',
+        'ocr_server_test_failed' => 'Der Server-Test ist fehlgeschlagen. Die Einrichtung der Texterkennung prüfen.',
+    ],
     'engine_label' => 'Erkannt von',
     'engine_filter' => ['' => 'Alle', 'server' => 'Server', 'browser' => 'Browser'],
     'books_label' => 'Logbücher',

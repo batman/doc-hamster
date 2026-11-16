@@ -373,7 +373,12 @@
                 board.querySelector(`.note-box[data-at="${box.dataset.at}"]`)?.focus();
             }
         });
-        new ResizeObserver(() => board.querySelectorAll('.note-area').forEach(grow)).observe(board);
+        // Batch 16: grown in the next frame, so the observer never changes a size within its own round (no loop warning).
+        let growing = 0;
+        new ResizeObserver(() => {
+            cancelAnimationFrame(growing);
+            growing = requestAnimationFrame(() => board.querySelectorAll('.note-area').forEach(grow));
+        }).observe(board);
     };
     DocHamster.on('window:open', root => root.querySelectorAll?.('[data-notes]:not([data-ready])').forEach(setupBoard));
     // "+ Notiz" in a column (or the toolbar) puts the new note into that column (A33) – of its own board.

@@ -217,6 +217,8 @@ label.tag-choice { color: inherit; }
 .pill-new, .tab[aria-current="page"] .pill { border-color: transparent; background: rgb(255 118 34 / .15); color: var(--primary-ink); }
 .pill-error { border-color: transparent; background: color-mix(in srgb, var(--error) 15%, var(--bg)); color: color-mix(in srgb, var(--error) 75%, var(--text)); }
 .pill-warning { border-color: transparent; background: rgb(255 118 34 / .15); color: var(--primary-ink); }
+/* Batch 16: yellow "Hinweis" – harmless or technical, nothing for the person to do (e.g. the log level Hinweis). */
+.pill-hint { border-color: transparent; background: color-mix(in srgb, var(--warning) 22%, var(--bg)); color: color-mix(in srgb, var(--warning) 40%, var(--text)); }
 
 /* A93: tabs – a bar with tabs over a thin line; the active one in text colour with an orange bar that glides */
 .tab-bar { display: flex; gap: .25rem; margin: 1.25rem 0 1rem; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border); }

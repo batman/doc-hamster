@@ -26,7 +26,7 @@
                 @foreach ($summary as $reason => $count)
                     <li><strong>{{ $count }}</strong>
                         @if ($reason !== '')
-                            <a href="{{ route('log.index', ['books' => ['ocr'], 'level' => 'problems', 'q' => $reason]) }}">{{ $reason }}</a>
+                            <a href="{{ route('log.index', ['books' => ['ocr'], 'level' => 'hints', 'q' => $reason]) }}">{{ $reason }}</a>
                         @else
                             <span class="muted">{{ __('ocr.log.summary_none') }}</span>
                         @endif
@@ -122,6 +122,10 @@
                                     @endif
                                 </small>
                             @endif
+                            @if ($row['help'] !== null)
+                                {{-- Batch 16 (2.5): what a critical entry means and what to do. --}}
+                                <small class="log-help">{{ $row['help'] }}</small>
+                            @endif
                             <small>{{ implode(' · ', $details) }}</small>
                         </span>
                         <span class="log-pills">
@@ -130,7 +134,7 @@
                             @endif
                             <span class="pill">{{ __('log.books.'.$row['book']) }}</span>
                             @if ($row['level'] !== 'event')
-                                <span class="pill pill-{{ $row['level'] }}">{{ __('log.levels.'.$row['level']) }}</span>
+                                <span class="pill {{ $row['level'] === 'error' ? 'pill-error' : 'pill-hint' }}">{{ __('log.levels.'.$row['level']) }}</span>
                             @endif
                         </span>
                     </li>

@@ -60,7 +60,7 @@
         }
     };
     const watched = new WeakSet();
-    const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(entries => entries.forEach(entry => fit(entry.target))) : null;
+    const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(entries => requestAnimationFrame(() => entries.forEach(entry => fit(entry.target)))) : null;
     DocHamster.on('window:open', root => {
         const wins = root instanceof Element
             ? [root.matches('section[data-window]') ? root : root.closest('section[data-window]')]

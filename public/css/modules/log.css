@@ -8,5 +8,7 @@
 .log-row > span:nth-child(2) { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .log-pills { display: inline-flex; flex: none; flex-wrap: wrap; justify-content: flex-end; gap: .25rem; margin-left: auto; }
 .log-error .row-icon { color: var(--error); }
-.log-warning .row-icon { color: var(--primary); }
+.log-warning .row-icon { color: var(--warning); }
 .log-error strong { color: color-mix(in srgb, var(--error) 75%, var(--text)); }
+/* Batch 16 (2.5): the "was heißt das / was tun" line of a critical entry. */
+.log-row .log-help { color: var(--text); }

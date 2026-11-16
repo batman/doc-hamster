@@ -31,6 +31,9 @@ final class LogController
     /** OCR events by level (A229): errors red, "nicht möglich" a warning, everything else an event. */
     private const array OCR_WARNINGS = ['unavailable'];
 
+    /** Batch 16: harmless browser messages that are never stored (loop warnings, extensions, skipped view transitions). */
+    public const string BROWSER_NOISE = '~ResizeObserver loop|(chrome|moz|safari(-web)?)-extension://|Transition was (aborted|skipped)~i';
+
     public function index(Request $request, CurrentOrg $org, ?string $book = null): View
     {
         $filters = $this->filters($request, $book);
@@ -100,15 +103,24 @@ final class LogController
         return redirect()->route('log.index')->with('status', __('log.cleared', ['books' => $names]));
     }
 
-    /** Point 115: errors of the browser (window.onerror, failed promises, module errors) – short, at most a few per page. */
+    /**
+     * Point 115, batch 16: errors of the browser (window.onerror, failed promises, module errors) – short, at most a few
+     * per page. A "Hinweis" unless the page says a request or an action of the person failed ("critical" = "Kritisch").
+     * Harmless browser noise (ResizeObserver loop warnings, browser extensions) is not stored at all.
+     */
     public function client(Request $request): JsonResponse
     {
         $data = $request->validate([
             'message' => ['required', 'string', 'max:500'],
             'where' => ['nullable', 'string', 'max:300'],
+            'critical' => ['nullable', 'boolean'],
         ]);
         $where = is_string($data['where'] ?? null) && $data['where'] !== '' ? ' ('.$data['where'].')' : '';
-        LogEntry::write('general', 'error', (string) __('log.browser', ['message' => $data['message'].$where]), 'browser.error');
+        if (preg_match(self::BROWSER_NOISE, $data['message'].$where) === 1) {
+            return response()->json(['ok' => true]);
+        }
+        $critical = (bool) ($data['critical'] ?? false);
+        LogEntry::write('general', $critical ? 'error' : 'warning', (string) __('log.browser', ['message' => $data['message'].$where]), $critical ? 'browser.error' : 'browser.hint');
 
         return response()->json(['ok' => true]);
     }
@@ -124,7 +136,7 @@ final class LogController
 
         return [
             'books' => $books === [] ? LogEntry::BOOKS : $books,
-            'level' => in_array($request->query('level'), ['errors', 'problems'], true) ? (string) $request->query('level') : '',
+            'level' => in_array($request->query('level'), ['errors', 'hints', 'problems'], true) ? (string) $request->query('level') : '',
             'from' => $date($request->query('from')),
             'to' => $date($request->query('to')),
             'q' => is_string($request->query('q')) ? mb_substr(trim((string) $request->query('q')), 0, 100) : '',
@@ -141,8 +153,10 @@ final class LogController
      */
     private function query(string $orgId, array $filters): Builder
     {
+        // Batch 16: Alle · Kritisch (error) · Hinweise (warning); "problems" stays for links kept from before.
         $levels = match ($filters['level']) {
             'errors' => ['error'],
+            'hints' => ['warning'],
             'problems' => ['error', 'warning'],
             default => LogEntry::LEVELS,
         };
@@ -168,7 +182,7 @@ final class LogController
                 ->where('org_id', $orgId)
                 ->when($filters['engine'] !== '', static fn (Builder $q) => $q->whereIn('source', OcrLog::ENGINES[$filters['engine']]))
                 ->when($levels !== LogEntry::LEVELS, static fn (Builder $q) => $q->whereIn('event', [
-                    ...OcrLog::ERRORS, ...(in_array('warning', $levels, true) ? self::OCR_WARNINGS : []),
+                    ...(in_array('error', $levels, true) ? OcrLog::ERRORS : []), ...(in_array('warning', $levels, true) ? self::OCR_WARNINGS : []),
                 ]))
                 ->when($filters['q'] !== '', static fn (Builder $q) => $q->where(static fn (Builder $w) => $w->where('message', 'like', $like)
                     ->orWhereIn('document_id', DB::table('documents')->select('id')->where('title', 'like', $like))))
@@ -191,7 +205,7 @@ final class LogController
      * The page's rows with their text, person and document, one shape for both stores (view and export).
      *
      * @param  Collection<int, stdClass>  $items
-     * @return list<array{id: string, kind: string, book: string, level: string, time: Carbon, text: string, details: list<string>, person: ?string, document: ?string, document_id: ?string, ocr: ?OcrLog}>
+     * @return list<array{id: string, kind: string, book: string, level: string, time: Carbon, text: string, details: list<string>, person: ?string, document: ?string, document_id: ?string, ocr: ?OcrLog, help: ?string}>
      */
     private function hydrate(Collection $items): array
     {
@@ -205,7 +219,8 @@ final class LogController
             if ($item->kind === 'log' && ($entry = $own->get($item->id)) instanceof LogEntry) {
                 $rows[] = ['id' => $entry->id, 'kind' => 'log', 'book' => $entry->book, 'level' => $entry->level, 'time' => $entry->created_at,
                     'text' => $entry->message, 'details' => [], 'person' => $entry->user?->display_name,
-                    'document' => $entry->document?->title, 'document_id' => $entry->document_id, 'ocr' => null];
+                    'document' => $entry->document?->title, 'document_id' => $entry->document_id, 'ocr' => null,
+                    'help' => self::help($entry->level, (string) $entry->event)];
             } elseif ($item->kind === 'ocr' && ($entry = $ocr->get($item->id)) instanceof OcrLog) {
                 $key = 'ocr.log.event.'.$entry->event;
                 $text = Lang::has($key) ? rtrim((string) __($key, ['chars' => (int) $entry->chars, 'message' => $entry->message ?? '']), ' ·:') : $entry->event;
@@ -218,11 +233,20 @@ final class LogController
                         $entry->pages !== null ? trans_choice('ocr.log.pages', $entry->pages, ['count' => $entry->pages]) : null,
                         $entry->agent,
                     ])), 'person' => $entry->user?->display_name,
-                    'document' => $entry->document?->title, 'document_id' => $entry->document_id, 'ocr' => $entry];
+                    'document' => $entry->document?->title, 'document_id' => $entry->document_id, 'ocr' => $entry,
+                    'help' => self::help((string) $item->level, 'ocr.'.$entry->event)];
             }
         }
 
         return $rows;
+    }
+
+    /** Batch 16 (2.5): one line "what it means / what to do" for a critical entry, where one is known (lang log.help). */
+    private static function help(string $level, string $event): ?string
+    {
+        $key = 'log.help.'.str_replace('.', '_', $event);
+
+        return $level === 'error' && $event !== '' && Lang::has($key) ? (string) __($key) : null;
     }
 
     private static function size(int $bytes): string

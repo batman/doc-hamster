@@ -17,7 +17,7 @@
         };
         content.addEventListener('scroll', update, { passive: true });
         document.addEventListener('dh:cols', update);
-        new ResizeObserver(update).observe(content);
+        new ResizeObserver(() => requestAnimationFrame(update)).observe(content);
         update();
     };
 
