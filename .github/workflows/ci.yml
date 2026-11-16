@@ -40,6 +40,8 @@ jobs:
         run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
       - name: License allowlist (D-022)
         run: php scripts/check-licenses.php
+      - name: UI framework check (point 243)
+        run: php scripts/check-ui.php
       - name: Known vulnerabilities
         run: composer audit
 

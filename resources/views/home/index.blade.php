@@ -70,7 +70,7 @@
                             <button type="button" class="menu-item" data-dialog-open="column-note-color-{{ $column->id }}"><x-icon name="note" /><span>{{ __('home.column_note_color') }}</span></button>
                             {{-- Point 179, A355: Schmal | Normal | Breit, saved at once (notes.js). --}}
                             <p class="dropdown-title">{{ __('home.column_width') }}</p>
-                            <span class="button-choice kanban-width" data-choice>
+                            <span class="button-choice" data-choice>
                                 <input type="hidden" value="{{ $column->width }}" data-column-width="{{ route('notes.columns.look', $column->id) }}">
                                 <span class="switcher" role="group" aria-label="{{ __('home.column_width') }}">
                                     @foreach (\App\Domain\Notes\NoteColumn::WIDTHS as $width)

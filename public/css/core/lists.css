@@ -164,6 +164,7 @@ html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
 /* Inhaltszähler (point 161 / F5 variant D, <x-row-stats>): "6 [folder] · 3 [document] (50 [document] insgesamt)" as a row's
    second line; small inline symbols, each part with its words as tooltip (it lies above the row's link area for that). */
 .row-stats, .pick-row small.row-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 0 .3rem; }
+.row-stat-sep { color: var(--muted); }
 .row-stat { position: relative; z-index: 1; display: inline-flex; align-items: center; }
 /* Point 229: the symbol as tall as the digits, on their middle (digits have no descender, so a box centred on the line
    sat low), with an even small gap. */
@@ -265,7 +266,6 @@ html.is-carrying, html.is-carrying * { cursor: grabbing !important; }
 .menu-stack .menu-item { width: 100%; }
 /* A field that fills a row (rename in place, A286). */
 .pick-row > .row-field { flex: 1; min-width: 0; margin: 0; }
-.folder-step .actions { display: flex; flex-wrap: wrap; gap: .5rem; }
 .folder-step form { margin: 0; }
 .folder-step button .icon { width: 1.1rem; height: 1.1rem; margin-right: .35rem; }
 

@@ -14,5 +14,5 @@
 @endphp
 <small {{ $attributes->class('row-stats') }}>@if ($parts === [] && $total === 0){{ __('folders.stat_empty') }}@else
 @foreach ($parts as [$n, $icon, $words])@if (! $loop->first)<span class="row-stat-sep" aria-hidden="true">·</span>@endif<span class="row-stat" data-tooltip="{{ $words }}"><span aria-hidden="true">{{ $n }}<x-icon :name="$icon" /></span><span class="visually-hidden">{{ $words }}</span></span>@endforeach
-@if ($total !== $documents)@php $words = trans_choice('folders.stat_total', $total, ['count' => $total]); @endphp<span class="row-stat is-total" data-tooltip="{{ $words }}"><span aria-hidden="true">({{ $total }}<x-icon name="file-text" /> {{ __('folders.stat_total_word') }})</span><span class="visually-hidden">{{ $words }}</span></span>@endif
+@if ($total !== $documents)@php $words = trans_choice('folders.stat_total', $total, ['count' => $total]); @endphp<span class="row-stat" data-tooltip="{{ $words }}"><span aria-hidden="true">({{ $total }}<x-icon name="file-text" /> {{ __('folders.stat_total_word') }})</span><span class="visually-hidden">{{ $words }}</span></span>@endif
 @endif</small>

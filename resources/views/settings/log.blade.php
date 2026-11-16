@@ -91,7 +91,7 @@
         @if ($rows === [])
             <x-empty icon="list" :text="$query !== [] ? __('empty.log_filtered') : __('empty.log')" />
         @else
-            <ul class="pick-list log-list">
+            <ul class="pick-list">
                 @foreach ($rows as $row)
                     @php
                         $icon = match ($row['level']) {

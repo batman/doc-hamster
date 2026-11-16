@@ -113,7 +113,7 @@
                     $pinHome = $kind !== 'dashboard' && auth()->check() && Route::has('dashboard.pins.store');
                 @endphp
                 @if ($hasMenu || $pinHome)
-                    <x-more-menu class="win-menu">
+                    <x-more-menu>
                         @if ($pinHome)
                             <button type="button" class="menu-item" data-pin-home="{{ route('dashboard.pins.store') }}" data-pin-icon="{{ $icon }}" data-failed="{{ __('dashboard.failed') }}"><x-icon name="pin" /><span>{{ __('dashboard.pin') }}</span></button>
                             @if ($hasMenu)<hr class="menu-separator">@endif

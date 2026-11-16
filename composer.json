@@ -79,6 +79,9 @@
         "check-licenses": [
             "@php scripts/check-licenses.php"
         ],
+        "check-ui": [
+            "@php scripts/check-ui.php"
+        ],
         "hooks": [
             "git config core.hooksPath .githooks"
         ]

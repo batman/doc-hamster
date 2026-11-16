@@ -14,7 +14,7 @@
         @endif
 
         @if ($documents->isNotEmpty())
-            <ul class="view-tiles view-small share-tiles">
+            <ul class="view-tiles view-small">
                 @foreach ($documents as $document)
                     <li>
                         <a href="{{ route('documents.show', $document->id) }}">

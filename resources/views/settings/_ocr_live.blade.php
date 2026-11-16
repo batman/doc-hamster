@@ -17,7 +17,7 @@
         };
     };
 @endphp
-<x-fold-card fold="ocr.live" :title="__('ocr.live.title')" icon="eye" class="ocr-live"
+<x-fold-card fold="ocr.live" :title="__('ocr.live.title')" icon="eye"
     data-ocr-live="{{ json_encode($live) }}"
     data-labels="{{ json_encode(__('ocr.live')) }}">
     <div class="ocr-live-now">

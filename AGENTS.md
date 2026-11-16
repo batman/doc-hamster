@@ -15,10 +15,10 @@ DocHamster is an open-source (MIT) PHP web app for collecting receipts: snap a p
 3. **To main on the PO's word.** When the PO says "main": CI green, fast-forward `main` to `dev` **locally** (never the GitHub merge button or `gh pr merge` – it writes a real name into the history), push, then push the next patch tag `vX.Y.Z`. The release workflow builds the release; never run `gh release create` by hand.
 4. **Decide technical questions yourself.** Ask the PO only about product design or things hard to change later, short and numbered (F1, F2 …).
 5. **One task, done end to end** – also where it touches the UI framework or other areas.
-6. **One UI framework.** Pages and modules use only the building blocks in [`docs/design/FRAMEWORK.md`](docs/design/FRAMEWORK.md). A missing building block is added there (and to the styleguide) first.
+6. **One UI framework.** Every UI element – not only buttons – is taken exactly as the styleguide ([`public/design/styleguide.html`](public/design/styleguide.html)) and [`docs/design/FRAMEWORK.md`](docs/design/FRAMEWORK.md) define it: no local variants, sizes or inline styles. A missing element is first declared in the styleguide and FRAMEWORK.md, then used. Aim: everything the UI uses is shown in the styleguide. `composer check-ui` (also in CI) enforces the basics.
 7. **Lean.** Tests only for calculation logic (OCR/invoice reading, bank matching, import parsers, amounts). Keep files small (split past ~400 lines).
 
-Local checks: `composer lint`, `composer analyse`, `composer test`, `composer check-licenses`. Enable the secret-scan hook once per clone: `composer hooks` (needs gitleaks).
+Local checks: `composer lint`, `composer analyse`, `composer test`, `composer check-licenses`, `composer check-ui`. Enable the secret-scan hook once per clone: `composer hooks` (needs gitleaks).
 
 ## Public repository rules
 

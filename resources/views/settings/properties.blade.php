@@ -41,7 +41,7 @@
     @if ($properties->isEmpty())
         <x-empty icon="list-details" :text="__('empty.properties')" />
     @else
-        <ul class="pick-list property-rows" data-sortable data-properties-order="{{ route('properties.order') }}" data-order-failed="{{ __('properties.order_invalid') }}">
+        <ul class="pick-list" data-sortable data-properties-order="{{ route('properties.order') }}" data-order-failed="{{ __('properties.order_invalid') }}">
             @foreach ($properties as $property)
                 <li class="pick-row is-static property-row @unless ($property->active) is-off @endunless" data-id="{{ $property->id }}" data-property-row="{{ $property->id }}">
                     <button type="button" class="pick-handle" aria-label="{{ __('properties.drag', ['name' => $property->name]) }}"><x-icon name="grip-vertical" /></button>

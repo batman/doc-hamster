@@ -11,7 +11,7 @@
             $size = $bytes >= 1048576 ? number_format($bytes / 1048576, 1, ',', '.').' MB' : max(1, (int) round($bytes / 1024)).' KB';
             $pages = $document->files->count();
         @endphp
-        <li class="pick-row is-static doc-row @if ($open?->id === $document->id) is-open @endif" data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" data-doc="{{ $document->id }}" data-doc-file="{{ $document->dragFile() }}" data-folder="{{ $document->folder_id }}" data-doc-row tabindex="0">
+        <li class="pick-row is-static @if ($open?->id === $document->id) is-open @endif" data-item data-tags="{{ $document->tags->pluck('id')->implode(' ') }}" data-doc="{{ $document->id }}" data-doc-file="{{ $document->dragFile() }}" data-folder="{{ $document->folder_id }}" data-doc-row tabindex="0">
             @if ($canPick ?? false)
                 @include('documents._pick')
             @endif

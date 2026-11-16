@@ -61,6 +61,15 @@ button .icon, .button .icon { width: 1.25rem; height: 1.25rem; }
 :is(button, .button).button-small { min-height: 40px; padding: 0 .9rem; font-size: .95rem; }
 .icon-button { width: 48px; padding: 0; }
 
+/* Aktionszeile (point 243, A432): <div class="actions"> – the buttons of one row side by side, all the small size
+   (40 px, icon buttons 40 × 40), one even gap, wrapping when narrow. At most one filled main button per row
+   (scripts/check-ui.php checks it); every other one is .button-quiet, .button-danger or an .icon-button. Forms inside
+   the row (a button that posts) take no room of their own. */
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: 1rem; }
+.actions > form { display: contents; }
+.actions :is(button, .button, .icon-button):not(.button-link, .control-button) { min-height: 40px; height: 40px; margin: 0; padding: 0 .9rem; font-size: .95rem; }
+.actions .icon-button { width: 40px; min-width: 40px; padding: 0; }
+
 /* Point 8: every icon button has the same rounding, link or button */
 .icon-button { border-radius: 10px; }
 

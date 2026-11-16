@@ -19,7 +19,7 @@
         @csrf
         <button type="button" class="list-entry expand-plus-open"><x-icon name="plus" /><span>{{ __('bank.mcc_new') }}</span></button>
         <div class="pick-row is-static expand-plus-row">
-            <input class="input-small mcc-code" name="mcc" inputmode="numeric" pattern="\d{4}" maxlength="4" required value="{{ old('mcc') }}" placeholder="{{ __('bank.mcc_code') }}" aria-label="{{ __('bank.mcc_code') }}" autocomplete="off" data-expand-focus>
+            <input class="input-small" name="mcc" inputmode="numeric" pattern="\d{4}" maxlength="4" required value="{{ old('mcc') }}" placeholder="{{ __('bank.mcc_code') }}" aria-label="{{ __('bank.mcc_code') }}" autocomplete="off" data-expand-focus>
             <div class="field-addon expand-plus-field">
                 <input class="input-small" name="tag" maxlength="60" value="{{ old('tag') }}" placeholder="{{ __('bank.mcc_tag') }}" aria-label="{{ __('bank.mcc_tag') }}" autocomplete="off">
                 <span class="addon-end"><button type="submit" class="control-button addon-button" aria-label="{{ __('bank.mcc_create') }}" data-tooltip="{{ __('bank.mcc_create') }}" @unless ($adding) hidden @endunless><x-icon name="check" /></button></span>

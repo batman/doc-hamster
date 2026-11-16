@@ -82,13 +82,28 @@
             <h2>Framework (Stand 2026-11-13)</h2>
             <p class="sg-note">Die verbindlichen Bausteine. Regeln und Einbindung für Module: <code>docs/design/FRAMEWORK.md</code>. Ältere Abschnitte weiter unten sind Entwürfe.</p>
 
-            <h3>Knöpfe</h3>
+            <h3 id="buttons">Knöpfe</h3>
+            <p class="sg-note">Punkt 243 (A433): das eine Knopfsystem – <strong>keine weiteren Varianten</strong>. Art: Haupt (<code>button</code>, orange, höchstens einer pro Bereich), Normal (<code>button-quiet</code>, Rahmen), Gefahr (<code>button-danger</code>), Textlink (<code>button-link</code>, <code>.is-quiet</code>, <code>.is-danger</code>). Größe: 48 px oder klein 40 px (<code>button-small</code>). Nur Symbol: <code>icon-button</code> (quadratisch, mit Tooltip). In Listenzeilen: Steuerknöpfe (<code>control-button</code>, ohne Rahmen). <code>scripts/check-ui.php</code> (CI) lehnt Klassen ab, die kein Stylesheet kennt.</p>
             <div class="sg-row">
-                <button type="button">Speichern</button>
-                <button type="button" class="button-quiet">Abbrechen</button>
-                <button type="button" class="button-danger">Löschen</button>
-                <button type="button" class="button-small">Installieren</button>
-                <button type="button" class="icon-button" aria-label="Neu laden" data-tooltip="Neu laden"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg></button>
+                <button type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>Haupt</button>
+                <button type="button" class="button-quiet"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>Normal</button>
+                <button type="button" class="button-danger"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7l16 0"/><path d="M10 11l0 6"/><path d="M14 11l0 6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/></svg>Gefahr</button>
+                <button type="button" class="icon-button" aria-label="Neu" data-tooltip="Neu"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg></button>
+            </div>
+            <div class="sg-row">
+                <button type="button" class="button-small"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>Haupt klein</button>
+                <button type="button" class="button-quiet button-small"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>Normal klein</button>
+                <button type="button" class="button-danger button-small"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7l16 0"/><path d="M10 11l0 6"/><path d="M14 11l0 6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/></svg>Gefahr klein</button>
+                <button type="button" class="icon-button button-small" aria-label="Neu" data-tooltip="Neu"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg></button>
+            </div>
+            <h3 class="sg-pad" id="actions-row">Aktionszeile</h3>
+            <p class="sg-note">Punkt 243 (A432): <code>&lt;div class="actions"&gt;</code> – alle Knöpfe einer Zeile gleich hoch (40 px, Symbolknöpfe 40 × 40), gleicher Abstand, höchstens <strong>ein</strong> Hauptknopf; Formulare darin nehmen keinen Platz ein.</p>
+            <div class="actions">
+                <a class="button" href="#actions-row"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>Belegvorschläge</a>
+                <a class="icon-button" href="#actions-row" aria-label="Ordner daneben öffnen" data-tooltip="Ordner daneben öffnen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12"/><path d="M12 4l0 16"/></svg></a>
+                <form><button type="button" class="button-quiet">Kein Dokument nötig</button></form>
+            </div>
+            <div class="sg-row">
                 <button type="button" disabled>Gesperrt</button>
                 <a href="#framework">Link bleibt Text</a>
                 <button type="button" class="button-link is-quiet">Zurücksetzen</button>

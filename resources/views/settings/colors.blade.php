@@ -32,7 +32,7 @@
     @else
         <ul class="pick-list palette-rows" data-sortable data-palette-order="{{ route('palette.order') }}" data-order-failed="{{ __('palette.order_invalid') }}">
             @foreach ($colors as $color)
-                <li class="pick-row is-static palette-row" data-id="{{ $color->id }}">
+                <li class="pick-row is-static" data-id="{{ $color->id }}">
                     <button type="button" class="pick-handle" aria-label="{{ __('palette.drag', ['name' => $color->name]) }}"><x-icon name="grip-vertical" /></button>
                     <form method="post" action="{{ route('palette.update', $color->id) }}" class="palette-edit" data-autosave>
                         @csrf

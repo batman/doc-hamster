@@ -9,7 +9,7 @@
 
 @section('content')
     <div class="windows" data-windows>
-    <x-window :title="$document->title" icon="file-text" kind="text" :url="route('documents.text', $document->id)" :close="route('documents.show', $document->id)" min="36rem" class="win-text">
+    <x-window :title="$document->title" icon="file-text" kind="text" :url="route('documents.text', $document->id)" :close="route('documents.show', $document->id)" min="36rem">
         @if ($canEdit)
             <x-slot:actions>
                 <div class="toolbar">
@@ -69,7 +69,7 @@
         @else
             <p class="muted">{{ __('documents.text.read_only') }}</p>
             @if ($rich)
-                <div class="rich-text rt-view">{!! $content !!}</div>
+                <div class="rich-text">{!! $content !!}</div>
             @else
                 <pre class="plain-text-view">{{ $content }}</pre>
             @endif

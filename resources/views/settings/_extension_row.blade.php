@@ -17,9 +17,9 @@
         @if (! $row['installed'] || $row['updatable'])
             <form method="post" action="{{ route('extensions.install', $ext->key) }}">
                 @csrf
-                <button type="submit" class="button-small">
-                    <x-icon :name="$row['installed'] ? 'cloud-download' : 'download'" />{{ __($row['installed'] ? 'extensions.update' : 'extensions.install') }}
-                </button>
+                {{-- Point 243: row actions are icon buttons (control-button) with tooltip, like every list row. --}}
+                @php $installLabel = __($row['installed'] ? 'extensions.update' : 'extensions.install'); @endphp
+                <button type="submit" class="control-button" aria-label="{{ $installLabel }}: {{ $name }}" data-tooltip="{{ $installLabel }}"><x-icon :name="$row['installed'] ? 'cloud-download' : 'download'" /></button>
             </form>
         @endif
         @if ($row['installed'] && $ext->files !== [])
@@ -32,7 +32,7 @@
             </form>
         @endif
         @if ($row['installed'])
-            <button type="button" class="button-small button-quiet" data-dialog-open="remove-extension-{{ $ext->key }}"><x-icon name="trash" />{{ __('extensions.remove') }}</button>
+            <button type="button" class="control-button" data-dialog-open="remove-extension-{{ $ext->key }}" aria-label="{{ __('extensions.remove') }}: {{ $name }}" data-tooltip="{{ __('extensions.remove') }}"><x-icon name="trash" /></button>
         @endif
     </span>
 </li>

@@ -18,7 +18,7 @@
 @endphp
 <section {{ $attributes->class(['card card-fold', 'is-compact' => $compact, 'is-folded' => $isFolded]) }} data-card-fold="{{ $fold }}" @unless ($remember) data-card-fold-forget @endunless>
     <h2 class="card-head">
-        @if ($icon)<x-icon :name="$icon" />@endif<span class="card-title">{{ $title }}</span>
+        @if ($icon)<x-icon :name="$icon" />@endif<span>{{ $title }}</span>
         @if ($summary !== null && ($summary !== '' || $compact))
             <span @class(['card-summary', 'is-'.$summaryTone => $summaryTone !== null]) data-card-summary @if ($summary === '') hidden @endif>@if ($summaryIcon)<x-icon :name="$summaryIcon" />@endif<span>{{ $summary }}</span></span>
         @endif

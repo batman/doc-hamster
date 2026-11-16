@@ -298,8 +298,6 @@ input.win-title-field {
 @media (max-width: 63.99rem) { .win.has-opener-line::after { display: none; } }
 
 /* A window that holds a plain page (e.g. an Einstellungen page, point 156): form buttons in a row with air above. */
-.win-page .actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.5rem; }
-.win-page .actions button { margin: 0; }
 .win-page .tag-colors { margin-bottom: 1rem; }
 
 /* Point 164.8d: a window on its way – the clicked row looks pressed at once; after 150 ms a thin bar runs along the

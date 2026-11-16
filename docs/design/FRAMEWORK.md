@@ -30,7 +30,7 @@ Sticky notes keep their own 20 colours (`.note-*`); they are not app colours.
 
 ## 2. Buttons
 
-Every `<button>` and `.button` is a button by default. Do not reuse its look for anything else.
+Every `<button>` and `.button` is a button by default. Do not reuse its look for anything else. **This table is the whole set (point 243, A433): no further variants, no local sizes, no inline styles.** `scripts/check-ui.php` (CI, `composer check-ui`) rejects classes no stylesheet knows and inline styles other than `--custom-properties`.
 
 | Kind | Markup | When |
 |------|--------|------|
@@ -46,6 +46,7 @@ Every `<button>` and `.button` is a button by default. Do not reuse its look for
 | Umschalter | `<span class="switcher" role="group" aria-label="…">` around `<button>`s or `<a>`s with `aria-pressed` (no button classes) | The horizontal choice (point 188.2, variant B): one grey rail (`--surface`, 10 px corners, 3 px padding, 2 px gap) with text or icon segments; the chosen one a raised white segment in the marked look (`--mark-surface` / `--mark-shadow`, icon orange); hover a slightly darker grey. Narrow (188.4): the rail fills the width; when it still does not fit, `core/button-choice.js` shows a small `select` in its place (`.is-tight` + `.switcher-select`, measured on every size change of its parent like the bank toolbar) – `data-switch-static` = never (the module has its own narrow form, e.g. a dropdown) |
 | Quiet link | `<button type="button" class="button-link is-quiet">` | A side action that should not draw the eye ("Zurücksetzen" in the search panel, 187.4): muted text, orange on hover |
 | Quiet red link | `<button type="button" class="button-link is-danger" data-dialog-open="…">` | A destructive side action inside an open row ("Zugang entfernen", point 218): red text, no frame; it always opens a confirm dialog with the red delete button |
+| Aktionszeile | `<div class="actions">` around buttons (forms inside allowed) | One row of actions below content (point 243, A432): **all the small size** (40 px, icon buttons 40 × 40) whatever their own class, one even gap, wraps when narrow; **at most one** filled main button, the rest `button-quiet` / `button-danger` / `icon-button` (checked by `scripts/check-ui.php`) |
 | Control | `<button type="button" class="control-button" aria-label="…" data-tooltip="…">` | Window controls only (minimise ‹ – one term, A218 –, unfold ›, maximise, close): **no frame**, icon in text colour, orange on hover; 36 px in window heads. The menu arrow is its 48 px flavour (points 70, A116) |
 
 48 px high (small 40 px), 10 px corners (icon buttons too, link or button), semi-bold, no letter spacing, light shadow that presses in on click, orange focus ring for the keyboard, faded when disabled. A link stays underlined text and never looks like a button.
