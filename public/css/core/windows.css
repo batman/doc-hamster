@@ -160,10 +160,11 @@ input.win-title-field {
 .win-search-toggle[aria-expanded="true"] .icon { rotate: 180deg; }
 
 /* Point 187: the advanced search is ONE card right under the search row, as wide as the window minus its padding;
-   the chevron becomes its tab (below). The card scrolls on its own when it is taller than the room; its footer
-   ("Zurücksetzen" left, "Suchen" right) stays at its bottom, inside the card. Never a horizontal scroll (187.6). */
+   the chevron becomes its tab (below). It never scrolls on its own and never shrinks: it always takes the height it
+   needs and the window scrolls as a whole (batch 16); its footer ("Zurücksetzen" left, "Suchen" right) is its last
+   row, inside the card. Never a horizontal scroll (187.6). */
 .win-search-area {
-    display: flex; flex-direction: column; min-width: 0; max-height: min(70vh, 44rem); overflow: hidden auto; overscroll-behavior: contain;
+    flex: none; display: flex; flex-direction: column; min-width: 0;
     margin: 0 1.5rem 1rem; padding: 1rem 1rem 0; border: 1px solid var(--border); border-radius: 12px; border-top-right-radius: 0; background: var(--bg);
 }
 .win-search-area[hidden] { display: none; }
@@ -191,26 +192,31 @@ input.win-title-field {
 }
 /* 187.4: the footer inside the card – no band of its own; Enter in any field searches (core/window-search.js). */
 .win-search-actions {
-    position: sticky; bottom: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: .75rem;
-    margin: auto 0 0; padding: .75rem 0 1rem; background: var(--bg);
+    display: flex; justify-content: space-between; align-items: center; gap: .75rem; margin: auto 0 0; padding: .75rem 0 1rem;
 }
 
 /* 187.7: open, the chevron is a tab that grows down into the card – same background and border, no bottom border, the
    chevron turned up, a small concave curve (8 px) on its left where it meets the card's top edge; the card's top-right
    corner is square under it. Closed = a normal icon button. While open the search takes the toolbar's last row on its
-   own (full width), so the tab stands over the card's right end and the card sits right under the search row. */
+   own (full width, whatever else the toolbar holds and however it wraps), so the toggle stands at the right end of the
+   search row, over the card's right end, and the card sits right under it. The selectors carry .icon-button so they
+   outrank the Knopfgruppe rules above (they made the open tab's border transparent – the line broke at the tab). */
 .win-frame:has(> .win-search-area:not([hidden])) > .win-tools { padding-bottom: .5rem; }
-.win-frame:has(> .win-search-area:not([hidden])) > .win-tools > .win-search { order: 1; flex: 1 0 100%; align-self: stretch; }
-.win-tools .win-search-toggle[aria-expanded="true"] {
-    z-index: 3; align-self: stretch; height: auto; min-height: 0; margin-bottom: calc(-.5rem - 1px); padding-bottom: calc(.5rem + 1px);
+.win-frame:has(> .win-search-area:not([hidden])) > .win-tools > .win-search { order: 1; flex: 1 0 100%; align-self: stretch; margin-left: 0; }
+.win-tools .win-search-toggle.icon-button[aria-expanded="true"] {
+    z-index: 3; align-self: stretch; height: auto; min-height: 0; margin-left: auto; margin-bottom: calc(-.5rem - 1px); padding-bottom: calc(.5rem + 1px);
     border-color: var(--border); border-bottom: 0; border-radius: 8px 8px 0 0; background: var(--bg); color: var(--text);
 }
-.win-tools .win-search-toggle[aria-expanded="true"]::before {
-    content: ""; position: absolute; right: 100%; bottom: 0; width: 9px; height: 9px; box-sizing: border-box;
+/* The concave curve is drawn by the search form (the toggle's own ::before/::after belong to its tooltip): a 9 px box
+   whose right edge lies on the tab's left border and whose bottom lies on the card's top edge; its rounded border
+   carries the line from the tab into the card, its shadow covers the square corner behind the curve. The toggle is
+   always the form's last child and 36 px wide (A101). */
+.win-search:has(> .win-search-toggle[aria-expanded="true"])::after {
+    content: ""; position: absolute; z-index: 4; right: 35px; bottom: calc(-.5rem - 1px); width: 9px; height: 9px; box-sizing: border-box;
     border: solid var(--border); border-width: 0 1px 1px 0; border-bottom-right-radius: 8px; box-shadow: 3px 3px 0 0 var(--bg); pointer-events: none;
 }
-.win-tools .win-search-toggle[aria-expanded="true"]:hover { background: var(--bg); }
-.win-tools .win-search-toggle.is-active:not([aria-expanded="true"]) { border-color: var(--primary); color: var(--primary-ink); }
+.win-tools .win-search-toggle.icon-button[aria-expanded="true"]:hover { background: var(--bg); }
+.win-tools .win-search-toggle.icon-button.is-active:not([aria-expanded="true"]) { border-color: var(--primary); color: var(--primary-ink); }
 /* Phones (187.5, 187.6): the card keeps the window's side padding; the toolbar keeps the floating menu button's room
    on the left, like the head, so the button never covers the search field. */
 @media (max-width: 63.99rem) {
