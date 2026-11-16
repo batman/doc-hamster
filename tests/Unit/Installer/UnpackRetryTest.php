@@ -136,4 +136,4 @@ it('cleans the temp folder without following symlinks', function (): void {
 
     expect(is_dir($tmp))->toBeFalse()
         ->and(file_get_contents($outside.'/precious.txt'))->toBe('data');
-});
+})->skipOnWindows(); // symlinks need extra rights on Windows

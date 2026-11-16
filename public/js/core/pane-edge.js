@@ -3,7 +3,8 @@
    on the edge). Min 12rem; A424: max nearly the whole visible height of the window – the pane (its last child is the
    zoom bar) and the edge below it still fit in the window's scroll area. The height belongs to the KIND (key), not to one record:
    localStorage `dh.pane.<key>`, set as `--pane-<key>` on <html> while this file runs in <head>, so a window draws at
-   its height at once (no jump). The pane reads it via `style="--pane-size: var(--pane-<key>)"`. */
+   its height at once (no jump). The pane reads it through a CSS rule per kind (pane-edge.css: --pane-size: var(--pane-<key>)) – never a style
+   attribute, which the CSP blocks. */
 (() => {
     const PREFIX = 'dh.pane.';
     const root = document.documentElement;

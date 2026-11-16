@@ -16,6 +16,10 @@ use Tests\Support\FakeSystemProbe;
 */
 
 beforeEach(function (): void {
+    // The installer talks to a real MariaDB/MySQL (CI runs both); a local SQLite run skips it.
+    if (config('database.default') === 'sqlite') {
+        $this->markTestSkipped('Needs MariaDB or MySQL.');
+    }
     config(['dochamster.installed' => false]);
     $this->envPath = tempnam(sys_get_temp_dir(), 'env');
     $this->codePath = sys_get_temp_dir().'/setup-code-'.uniqid().'.txt';
@@ -24,8 +28,12 @@ beforeEach(function (): void {
 });
 
 afterEach(function (): void {
-    @unlink($this->envPath);
-    @unlink($this->codePath);
+    if (isset($this->envPath)) {
+        @unlink($this->envPath);
+    }
+    if (isset($this->codePath)) {
+        @unlink($this->codePath);
+    }
 });
 
 function storedEnv(string $path): array

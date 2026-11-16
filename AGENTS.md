@@ -18,7 +18,7 @@ DocHamster is an open-source (MIT) PHP web app for collecting receipts: snap a p
 6. **One UI framework.** Every UI element – not only buttons – is taken exactly as the styleguide ([`public/design/styleguide.html`](public/design/styleguide.html)) and [`docs/design/FRAMEWORK.md`](docs/design/FRAMEWORK.md) define it: no local variants, sizes or inline styles. A missing element is first declared in the styleguide and FRAMEWORK.md, then used. Aim: everything the UI uses is shown in the styleguide. `composer check-ui` (also in CI) enforces the basics.
 7. **Lean.** Tests only for calculation logic (OCR/invoice reading, bank matching, import parsers, amounts). Keep files small (split past ~400 lines).
 
-Local checks: `composer lint`, `composer analyse`, `composer test`, `composer check-licenses`, `composer check-ui`. Enable the secret-scan hook once per clone: `composer hooks` (needs gitleaks).
+Local checks: `composer lint`, `composer analyse`, `composer test`, `composer check-licenses`, `composer check-ui`, `composer check-views`. Enable the pre-push hook (same checks before every push) with `composer hooks`. Local demo with synthetic data for browser checks: `composer demo`, then serve with `php -S 127.0.0.1:8124 -t public scripts/demo-server.php` (sign-in in `database/seeders/DemoSeeder.php`). Enable the secret-scan hook once per clone: `composer hooks` (needs gitleaks).
 
 ## Public repository rules
 

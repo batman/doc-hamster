@@ -76,7 +76,7 @@
         // Point 238: rotation/crop per page (modules/doc-transform.js turns the shown picture or pdf canvas).
         $transforms = $file ? (string) json_encode((object) $file->transforms()) : '{}';
     @endphp
-    @if ($viewer)<div class="pane" data-pane="detail" style="--pane-size: var(--pane-detail)">@endif
+    @if ($viewer)<div class="pane" data-pane="detail">@endif
     @if ($file?->isImage())
         <span class="thumb-frame detail-doc" data-transforms="{{ $transforms }}"><img class="thumb" src="{{ route('documents.file', $file->id) }}" alt="" draggable="false" data-raw></span>
     @elseif ($isText)

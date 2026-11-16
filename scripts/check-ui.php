@@ -6,7 +6,7 @@ declare(strict_types=1);
  * UI check (point 243, A434, A437; AGENTS.md "One UI framework"): every UI element comes from the styleguide /
  * FRAMEWORK.md. Fails when a Blade view
  *   - uses a CSS class that no stylesheet defines and no script uses as a hook (an element outside the framework),
- *   - sets inline styles other than CSS custom properties (style="--x: …" carries computed values, e.g. widths),
+ *   - has a style attribute (the CSP blocks every one the server writes; scripts set computed values instead),
  *   - puts two filled main buttons into one Aktionszeile (.actions).
  * Also lists framework classes (public/css/core) the styleguide (styleguide.html + styleguide.js) does not show yet –
  * information, not a failure; the goal is 0.
@@ -108,14 +108,11 @@ foreach (files($root.'/resources/views', '.blade.php') as $file) {
         }
     }
 
+    // No style attributes at all: the CSP (style-src 'self', SecurityHeaders) blocks them in the browser, so they
+    // silently do nothing. Values computed per element are set by script (element.style), which the CSP allows.
     preg_match_all('/(?<![:\w-])style="([^"]*)"/', $plain, $m, PREG_OFFSET_CAPTURE);
     foreach ($m[1] as [$value, $offset]) {
-        $literal = trim((string) preg_replace(['/\{\{.*?\}\}/s', '/@\w+\s*\([^)]*\)/'], 'X', $value));
-        foreach (array_filter(array_map('trim', explode(';', $literal))) as $declaration) {
-            if (! str_starts_with($declaration, '--')) {
-                $errors[] = "{$name}:{$lines($offset)} inline style \"{$declaration}\" – use a framework class (only --custom-properties may be set inline)";
-            }
-        }
+        $errors[] = "{$name}:{$lines($offset)} style attribute \"{$value}\" – the CSP blocks it; use a framework class (or set it from script)";
     }
 
     // Aktionszeile: at most one filled main button.

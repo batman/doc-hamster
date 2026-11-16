@@ -60,4 +60,4 @@ it('installs a fitting release end to end', function (): void {
     } finally {
         $browser->stop();
     }
-});
+})->skipOnWindows(); // the installer writes POSIX paths; it runs on Linux servers

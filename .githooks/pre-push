@@ -1,0 +1,9 @@
+#!/bin/sh
+# The checks CI runs first, before anything leaves this machine (F48): code style, PHPStan, the UI framework rules and
+# views that compile. The test suite stays in CI (and `composer test`): it takes minutes.
+# Enable once per clone:  composer hooks   (= git config core.hooksPath .githooks)
+set -e
+php vendor/bin/pint --test
+php vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+php scripts/check-ui.php
+php scripts/check-views.php

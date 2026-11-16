@@ -30,7 +30,7 @@ Sticky notes keep their own 20 colours (`.note-*`); they are not app colours.
 
 ## 2. Buttons
 
-Every `<button>` and `.button` is a button by default. Do not reuse its look for anything else. **This table is the whole set (point 243, A433): no further variants, no local sizes, no inline styles.** `scripts/check-ui.php` (CI, `composer check-ui`) rejects classes no stylesheet knows and inline styles other than `--custom-properties`; it also counts framework classes (`css/core`) the styleguide does not show (`--list` names them, goal 0; pure script states are on its short allowlist).
+Every `<button>` and `.button` is a button by default. Do not reuse its look for anything else. **This table is the whole set (point 243, A433): no further variants, no local sizes, no inline styles.** `scripts/check-ui.php` (CI, `composer check-ui`) rejects classes no stylesheet knows and every `style` attribute (the CSP `style-src 'self'` blocks them in the browser; computed values are set from script). it also counts framework classes (`css/core`) the styleguide does not show (`--list` names them, goal 0; pure script states are on its short allowlist).
 
 | Kind | Markup | When |
 |------|--------|------|

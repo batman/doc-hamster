@@ -19,13 +19,19 @@ use Tests\Support\FakeSystemProbe;
 */
 
 beforeEach(function (): void {
+    // The installer talks to a real MariaDB/MySQL (CI runs both); a local SQLite run skips it.
+    if (config('database.default') === 'sqlite') {
+        $this->markTestSkipped('Needs MariaDB or MySQL.');
+    }
     $this->app->instance(SystemProbe::class, new FakeSystemProbe);
     $this->envPath = tempnam(sys_get_temp_dir(), 'env');
     $this->app->instance(EnvFile::class, new EnvFile($this->envPath));
 });
 
 afterEach(function (): void {
-    @unlink($this->envPath);
+    if (isset($this->envPath)) {
+        @unlink($this->envPath);
+    }
 });
 
 /**

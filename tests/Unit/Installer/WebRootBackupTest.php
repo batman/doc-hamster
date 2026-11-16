@@ -123,4 +123,4 @@ it('wires the web root without backup when keepOld is false', function (): void 
 
     expect(glob($web.'/index.php.bak-*'))->toBe([])
         ->and(file_get_contents($web.'/index.php'))->toContain($app);
-});
+})->skipOnWindows(); // path separators differ on Windows; the installer runs on Linux servers

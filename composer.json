@@ -82,6 +82,12 @@
         "check-ui": [
             "@php scripts/check-ui.php"
         ],
+        "check-views": [
+            "@php scripts/check-views.php"
+        ],
+        "demo": [
+            "@php artisan dochamster:demo"
+        ],
         "hooks": [
             "git config core.hooksPath .githooks"
         ]

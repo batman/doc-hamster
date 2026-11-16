@@ -1,6 +1,10 @@
 /* Pane with a drag edge below (point 168.1, core/pane-edge.js): the pane is a column whose first child (e.g. the
    document viewer frame) takes the height left after the rest; the edge looks like the window edge, turned. */
 .pane { display: flex; flex-direction: column; height: clamp(12rem, var(--pane-size, var(--pane-default, 31rem)), calc(100dvh - 2rem)); }
+/* The stored height per kind (--pane-<key> on <html>, pane-edge.js). Set here, not in a style attribute: the CSP
+   (style-src 'self') blocks every style attribute the server writes – which is why dragging never changed the height. */
+.pane[data-pane="detail"] { --pane-size: var(--pane-detail); }
+.pane[data-pane="sg"] { --pane-size: var(--pane-sg, 14rem); }
 .pane[data-pane] > :first-child { flex: 1 1 0; min-height: 0; height: auto; margin-bottom: .5rem; }
 .pane[data-pane] > :last-child { margin-bottom: 0; }
 /* Point 241, A423: a 20 px grip area with a visible grip in the middle (two short bars) and the row-resize cursor;
