@@ -9,10 +9,10 @@ Every `<button>` and `.button` is a button by default. Do not reuse its look for
 | Kind | Markup | When |
 |------|--------|------|
 | Main | `<button>` | The one main action of an area |
-| Side | `<button class="button-quiet">` | Cancel and side actions; outlined, no fill |
+| Side | `<button class="button-quiet">` | Cancel and side actions; grey fill, same shadow as the others, **no frame** (PO 2026-11-16: never a white button with a frame) |
 | Delete | `<button class="button-danger">` | Delete only |
 | Small | add `button-small` | 40 px instead of 48 px, e.g. in list rows |
-| Icon | `<button class="icon-button" aria-label="…" data-tooltip="…">` | Square, icon only, always with tooltip |
+| Icon | `<button class="icon-button" aria-label="…" data-tooltip="…">` | Square, icon only, always with tooltip; grey fill with shadow like Normal, no frame |
 | File | `<label class="button button-small file-button" data-tooltip="…"><input class="visually-hidden" type="file" …><x-icon name="upload" />Hochladen</label>` | Picks files and starts at once (point 182, Posteingang head); focus ring on the label, `is-busy` (faded, spinning symbol) while sending |
 | Link | `<button type="button" class="button-link" data-tooltip="…">` + small symbol + text | An action inside running text or a subline (point 165.6: "lesen als Tag, Monat, Jahr"); orange text, no frame, underlined on hover |
 | Group | `<div class="button-group" role="group" aria-label="…">` around buttons | **Actions** side by side (zoom bar, editor toolbar); rounded only outside, a toggled one `aria-pressed="true"`. A group used as a **choice** is always the Umschalter (point 188.3) |

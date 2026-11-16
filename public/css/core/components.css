@@ -49,11 +49,10 @@ code { word-break: break-all; background: var(--surface); padding: .1rem .3rem; 
 .icon-button {
     position: relative; display: inline-flex; align-items: center; justify-content: center;
     width: 48px; min-height: 48px; margin: 0; padding: 0;
-    border: 2px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text);
+    border: 2px solid transparent; border-radius: var(--radius); background: var(--button-quiet); color: var(--text);
 }
 .icon-button .icon { width: 1.5rem; height: 1.5rem; }
-.icon-button:hover { box-shadow: var(--shadow); }
-.icon-button[aria-expanded="true"] { border-color: var(--primary); }
+.icon-button[aria-expanded="true"] { border-color: transparent; }
 .icon-button[aria-expanded="true"]::before, .icon-button[aria-expanded="true"]::after { display: none; }
 
 /* Count badge (task 110: one style for the filter count and the menu counts): a round number, orange;
