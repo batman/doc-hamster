@@ -119,10 +119,35 @@
         }
     });
 
+    // Gruppe B (.chips, PO 2026-11-16): equal columns – every field as wide as the widest entry. Measured once the group
+    // is visible (a closed search panel has no width yet), again when its fonts or entries change.
+    const measure = rail => {
+        if (!rail.offsetWidth) return;
+        rail.classList.add('is-measuring');
+        const widest = Math.max(...[...rail.children].map(chip => chip.getBoundingClientRect().width));
+        rail.classList.remove('is-measuring');
+        if (widest > 0) rail.style.setProperty('--chip-w', `${Math.ceil(widest)}px`);
+    };
+    const shown = typeof ResizeObserver === 'function'
+        ? new ResizeObserver(entries => requestAnimationFrame(() => entries.forEach(entry => {
+            if (!entry.target.style.getPropertyValue('--chip-w')) measure(entry.target);
+        })))
+        : null;
+    const scanGroups = root => root?.querySelectorAll?.('.chips').forEach(rail => {
+        shown?.observe(rail);
+        measure(rail);
+    });
+    document.fonts?.ready.then(() => document.querySelectorAll('.chips').forEach(measure));
+
+    document.addEventListener('DOMContentLoaded', () => scanGroups(document));
     document.addEventListener('DOMContentLoaded', () => scan(document));
     if (window.DocHamster) {
         window.DocHamster.syncChoices = sync;
         // Windows loaded later (after the module swapped its parts in the same event).
-        window.DocHamster.on?.('window:open', root => requestAnimationFrame(() => scan(root instanceof Element ? (root.closest('section[data-window]') ?? root) : document)));
+        window.DocHamster.on?.('window:open', root => requestAnimationFrame(() => {
+            const box = root instanceof Element ? (root.closest('section[data-window]') ?? root) : document;
+            scan(box);
+            scanGroups(box);
+        }));
     }
 })();

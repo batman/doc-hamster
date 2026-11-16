@@ -7,33 +7,33 @@
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#30302e">
 <title>Formulare – docHamster Styleguide</title>
-    <link rel="stylesheet" href="../css/core/base.css">
-    <link rel="stylesheet" href="../css/core/layout.css">
-    <link rel="stylesheet" href="../css/core/forms.css">
-    <link rel="stylesheet" href="../css/core/components.css">
-    <link rel="stylesheet" href="../css/core/buttons.css">
-    <link rel="stylesheet" href="../css/core/menus.css">
-    <link rel="stylesheet" href="../css/core/lists.css">
-    <link rel="stylesheet" href="../css/core/windows.css">
-    <link rel="stylesheet" href="../css/core/menu-window.css">
-    <link rel="stylesheet" href="../css/core/pane-edge.css">
-    <link rel="stylesheet" href="../css/modules/bank.css">
-    <link rel="stylesheet" href="../css/modules/documents.css">
-    <link rel="stylesheet" href="../css/modules/notes.css">
-    <link rel="stylesheet" href="../css/modules/text-editor.css">
-    <link rel="stylesheet" href="../css/modules/ocr.css">
-    <link rel="stylesheet" href="../css/modules/log.css">
-    <link rel="stylesheet" href="../css/modules/updates.css">
-    <link rel="stylesheet" href="../css/modules/palette.css">
-    <link rel="stylesheet" href="../css/modules/pages.css">
-    <link rel="stylesheet" href="../css/modules/properties.css">
-    <link rel="stylesheet" href="../css/modules/ocr-text.css">
-    <link rel="stylesheet" href="../css/modules/girocode.css">
-    <link rel="stylesheet" href="../css/modules/dnd.css">
-    <link rel="stylesheet" href="../css/modules/doc-fullscreen.css">
-    <link rel="stylesheet" href="../css/modules/dashboard.css">
-    <link rel="stylesheet" href="../css/core/layout-debug.css">
-    <link rel="stylesheet" href="styleguide.css">
+    <link rel="stylesheet" href="../css/core/base.css?sg">
+    <link rel="stylesheet" href="../css/core/layout.css?sg">
+    <link rel="stylesheet" href="../css/core/forms.css?sg">
+    <link rel="stylesheet" href="../css/core/components.css?sg">
+    <link rel="stylesheet" href="../css/core/buttons.css?sg">
+    <link rel="stylesheet" href="../css/core/menus.css?sg">
+    <link rel="stylesheet" href="../css/core/lists.css?sg">
+    <link rel="stylesheet" href="../css/core/windows.css?sg">
+    <link rel="stylesheet" href="../css/core/menu-window.css?sg">
+    <link rel="stylesheet" href="../css/core/pane-edge.css?sg">
+    <link rel="stylesheet" href="../css/modules/bank.css?sg">
+    <link rel="stylesheet" href="../css/modules/documents.css?sg">
+    <link rel="stylesheet" href="../css/modules/notes.css?sg">
+    <link rel="stylesheet" href="../css/modules/text-editor.css?sg">
+    <link rel="stylesheet" href="../css/modules/ocr.css?sg">
+    <link rel="stylesheet" href="../css/modules/log.css?sg">
+    <link rel="stylesheet" href="../css/modules/updates.css?sg">
+    <link rel="stylesheet" href="../css/modules/palette.css?sg">
+    <link rel="stylesheet" href="../css/modules/pages.css?sg">
+    <link rel="stylesheet" href="../css/modules/properties.css?sg">
+    <link rel="stylesheet" href="../css/modules/ocr-text.css?sg">
+    <link rel="stylesheet" href="../css/modules/girocode.css?sg">
+    <link rel="stylesheet" href="../css/modules/dnd.css?sg">
+    <link rel="stylesheet" href="../css/modules/doc-fullscreen.css?sg">
+    <link rel="stylesheet" href="../css/modules/dashboard.css?sg">
+    <link rel="stylesheet" href="../css/core/layout-debug.css?sg">
+    <link rel="stylesheet" href="styleguide.css?sg">
 </head>
 <body>
 <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -55,53 +55,7 @@
                 </fieldset>
             </form>
 
-                        <form onsubmit="return false">
-                <label for="sg-text">Textfeld</label>
-                <input id="sg-text" type="text" placeholder="Platzhalter">
-
-                <label for="sg-pw">Passwort</label>
-                <input id="sg-pw" type="password" value="geheim123">
-
-                <label for="sg-date">Datum</label>
-                <input id="sg-date" type="date" value="2026-11-02">
-
-                <label for="sg-select">Auswahl</label>
-                <select id="sg-select"><option>Alle Dokumente</option><option>Nur offene</option></select>
-
-                <label for="sg-area">Mehrzeilig</label>
-                <textarea id="sg-area" rows="3">Notiz zum Dokument</textarea>
-
-                <label for="sg-err">Feld mit Fehler</label>
-                <input id="sg-err" type="text" value="12,5x" aria-invalid="true" aria-describedby="sg-err-msg">
-                <p class="error" id="sg-err-msg">Bitte einen gültigen Betrag eingeben.</p>
-
-                <label class="file-button">Datei wählen
-                    <input type="file">
-                </label>
-
-                <fieldset class="rights">
-                    <legend>Rechte (fieldset .rights)</legend>
-                    <label><input type="checkbox" checked> Dokumente hochladen</label>
-                    <label><input type="checkbox"> Bank importieren</label>
-                </fieldset>
-
-                <label>Mehrfachauswahl (<code>.chips</code>)</label>
-                <div class="chips">
-                    <label class="chip"><input type="checkbox" checked><span>#reise</span></label>
-                    <label class="chip"><input type="checkbox"><span>#büro</span></label>
-                    <label class="chip"><input type="checkbox"><span>#bewirtung</span></label>
-                </div>
-                <label>Mehrfachauswahl in der Suchkarte (<code>.chips.chips-small</code>, z. B. „Suchen in“)</label>
-                <div class="chips chips-small">
-                    <label class="chip"><input type="checkbox" checked><span>Name</span></label>
-                    <label class="chip"><input type="checkbox" checked><span>Erkannter Text</span></label>
-                    <label class="chip"><input type="checkbox"><span>Notiz</span></label>
-                </div>
-
-                <button type="submit">Absenden</button>
-            </form>
-
-<h3 id="sg-formularfelder" class="sg-pad">Formularfelder</h3>
+            <h3 id="sg-formularfelder" class="sg-pad">Formularfelder</h3>
             <div style="max-width: 26rem;">
                 <div class="field"><label for="sg-user">Benutzername</label><input id="sg-user" value="max.mustermann" autocomplete="off"></div>
                 <div class="field"><label for="sg-pass">Passwort</label><input id="sg-pass" type="password" value="geheimgeheim" autocomplete="off"></div>
@@ -112,6 +66,12 @@
                 <div class="field has-error"><label for="sg-mail">E-Mail</label><input id="sg-mail" value="max@" aria-invalid="true"><p class="field-hint">Bitte eine vollständige Adresse eingeben.</p></div>
                 <button type="button" style="margin-top: 1.5rem;">Anmelden</button>
             </div>
+
+            <h3 class="sg-pad" id="checkbox-group">Mehrfachauswahl (Gruppe)</h3>
+            <p class="sg-note">Mehrere Wahlen nebeneinander, z. B. „Suchen in“: <code>&lt;div class="chips" role="group" aria-label="…"&gt;</code> mit <code>&lt;label class="chip"&gt;&lt;input type="checkbox"&gt;&lt;span&gt;…&lt;/span&gt;&lt;/label&gt;</code> – die graue Schiene des Umschalters, jedes Feld mit Kästchen; angehakt hebt sich das Feld weiß ab, das Kästchen wird orange. Gleich breite Spalten (so breit wie der längste Eintrag), so viele wie passen; weitere Zeilen stehen sauber darunter. Untereinander (Listen wie die Rechte) nimmt man einzelne Checkboxen. Pillen gibt es nur für Tags. In der Suchkarte <code>chips-small</code> (ohne Abstand oben).</p>
+            <div class="chips sg-pad" role="group" aria-label="Suchen in"><label class="chip"><input type="checkbox" checked><span>Name</span></label><label class="chip"><input type="checkbox" checked><span>Erkannter Text</span></label><label class="chip"><input type="checkbox"><span>Notiz</span></label><label class="chip"><input type="checkbox"><span>Tags</span></label><label class="chip"><input type="checkbox"><span>Eigenschaften</span></label></div>
+            <p class="sg-note">Schmal – dieselbe Gruppe, zweizeilig:</p>
+            <div class="sg-narrow"><div class="chips" role="group" aria-label="Suchen in"><label class="chip"><input type="checkbox" checked><span>Name</span></label><label class="chip"><input type="checkbox" checked><span>Erkannter Text</span></label><label class="chip"><input type="checkbox"><span>Notiz</span></label><label class="chip"><input type="checkbox"><span>Tags</span></label><label class="chip"><input type="checkbox"><span>Eigenschaften</span></label></div></div>
 
             <h3 class="sg-pad" id="field-addon">Feld mit Symbol</h3>
             <p class="sg-note">Baustein <code>.field-addon</code> (A195–A199): Symbol oder Text vorn, Knopf im Feld hinten (✓ speichern, X leeren, Auge), Zustand grün/rot. Gleiche Höhe wie Felder (40 px).</p>
@@ -146,8 +106,8 @@
                 <form class="expand-plus is-row" data-expand-plus onsubmit="return false"><button type="button" class="list-entry expand-plus-open"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg><span>Farbe hinzufügen</span></button><div class="pick-row is-static expand-plus-row"><input type="color" name="hex" value="#ff7622" aria-label="Farbe"><div class="field-addon expand-plus-field"><input class="input-small" name="name" placeholder="Name der Farbe" aria-label="Name" autocomplete="off"><span class="addon-end"><button type="submit" class="control-button addon-button" aria-label="Farbe anlegen" data-tooltip="Farbe anlegen" hidden><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l10 -10"/></svg></button></span></div></div></form>
             </div>
 
-            <h3 class="sg-pad" id="accordion-list">Aufklappliste, Initialen-Kreis, Schalter</h3>
-            <p class="sg-note">Punkte 216, 218, 223: <code>ul.accordion-list</code> &gt; <code>li.accordion-row</code> (eine Zeile ohne Körper zeigt nur: <code>span.accordion-static</code> statt des Knopfs, z. B. Inhaber); der Kopf ist ein Listeneintrag-Button (<code>data-accordion-toggle</code>), ein Klick öffnet den Körper (weiß markiert), die anderen schließen (<code>core/accordion.js</code>). Darin speichert jedes Feld sofort. <code>.initials</code> statt Zeilen-Symbol bei Personen (grau: <code>is-paused</code>), <code>.switch</code> für Ein/Aus, <code>button-link is-danger</code> als leiser roter Link.</p>
+            <h3 class="sg-pad" id="accordion-list">Aufklappliste, Initialen-Kreis</h3>
+            <p class="sg-note">Punkte 216, 218, 223: <code>ul.accordion-list</code> &gt; <code>li.accordion-row</code> (eine Zeile ohne Körper zeigt nur: <code>span.accordion-static</code> statt des Knopfs, z. B. Inhaber); der Kopf ist ein Listeneintrag-Button (<code>data-accordion-toggle</code>), ein Klick öffnet den Körper (weiß markiert), die anderen schließen (<code>core/accordion.js</code>). Darin speichert jedes Feld sofort. <code>.initials</code> statt Zeilen-Symbol bei Personen (grau: <code>is-paused</code>), für Ein/Aus ein Umschalter (z. B. „Status: Aktiv | Pausiert“, nie ein Kipp-Schalter), <code>button-link is-danger</code> als leiser roter Link.</p>
             <div class="sg-pad" style="max-width: 40rem;">
                 <ul class="accordion-list">
                     <li class="accordion-row">
@@ -160,7 +120,7 @@
                         <div class="accordion-body">
                             <ul class="prop-list">
                                 <li class="prop-row"><span class="prop-name">Rolle</span><span class="prop-value"><span class="switcher" role="group" aria-label="Rolle"><button type="button" aria-pressed="false"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 21v-2a4 4 0 0 1 4 -4h2"/><path d="M22 16c0 4 -2.5 6 -3.5 6s-3.5 -2 -3.5 -6c1 0 2.5 -.5 3.5 -1.5c1 1 2.5 1.5 3.5 1.5"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/></svg>Admin</button><button type="button" aria-pressed="false"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>Mitarbeiter</button><button type="button" aria-pressed="true"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 9a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2l0 -9" /><path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2" /><path d="M12 12l0 .01" /><path d="M3 13a20 20 0 0 0 18 0" /></svg>Steuerberater</button></span></span></li>
-                                <li class="prop-row"><span class="prop-name">Pausiert</span><span class="prop-value"><label class="switch"><input type="checkbox" role="switch" aria-label="Pausiert"></label></span></li>
+                                <li class="prop-row"><span class="prop-name">Status</span><span class="prop-value"><span class="switcher" role="group" aria-label="Status"><button type="button" aria-pressed="true">Aktiv</button><button type="button" aria-pressed="false">Pausiert</button></span></span></li>
                             </ul>
                             <p><button type="button" class="button-link is-danger">Zugang entfernen</button></p>
                         </div>
@@ -191,17 +151,19 @@
             <h3 id="sg-eigenschaften-ohne-speichern-knopf" class="sg-pad">Eigenschaften ohne Speichern-Knopf</h3>
             <p class="sg-note">Farbe, Symbol, Häkchen und Auswahl speichern sofort (Toast „Gespeichert.“); der Name nur mit Enter oder ✓, das ✓ erscheint erst, wenn er sich unterscheidet. Andere offene Module folgen sofort (Name, Farbe, Symbol).</p>
 
-<h3 id="sg-klick-zum-bearbeiten" class="sg-pad">Klick zum Bearbeiten</h3>
-            <div style="max-width: 26rem;">
-                <div class="edit-in-place is-multiline" tabindex="0" role="button" data-placeholder="Notiz zu diesem Dokument">Parken am Flughafen, 2 Tage</div>
-            </div>
-
             <h3 class="sg-pad" id="color-picker">Farbwahl</h3>
-            <p class="sg-note"><code>&lt;x-color-picker&gt;</code>: <code>fieldset.tag-color-field</code> mit der Palette der Organisation, optional „Keine Farbe“ und <code>.tag-color-own</code> (eigene Farbe mit Farbfeld und #rrggbb).</p>
-            <div style="max-width: 26rem;">
-                <fieldset class="tag-color-field color-picker"><legend>Farbe</legend><div class="tag-colors"><label class="tag-color" title="Keine Farbe"><input type="radio" name="sg-color" value="none" aria-label="Keine Farbe"><span class="no-color"></span></label><label class="tag-color" title="Mint"><input type="radio" name="sg-color" value="#a5e6c8" checked aria-label="Mint"><span style="--tag: #a5e6c8;"></span></label><label class="tag-color" title="Gelb"><input type="radio" name="sg-color" value="#fdd835" aria-label="Gelb"><span style="--tag: #fdd835;"></span></label><label class="tag-color" title="Bordeaux"><input type="radio" name="sg-color" value="#800020" aria-label="Bordeaux"><span style="--tag: #800020;"></span></label></div>
-                    <div class="tag-color-own"><label for="sg-color-own">Eigene Farbe</label><input id="sg-color-own" type="color" value="#1e5bc6" data-color-picker><label for="sg-color-hex" class="visually-hidden">Hex-Wert</label><input id="sg-color-hex" value="" placeholder="#rrggbb" maxlength="7" data-color-hex></div>
+            <p class="sg-note"><code>&lt;x-color-picker&gt;</code>: <code>fieldset.tag-color-field</code> mit der Palette der Organisation, optional „Keine Farbe“ und als letzter Kreis „Eigene Farbe“ (gleich groß, mit Plus; ist eine eigene Farbe gewählt, zeigt der Kreis sie). Ein Klick darauf öffnet unseren eigenen Farb-Dialog (<code>core/color-field.js</code>, nie der Farbwähler des Browsers): Farbfläche, Farbton-Regler, darunter untereinander HEX, Rot, Grün, Blau; „Übernehmen“ setzt die Farbe, „Abbrechen“, X oder Esc lassen die alte Wahl.</p>
+            <div class="sg-pad" style="max-width: 26rem;">
+                <fieldset class="tag-color-field color-picker" data-color-field data-color-title="Eigene Farbe" data-color-hue="Farbton" data-color-r="Rot" data-color-g="Grün" data-color-b="Blau" data-color-apply="Übernehmen" data-color-cancel="Abbrechen" data-color-close="Schließen"><legend>Farbe</legend><div class="tag-colors"><label class="tag-color" title="Keine Farbe"><input type="radio" name="sg-color" value="none" aria-label="Keine Farbe"><span class="no-color"></span></label><label class="tag-color" title="Mint"><input type="radio" name="sg-color" value="#a5e6c8" checked aria-label="Mint"><span style="--tag: #a5e6c8;"></span></label><label class="tag-color" title="Gelb"><input type="radio" name="sg-color" value="#fdd835" aria-label="Gelb"><span style="--tag: #fdd835;"></span></label><label class="tag-color" title="Bordeaux"><input type="radio" name="sg-color" value="#800020" aria-label="Bordeaux"><span style="--tag: #800020;"></span></label><label class="tag-color" title="Eigene Farbe"><input type="radio" name="sg-color" value="" aria-label="Eigene Farbe" data-color-own><span class="own-color"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg></span></label></div>
+                    <input type="hidden" name="sg-color_hex" value="" data-color-hex>
                 </fieldset>
+            </div>
+            <p class="sg-note">Der Dialog „Eigene Farbe“ (offen gezeigt):</p>
+            <div class="dialog color-dialog" role="dialog" aria-labelledby="sg-color-title"><button type="button" class="icon-button button-small dialog-x" aria-label="Schließen"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></button><h2 id="sg-color-title">Eigene Farbe</h2>
+                <div class="color-sv" style="--hue: 218;"><span class="color-sv-dot" style="left: 84%; top: 22%; --pick: #1e5bc6;"></span></div>
+                <input type="range" class="color-hue" min="0" max="359" value="218" aria-label="Farbton">
+                <div class="color-values"><label>HEX</label><input class="input-small" value="#1e5bc6"><label>Rot</label><input class="input-small" value="30"><label>Grün</label><input class="input-small" value="91"><label>Blau</label><input class="input-small" value="198"></div>
+                <div class="dialog-actions"><button type="button" class="button-quiet">Abbrechen</button><button type="button">Übernehmen</button></div>
             </div>
 
             <h3 class="sg-pad" id="edit-in-place">Klick zum Bearbeiten</h3>
@@ -273,12 +235,13 @@
 </nav></aside></template>
 <template id="tpl-side-plain"><aside class="side side-plain"><header class="site-header"><a class="brand" href="#"><img src="../img/logo.png" alt="docHamster" width="476" height="186"></a></header></aside></template>
 
-<script src="../js/core/card-fold.js"></script>
-<script src="../js/core/button-choice.js"></script>
-<script src="../js/core/expand-plus.js"></script>
-<script src="../js/core/accordion.js"></script>
-<script src="../js/core/dropdowns.js"></script>
-<script src="../js/core/tooltips.js"></script>
-<script src="styleguide.js"></script>
+<script src="../js/core/card-fold.js?sg"></script>
+<script src="../js/core/button-choice.js?sg"></script>
+<script src="../js/core/expand-plus.js?sg"></script>
+<script src="../js/core/accordion.js?sg"></script>
+<script src="../js/core/dropdowns.js?sg"></script>
+<script src="../js/core/tooltips.js?sg"></script>
+<script src="../js/core/color-field.js?sg"></script>
+<script src="styleguide.js?sg"></script>
 </body>
 </html>

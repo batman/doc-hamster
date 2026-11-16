@@ -7,33 +7,33 @@
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#30302e">
 <title>Aktionen – docHamster Styleguide</title>
-    <link rel="stylesheet" href="../css/core/base.css">
-    <link rel="stylesheet" href="../css/core/layout.css">
-    <link rel="stylesheet" href="../css/core/forms.css">
-    <link rel="stylesheet" href="../css/core/components.css">
-    <link rel="stylesheet" href="../css/core/buttons.css">
-    <link rel="stylesheet" href="../css/core/menus.css">
-    <link rel="stylesheet" href="../css/core/lists.css">
-    <link rel="stylesheet" href="../css/core/windows.css">
-    <link rel="stylesheet" href="../css/core/menu-window.css">
-    <link rel="stylesheet" href="../css/core/pane-edge.css">
-    <link rel="stylesheet" href="../css/modules/bank.css">
-    <link rel="stylesheet" href="../css/modules/documents.css">
-    <link rel="stylesheet" href="../css/modules/notes.css">
-    <link rel="stylesheet" href="../css/modules/text-editor.css">
-    <link rel="stylesheet" href="../css/modules/ocr.css">
-    <link rel="stylesheet" href="../css/modules/log.css">
-    <link rel="stylesheet" href="../css/modules/updates.css">
-    <link rel="stylesheet" href="../css/modules/palette.css">
-    <link rel="stylesheet" href="../css/modules/pages.css">
-    <link rel="stylesheet" href="../css/modules/properties.css">
-    <link rel="stylesheet" href="../css/modules/ocr-text.css">
-    <link rel="stylesheet" href="../css/modules/girocode.css">
-    <link rel="stylesheet" href="../css/modules/dnd.css">
-    <link rel="stylesheet" href="../css/modules/doc-fullscreen.css">
-    <link rel="stylesheet" href="../css/modules/dashboard.css">
-    <link rel="stylesheet" href="../css/core/layout-debug.css">
-    <link rel="stylesheet" href="styleguide.css">
+    <link rel="stylesheet" href="../css/core/base.css?sg">
+    <link rel="stylesheet" href="../css/core/layout.css?sg">
+    <link rel="stylesheet" href="../css/core/forms.css?sg">
+    <link rel="stylesheet" href="../css/core/components.css?sg">
+    <link rel="stylesheet" href="../css/core/buttons.css?sg">
+    <link rel="stylesheet" href="../css/core/menus.css?sg">
+    <link rel="stylesheet" href="../css/core/lists.css?sg">
+    <link rel="stylesheet" href="../css/core/windows.css?sg">
+    <link rel="stylesheet" href="../css/core/menu-window.css?sg">
+    <link rel="stylesheet" href="../css/core/pane-edge.css?sg">
+    <link rel="stylesheet" href="../css/modules/bank.css?sg">
+    <link rel="stylesheet" href="../css/modules/documents.css?sg">
+    <link rel="stylesheet" href="../css/modules/notes.css?sg">
+    <link rel="stylesheet" href="../css/modules/text-editor.css?sg">
+    <link rel="stylesheet" href="../css/modules/ocr.css?sg">
+    <link rel="stylesheet" href="../css/modules/log.css?sg">
+    <link rel="stylesheet" href="../css/modules/updates.css?sg">
+    <link rel="stylesheet" href="../css/modules/palette.css?sg">
+    <link rel="stylesheet" href="../css/modules/pages.css?sg">
+    <link rel="stylesheet" href="../css/modules/properties.css?sg">
+    <link rel="stylesheet" href="../css/modules/ocr-text.css?sg">
+    <link rel="stylesheet" href="../css/modules/girocode.css?sg">
+    <link rel="stylesheet" href="../css/modules/dnd.css?sg">
+    <link rel="stylesheet" href="../css/modules/doc-fullscreen.css?sg">
+    <link rel="stylesheet" href="../css/modules/dashboard.css?sg">
+    <link rel="stylesheet" href="../css/core/layout-debug.css?sg">
+    <link rel="stylesheet" href="styleguide.css?sg">
 </head>
 <body>
 <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -45,25 +45,19 @@
         <h1>Aktionen</h1>
         <p class="sg-note">Knöpfe, Knopfgruppen, Umschalter und Menüs. Regeln: <code>docs/design/framework/aktionen.md</code>.</p>
         <section class="sg-section">
-                        <p class="sg-note">Tooltip unter dem Element (Standard) oder rechts (<code>tooltip-right</code>):</p>
-            <div class="sg-row">
-                <button type="button" data-tooltip="Tooltip unter dem Element">Tooltip unten</button>
-                <button type="button" class="tooltip-right" data-tooltip="Tooltip rechts">Tooltip rechts</button>
-            </div>
-
-<h3 id="buttons">Knöpfe</h3>
-            <p class="sg-note">Punkt 243 (A433): das eine Knopfsystem – <strong>keine weiteren Varianten</strong>. Art: Haupt (<code>button</code>, orange, höchstens einer pro Bereich), Normal (<code>button-quiet</code>, grau gefüllt mit Schatten, ohne Rahmen – nie ein weißer Knopf mit Rahmen), Gefahr (<code>button-danger</code>), Textlink (<code>button-link</code>, <code>.is-quiet</code>, <code>.is-danger</code>). Größe: 48 px oder klein 40 px (<code>button-small</code>). Nur Symbol: <code>icon-button</code> (quadratisch, mit Tooltip). In Listenzeilen: Steuerknöpfe (<code>control-button</code>, ohne Rahmen). <code>scripts/check-ui.php</code> (CI) lehnt Klassen ab, die kein Stylesheet kennt.</p>
+            <h3 id="buttons">Knöpfe</h3>
+            <p class="sg-note">Punkt 243 (A433): das eine Knopfsystem – <strong>keine weiteren Varianten</strong>. Art: Haupt (<code>button</code>, orange, höchstens einer pro Bereich), Normal (<code>button-quiet</code>, weiß mit Schatten, ohne Rahmen; im Dunkelmodus dunkelgrau), Gefahr (<code>button-danger</code>), Textlink (<code>button-link</code>, <code>.is-quiet</code>, <code>.is-danger</code>). Eine Größe: alle Knöpfe 40 px hoch wie die Felder, Symbolknöpfe 40 × 40 (<code>button-small</code> ist gleich groß und bleibt nur gültig). Nur Symbol: <code>icon-button</code> (quadratisch, mit Tooltip). In Listenzeilen: Steuerknöpfe (<code>control-button</code>, ohne Rahmen). <code>scripts/check-ui.php</code> (CI) lehnt Klassen ab, die kein Stylesheet kennt.</p>
             <div class="sg-row">
                 <button type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>Haupt</button>
                 <button type="button" class="button-quiet"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>Normal</button>
                 <button type="button" class="button-danger"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7l16 0"/><path d="M10 11l0 6"/><path d="M14 11l0 6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/></svg>Gefahr</button>
                 <button type="button" class="icon-button" aria-label="Neu" data-tooltip="Neu"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg></button>
             </div>
+
+                        <p class="sg-note">Tooltip unter dem Element (Standard) oder rechts (<code>tooltip-right</code>):</p>
             <div class="sg-row">
-                <button type="button" class="button-small"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>Haupt klein</button>
-                <button type="button" class="button-quiet button-small"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>Normal klein</button>
-                <button type="button" class="button-danger button-small"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7l16 0"/><path d="M10 11l0 6"/><path d="M14 11l0 6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/></svg>Gefahr klein</button>
-                <button type="button" class="icon-button button-small" aria-label="Neu" data-tooltip="Neu"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg></button>
+                <button type="button" data-tooltip="Tooltip unter dem Element">Tooltip unten</button>
+                <button type="button" class="tooltip-right" data-tooltip="Tooltip rechts">Tooltip rechts</button>
             </div>
 
             <h3 class="sg-pad" id="actions-row">Aktionszeile</h3>
@@ -92,17 +86,7 @@
             </div>
             <p class="sg-note">Oben rechts in 15rem: passt nicht – das Auswahlfeld steht an seiner Stelle.</p>
 
-                        <div class="sg-row">
-                <div class="switcher" data-switch-static role="group" aria-label="Ansicht"><button type="button" aria-pressed="true" aria-label="Details" data-tooltip="Details"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l11 0"/><path d="M9 12l11 0"/><path d="M9 18l11 0"/><path d="M5 6l0 .01"/><path d="M5 12l0 .01"/><path d="M5 18l0 .01"/></svg></button><button type="button" aria-pressed="false" aria-label="Kacheln" data-tooltip="Kacheln"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6v6h-6z"/><path d="M14 4h6v6h-6z"/><path d="M4 14h6v6h-6z"/><path d="M14 14h6v6h-6z"/></svg></button><button type="button" aria-pressed="false" aria-label="Kalender" data-tooltip="Kalender"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/></svg></button></div>
-                <span class="switcher" role="group" aria-label="Zeitraum"><button type="button" aria-pressed="true">Monat</button><button type="button" aria-pressed="false">Quartal</button><button type="button" aria-pressed="false">Jahr</button></span>
-            </div>
-            <p class="sg-note"><code>.button-group</code>: <strong>Aktionen</strong> direkt aneinander (Zoom-Leiste, Editor), außen 10 px rund, ein umgeschalteter mit <code>aria-pressed="true"</code>. Eine Ansicht wählen ist eine Auswahl – also ein Umschalter (oben).</p>
-            <div class="sg-row">
-                <span class="button-choice" data-choice><input type="hidden" value=""><span class="switcher" role="group" aria-label="Bank zugeordnet"><button type="button" data-value="" aria-pressed="true">Alle</button><button type="button" data-value="yes" aria-pressed="false">Ja</button><button type="button" data-value="no" aria-pressed="false">Nein</button></span></span>
-            </div>
-            <p class="sg-note"><strong>Eine Auswahl ist nie eine Knopfgruppe</strong> (Punkt 188.3), sondern der <a href="#switcher">Umschalter</a> – <code>.button-group</code> nur für Aktionen nebeneinander.</p>
-
-<h3 class="sg-pad" id="action-group">Knopfgruppe</h3>
+            <h3 class="sg-pad" id="action-group">Knopfgruppe</h3>
             <p class="sg-note">Punkt 200: <strong>Aktionen</strong> in der Fensterleiste stehen wie der Umschalter in der grauen Schiene, <strong>ohne Rahmen</strong>; Hover etwas dunkleres Grau, nie der weiße/orange „gewählt“-Look. Ein einzelner Knopf ist seine eigene Schiene (<code>.icon-button</code> in <code>.win-tools</code>); was zusammengehört, teilt eine: <code>&lt;span class="switcher is-actions" role="group" aria-label="…"&gt;</code> um Knöpfe ohne Knopfklassen. Rechts daneben für sich das ⋯-Menü. Der Umschalter selbst bleibt unverändert.</p>
             <div class="win-tools" style="display: flex; align-items: center; gap: .4rem; flex-wrap: wrap;">
                 <span class="switcher" data-switch-static role="group" aria-label="Ansicht"><button type="button" aria-pressed="false" aria-label="Details"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 5h8" />
@@ -125,6 +109,16 @@
   <path d="M9 14l6 0" /></svg></button><button type="button" aria-label="Neuer Ordner" data-tooltip="Neuer Ordner"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19h-7a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2h4l3 3h7a2 2 0 0 1 2 2v3.5" /><path d="M16 19h6" /><path d="M19 16v6" /></svg></button></span>
                 <button type="button" class="icon-button" aria-label="Mehr" data-tooltip="Mehr"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M18 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /></svg></button>
             </div>
+
+                                    <div class="sg-row">
+                <div class="switcher" data-switch-static role="group" aria-label="Ansicht"><button type="button" aria-pressed="true" aria-label="Details" data-tooltip="Details"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l11 0"/><path d="M9 12l11 0"/><path d="M9 18l11 0"/><path d="M5 6l0 .01"/><path d="M5 12l0 .01"/><path d="M5 18l0 .01"/></svg></button><button type="button" aria-pressed="false" aria-label="Kacheln" data-tooltip="Kacheln"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6v6h-6z"/><path d="M14 4h6v6h-6z"/><path d="M4 14h6v6h-6z"/><path d="M14 14h6v6h-6z"/></svg></button><button type="button" aria-pressed="false" aria-label="Kalender" data-tooltip="Kalender"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/></svg></button></div>
+                <span class="switcher" role="group" aria-label="Zeitraum"><button type="button" aria-pressed="true">Monat</button><button type="button" aria-pressed="false">Quartal</button><button type="button" aria-pressed="false">Jahr</button></span>
+            </div>
+            <p class="sg-note"><code>.button-group</code>: <strong>Aktionen</strong> direkt aneinander (Zoom-Leiste, Editor), außen 10 px rund, ein umgeschalteter mit <code>aria-pressed="true"</code>. Eine Ansicht wählen ist eine Auswahl – also ein Umschalter (oben).</p>
+            <div class="sg-row">
+                <span class="button-choice" data-choice><input type="hidden" value=""><span class="switcher" role="group" aria-label="Bank zugeordnet"><button type="button" data-value="" aria-pressed="true">Alle</button><button type="button" data-value="yes" aria-pressed="false">Ja</button><button type="button" data-value="no" aria-pressed="false">Nein</button></span></span>
+            </div>
+            <p class="sg-note"><strong>Eine Auswahl ist nie eine Knopfgruppe</strong> (Punkt 188.3), sondern der <a href="#switcher">Umschalter</a> – <code>.button-group</code> nur für Aktionen nebeneinander.</p>
 
             <h3 id="sg-steuerknoepfe" class="sg-pad">Steuerknöpfe</h3>
             <p class="sg-note"><code>.control-button</code>: ohne Rahmen, Symbol in Textfarbe, beim Darüberfahren orange. Im Fensterkopf 36 px: Minimieren <code>chevron-left</code> (‹), Maximieren <code>window-maximise</code> (vier kleine Winkel nach außen) / Wiederherstellen <code>window-restore</code> (nach innen) – eigene Symbole im Tabler-Stil, Strich wie ‹; beim Darüberfahren pulsieren die Winkel nach außen bzw. innen, bei „Bewegung reduzieren“ nur der Farbwechsel, Schließen <code>x</code> – immer diese Reihenfolge, rechts. Die Einklapppfeile der Einstellungen (<code>.col-fold</code>) sind dieselbe Art in 48 px.</p>
@@ -201,12 +195,13 @@
 </nav></aside></template>
 <template id="tpl-side-plain"><aside class="side side-plain"><header class="site-header"><a class="brand" href="#"><img src="../img/logo.png" alt="docHamster" width="476" height="186"></a></header></aside></template>
 
-<script src="../js/core/card-fold.js"></script>
-<script src="../js/core/button-choice.js"></script>
-<script src="../js/core/expand-plus.js"></script>
-<script src="../js/core/accordion.js"></script>
-<script src="../js/core/dropdowns.js"></script>
-<script src="../js/core/tooltips.js"></script>
-<script src="styleguide.js"></script>
+<script src="../js/core/card-fold.js?sg"></script>
+<script src="../js/core/button-choice.js?sg"></script>
+<script src="../js/core/expand-plus.js?sg"></script>
+<script src="../js/core/accordion.js?sg"></script>
+<script src="../js/core/dropdowns.js?sg"></script>
+<script src="../js/core/tooltips.js?sg"></script>
+<script src="../js/core/color-field.js?sg"></script>
+<script src="styleguide.js?sg"></script>
 </body>
 </html>

@@ -7,10 +7,12 @@ label:not(:has(input[type="checkbox"])) { color: var(--primary); }
 /* Mehrfachauswahl (PO 2026-11-16, variant B): <div class="chips" role="group" aria-label="…"><label class="chip"><input
    type="checkbox" …><span>Name</span></label>…</div> – the grey rail of the Umschalter, every field with its own box
    (grey and empty; ticked: the field lifts white, the box turns orange with a check). No frame, no check text: a click
-   never changes a width. Too narrow, the rail wraps onto a second line (no dropdown: the choices stay in view). */
-.chips { display: inline-flex; flex-wrap: wrap; gap: 2px; max-width: 100%; min-width: 0; margin-top: .5rem; padding: 3px; border-radius: 10px; background: var(--surface); vertical-align: middle; }
+   never changes a width. A grid of equal columns (PO 2026-11-16): every field as wide as the group's widest entry
+   (--chip-w, measured by core/button-choice.js), as many columns as fit; further lines stand right below. */
+.chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--chip-w, 8rem)), 1fr)); gap: 2px; max-width: 100%; min-width: 0; margin-top: .5rem; padding: 3px; border-radius: 10px; background: var(--surface); vertical-align: middle; }
+.chips.is-measuring { display: inline-flex; }
 .chips > .chip {
-    display: inline-flex; align-items: center; gap: .4rem; min-height: 34px; margin: 0; padding: 0 .8rem 0 .55rem; border-radius: 7px;
+    display: flex; align-items: center; gap: .4rem; min-height: 34px; margin: 0; padding: 0 .8rem 0 .55rem; border-radius: 7px;
     color: var(--muted); font-size: .925rem; font-weight: 600; line-height: 1.2; white-space: nowrap; cursor: pointer;
     transition: background-color .12s, box-shadow .12s, color .12s;
 }
@@ -29,7 +31,7 @@ input, select, textarea {
 /* File picker: the native "choose file" part looks like our button, the file name stays beside it */
 input[type="file"] { width: auto; max-width: 100%; min-height: 0; padding: 0; border: 0; background: none; border-radius: 0; cursor: pointer; }
 input[type="file"]::file-selector-button {
-    min-height: 48px; margin-right: .75rem; padding: .7rem 1.4rem; border: 0; border-radius: var(--radius);
+    min-height: 40px; margin-right: .75rem; padding: 0 1rem; border: 0; border-radius: 10px;
     background: var(--primary); color: var(--primary-text);
     font: inherit; font-size: 1.125rem; font-weight: 600; letter-spacing: .07em; cursor: pointer;
 }
@@ -59,7 +61,7 @@ label:not(.chip):has(> input[type="checkbox"]) {
 
 button, .button {
     display: inline-flex; align-items: center; justify-content: center;
-    min-height: 48px; margin-top: 1.5rem; padding: .7rem 1.4rem; border: 0; border-radius: var(--radius);
+    min-height: 40px; margin-top: 1.5rem; padding: 0 1rem; border: 0; border-radius: 10px;
     background: var(--primary); color: var(--primary-text);
     font: inherit; font-size: 1.125rem; font-weight: 600; letter-spacing: .07em;
     text-decoration: none; cursor: pointer;
@@ -161,7 +163,11 @@ input[type="color"]:focus-visible { outline: 2px solid var(--primary); outline-o
 .crop-handle[data-handle="s"] { left: 50%; top: 100%; cursor: ns-resize; }
 .crop-handle[data-handle="sw"] { left: 0; top: 100%; cursor: nesw-resize; }
 .crop-handle[data-handle="w"] { left: 0; top: 50%; cursor: ew-resize; }
-.crop-actions { position: absolute; top: 0; right: 0; display: flex; gap: .35rem; padding: .5rem; transform: scale(calc(1 / var(--doc-scale, 1))); transform-origin: 100% 0; cursor: default; }
+/* PO 2026-11-16: ✓ and X outside the marked area – under its right edge (core: doc-transform.js picks the side); above it
+   when there is no room below (is-bar-above); inside the bottom right corner only when the frame covers the page. */
+.crop-actions { position: absolute; top: 100%; right: 0; display: flex; gap: .35rem; padding: .5rem 0 0; transform: scale(calc(1 / var(--doc-scale, 1))); transform-origin: 100% 0; cursor: default; }
+.crop-box.is-bar-above .crop-actions { top: auto; bottom: 100%; padding: 0 0 .5rem; transform-origin: 100% 100%; }
+.crop-box.is-bar-inside .crop-actions { top: auto; bottom: 0; padding: .5rem; transform-origin: 100% 100%; }
 /* Click-to-edit (point 28; PO 2026-11-16): plain text, a light grey on hover (no frame); a click turns it into a slim
    field with ✓ behind it (.edit-field). Enter, ✓ or leaving saves, Escape cancels. */
 .edit-in-place {
@@ -187,6 +193,12 @@ p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere;
 .toast.toast-error::before { content: ""; flex: none; width: .5rem; height: .5rem; border-radius: 50%; background: var(--danger); }
 /* Point 232: a button closing a form keeps some air above the last field. */
 form > .field + :is(button, .button, .actions) { margin-top: 1.5rem; }
+
+/* Feld mit Knopf (PO 2026-11-16): <div class="field-row"><input …><button …>Weiter</button></div> – a field and its button in
+   one row: the same height (40 px), a fixed gap, the field takes the room. */
+.field-row { display: flex; align-items: center; gap: .5rem; max-width: 40rem; }
+.field-row > :is(input, select) { flex: 1; min-width: 0; margin: 0; }
+.field-row > :is(button, .button) { flex: none; margin: 0; }
 
 /* Field with symbol ("Feld mit Symbol", A195-A199), like input groups: a leading symbol or text (@, €, search), a
    button inside the field on the right (✓ save, X clear, eye) and/or a state symbol (green ✓, red !). The field keeps

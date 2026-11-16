@@ -7,6 +7,7 @@ return [
     'intro' => 'These colours can be picked for notes, folders and tags. Changing or deleting one leaves already coloured notes, folders and tags as they are.',
     'none' => 'No colour',
     'own' => 'Own colour',
+    'dialog' => ['hue' => 'Hue', 'r' => 'Red', 'g' => 'Green', 'b' => 'Blue', 'apply' => 'Apply', 'cancel' => 'Cancel', 'close' => 'Close'],
     'name' => 'Name',
     'hex' => 'Colour',
     'add' => 'Add colour',

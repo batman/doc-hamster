@@ -49,8 +49,8 @@ code { word-break: break-all; background: var(--surface); padding: .1rem .3rem; 
 .toolbar { display: flex; align-items: center; gap: .5rem; }
 .icon-button {
     position: relative; display: inline-flex; align-items: center; justify-content: center;
-    width: 48px; min-height: 48px; margin: 0; padding: 0;
-    border: 2px solid transparent; border-radius: var(--radius); background: var(--button-quiet); color: var(--text);
+    width: 40px; min-height: 40px; margin: 0; padding: 0;
+    border: 2px solid transparent; border-radius: 10px; background: var(--button-quiet); color: var(--text);
 }
 .icon-button .icon { width: 1.5rem; height: 1.5rem; }
 .icon-button[aria-expanded="true"] { border-color: transparent; }
@@ -154,7 +154,7 @@ label.tag-choice { color: inherit; }
 .card-text { max-width: 70ch; margin: .25rem 0 .75rem; color: var(--muted); }
 .card-note { max-width: 70ch; margin: .5rem 0 0; font-size: .8rem; color: var(--muted); }
 .card button { margin-top: 0; }
-.button-small { display: inline-flex; align-items: center; gap: .45rem; min-height: 40px; padding: 0 1rem; font-size: .95rem; }
+.button-small { display: inline-flex; align-items: center; gap: .45rem; min-height: 40px; padding: 0 1rem; }
 .button-small .icon { width: 1.15rem; height: 1.15rem; }
 
 /* Toast: a short status top right that closes itself (A22) */
@@ -311,9 +311,27 @@ label.tag-choice:not(.chip):has(> input[type="checkbox"]) { display: inline-bloc
 .dropdown-panel .dialog-actions { margin-top: .25rem; padding: 0 .5rem .5rem; }
 .tag-color-field { margin: 1rem 0 0; padding: 0; border: 0; }
 .tag-color-field legend { padding: 0; font-weight: 600; color: var(--primary); }
-.tag-color-own { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-top: .75rem; }
-.tag-color-own label { margin: 0; }
-.tag-color-own input[type="color"] { width: 3rem; height: 3rem; min-height: 0; padding: 0; border-radius: 50%; cursor: pointer; }
-.tag-color-own input[data-color-hex] { max-width: 9rem; }
+.tag-color .own-color { display: grid; place-items: center; background: var(--surface); color: var(--muted); }
+.tag-color .own-color .icon { width: 1.1rem; height: 1.1rem; }
+.tag-color .own-color.has-color { background: var(--tag); }
+.tag-color .own-color.has-color .icon { display: none; }
+/* Eigene Farbe (PO 2026-11-16, core/color-field.js): our own dialog – a colour area (saturation to the right, brightness
+   upwards) over the hue, a hue slider, then HEX, R, G, B one below the other; never the browser's colour picker. */
+.color-dialog { width: min(22rem, calc(100% - 2rem)); }
+.color-sv {
+    position: relative; height: 10rem; margin: .5rem 0 .75rem; border-radius: 8px; cursor: crosshair; touch-action: none;
+    background: linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent), hsl(var(--hue, 24) 100% 50%);
+}
+.color-sv:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.color-sv-dot { position: absolute; width: 16px; height: 16px; border: 2px solid #fff; border-radius: 50%; background: var(--pick, transparent); box-shadow: 0 0 0 1px rgb(0 0 0 / .35), 0 1px 3px rgb(0 0 0 / .35); translate: -50% -50%; pointer-events: none; }
+input[type="range"].color-hue {
+    appearance: none; display: block; width: 100%; height: 12px; min-height: 0; margin: 0 0 1rem; padding: 0; border: 0; border-radius: 999px; cursor: pointer;
+    background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+}
+input[type="range"].color-hue::-webkit-slider-thumb { appearance: none; width: 18px; height: 18px; border: 2px solid #fff; border-radius: 50%; background: transparent; box-shadow: 0 0 0 1px rgb(0 0 0 / .35), 0 1px 3px rgb(0 0 0 / .35); }
+input[type="range"].color-hue::-moz-range-thumb { width: 14px; height: 14px; border: 2px solid #fff; border-radius: 50%; background: transparent; box-shadow: 0 0 0 1px rgb(0 0 0 / .35); }
+.color-values { display: grid; grid-template-columns: 4rem minmax(0, 1fr); align-items: center; gap: .4rem .75rem; }
+.color-values > label { margin: 0; color: var(--muted); font-size: .875rem; font-weight: 600; }
+.color-values > input { margin: 0; }
 .detail-doc .thumb { max-height: 100%; }
 .tag-search { margin-bottom: 1rem; max-width: none; }

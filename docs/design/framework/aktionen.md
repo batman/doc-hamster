@@ -9,10 +9,10 @@ Every `<button>` and `.button` is a button by default. Do not reuse its look for
 | Kind | Markup | When |
 |------|--------|------|
 | Main | `<button>` | The one main action of an area |
-| Side | `<button class="button-quiet">` | Cancel and side actions; grey fill, same shadow as the others, **no frame** (PO 2026-11-16: never a white button with a frame) |
+| Side | `<button class="button-quiet">` | Cancel and side actions; **white** with the same shadow as the others, **no frame** (PO 2026-11-16; dark mode a dark grey; hover a light cream) |
 | Delete | `<button class="button-danger">` | Delete only |
 | Small | add `button-small` | 40 px instead of 48 px, e.g. in list rows |
-| Icon | `<button class="icon-button" aria-label="…" data-tooltip="…">` | Square, icon only, always with tooltip; grey fill with shadow like Normal, no frame |
+| Icon | `<button class="icon-button" aria-label="…" data-tooltip="…">` | Square, icon only, always with tooltip; white with shadow like Normal, no frame; 40 × 40 |
 | File | `<label class="button button-small file-button" data-tooltip="…"><input class="visually-hidden" type="file" …><x-icon name="upload" />Hochladen</label>` | Picks files and starts at once (point 182, Posteingang head); focus ring on the label, `is-busy` (faded, spinning symbol) while sending |
 | Link | `<button type="button" class="button-link" data-tooltip="…">` + small symbol + text | An action inside running text or a subline (point 165.6: "lesen als Tag, Monat, Jahr"); orange text, no frame, underlined on hover |
 | Group | `<div class="button-group" role="group" aria-label="…">` around buttons | **Actions** side by side (zoom bar, editor toolbar); rounded only outside, a toggled one `aria-pressed="true"`. A group used as a **choice** is always the Umschalter (point 188.3) |
@@ -35,3 +35,5 @@ Every `<button>` and `.button` is a button by default. Do not reuse its look for
 - **Column menu ⋮ (points 65–67)** – a column inside a module (e.g. a notes column) puts all its actions into `<x-more-menu class="kanban-menu" icon="dots-vertical" label="Spalte">` at the right of its head – no loose buttons below or beside the column. The button shows only while the column is hovered or the menu has focus or is open; on touch devices (`hover: none`) always. Order: add ("Notiz hinzufügen" – the only way to add a note, point 177), rename (`data-focus="<edit-in-place id>"` starts click-to-edit), colour dialogs (`<x-color-picker>`), the width as a Knopfgruppe als Auswahl below a `.dropdown-title` "Breite" (Schmal | Normal | Breit = 14 / 18 / 26 rem, saved at once; point 179), move left/right (`disabled` at the ends; `.menu-item:disabled` is greyed), a `.dropdown-title` group of `role="menuitemradio"` entries (sorting), bulk actions, and the red delete entry last. Column colour: class `has-color` + `c-rrggbb` tints the column (no inline styles).
 - **Choice stack (A286)** – `<div class="menu-stack">` of `menu-item` buttons in a dialog, each in its own form: one click saves. A last entry that needs text ("Anderer Grund") opens a `field-addon` with ✓ (Enter or ✓ saves).
 - **Unterstützen-Link** – `<a class="list-entry support-link" …><x-icon name="heart" /><span>…</span></a>`: the last, quiet entry of the Einstellungen menu window, red heart.
+
+**One size (PO 2026-11-16):** every button is 40 px high like every field (icon buttons 40 × 40). `button-small` is the same size now; it stays valid in markup but means nothing extra.

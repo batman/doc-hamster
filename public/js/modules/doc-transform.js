@@ -122,7 +122,16 @@
     };
 
     // --- Crop frame ------------------------------------------------------------------------------------------------
-    const place = (el, b) => Object.assign(el.style, { left: b.x * 100 + '%', top: b.y * 100 + '%', width: b.w * 100 + '%', height: b.h * 100 + '%' });
+    // PO 2026-11-16: ✓ and X stand outside the marked area – below its right edge; no room below, above it; only when the
+    // frame covers (nearly) the whole page, inside its bottom right corner.
+    const place = (el, b) => {
+        Object.assign(el.style, { left: b.x * 100 + '%', top: b.y * 100 + '%', width: b.w * 100 + '%', height: b.h * 100 + '%' });
+        const room = el.parentElement?.getBoundingClientRect().height ?? 0;
+        const below = (1 - b.y - b.h) * room >= 52;
+        const above = !below && b.y * room >= 52;
+        el.classList.toggle('is-bar-above', above);
+        el.classList.toggle('is-bar-inside', !below && !above);
+    };
     const pressed = (frame, on) => groupOf(frame)?.querySelector('[data-transform-crop]')?.setAttribute('aria-pressed', String(on));
     const startCrop = (frame, page) => {
         const tpl = groupOf(frame)?.querySelector('template[data-crop-tpl]');

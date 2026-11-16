@@ -18,6 +18,7 @@
 .sg-frame .nav-closed .side, .sg-frame .shell.nav-closed .side { height: auto; }
 .sg-frame .page { padding: 1rem; }
 .sg-mini { padding: .75rem; width: 15rem; }
+.sg-narrow { max-width: 22rem; margin-top: .5rem; }
 .sg-screens { margin: 3rem 0 0; padding: 0 2rem; }
 .sg-screens > h2 { border-bottom: 2px solid var(--primary); padding-bottom: .25rem; }
 .sg-screen-title { margin: 2rem 0 .25rem; }

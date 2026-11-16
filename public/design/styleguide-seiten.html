@@ -7,33 +7,33 @@
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#30302e">
 <title>Ganze Seiten – docHamster Styleguide</title>
-    <link rel="stylesheet" href="../css/core/base.css">
-    <link rel="stylesheet" href="../css/core/layout.css">
-    <link rel="stylesheet" href="../css/core/forms.css">
-    <link rel="stylesheet" href="../css/core/components.css">
-    <link rel="stylesheet" href="../css/core/buttons.css">
-    <link rel="stylesheet" href="../css/core/menus.css">
-    <link rel="stylesheet" href="../css/core/lists.css">
-    <link rel="stylesheet" href="../css/core/windows.css">
-    <link rel="stylesheet" href="../css/core/menu-window.css">
-    <link rel="stylesheet" href="../css/core/pane-edge.css">
-    <link rel="stylesheet" href="../css/modules/bank.css">
-    <link rel="stylesheet" href="../css/modules/documents.css">
-    <link rel="stylesheet" href="../css/modules/notes.css">
-    <link rel="stylesheet" href="../css/modules/text-editor.css">
-    <link rel="stylesheet" href="../css/modules/ocr.css">
-    <link rel="stylesheet" href="../css/modules/log.css">
-    <link rel="stylesheet" href="../css/modules/updates.css">
-    <link rel="stylesheet" href="../css/modules/palette.css">
-    <link rel="stylesheet" href="../css/modules/pages.css">
-    <link rel="stylesheet" href="../css/modules/properties.css">
-    <link rel="stylesheet" href="../css/modules/ocr-text.css">
-    <link rel="stylesheet" href="../css/modules/girocode.css">
-    <link rel="stylesheet" href="../css/modules/dnd.css">
-    <link rel="stylesheet" href="../css/modules/doc-fullscreen.css">
-    <link rel="stylesheet" href="../css/modules/dashboard.css">
-    <link rel="stylesheet" href="../css/core/layout-debug.css">
-    <link rel="stylesheet" href="styleguide.css">
+    <link rel="stylesheet" href="../css/core/base.css?sg">
+    <link rel="stylesheet" href="../css/core/layout.css?sg">
+    <link rel="stylesheet" href="../css/core/forms.css?sg">
+    <link rel="stylesheet" href="../css/core/components.css?sg">
+    <link rel="stylesheet" href="../css/core/buttons.css?sg">
+    <link rel="stylesheet" href="../css/core/menus.css?sg">
+    <link rel="stylesheet" href="../css/core/lists.css?sg">
+    <link rel="stylesheet" href="../css/core/windows.css?sg">
+    <link rel="stylesheet" href="../css/core/menu-window.css?sg">
+    <link rel="stylesheet" href="../css/core/pane-edge.css?sg">
+    <link rel="stylesheet" href="../css/modules/bank.css?sg">
+    <link rel="stylesheet" href="../css/modules/documents.css?sg">
+    <link rel="stylesheet" href="../css/modules/notes.css?sg">
+    <link rel="stylesheet" href="../css/modules/text-editor.css?sg">
+    <link rel="stylesheet" href="../css/modules/ocr.css?sg">
+    <link rel="stylesheet" href="../css/modules/log.css?sg">
+    <link rel="stylesheet" href="../css/modules/updates.css?sg">
+    <link rel="stylesheet" href="../css/modules/palette.css?sg">
+    <link rel="stylesheet" href="../css/modules/pages.css?sg">
+    <link rel="stylesheet" href="../css/modules/properties.css?sg">
+    <link rel="stylesheet" href="../css/modules/ocr-text.css?sg">
+    <link rel="stylesheet" href="../css/modules/girocode.css?sg">
+    <link rel="stylesheet" href="../css/modules/dnd.css?sg">
+    <link rel="stylesheet" href="../css/modules/doc-fullscreen.css?sg">
+    <link rel="stylesheet" href="../css/modules/dashboard.css?sg">
+    <link rel="stylesheet" href="../css/core/layout-debug.css?sg">
+    <link rel="stylesheet" href="styleguide.css?sg">
 </head>
 <body>
 <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -47,7 +47,7 @@
         <section class="sg-section" id="sg-ganze-seiten">
             <p class="muted">Nur die Seiten außerhalb des Fenstersystems (Anmelden, Einrichtung, Fehlerseite). Alles andere zeigt die App selbst – gebaut aus den Bausteinen der anderen Kategorien.</p>
 <h3 class="sg-screen-title">Anmelden</h3><p class="sg-note">Ohne Menü: nur das Logo im dunklen Block.</p><div class="sg-screen" data-active="-1"><main class="page"><h1>Anmelden</h1><form onsubmit="return false"><label>Benutzername <input value="max"></label><label>Passwort <input type="password"></label><p class="error" role="alert">Benutzername oder Passwort ist falsch.</p><button type="submit">Anmelden</button></form></main></div>
-<h3 class="sg-screen-title">Einrichtung: Willkommen</h3><div class="sg-screen" data-active="-1"><main class="page"><h1>Willkommen bei docHamster</h1><p>Wir richten docHamster jetzt Schritt für Schritt ein.</p><p>Öffnen Sie dazu diese Datei und tippen Sie den Code darin hier ein: <code>storage/app/setup-code.txt</code></p><form onsubmit="return false"><label for="sg-code">Einrichtungscode</label><input id="sg-code"><button type="submit">Weiter</button></form></main></div>
+<h3 class="sg-screen-title">Einrichtung: Willkommen</h3><div class="sg-screen" data-active="-1"><main class="page"><h1>Willkommen bei docHamster</h1><p>Wir richten docHamster jetzt Schritt für Schritt ein.</p><p>Öffnen Sie dazu diese Datei und tippen Sie den Code darin hier ein: <code>storage/app/setup-code.txt</code></p><form onsubmit="return false"><label for="sg-code">Einrichtungscode</label><div class="field-row"><input id="sg-code"><button type="submit">Weiter</button></div></form></main></div>
 <h3 class="sg-screen-title">Einrichtung: Server prüfen</h3><div class="sg-screen" data-active="-1"><main class="page"><h1>Server prüfen</h1><p>Wir prüfen, ob Ihr Server alles hat, was docHamster braucht.</p><ul class="checks"><li class="check-ok"><strong>PHP-Version:</strong> OK – 8.3.12 (mindestens 8.3)</li><li class="check-warning"><strong>Zusatzfunktion Texterkennung:</strong> Hinweis – Nicht verfügbar. Der Kern funktioniert trotzdem.</li></ul><a class="button" href="#">Weiter</a></main></div>
 <h3 class="sg-screen-title">Einrichtung: Datenbank</h3><div class="sg-screen" data-active="-1"><main class="page"><h1>Datenbank</h1><p>docHamster speichert seine Daten in einer MariaDB- oder MySQL-Datenbank.</p><form onsubmit="return false"><label for="sg-h">Server (Host)</label><input id="sg-h" type="text" value="localhost"><label for="sg-p">Port</label><input id="sg-p" type="text" value="3306"><label for="sg-dn">Name der Datenbank</label><input id="sg-dn" type="text" value="dochamster"><label for="sg-du">Benutzername</label><input id="sg-du" type="text" value=""><label for="sg-dp">Passwort</label><input id="sg-dp" type="password" value=""><p class="error">Benutzername oder Passwort stimmen nicht.</p><button type="submit">Verbindung prüfen und Datenbank einrichten</button></form></main></div>
 <h3 class="sg-screen-title">Fehlerseite 404</h3><div class="sg-screen" data-active="-1"><main class="page"><div class="error-page"><p class="error-code">404</p><h1>Seite nicht gefunden</h1><p>Diese Seite gibt es nicht (mehr).</p><a class="button" href="#">Zur Startseite</a></div></main></div>
@@ -107,12 +107,13 @@
 </nav></aside></template>
 <template id="tpl-side-plain"><aside class="side side-plain"><header class="site-header"><a class="brand" href="#"><img src="../img/logo.png" alt="docHamster" width="476" height="186"></a></header></aside></template>
 
-<script src="../js/core/card-fold.js"></script>
-<script src="../js/core/button-choice.js"></script>
-<script src="../js/core/expand-plus.js"></script>
-<script src="../js/core/accordion.js"></script>
-<script src="../js/core/dropdowns.js"></script>
-<script src="../js/core/tooltips.js"></script>
-<script src="styleguide.js"></script>
+<script src="../js/core/card-fold.js?sg"></script>
+<script src="../js/core/button-choice.js?sg"></script>
+<script src="../js/core/expand-plus.js?sg"></script>
+<script src="../js/core/accordion.js?sg"></script>
+<script src="../js/core/dropdowns.js?sg"></script>
+<script src="../js/core/tooltips.js?sg"></script>
+<script src="../js/core/color-field.js?sg"></script>
+<script src="styleguide.js?sg"></script>
 </body>
 </html>

@@ -9,6 +9,8 @@ Rules for agents (also in `AGENTS.md`):
 3. A new building block is made on the long-running branch `lead/framework`, documented here first, then used.
 4. Plain CSS and JS without a build step (D-004), split by topic (A216): `public/css/core/*.css` and `public/js/core/*.js` = the framework (base, layout, forms, buttons, menus, lists, windows, menu windows, dialogs, tooltips …), `public/css/modules/*.css` and `public/js/modules/*.js` = one file per module (documents, notes, ocr, updates …). The load order is `config/assets.php` (the styleguide links the same CSS list); a new file goes there. UI strings via `lang/`.
 5. **No double-click actions (point 169).** Every action has a visible icon button with a tooltip. The only double-click is on a drag edge (window/column width, pane height): it resets the size – and the reset also has its own icon or way.
+6. **No white surfaces (PO 2026-11-16).** Backgrounds are always cream (`--bg`, page, window, dialog) or grey (`--surface`, card, row, rail). White is only for what is chosen or lifted (`--mark-surface`: a chosen segment, a ticked box, a marked row), for buttons (Normal, icon buttons), for fields (`--field-bg`) and for what has to be white (QR codes, the paper preview).
+7. **One height (PO 2026-11-16).** Every field and every button is 40 px (icon buttons 40 × 40); a field with its button in one row is `.field-row`.
 
 ## Parts (read the index, then only the part you need)
 
