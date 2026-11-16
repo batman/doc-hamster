@@ -8,6 +8,8 @@ use App\Domain\Documents\Document;
 use App\Domain\Ocr\OcrFixes;
 use App\Domain\Ocr\OcrWords;
 use App\Domain\Org\Permission;
+use App\Domain\Properties\DocumentProperty;
+use App\Domain\Properties\PropertyValues;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,7 +22,7 @@ use Illuminate\Support\Facades\Gate;
  */
 final class DocumentWordsController extends Controller
 {
-    public function __construct(private readonly OcrFixes $fixes) {}
+    public function __construct(private readonly OcrFixes $fixes, private readonly PropertyValues $values) {}
 
     public function __invoke(Request $request, string $id): JsonResponse
     {
@@ -56,9 +58,28 @@ final class DocumentWordsController extends Controller
             'pages' => $words['pages'] ?? [],
             'fixes' => $fixes,
             'learned' => (object) ($words !== null ? $this->fixes->learnedFor($document) : []),
+            'values' => $words !== null ? $this->places($document) : [],
             'text' => $message !== null ? (string) $document->getAttribute('ocr_text') : null,
             'message' => $message,
         ], static fn (mixed $v): bool => $v !== null), 200, ['Cache-Control' => 'private, no-store']);
+    }
+
+    /**
+     * Point 242, A431: the document's values with a place, so a click on one of their words takes the whole value.
+     *
+     * @return list<array{name: string, text: string, p: int, x: float, y: float, w: float, h: float}>
+     */
+    private function places(Document $document): array
+    {
+        $out = [];
+        foreach ($document->properties()->with('property')->whereNotNull('page')->get() as $value) {
+            if ($value->box === null || $value->page === null) {
+                continue;
+            }
+            $out[] = ['name' => $value->property->name, 'text' => $this->values->display($value), 'p' => $value->page, ...$value->box];
+        }
+
+        return $out;
     }
 
     /** @return Builder<Document> */

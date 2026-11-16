@@ -67,6 +67,8 @@ return [
         'confirmed' => 'Bestätigt.',
         'removed' => 'Entfernt.',
         'value' => 'Wert',
+        // Point 239: the icon button of a value with a place.
+        'show' => 'Im Beleg zeigen',
     ],
     'mark' => [
         'title' => 'Markieren als …',
@@ -79,6 +81,8 @@ return [
         'replaces' => 'ersetzt :value',
         'read_as' => 'lesen als',
         'read_other' => 'Andere Reihenfolge',
+        // Point 242, A429: a marked IBAN or amount grown over the rest of its line.
+        'grown' => 'Ergänzt um die folgenden Gruppen der Zeile',
     ],
     'errors' => [
         'empty' => 'Bitte einen Wert eingeben.',

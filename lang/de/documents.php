@@ -232,7 +232,7 @@ return [
     ],
     // Reading view of the recognised text, word popup and OCR corrections (points 121, 122.3, 122.7, A240-A243).
     'words' => [
-        'edit_hint' => 'Text markieren zum Kopieren · Klick auf ein Wort: korrigieren',
+        'edit_hint' => 'Text markieren zum Kopieren · Klick auf ein Wort: korrigieren · Strg+Klick: mehrere Wörter als ein Wert',
         'word' => 'Wort',
         'selection' => 'Auswahl',
         'recognized' => 'Erkannt',
@@ -251,7 +251,9 @@ return [
         'fixed' => 'Korrektur gespeichert.',
         'unfixed' => 'Original wiederhergestellt.',
         'no_word' => 'An dieser Stelle steht kein Wort.',
-        'select' => 'Text auswählen',
+        // Point 242, A426: a word more for the block (the next tap on the document).
+        'add_word' => 'Wort hinzufügen',
+        'add_hint' => 'Tippen Sie auf das Wort, das dazugehört.',
         'close' => 'Schließen',
         // Point 134, A280/A281: selecting and copying the text.
         'copy' => 'Kopieren',

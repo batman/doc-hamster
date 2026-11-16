@@ -7,6 +7,8 @@ namespace App\Http\Controllers;
 use App\Domain\Audit\AuditLog;
 use App\Domain\Auth\User;
 use App\Domain\Documents\Document;
+use App\Domain\Ocr\OcrWords;
+use App\Domain\Ocr\WordBlock;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
 use App\Domain\Properties\DocumentProperty;
@@ -54,7 +56,8 @@ final class DocumentPropertyController
             return $this->answer($request, __('properties.card.removed'), ['value' => '', 'property' => $property->id]);
         }
 
-        $value = $this->values->set($document, $property, $data['value'], DocumentProperty::CONFIRMED, $data['page'], $data['box'], $data['order']);
+        // Point 242, A428: a block of OCR words is cleaned for the type (IBAN without spaces, "1 234,56" as an amount).
+        $value = $this->values->set($document, $property, WordBlock::clean($property->type, $data['value']), DocumentProperty::CONFIRMED, $data['page'], $data['box'], $data['order']);
         // A349: "bezahlt" is an event of its own (Home → Letzte Aktivitäten).
         $audit->record($property->key === 'paid_at' ? 'document.paid' : 'document.changed', orgId: $org->id(), userId: $this->user($request)->id, subject: $document, ip: $request->ip());
 
@@ -65,6 +68,8 @@ final class DocumentPropertyController
      * The live preview of the popup: how the value would be stored, or why not (422). A date that reads two ways
      * (165.6) also answers the order used (`order`, the sender's learned one by default, A343) and every reading
      * (`orders`: order, label "Tag, Monat, Jahr", text "3. April 2021") for the link that switches between them.
+     * A429: with the marked OCR words (`page` + `words[]`) an IBAN or spaced amount grows over the following words of
+     * the line; that suggestion comes back as `block` {text, page, box, words} and is what the preview shows.
      */
     public function preview(Request $request, string $id): JsonResponse
     {
@@ -73,13 +78,19 @@ final class DocumentPropertyController
         $property = $this->allowed($document, $data['property']);
         $order = $property->type === 'date' ? ($data['order'] ?? $this->values->senderOrder($document)) : null;
 
-        $parsed = $this->values->parse($property, $data['value'], $order);
+        $block = null;
+        if ($data['page'] !== null && $data['words'] !== []) {
+            $page = collect(OcrWords::forDocument($document)['pages'] ?? [])->firstWhere('n', $data['page']);
+            $block = WordBlock::extend($property->type, is_array($page) ? $page['words'] : [], $data['words']);
+        }
+        $raw = WordBlock::clean($property->type, $block['text'] ?? $data['value']);
+        $parsed = $this->values->parse($property, $raw, $order);
         $value = new DocumentProperty($parsed);
         $value->setRelation('property', $property);
         $current = $document->properties()->with('property')->where('property_id', $property->id)->first();
         $orders = [];
         if ($parsed['date_order'] !== null) {
-            foreach (PropertyValues::dateReadings($data['value']) as $key => $date) {
+            foreach (PropertyValues::dateReadings($raw) as $key => $date) {
                 $orders[] = ['order' => $key, 'label' => __('properties.orders.'.$key), 'text' => PropertyValues::formatDateLong($date)];
             }
         }
@@ -89,6 +100,7 @@ final class DocumentPropertyController
             'current' => $current !== null ? $this->values->display($current) : null,
             'order' => $parsed['date_order'],
             'orders' => $orders,
+            'block' => $block !== null ? [...$block, 'page' => $data['page']] : null,
         ]);
     }
 
@@ -130,7 +142,7 @@ final class DocumentPropertyController
     }
 
     /**
-     * @return array{property: string, value: string, page: ?int, box: ?array<string, mixed>, order: ?string}
+     * @return array{property: string, value: string, page: ?int, box: ?array<string, mixed>, order: ?string, words: list<int>}
      */
     private function input(Request $request): array
     {
@@ -144,6 +156,8 @@ final class DocumentPropertyController
             'box' => ['nullable', 'array'],
             'box.*' => ['numeric'],
             'order' => ['nullable', 'string', 'in:'.implode(',', PropertyValues::ORDERS)],
+            'words' => ['nullable', 'array', 'max:200'],
+            'words.*' => ['integer', 'min:0', 'max:20000'],
         ]);
 
         return [
@@ -152,6 +166,7 @@ final class DocumentPropertyController
             'page' => isset($data['page']) ? (int) $data['page'] : null,
             'box' => is_array($data['box'] ?? null) ? $data['box'] : null,
             'order' => isset($data['order']) ? (string) $data['order'] : null,
+            'words' => array_values(array_map('intval', is_array($data['words'] ?? null) ? $data['words'] : [])),
         ];
     }
 

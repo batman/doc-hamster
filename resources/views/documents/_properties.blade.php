@@ -1,6 +1,7 @@
 {{-- "Eigenschaften-Karte" of a document (points 122.4, A252): only properties with a value, each editable in place
      (click-to-edit; empty = removed); a suggested value carries the pill "vorgeschlagen" and a ✓ to confirm. A value with
-     a stored place (page + box) emits document:highlight on click (properties.js). "+ Eigenschaft" opens the popup
+     a stored place (page + box) has the icon button "Im Beleg zeigen" (point 239: click = go there, hover = outline only;
+     properties.js); clicking into the value only edits it. "+ Eigenschaft" opens the popup
      "Markieren als" (DocHamster.markAs). Only active properties the document may carry (A246). No ids inside: the card
      reloads itself (GET documents.properties) on properties:changed, in every window that shows this document. --}}
 @php
@@ -36,6 +37,9 @@
                             <span class="pill pill-new">{{ __('properties.card.suggested') }}</span>
                         @endif
                     </span>
+                    @if ($value->page !== null && $value->box !== null)
+                        <button type="button" class="control-button" data-prop-show aria-label="{{ __('properties.card.show') }}: {{ $property->name }}" data-tooltip="{{ __('properties.card.show') }}"><x-icon name="focus-2" /></button>
+                    @endif
                     @if ($propertyEdit)
                         @if ($value->isSuggested())
                             <form method="post" action="{{ route('documents.properties.confirm', [$document->id, $property->id]) }}" data-prop-action>

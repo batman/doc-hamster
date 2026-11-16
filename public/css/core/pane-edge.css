@@ -1,10 +1,18 @@
 /* Pane with a drag edge below (point 168.1, core/pane-edge.js): the pane is a column whose first child (e.g. the
    document viewer frame) takes the height left after the rest; the edge looks like the window edge, turned. */
-.pane { display: flex; flex-direction: column; height: clamp(12rem, var(--pane-size, var(--pane-default, 31rem)), 85vh); }
+.pane { display: flex; flex-direction: column; height: clamp(12rem, var(--pane-size, var(--pane-default, 31rem)), calc(100dvh - 2rem)); }
 .pane[data-pane] > :first-child { flex: 1 1 0; min-height: 0; height: auto; margin-bottom: .5rem; }
 .pane[data-pane] > :last-child { margin-bottom: 0; }
-.pane-edge { position: relative; height: 12px; margin: 0 0 .5rem; cursor: row-resize; touch-action: none; }
-.pane-edge::after { content: ""; position: absolute; left: 0; right: 0; top: 4px; height: 3px; border-radius: 2px; background: var(--primary); opacity: 0; transition: opacity .15s; }
-.pane-edge::before { content: ""; position: absolute; left: 50%; top: 4px; width: 2.5rem; height: 3px; margin-left: -1.25rem; border-radius: 2px; background: var(--border); }
-.pane-edge:hover::after, .pane-edge:focus-visible::after, .pane-edge.is-active::after { opacity: 1; }
+/* Point 241, A423: a 20 px grip area with a visible grip in the middle (two short bars) and the row-resize cursor;
+   hovered, dragged or focused, an orange line runs across. Drawn as backgrounds, not ::before/::after – the edge
+   carries a tooltip, and the tooltip layer (core/components.css, html.has-tips) hides those pseudo elements. */
+.pane-edge {
+    --edge-grip: color-mix(in srgb, var(--muted) 70%, transparent); --edge-line: transparent;
+    position: relative; height: 20px; margin: 0 0 .5rem; cursor: row-resize; touch-action: none;
+    background:
+        linear-gradient(var(--edge-grip), var(--edge-grip)) 50% 5px / 2.5rem 2px no-repeat,
+        linear-gradient(var(--edge-grip), var(--edge-grip)) 50% 13px / 2.5rem 2px no-repeat,
+        linear-gradient(var(--edge-line), var(--edge-line)) 0 8.5px / 100% 3px no-repeat;
+}
+.pane-edge:hover, .pane-edge:focus-visible, .pane-edge.is-active { --edge-grip: var(--text); --edge-line: var(--primary); }
 .pane-edge:focus-visible { outline: none; box-shadow: none; }

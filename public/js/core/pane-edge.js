@@ -1,6 +1,7 @@
 /* Pane edge (point 168.1): a drag edge below a pane (`.pane[data-pane="key"]`) changes its height – drag, arrow keys
    (Shift = bigger steps), the reset icon `[data-pane-reset="key"]` (and, as the one allowed double-click, a double-click
-   on the edge). Min 12rem, max 85 % of the window's height. The height belongs to the KIND (key), not to one record:
+   on the edge). Min 12rem; A424: max nearly the whole visible height of the window – the pane (its last child is the
+   zoom bar) and the edge below it still fit in the window's scroll area. The height belongs to the KIND (key), not to one record:
    localStorage `dh.pane.<key>`, set as `--pane-<key>` on <html> while this file runs in <head>, so a window draws at
    its height at once (no jump). The pane reads it via `style="--pane-size: var(--pane-<key>)"`. */
 (() => {
@@ -29,14 +30,18 @@
         while (el && !el.matches(`.pane[data-pane="${edge.dataset.paneEdge}"]`)) el = el.previousElementSibling;
         return el;
     };
-    const limits = pane => {
-        const box = pane.closest('section[data-window]') ?? document.body;
-        return { min: 12 * rem(), max: Math.max(12 * rem(), 0.85 * (box.clientHeight || innerHeight)) };
+    // Point 241: the limit comes from the window's visible scroll area (.win-frame scrolls on wide screens, the page on
+    // phones) – not from the section, whose height may be far shorter or longer than what is seen.
+    const limits = (pane, edge) => {
+        const scroller = pane.closest('.win-frame');
+        const scrolls = scroller && /auto|scroll/.test(getComputedStyle(scroller).overflowY);
+        const view = scrolls ? Math.min(innerHeight, scroller.clientHeight) : innerHeight;
+        return { min: 12 * rem(), max: Math.max(12 * rem(), view - (edge?.offsetHeight ?? 20) - 8) };
     };
     const resize = (edge, px, save = true) => {
         const pane = paneOf(edge);
         if (!pane) return;
-        const { min, max } = limits(pane);
+        const { min, max } = limits(pane, edge);
         px = Math.min(max, Math.max(min, px));
         set(edge.dataset.paneEdge, px);
         edge.setAttribute('aria-valuenow', String(Math.round(px)));
@@ -51,16 +56,21 @@
         event.preventDefault();
         const y0 = event.clientY, h0 = pane.getBoundingClientRect().height;
         let frame = 0, y = y0;
-        edge.setPointerCapture(event.pointerId);
+        // Point 241: the edge keeps the pointer (nothing below, e.g. the viewer's pan, may take it) until it is let go.
+        try { edge.setPointerCapture(event.pointerId); } catch { /* the pointer is gone already */ }
         edge.classList.add('is-active');
         const move = e => {
             y = e.clientY;
             frame ||= requestAnimationFrame(() => { frame = 0; resize(edge, h0 + y - y0, false); });
         };
+        let ended = false;
         const done = () => {
+            if (ended) return;
+            ended = true;
             edge.removeEventListener('pointermove', move);
             edge.removeEventListener('pointerup', done);
             edge.removeEventListener('pointercancel', done);
+            edge.removeEventListener('lostpointercapture', done);
             cancelAnimationFrame(frame);
             edge.classList.remove('is-active');
             if (y !== y0) resize(edge, h0 + y - y0);
@@ -68,6 +78,7 @@
         edge.addEventListener('pointermove', move);
         edge.addEventListener('pointerup', done);
         edge.addEventListener('pointercancel', done);
+        edge.addEventListener('lostpointercapture', done);
     });
     document.addEventListener('keydown', event => {
         const edge = event.target.closest?.('[data-pane-edge]');
