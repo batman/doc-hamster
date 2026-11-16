@@ -1,6 +1,7 @@
 #!/bin/sh
 # The checks CI runs first, before anything leaves this machine (F48): code style, PHPStan, the UI framework rules and
-# views that compile. The test suite stays in CI (and `composer test`): it takes minutes.
+# views that compile. The whole test suite runs in CI after the push; locally `composer test` (SQLite in memory, ~2 min)
+# or only the tests of the calculation logic a change touched.
 # Enable once per clone:  composer hooks   (= git config core.hooksPath .githooks)
 set -e
 php vendor/bin/pint --test

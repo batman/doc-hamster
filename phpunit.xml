@@ -34,5 +34,9 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
+        <!-- Batch 17: local runs use SQLite in memory (~100 s instead of waiting for a MariaDB that is not there).
+             Without force="true" these never override real environment variables, so CI stays on MariaDB/MySQL. -->
+        <env name="DB_CONNECTION" value="sqlite"/>
+        <env name="DB_DATABASE" value=":memory:"/>
     </php>
 </phpunit>
