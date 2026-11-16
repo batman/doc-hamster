@@ -12,6 +12,7 @@ use App\Events\TextRecognized;
 use App\Http\OcrAccess;
 use App\Infrastructure\Environment\LocalOcr;
 use App\Infrastructure\Environment\OcrProgress;
+use App\Jobs\Local\Ocr\PageShaper;
 use App\Jobs\Local\RecognizeText;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -162,6 +163,10 @@ final class OcrBrowserController extends Controller
         } else {
             $text = trim((string) ($data['text'] ?? ''));
             $words = is_string($data['words'] ?? null) ? OcrWords::fromBrowser($data['words']) : null;
+            // Point 238: the browser reads the stored file; its boxes move onto the turned/cropped page as shown.
+            if ($words !== null && $file !== null) {
+                $words['pages'] = (new PageShaper($file))->allFromOriginal($words['pages']);
+            }
             $document->forceFill([
                 'ocr_text' => OcrFixes::reapply($document, $text, $words), 'ocr_words' => OcrWords::encode($words), 'ocr_status' => 'done',
                 'ocr_pass' => OcrProgress::FULL, 'ocr_failures' => 0, 'ocr_rescan' => false,

@@ -19,12 +19,13 @@ use App\Http\Controllers\DeviceSettingsController;
 use App\Http\Controllers\DocumentBulkController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DocumentFileController;
-use App\Http\Controllers\DocumentZipController;
 use App\Http\Controllers\DocumentPackController;
 use App\Http\Controllers\DocumentPropertyController;
+use App\Http\Controllers\DocumentTransformController;
 use App\Http\Controllers\DocumentUploadController;
 use App\Http\Controllers\DocumentViewController;
 use App\Http\Controllers\DocumentWordsController;
+use App\Http\Controllers\DocumentZipController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ExtensionController;
 use App\Http\Controllers\FolderController;
@@ -127,6 +128,8 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     // OCR corrections of single words by position and their undo (point 122.7, A243).
     Route::post('documents/{id}/words/fix', [DocumentWordsController::class, 'fix'])->middleware('can:documents.edit')->name('documents.words.fix');
     Route::post('documents/{id}/words/unfix', [DocumentWordsController::class, 'unfix'])->middleware('can:documents.edit')->name('documents.words.unfix');
+    // Point 238: rotation and crop of the shown page (non-destructive).
+    Route::post('documents/{id}/transform', DocumentTransformController::class)->middleware('can:documents.edit')->name('documents.transform');
     Route::post('documents/{id}', [DocumentController::class, 'update'])->middleware('can:documents.edit')->name('documents.update');
     Route::post('documents/{id}/field', [DocumentController::class, 'updateField'])->middleware('can:documents.edit')->name('documents.field');
     Route::post('documents/{id}/move', [DocumentController::class, 'move'])->middleware('can:documents.edit')->name('documents.move');

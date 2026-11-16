@@ -119,6 +119,18 @@ return [
         'doc_prev' => 'Vorheriges Dokument',
         'doc_next' => 'Nächstes Dokument',
     ],
+    // Point 238: turn and crop the shown page (non-destructive, the download stays the original).
+    'transform' => [
+        'tools' => 'Drehen und Zuschneiden',
+        'rotate_left' => 'Nach links drehen',
+        'rotate_right' => 'Nach rechts drehen',
+        'crop' => 'Zuschneiden',
+        'apply' => 'Übernehmen',
+        'cancel' => 'Abbrechen',
+        'reset' => 'Zurücksetzen',
+        'saved' => 'Gespeichert – der Text wird neu erkannt.',
+        'failed' => 'Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.',
+    ],
     // Text documents written in the app (point 21).
     'new_group' => 'Neu anlegen',
     'text' => [

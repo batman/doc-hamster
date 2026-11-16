@@ -32,7 +32,8 @@ final class PdfReader
     /** A page with at least this many characters (without spaces) in its text layer needs no OCR (same rule as the browser). */
     private const int LAYER_CHARS = 20;
 
-    public function __construct(private readonly OcrTools $tools, private readonly bool $system) {}
+    /** @param  PageShaper|null  $shaper  point 238: pages read turned/cropped as shown, text-layer boxes moved onto them */
+    public function __construct(private readonly OcrTools $tools, private readonly bool $system, private readonly ?PageShaper $shaper = null) {}
 
     /**
      * @return array{0: string, 1: string, 2: ?int, 3: array{v: int, source: string, pages: list<array{n: int, words: list<array<string, mixed>>}>}|null} text, event, pages, words
@@ -53,7 +54,7 @@ final class PdfReader
         if ($this->system && $this->tools->ocr()->renderTool() === null) {
             [$text, $words] = $this->tools->ocrmypdf($path, $deadline);
 
-            return [$text, 'recognized', $pages, $words];
+            return [$text, 'recognized', $pages, $words === null ? null : OcrWords::make($words['source'], $this->shown($words['pages']))];
         }
 
         // Page images of a run that was killed (request or worker ended) are dropped after an hour.
@@ -96,7 +97,7 @@ final class PdfReader
             $isLayer = self::hasText($own);
             if ($isLayer && isset($byPage[$n])) {
                 $texts[] = trim($own);
-                $found[] = $byPage[$n];
+                $found[] = $this->shaper?->fromOriginal($byPage[$n]) ?? $byPage[$n];
 
                 continue;
             }
@@ -136,7 +137,7 @@ final class PdfReader
             }
             try {
                 try {
-                    [$read, $page] = $this->tools->tesseract($images[0], $n, $deadline);
+                    [$read, $page] = $this->tools->tesseract($this->shaper?->input($images[0], $n, false, $deadline) ?? $images[0], $n, $deadline);
                 } catch (Throwable $e) {
                     if (! $isLayer) {
                         throw $e;
@@ -159,6 +160,15 @@ final class PdfReader
             $pages ?? $last,
             OcrWords::make($fromLayer ? 'layer' : 'tesseract', $found),
         ];
+    }
+
+    /**
+     * @param  list<array{n: int, words: list<array<string, mixed>>}>  $pages
+     * @return list<array{n: int, words: list<array<string, mixed>>}>
+     */
+    private function shown(array $pages): array
+    {
+        return $this->shaper?->allFromOriginal($pages) ?? $pages;
     }
 
     private static function hasText(string $text): bool

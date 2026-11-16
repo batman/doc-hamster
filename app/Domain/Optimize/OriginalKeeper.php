@@ -40,7 +40,7 @@ final class OriginalKeeper
         if (! @rename($optimized, $disk->path($path)) && ! (@copy($optimized, $disk->path($path)) && @unlink($optimized))) {
             throw new RuntimeException('optimised file could not be stored');
         }
-        $old = $file->only(['org_id', 'kind', 'page_no', 'path', 'mime', 'size', 'sha256', 'thumb_path']);
+        $old = $file->only(['org_id', 'kind', 'page_no', 'path', 'mime', 'size', 'sha256', 'thumb_path', 'transform']); // point 238: the kept original shows turned/cropped like its words
 
         $original = DB::transaction(static function () use ($document, $file, $path, $result, $old, $folderId, $settings): Document {
             $original = new Document;

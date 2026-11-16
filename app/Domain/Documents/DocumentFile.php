@@ -23,6 +23,7 @@ use Illuminate\Support\Str;
  * @property int $size
  * @property string $sha256
  * @property string|null $thumb_path
+ * @property string|null $transform point 238: rotation/crop per page, JSON (PageTransform)
  */
 final class DocumentFile extends Model
 {
@@ -47,6 +48,51 @@ final class DocumentFile extends Model
             $this->mime === 'application/pdf' => 'file-type-pdf',
             default => 'file-text',
         };
+    }
+
+    /** The preview's URL; its path changes with a new rotation/crop, so the long browser cache never shows an old one. */
+    public function thumbUrl(): string
+    {
+        return route('documents.thumb', ['id' => $this->id, 'v' => substr(md5((string) $this->thumb_path), 0, 8)]);
+    }
+
+    /** Point 238 (A416): the rotation/crop of one page of this file (an image has page 1 only). */
+    public function pageTransform(int $page = 1): PageTransform
+    {
+        return PageTransform::fromArray($this->transforms()[$page] ?? null);
+    }
+
+    /**
+     * The stored transforms by page number (raw form, see PageTransform::fromArray).
+     *
+     * @return array<int, mixed>
+     */
+    public function transforms(): array
+    {
+        $raw = $this->getAttribute('transform');
+        $data = is_string($raw) && $raw !== '' ? json_decode($raw, true) : null;
+        $out = [];
+        foreach (is_array($data) ? $data : [] as $page => $value) {
+            if (is_numeric($page) && (int) $page >= 1) {
+                $out[(int) $page] = $value;
+            }
+        }
+
+        return $out;
+    }
+
+    /** Sets (not saves) the transform of one page; no transform on any page leaves the column empty. */
+    public function setPageTransform(int $page, PageTransform $transform): void
+    {
+        $all = $this->transforms();
+        $value = $transform->toArray();
+        if ($value === null) {
+            unset($all[$page]);
+        } else {
+            $all[$page] = $value;
+        }
+        ksort($all);
+        $this->forceFill(['transform' => $all === [] ? null : json_encode((object) $all)]);
     }
 
     public function isImage(): bool

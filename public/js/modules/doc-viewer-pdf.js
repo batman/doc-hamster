@@ -29,6 +29,9 @@
     };
     DocHamster.openPdf = openPdf;
 
+    // Point 238: rotation/crop of the shown page (modules/doc-transform.js sets DocHamster.viewer.shaper):
+    // size(frame, page, w, h) → {w, h} shown, paint(frame, page, picture) → the turned/cropped picture (or the same).
+    const shaper = () => DocHamster.viewer?.shaper ?? null;
     const PDF_MAX_PX = 16e6; // canvas limit of mobile Safari
     const PDF_MAX_SIDE = 16384; // longest canvas side most browsers draw
     const live = new Set();
@@ -60,7 +63,8 @@
         const w = frame.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
         const h = frame.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
         if (w <= 0 || h <= 0) return; // hidden window: drawn when it gets a size
-        const fit = Math.min(w / one.width, h / one.height) * (window.devicePixelRatio || 1);
+        const dims = shaper()?.size(frame, pdf.page, one.width, one.height) ?? { w: one.width, h: one.height };
+        const fit = Math.min(w / dims.w, h / dims.h) * (window.devicePixelRatio || 1);
         // The largest scale the canvas allows (area and side); its zoom level is remembered as the cap.
         const most = Math.min(Math.sqrt(PDF_MAX_PX / (one.width * one.height)), PDF_MAX_SIDE / Math.max(one.width, one.height));
         pdf.cap = Math.max(1, most / fit);
@@ -76,11 +80,13 @@
         if (gen !== pdf.gen || !frame.isConnected) return;
         pdf.task = null;
         pdf.drawn = level;
-        pdf.width = one.width; // PDF points, for "100 %" (point 168.2)
+        pdf.width = dims.w; // PDF points, for "100 %" (point 168.2)
+        const shown = shaper()?.paint(frame, pdf.page, canvas) ?? canvas;
+        shown.className = 'thumb doc-canvas';
         const old = frame.querySelector(':scope > .thumb, :scope > .icon');
-        if (old) old.replaceWith(canvas); else frame.prepend(canvas);
+        if (old) old.replaceWith(shown); else frame.prepend(shown);
         const now = stateOf(frame);
-        now.img = canvas;
+        now.img = shown;
         apply(frame, now);
         DocHamster.emit('viewer:page', { frame, page: pdf.page });
         (pdf.waiters ?? []).splice(0).forEach(done => done(true));
@@ -93,6 +99,11 @@
     core.zoomed = (frame, st) => {
         const pdf = pdfs.get(frame);
         if (pdf && pdf.drawn !== wanted(pdf, st.s)) redraw(frame, pdf, 150);
+    };
+    // Point 238: drawn again after the page's rotation/crop changed.
+    core.repaint = frame => {
+        const pdf = pdfs.get(frame);
+        if (pdf) { pdf.drawn = null; pdf.cap = null; redraw(frame, pdf, 0); }
     };
     const resized = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(entries => entries.forEach(entry => {
         const pdf = pdfs.get(entry.target);
@@ -152,7 +163,7 @@
             });
         },
         // Point 168.2 (fullscreen viewer): pdf.js for a frame added later, and freeing it again.
-        init: frame => (frame?.dataset.pdf ? initPdf(frame) : undefined),
+        init: frame => (frame?.dataset.pdf ? initPdf(frame) : frame?.classList?.contains('detail-doc') && DocHamster.viewer.refresh?.(frame)),
         release: drop,
     });
 

@@ -100,7 +100,7 @@ final class OcrStatusController extends Controller
                 'url' => route('documents.show', $current['id']),
                 'file' => $file !== null && OcrAccess::readable(DocumentFile::query()->whereKey($file->id))->exists() ? route('ocr.image', $file->id) : null,
                 'type' => $file?->mime,
-                'thumb' => $file?->thumb_path !== null ? route('documents.thumb', $file->id) : null,
+                'thumb' => $file?->thumb_path !== null ? $file->thumbUrl() : null,
             ];
         }
         $recent = array_map(static fn (array $row): array => [

@@ -304,6 +304,22 @@
             const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
             return w && h ? { img, w, h } : null;
         },
+        // Point 238: shows the page again after its rotation/crop changed (back to fit). A PDF is drawn again by
+        // doc-viewer-pdf.js (core.repaint); a picture is turned from the loaded <img data-raw>, which is kept while a
+        // canvas stands in its place.
+        refresh: frame => {
+            const st = stateOf(frame);
+            clearBox(st);
+            st.s = 1; st.x = 0; st.y = 0;
+            if (pdfs.has(frame)) { core.repaint?.(frame); return; }
+            const raw = st.raw ??= frame.querySelector(':scope > img.thumb[data-raw]');
+            if (!raw) return;
+            if (!raw.complete || !raw.naturalWidth) { raw.addEventListener('load', () => DocHamster.viewer.refresh(frame), { once: true }); return; }
+            const shown = DocHamster.viewer.shaper?.paint(frame, 1, raw) ?? raw;
+            if (shown !== st.img) { st.img.replaceWith(shown); st.img = shown; }
+            apply(frame, st);
+            DocHamster.emit('viewer:page', { frame, page: 1 });
+        },
         scale: frame => stateOf(frame).s,
         // Zoom by a factor around a client point (default: the frame's centre).
         zoomBy: (frame, factor, at = null) => {

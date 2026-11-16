@@ -6,8 +6,10 @@ namespace App\Jobs\Local;
 
 use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
+use App\Domain\Documents\PageTransform;
 use App\Domain\Documents\RichText;
 use App\Domain\Documents\TextDocument;
+use App\Domain\Documents\Thumbnail;
 use App\Domain\Ocr\OcrFixes;
 use App\Domain\Ocr\OcrLog;
 use App\Domain\Ocr\OcrServerSwitch;
@@ -21,6 +23,8 @@ use App\Jobs\Local\Ocr\Deadline;
 use App\Jobs\Local\Ocr\ImageReader;
 use App\Jobs\Local\Ocr\OcrTimeout;
 use App\Jobs\Local\Ocr\OcrTools;
+use App\Jobs\Local\Ocr\Orientation;
+use App\Jobs\Local\Ocr\PageShaper;
 use App\Jobs\Local\Ocr\PdfReader;
 use App\Queue\QueueName;
 use Closure;
@@ -160,6 +164,7 @@ final class RecognizeText implements ShouldQueue
         $event = 'recognized';
         $pages = $file->isImage() ? 1 : null;
         $error = null;
+        $shaper = null;
         try {
             $path = Storage::disk('local')->path($file->path);
             if (! is_file($path)) {
@@ -167,14 +172,19 @@ final class RecognizeText implements ShouldQueue
             }
             // 171.2 / A345: all chosen languages together, or the languages picked for this document.
             $tools = new OcrTools($ocr, $app, $ocr->languages(self::choice($document)));
+            // Point 238: pages are read turned/cropped as shown (A415); A418: the first read of a new upload turns a
+            // page that lies sideways or upside down, when Tesseract's orientation detection is sure.
+            $first = ! $hasText && ! $this->rescan && ! $this->server && $document->getAttribute('ocr_read_at') === null;
+            $shaper = new PageShaper($file, $first ? Orientation::for($tools, $app) : null);
+            $jpeg = $file->mime === 'image/jpeg';
             if ($route === 'image') {
                 $reader = new ImageReader($tools);
                 [$text, $words] = self::withRetry(
-                    static fn (Deadline $d): array => $reader->read($path, $document->id, $d),
-                    ImageReader::canShrink($path) ? static fn (Deadline $d): array => $reader->readShrunk($path, $document->id, $d) : null,
+                    static fn (Deadline $d): array => $reader->read($shaper->input($path, 1, $jpeg, $d), $document->id, $d),
+                    ImageReader::canShrink($path) ? static fn (Deadline $d): array => $reader->readShrunk($shaper->input($path, 1, $jpeg, $d), $document->id, $d) : null,
                 );
             } else {
-                $reader = new PdfReader($tools, $system);
+                $reader = new PdfReader($tools, $system, $shaper);
                 // ocrmypdf picks its own resolution: no smaller retry there.
                 [$text, $event, $pages, $words] = self::withRetry(
                     static fn (Deadline $d): array => $reader->read($path, $document->id, $d),
@@ -187,6 +197,10 @@ final class RecognizeText implements ShouldQueue
             $error = ['failed', OcrTools::short($e->getMessage())];
         } finally {
             OcrProgress::finish($document->id);
+            $shaper?->cleanup();
+        }
+        if ($text !== null && $shaper !== null && $shaper->found() !== []) {
+            self::keepTurns($file, $shaper->found());
         }
 
         // Point 61/69: the OCR log, without the text itself.
@@ -248,6 +262,23 @@ final class RecognizeText implements ShouldQueue
         }
 
         return OcrLog::text('ocr.reason.type', ['type' => OcrLog::type($file->mime)]);
+    }
+
+    /**
+     * A418: the rotations found by the orientation detection are stored like a person's (non-destructive), and the
+     * preview follows.
+     *
+     * @param  array<int, PageTransform>  $found
+     */
+    private static function keepTurns(DocumentFile $file, array $found): void
+    {
+        foreach ($found as $n => $transform) {
+            $file->setPageTransform($n, $transform);
+        }
+        $file->save();
+        if (isset($found[1])) {
+            Thumbnail::remake($file, null);
+        }
     }
 
     /** @param array<string, mixed> $values */

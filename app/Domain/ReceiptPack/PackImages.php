@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\ReceiptPack;
 
+use App\Domain\Documents\PageImage;
+use App\Domain\Documents\PageTransform;
 use App\Domain\Documents\Thumbnail;
 use App\Infrastructure\Environment\LocalOcr;
 use Illuminate\Support\Facades\Storage;
@@ -45,10 +47,11 @@ final class PackImages
         $note = null;
         foreach ($receipt->files as $file) {
             $path = Storage::disk('local')->path($file['path']);
+            $turns = $file['transforms'] ?? [];
             [$found, $why] = match (true) {
                 ! is_file($path) => [[], 'missing'],
-                $file['mime'] === 'application/pdf' => $this->pdf($path),
-                str_starts_with($file['mime'], 'image/') => $this->photo($path),
+                $file['mime'] === 'application/pdf' => $this->pdf($path, $turns),
+                str_starts_with($file['mime'], 'image/') => $this->photo($path, $turns[1] ?? PageTransform::none()),
                 default => [[], 'other'],
             };
             array_push($jpegs, ...$found);
@@ -70,21 +73,22 @@ final class PackImages
     /**
      * @return array{0: list<string>, 1: string}
      */
-    private function photo(string $path): array
+    private function photo(string $path, PageTransform $transform): array
     {
         $size = @getimagesize($path);
         if ($size === false || $size[0] * $size[1] > self::MAX_PIXELS || ! function_exists('imagecreatefromstring')) {
             return [[], 'image'];
         }
-        $jpeg = $this->toJpeg($path, $size[2] === IMAGETYPE_JPEG);
+        $jpeg = $this->toJpeg($path, $size[2] === IMAGETYPE_JPEG, $transform);
 
         return [$jpeg !== null ? [$jpeg] : [], 'image'];
     }
 
     /**
+     * @param  array<int, PageTransform>  $turns  rotation/crop by page number
      * @return array{0: list<string>, 1: string}
      */
-    private function pdf(string $path): array
+    private function pdf(string $path, array $turns): array
     {
         $tool = null;
         try {
@@ -107,7 +111,9 @@ final class PackImages
         natsort($pages);
         $jpegs = [];
         foreach ($pages as $png) {
-            $jpeg = $this->toJpeg($png, false);
+            // pdftopng names the pages root-000001.png …: the number is the page.
+            $n = preg_match('/-(\d+)\.png$/', $png, $m) === 1 ? (int) $m[1] : 0;
+            $jpeg = $this->toJpeg($png, false, $turns[$n] ?? PageTransform::none());
             @unlink($png);
             if ($jpeg !== null) {
                 $jpegs[] = $jpeg;
@@ -117,14 +123,17 @@ final class PackImages
         return [$jpegs, 'pdf'];
     }
 
-    /** A JPEG of at most MAX_EDGE pixels in the work folder; a fitting upright JPEG is copied as it is. */
-    private function toJpeg(string $source, bool $isJpeg): ?string
+    /**
+     * A JPEG of at most MAX_EDGE pixels in the work folder, turned and cropped as shown (point 238); a fitting upright
+     * JPEG without rotation/crop is copied as it is.
+     */
+    private function toJpeg(string $source, bool $isJpeg, PageTransform $transform): ?string
     {
         $target = $this->dir.'/p'.(++$this->counter).'.jpg';
         $size = @getimagesize($source);
         $exif = $isJpeg && function_exists('exif_read_data') ? @exif_read_data($source) : false;
         $upright = ! is_array($exif) || ($exif['Orientation'] ?? 1) === 1;
-        if ($isJpeg && $size !== false && $upright && max($size[0], $size[1]) <= self::MAX_EDGE && ($size['channels'] ?? 3) === 3) {
+        if ($transform->isNone() && $isJpeg && $size !== false && $upright && max($size[0], $size[1]) <= self::MAX_EDGE && ($size['channels'] ?? 3) === 3) {
             return copy($source, $target) ? $target : null;
         }
         try {
@@ -135,6 +144,7 @@ final class PackImages
             if ($isJpeg) {
                 $image = Thumbnail::upright($image, $source);
             }
+            $image = PageImage::apply($image, $transform);
             $scale = min(1, self::MAX_EDGE / max(imagesx($image), imagesy($image)));
             if ($scale < 1) {
                 $scaled = imagescale($image, max(1, (int) round(imagesx($image) * $scale)), max(1, (int) round(imagesy($image) * $scale)));

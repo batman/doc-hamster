@@ -72,11 +72,13 @@
         // changes (remembered per kind 'detail'); the fullscreen viewer is cloned from the template at the end.
         $isPdf = $file?->mime === 'application/pdf';
         $viewer = ! $isText && ($file?->isImage() || $file?->thumb_path || $isPdf);
-        $viewerSrc = $file?->isImage() ? route('documents.file', $file->id) : ($file?->thumb_path ? route('documents.thumb', $file->id) : null);
+        $viewerSrc = $file?->isImage() ? route('documents.file', $file->id) : ($file?->thumb_path ? $file->thumbUrl() : null);
+        // Point 238: rotation/crop per page (modules/doc-transform.js turns the shown picture or pdf canvas).
+        $transforms = $file ? (string) json_encode((object) $file->transforms()) : '{}';
     @endphp
     @if ($viewer)<div class="pane" data-pane="detail" style="--pane-size: var(--pane-detail)">@endif
     @if ($file?->isImage())
-        <span class="thumb-frame detail-doc"><img class="thumb" src="{{ route('documents.file', $file->id) }}" alt="" draggable="false"></span>
+        <span class="thumb-frame detail-doc" data-transforms="{{ $transforms }}"><img class="thumb" src="{{ route('documents.file', $file->id) }}" alt="" draggable="false" data-raw></span>
     @elseif ($isText)
         {{-- Formatted text is sanitized again before it is shown (TextDocument::display). --}}
         @php $textContent = \App\Domain\Documents\TextDocument::display($file); @endphp
@@ -87,9 +89,9 @@
         @endif
     @elseif ($file?->mime === 'application/pdf')
         {{-- PDFs are drawn sharp with pdf.js (app.js "Document viewer"); the preview image stays if that fails (point 33). --}}
-        <span class="thumb-frame detail-doc" tabindex="0" data-pdf="{{ route('documents.file', $file->id) }}">
+        <span class="thumb-frame detail-doc" tabindex="0" data-pdf="{{ route('documents.file', $file->id) }}" data-transforms="{{ $transforms }}">
             @if ($file->thumb_path)
-                <img class="thumb" src="{{ route('documents.thumb', $file->id) }}" alt="" draggable="false">
+                <img class="thumb" src="{{ $file->thumbUrl() }}" alt="" draggable="false">
             @else
                 <x-icon :name="$file->typeIcon()" />
             @endif
@@ -117,6 +119,26 @@
                     <output data-page-label></output>
                 </div>
             @endif
+            @if ($canEdit)
+                {{-- Point 238: turn and crop the page shown – saved at once, non-destructive (the download stays the original). --}}
+                <div class="button-group" role="group" aria-label="{{ __('documents.transform.tools') }}" data-doc-transform="{{ route('documents.transform', $document->id) }}"
+                    data-document="{{ $document->id }}" data-label-failed="{{ __('documents.transform.failed') }}">
+                    <button type="button" class="icon-button button-small" data-transform-rotate="-90" aria-label="{{ __('documents.transform.rotate_left') }}" data-tooltip="{{ __('documents.transform.rotate_left') }}"><x-icon name="rotate" /></button>
+                    <button type="button" class="icon-button button-small" data-transform-rotate="90" aria-label="{{ __('documents.transform.rotate_right') }}" data-tooltip="{{ __('documents.transform.rotate_right') }}"><x-icon name="rotate-clockwise" /></button>
+                    <button type="button" class="icon-button button-small" data-transform-crop aria-pressed="false" aria-label="{{ __('documents.transform.crop') }}" data-tooltip="{{ __('documents.transform.crop') }}"><x-icon name="crop" /></button>
+                    <button type="button" class="icon-button button-small" data-transform-reset aria-label="{{ __('documents.transform.reset') }}" data-tooltip="{{ __('documents.transform.reset') }}" hidden><x-icon name="arrow-back-up" /></button>
+                    {{-- Zuschneiderahmen (FRAMEWORK.md): put over the page while cropping. --}}
+                    <template data-crop-tpl>
+                        <div class="crop-box">
+                            @foreach (['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'] as $handle)<span class="crop-handle" data-handle="{{ $handle }}"></span>@endforeach
+                            <span class="crop-actions">
+                                <button type="button" class="icon-button button-small" data-crop-apply aria-label="{{ __('documents.transform.apply') }}" data-tooltip="{{ __('documents.transform.apply') }}"><x-icon name="check" /></button>
+                                <button type="button" class="icon-button button-small" data-crop-cancel aria-label="{{ __('documents.transform.cancel') }}" data-tooltip="{{ __('documents.transform.cancel') }}"><x-icon name="x" /></button>
+                            </span>
+                        </div>
+                    </template>
+                </div>
+            @endif
             <button type="button" class="icon-button button-small" data-pane-reset="detail" aria-label="{{ __('documents.viewer.height_reset') }}" data-tooltip="{{ __('documents.viewer.height_reset') }}"><x-icon name="restore" /></button>
             <button type="button" class="icon-button button-small" data-doc-fullscreen="{{ $document->id }}" aria-label="{{ __('documents.viewer.fullscreen') }}" data-tooltip="{{ __('documents.viewer.fullscreen') }}"><x-icon name="maximize" /></button>
         </div>
@@ -128,9 +150,9 @@
             <div class="dialog-backdrop doc-fullscreen" hidden>
                 <div class="dialog doc-fullscreen-box" role="dialog" aria-modal="true" aria-label="{{ $document->title }}">
                     <button type="button" class="icon-button button-small dialog-x" data-dialog-close aria-label="{{ __('documents.close') }}" data-tooltip="{{ __('documents.close') }}"><x-icon name="x" /></button>
-                    <span class="thumb-frame detail-doc doc-fullscreen-frame" tabindex="0" @if ($isPdf) data-pdf="{{ route('documents.file', $file->id) }}" @endif>
+                    <span class="thumb-frame detail-doc doc-fullscreen-frame" tabindex="0" @if ($isPdf) data-pdf="{{ route('documents.file', $file->id) }}" @endif data-transforms="{{ $transforms }}">
                         @if ($viewerSrc)
-                            <img class="thumb" src="{{ $viewerSrc }}" alt="" draggable="false">
+                            <img class="thumb" src="{{ $viewerSrc }}" alt="" draggable="false" @if ($file->isImage()) data-raw @endif>
                         @else
                             <x-icon :name="$file->typeIcon()" />
                         @endif

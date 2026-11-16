@@ -140,6 +140,20 @@ input[type="color"]:focus-visible { outline: 2px solid var(--primary); outline-o
 .doc-mark.is-faint { border-color: color-mix(in srgb, var(--primary) 45%, transparent); background: color-mix(in srgb, var(--primary) 10%, transparent); }
 @keyframes doc-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 60%, transparent); } 100% { box-shadow: 0 0 0 calc(14px / var(--doc-scale, 1)) transparent; } }
 @media (prefers-reduced-motion: reduce) { .doc-mark.is-pulse { animation: none; } }
+/* Zuschneiderahmen (point 238): a frame over the shown page (inside .doc-layer-page, in page percent) with corner and
+   edge handles; outside dimmed; ✓ / X icon buttons in its top right corner. Handles and buttons keep their size at any zoom. */
+.doc-layer.is-cropping { z-index: 3; }
+.crop-box { position: absolute; box-sizing: border-box; border: calc(2px / var(--doc-scale, 1)) solid var(--primary); box-shadow: 0 0 0 100vmax rgb(0 0 0 / .45); pointer-events: auto; cursor: move; touch-action: none; }
+.crop-handle { position: absolute; box-sizing: border-box; width: calc(16px / var(--doc-scale, 1)); height: calc(16px / var(--doc-scale, 1)); margin: calc(-8px / var(--doc-scale, 1)); border: calc(2px / var(--doc-scale, 1)) solid var(--primary); border-radius: 50%; background: var(--surface); }
+.crop-handle[data-handle="nw"] { left: 0; top: 0; cursor: nwse-resize; }
+.crop-handle[data-handle="n"] { left: 50%; top: 0; cursor: ns-resize; }
+.crop-handle[data-handle="ne"] { left: 100%; top: 0; cursor: nesw-resize; }
+.crop-handle[data-handle="e"] { left: 100%; top: 50%; cursor: ew-resize; }
+.crop-handle[data-handle="se"] { left: 100%; top: 100%; cursor: nwse-resize; }
+.crop-handle[data-handle="s"] { left: 50%; top: 100%; cursor: ns-resize; }
+.crop-handle[data-handle="sw"] { left: 0; top: 100%; cursor: nesw-resize; }
+.crop-handle[data-handle="w"] { left: 0; top: 50%; cursor: ew-resize; }
+.crop-actions { position: absolute; top: 0; right: 0; display: flex; gap: .35rem; padding: .5rem; transform: scale(calc(1 / var(--doc-scale, 1))); transform-origin: 100% 0; cursor: default; }
 /* Click-to-edit (point 28): plain text with a light hover hint, a field of the same size while editing */
 .edit-in-place {
     min-height: 2.75rem; margin: 0 -.5rem; padding: .5rem; border: 1px solid transparent; border-radius: calc(var(--radius) / 2);

@@ -21,7 +21,7 @@ return [
         'core/tooltips', 'core/dialogs', 'core/window-cache', 'core/windows', 'core/window-rename', 'core/window-search', 'core/menu-window', 'core/scroll-hint',
         'core/badges', 'modules/notes', 'modules/tags-search', 'core/toasts', 'core/selection-bar', 'core/ajax-forms',
         'modules/updates-preview-pick', 'core/color-field', 'modules/folder-import', 'core/start',
-        'core/pane-edge', 'modules/document-viewer', 'modules/doc-fullscreen', 'modules/ocr-text', 'modules/translate', 'modules/palette', 'modules/ocr-ink', 'modules/ocr-browser', 'modules/documents', 'modules/documents-rows', 'modules/documents-forms',
+        'core/pane-edge', 'modules/document-viewer', 'modules/doc-fullscreen', 'modules/doc-transform', 'modules/ocr-text', 'modules/translate', 'modules/palette', 'modules/ocr-ink', 'modules/ocr-browser', 'modules/documents', 'modules/documents-rows', 'modules/documents-forms',
         'modules/documents-rename', 'modules/documents-trash', 'modules/documents-select', 'modules/documents-pick', 'modules/documents-columns', 'modules/documents-dnd', 'modules/documents-dnd-native', 'modules/documents-upload', 'modules/documents-search',
         'modules/updates',
         'modules/text-editor', 'core/edit-in-place', 'modules/ocr-progress', 'modules/ocr-live', 'modules/ocr-server', 'modules/optimize', 'modules/note-options',

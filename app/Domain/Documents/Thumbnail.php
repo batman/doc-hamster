@@ -51,7 +51,10 @@ final class Thumbnail
         // Point 164.7: Einstellungen -> Geschwindigkeit -> Vorschaubilder (small: 320 px, quality 70).
         $orgId = $file->getAttribute('org_id');
         [$edge, $quality] = SpeedOptions::thumbSize(is_string($orgId) ? Organization::query()->find($orgId) : null);
-        $scale = min(1, $edge / max(imagesx($image), imagesy($image)));
+        // Point 238 (A415): the preview shows the page turned and cropped; the cropped part gets the full edge.
+        $transform = $file->pageTransform(1);
+        $part = $transform->crop === null ? 1.0 : max($transform->crop['w'], $transform->crop['h']);
+        $scale = min(1, $edge / (max(imagesx($image), imagesy($image)) * $part));
         $thumb = imagescale($image, max(1, (int) round(imagesx($image) * $scale)), max(1, (int) round(imagesy($image) * $scale)));
         if ($thumb === false) {
             return null;
@@ -59,13 +62,31 @@ final class Thumbnail
         if ($file->mime === 'image/jpeg') {
             $thumb = self::upright($thumb, $source);
         }
+        $thumb = PageImage::apply($thumb, $transform);
 
-        $path = $file->path.'.thumb.jpg';
+        // A new rotation/crop gets a new path, so the URL changes (DocumentFile::thumbUrl, cached for a year).
+        $path = $file->path.($transform->isNone() ? '.thumb.jpg' : '.thumb-'.substr(md5((string) json_encode($transform->toArray())), 0, 8).'.jpg');
         ob_start();
         imagejpeg($thumb, null, $quality);
         $disk->put($path, (string) ob_get_clean());
 
         return $path;
+    }
+
+    /**
+     * Point 238: makes the preview again after a rotation/crop and drops the old one (kept when no new one can be made).
+     */
+    public static function remake(DocumentFile $file, ?int $maxPixels = self::UPLOAD_MAX_PIXELS): void
+    {
+        $old = $file->thumb_path;
+        $new = self::make($file, $maxPixels);
+        if ($new === null) {
+            return;
+        }
+        $file->forceFill(['thumb_path' => $new])->save();
+        if ($old !== null && $old !== $new) {
+            Storage::disk('local')->delete($old);
+        }
     }
 
     /**

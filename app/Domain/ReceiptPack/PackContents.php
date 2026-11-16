@@ -9,6 +9,7 @@ use App\Domain\Banking\Transaction;
 use App\Domain\Banking\TransactionMatch;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
+use App\Domain\Documents\PageTransform;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -112,7 +113,11 @@ final readonly class PackContents
     {
         $files = array_values($document->files->sortBy('page_no')
             ->filter(static fn (DocumentFile $f): bool => $f->kind !== 'thumb')
-            ->map(static fn (DocumentFile $f): array => ['path' => $f->path, 'mime' => $f->mime])->all());
+            ->map(static fn (DocumentFile $f): array => [
+                'path' => $f->path, 'mime' => $f->mime,
+                // Point 238 (A415): the pages turned and cropped as shown.
+                'transforms' => array_map(PageTransform::fromArray(...), $f->transforms()),
+            ])->all());
 
         return new PackReceipt($document->id, $document->title, $files, $document->dateBy('doc')->format('d.m.Y'));
     }
