@@ -33,6 +33,13 @@ return new class extends Migration
             $table->dropIndex(['original_of']);
             $table->dropColumn('original_of');
         });
+        // MySQL/MariaDB let the org_id foreign key use the (org_id, optimize) index and dropped its own one: give the key
+        // a plain index back before that one goes, or the drop fails (error 1553).
+        if (in_array(Schema::getConnection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+            Schema::table('document_files', function (Blueprint $table): void {
+                $table->index('org_id');
+            });
+        }
         Schema::table('document_files', function (Blueprint $table): void {
             $table->dropIndex(['org_id', 'optimize']);
             $table->dropColumn(['optimize', 'original_size', 'optimize_at']);
