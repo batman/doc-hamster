@@ -41,7 +41,8 @@
 code { word-break: break-all; background: var(--surface); padding: .1rem .3rem; border-radius: 4px; }
 
 /* One-time information, e.g. a new password */
-.notice { background: var(--surface); border-left: 4px solid var(--primary); padding: .5rem var(--space); border-radius: var(--radius); }
+/* Hinweis (PO 2026-11-16): a plain grey box with round corners – no coloured bar on the left. */
+.notice { background: var(--surface); padding: .75rem var(--space); border-radius: 12px; }
 
 /* Toolbar above a list: icon buttons with a dropdown (filter, view) */
 .page-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; }

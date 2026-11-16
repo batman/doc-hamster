@@ -3,19 +3,23 @@ label { display: block; margin-top: var(--space); font-weight: 600; }
 label:not(:has(input[type="checkbox"])) { color: var(--primary); }
 .rights { max-width: 40rem; margin-top: var(--space); border: 1px solid var(--border); border-radius: var(--radius); }
 .rights label { margin-top: 0; font-weight: 400; }
-.chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
-.chips .chip { position: relative; margin: 0; font-weight: 400; }
-.chip input { position: absolute; opacity: 0; }
-.chip span { display: inline-block; min-height: 2.75rem; line-height: calc(2.75rem - 2px); padding: 0 1rem; border: 1px solid var(--primary); border-radius: 1.375rem; color: var(--text); font-weight: 600; cursor: pointer; transition: background-color .12s; }
-/* PO 2026-11-16: a chip works like a tag pill – chosen = filled (orange, white text), not chosen = only the frame; no
-   check mark, the same weight in both states, so a click never changes its width and nothing beside it moves. */
-.chip span:hover { background: rgb(255 118 34 / .12); }
-.chip input:checked + span { background: var(--primary); color: var(--primary-text); }
-.chip input:focus-visible + span { outline: 2px solid currentColor; outline-offset: 2px; }
-/* Small toggle chips (point 187.1, e.g. "Suchen in" in the search panel): 36 px high, for tight spots; they wrap. */
-.chips.chips-small { gap: .35rem; margin-top: 0; }
-.chips-small .chip input { inset: 0; width: 100%; height: 100%; min-height: 0; margin: 0; }
-.chips-small .chip span { min-height: 2.25rem; line-height: calc(2.25rem - 2px); padding: 0 .75rem; border-radius: 1.125rem; font-size: .9rem; white-space: nowrap; }
+:root { --check-off: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a8a59b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 5a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2l0 -14'/%3E%3C/svg%3E"); --check-on: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff7622' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 11l3 3l8 -8'/%3E%3Cpath d='M20 12v6a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h9'/%3E%3C/svg%3E"); }
+/* Mehrfachauswahl (PO 2026-11-16, variant B): <div class="chips" role="group" aria-label="…"><label class="chip"><input
+   type="checkbox" …><span>Name</span></label>…</div> – the grey rail of the Umschalter, every field with its own box
+   (grey and empty; ticked: the field lifts white, the box turns orange with a check). No frame, no check text: a click
+   never changes a width. Too narrow, the rail wraps onto a second line (no dropdown: the choices stay in view). */
+.chips { display: inline-flex; flex-wrap: wrap; gap: 2px; max-width: 100%; min-width: 0; margin-top: .5rem; padding: 3px; border-radius: 10px; background: var(--surface); vertical-align: middle; }
+.chips > .chip {
+    display: inline-flex; align-items: center; gap: .4rem; min-height: 34px; margin: 0; padding: 0 .8rem 0 .55rem; border-radius: 7px;
+    color: var(--muted); font-size: .925rem; font-weight: 600; line-height: 1.2; white-space: nowrap; cursor: pointer;
+    transition: background-color .12s, box-shadow .12s, color .12s;
+}
+.chips > .chip:hover { background: color-mix(in srgb, var(--text) 8%, var(--surface)); color: var(--text); }
+.chips > .chip:has(> input:checked) { background: var(--mark-surface); box-shadow: var(--mark-shadow); color: var(--text); }
+.chips > .chip > input[type="checkbox"] { width: 18px; height: 18px; border-radius: 0; background-color: transparent; background-size: 18px; box-shadow: none; }
+.chips > .chip > input[type="checkbox"]:focus-visible { outline-offset: 1px; }
+/* chips-small (point 187.1, e.g. "Suchen in" in the search panel): the same rail, without the gap above. */
+.chips.chips-small { margin-top: 0; }
 input, select, textarea {
     width: 100%; min-height: 40px; padding: 0 .65rem; font: inherit; color: var(--text);
     background: var(--bg); border: 2px solid var(--primary); border-radius: var(--radius);
@@ -31,21 +35,19 @@ input[type="file"]::file-selector-button {
 }
 input[type="file"]:hover::file-selector-button { box-shadow: var(--shadow); }
 
-/* Checkbox: the native input styled as a box, no extra markup */
-input[type="checkbox"] {
-    appearance: none; flex: none; display: inline-grid; place-content: center;
-    width: 1.25em; height: 1.25em; min-height: 0; margin: 0; padding: 0;
-    border-radius: 6px; cursor: pointer;
+/* Checkbox (PO 2026-11-16, variant B2): the native input, no extra markup – a small grey field with a box symbol (grey,
+   empty); ticked, the field lifts white like a chosen Umschalter segment and the box turns orange with a check. The
+   switch (role="switch") keeps its own look. */
+input[type="checkbox"]:not([role="switch"]) {
+    appearance: none; flex: none; display: inline-block; width: 30px; height: 30px; min-height: 0; margin: 0; padding: 0;
+    border: 0; border-radius: 7px; background: var(--surface) var(--check-off) center / 18px no-repeat; cursor: pointer;
+    transition: background-color .12s, box-shadow .12s;
 }
-input[type="checkbox"]::before {
-    content: ""; width: .7em; height: .7em; background: var(--primary-text);
-    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0, 43% 62%);
-    transform: scale(0); transition: transform .12s ease-out;
-}
-input[type="checkbox"]:checked { background: var(--primary); }
-input[type="checkbox"]:checked::before { transform: scale(1); }
-input[type="checkbox"]:hover:not(:disabled) { box-shadow: var(--shadow); }
+input[type="checkbox"]:not([role="switch"]):hover:not(:disabled) { background-color: color-mix(in srgb, var(--text) 8%, var(--surface)); }
+input[type="checkbox"]:not([role="switch"]):checked, input[type="checkbox"]:not([role="switch"]):checked:hover { background-color: var(--mark-surface); background-image: var(--check-on); box-shadow: var(--mark-shadow); }
+input[type="checkbox"]:not([role="switch"]):focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 input[type="checkbox"]:disabled { opacity: .5; cursor: not-allowed; }
+
 /* Checkbox row (point 217): no top margin (that is for a label above a field), compact 36 px rows on desktop, the
    48 px touch target only for a finger (pointer: coarse). A lone checkbox – or the first of a run – after other form
    parts keeps a small gap; in a list of checkboxes the rows sit close together. */
