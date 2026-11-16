@@ -8,7 +8,6 @@ use App\Domain\Documents\Document;
 use App\Domain\Ocr\OcrFixes;
 use App\Domain\Ocr\OcrWords;
 use App\Domain\Org\Permission;
-use App\Domain\Properties\DocumentProperty;
 use App\Domain\Properties\PropertyValues;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;

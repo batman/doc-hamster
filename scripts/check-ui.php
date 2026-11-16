@@ -89,9 +89,9 @@ foreach (files($root.'/resources/views', '.blade.php') as $file) {
     $name = substr(str_replace('\\', '/', $file), strlen(str_replace('\\', '/', $root)) + 1);
     $blade = (string) file_get_contents($file);
     // Comments out, their line breaks kept so the line numbers stay right.
-    $plain = (string) preg_replace_callback('/\{\{--.*?--\}\}/s', static fn (array $c): string => str_repeat("
-", substr_count($c[0], "
-")), $blade);
+    $plain = (string) preg_replace_callback('/\{\{--.*?--\}\}/s', static fn (array $c): string => str_repeat('
+', substr_count($c[0], '
+')), $blade);
     $lines = static fn (int $offset): int => substr_count($plain, "\n", 0, $offset) + 1;
 
     preg_match_all('/(?<![:\w-])class="([^"]*)"/', $plain, $m, PREG_OFFSET_CAPTURE);

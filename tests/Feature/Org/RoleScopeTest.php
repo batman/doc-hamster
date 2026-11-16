@@ -6,6 +6,7 @@ use App\Domain\Auth\User;
 use App\Domain\Banking\BankAccount;
 use App\Domain\Banking\Transaction;
 use App\Domain\Documents\Document;
+use App\Domain\Documents\DocumentFile;
 use App\Domain\Documents\Folder;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Membership;
@@ -13,6 +14,7 @@ use App\Domain\Org\OrgRole;
 use App\Domain\Org\OrgScope;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /*
@@ -155,8 +157,8 @@ it('puts only what the role may see into a folder or selection ZIP, keeping the 
     foreach ([['Hotel', $this->deep->id], ['Hotel', $this->sub->id], ['Geheim', $this->sibling->id]] as [$title, $folder]) {
         $doc = scopedDoc($title, $folder);
         $path = 'documents/'.$doc->id.'.pdf';
-        Illuminate\Support\Facades\Storage::disk('local')->put($path, '%PDF-1.4 '.$title);
-        App\Domain\Documents\DocumentFile::query()->withoutGlobalScopes()->create(['org_id' => $this->orgId, 'document_id' => $doc->id, 'path' => $path, 'mime' => 'application/pdf', 'size' => 12, 'sha256' => str_repeat('0', 64)]);
+        Storage::disk('local')->put($path, '%PDF-1.4 '.$title);
+        DocumentFile::query()->withoutGlobalScopes()->create(['org_id' => $this->orgId, 'document_id' => $doc->id, 'path' => $path, 'mime' => 'application/pdf', 'size' => 12, 'sha256' => str_repeat('0', 64)]);
         $files[] = $doc;
     }
     $this->actingAs($this->person->user);
