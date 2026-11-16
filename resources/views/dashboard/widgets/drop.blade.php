@@ -3,7 +3,7 @@
     <x-icon name="upload" />
     <strong>{{ __('dashboard.drop') }}</strong>
     <small>{{ __('dashboard.drop_hint') }}</small>
-    <label class="button button-quiet button-small">
+    <label class="button button-quiet file-button">
         <input class="visually-hidden" type="file" multiple accept="image/*,application/pdf" data-dash-drop-input aria-label="{{ __('dashboard.drop_pick') }}">
         <x-icon name="upload" />{{ __('dashboard.drop_pick') }}
     </label>

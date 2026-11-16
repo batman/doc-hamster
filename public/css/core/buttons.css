@@ -18,15 +18,15 @@ label.button.file-button > .icon { flex: none; width: 1.1rem; height: 1.1rem; }
    keep their own look and are left out here. */
 :root { --button-shadow: 0 1px 0 rgb(0 0 0 / .12), 0 2px 6px rgb(0 0 0 / .14); --button-quiet: #ffffff; --button-quiet-hover: #f4f2ec; --primary-hover: #ee6410; --danger: #d92d20; --danger-hover: #b9251a; }
 @media (prefers-color-scheme: dark) { :root { --button-shadow: 0 1px 0 rgb(0 0 0 / .4), 0 2px 8px rgb(0 0 0 / .45); --button-quiet: #3d3c39; --button-quiet-hover: #4a4945; } }
-:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .list-entry, .control-button, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice, .switcher > *)) {
+:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .list-entry, .control-button, .note-tool, .tag, .dropdown-reset, .tag-choice, .switcher > *)) {
     display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
     min-height: 40px; padding: 0 1rem; border: 2px solid transparent; border-radius: 10px;
     background: var(--primary); color: var(--primary-text); box-shadow: var(--button-shadow);
     font: inherit; font-size: 1rem; font-weight: 600; letter-spacing: 0; line-height: 1.2; text-decoration: none;
     cursor: pointer; transition: background-color .12s, box-shadow .12s, translate .06s;
 }
-:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .list-entry, .control-button, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice, .switcher > *)):hover { background: var(--primary-hover); box-shadow: var(--button-shadow); }
-:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .list-entry, .control-button, .note-tool, .tag, .dropdown-reset, .nav-collapse, .tag-choice, .switcher > *)):active:not(:disabled) { translate: 0 1px; box-shadow: none; }
+:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .list-entry, .control-button, .note-tool, .tag, .dropdown-reset, .tag-choice, .switcher > *)):hover { background: var(--primary-hover); box-shadow: var(--button-shadow); }
+:is(button, .button):not(:where(.nav-toggle, .nav-item, .menu-item, .list-entry, .control-button, .note-tool, .tag, .dropdown-reset, .tag-choice, .switcher > *)):active:not(:disabled) { translate: 0 1px; box-shadow: none; }
 :is(button, .button):focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; box-shadow: none; }
 :is(button, .button):disabled { opacity: .45; box-shadow: none; cursor: not-allowed; translate: none; }
 button .icon, .button .icon { width: 1.25rem; height: 1.25rem; }
@@ -66,8 +66,7 @@ button .icon, .button .icon { width: 1.25rem; height: 1.25rem; }
    the row (a button that posts) take no room of their own. */
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: 1rem; }
 .actions > form { display: contents; }
-.actions :is(button, .button, .icon-button):not(.button-link, .control-button) { min-height: 40px; height: 40px; margin: 0; padding: 0 .9rem; font-size: .95rem; }
-.actions .icon-button { width: 40px; min-width: 40px; padding: 0; }
+.actions :is(button, .button, .icon-button):not(.button-link, .control-button) { margin: 0; }
 
 /* Point 8: every icon button has the same rounding, link or button */
 .icon-button { border-radius: 10px; }
@@ -114,7 +113,7 @@ button .icon, .button .icon { width: 1.25rem; height: 1.25rem; }
 .switcher > :is(button, a) .pill { font-size: .7rem; }
 .switcher.is-wide { display: flex; width: 100%; }
 .switcher[data-switch-static] { flex: none; max-width: none; }
-.win-tools .switcher > :is(button, a) { min-height: 30px; padding-inline: .7rem; }
+.win-tools .switcher > :is(button, a) { min-height: 34px; padding-inline: .7rem; }
 .switcher.is-tight { display: none; }
 .switcher-select { display: none; }
 /* PO 2026-11-16: the narrow form is our own dropdown – the chosen entry with its symbol and a chevron, 40 px like a field

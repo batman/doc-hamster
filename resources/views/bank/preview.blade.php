@@ -41,10 +41,8 @@
                                         @endif
                                     </span>
                                     <span class="row-amount @if ($line['amount_minor'] > 0) is-income @endif">{{ $money($line['amount_minor'], $currency) }}</span>
-                                    <span class="row-actions" role="radiogroup" aria-label="{{ __('bank.unclear_title') }}">
-                                        <label class="check"><input type="radio" name="decide[{{ $index }}]" value="new" required> {{ __('bank.decide_new') }}</label>
-                                        <label class="check"><input type="radio" name="decide[{{ $index }}]" value="known"> {{ __('bank.decide_known') }}</label>
-                                    </span>
+                                    {{-- PO 2026-11-16: an Umschalter instead of radios; nothing chosen until the person decides. --}}
+                                    @include('documents._search-choice', ['name' => 'decide['.$index.']', 'value' => old('decide.'.$index, ''), 'options' => ['new' => __('bank.decide_new'), 'known' => __('bank.decide_known')], 'icons' => ['new' => 'plus', 'known' => 'copy'], 'label' => __('bank.unclear_title')])
                                 </li>
                             @endforeach
                         </ul>

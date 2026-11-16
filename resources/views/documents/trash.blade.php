@@ -33,7 +33,7 @@
             @endforeach
         @endif
         @if (session('status'))
-            <p class="check-ok" role="status">{{ session('status') }}</p>
+            <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
         @endif
         @if ($documents->isEmpty())
             <x-empty icon="trash" :text="__('empty.trash')" />

@@ -42,7 +42,7 @@
             </ul>
         @endif
         <p>
-            @if ($note->locked)<span class="note-lock" title="{{ __('home.locked') }}"><x-icon name="lock" /><span class="visually-hidden">{{ __('home.locked') }}</span></span>@endif
+            @if ($note->locked)<span class="note-lock" data-tooltip="{{ __('home.locked') }}"><x-icon name="lock" /><span class="visually-hidden">{{ __('home.locked') }}</span></span>@endif
             {{ $note->author->display_name }} · {{ $note->created_at->format('d.m.Y') }}
             @if ($note->shared) · {{ $note->editable ? __('home.shared_editable') : __('home.shared') }} @endif
         </p>

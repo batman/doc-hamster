@@ -52,6 +52,8 @@ return [
     'accounts_count' => '{1} 1 Konto|[2,*] :count Konten',
     'folders_count' => '{1} 1 Ordner|[2,*] :count Ordner',
     'paused' => 'Pausiert',
+    'status' => 'Status',
+    'active' => 'Aktiv',
     'paused_pill' => 'pausiert',
     'paused_hint' => 'Alle Personen mit dieser Rolle sind abgemeldet und können sich nicht anmelden; Uploads mit Geräteschlüsseln werden abgelehnt.',
     'pause_title' => 'Rolle pausieren?',

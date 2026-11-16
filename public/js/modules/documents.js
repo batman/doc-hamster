@@ -27,35 +27,8 @@
     const docsLabel = count => fill(count === 1 ? config().docsOne : config().docsMany, { count });
     const still = matchMedia('(prefers-reduced-motion: reduce)');
 
-    // --- Toast with an optional "Rückgängig" (A133) -------------------------------------------------------------
-    const toast = (message, { error = false, undo = null, undoLabel = null } = {}) => {
-        const el = document.createElement('div');
-        el.className = error ? 'toast toast-error' : 'toast';
-        el.setAttribute('role', error ? 'alert' : 'status');
-        const textEl = document.createElement('span');
-        textEl.textContent = message;
-        el.append(textEl);
-        const leave = () => {
-            el.classList.add('is-leaving');
-            setTimeout(() => el.remove(), 300);
-        };
-        if (undo) {
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'button-quiet button-small toast-action';
-            button.textContent = undoLabel ?? config().undo ?? 'Undo';
-            button.addEventListener('click', event => {
-                event.stopPropagation();
-                leave();
-                undo();
-            }, { once: true });
-            el.append(button);
-        }
-        el.addEventListener('click', leave);
-        document.body.append(el);
-        setTimeout(leave, undo ? 8000 : 4000);
-    };
-    DocHamster.toast = toast;
+    // Toast (with an optional "Rückgängig", A133) and the confirm come from the framework (core/toasts.js).
+    const toast = (...args) => DocHamster.toast(...args);
 
     const post = (url, data) => {
         const body = data instanceof FormData ? data : new FormData();
@@ -86,58 +59,8 @@
         }
     });
 
-    // Our own confirm (framework dialog, built here because the question depends on what was dropped).
-    const confirmDialog = ({ title, text, ok }) => new Promise(resolve => {
-        const backdrop = document.createElement('div');
-        backdrop.className = 'dialog-backdrop';
-        backdrop.hidden = true;
-        const box = document.createElement('div');
-        box.className = 'dialog';
-        box.setAttribute('role', 'alertdialog');
-        box.setAttribute('aria-modal', 'true');
-        const h = document.createElement('h2');
-        h.textContent = title;
-        const p = document.createElement('p');
-        p.textContent = text;
-        const actions = document.createElement('div');
-        actions.className = 'dialog-actions';
-        const no = document.createElement('button');
-        no.type = 'button';
-        no.className = 'button-quiet';
-        no.textContent = config().cancel ?? 'Cancel';
-        const yes = document.createElement('button');
-        yes.type = 'button';
-        yes.className = 'button-danger';
-        yes.textContent = ok;
-        actions.append(no, yes);
-        box.append(h, p, actions);
-        backdrop.append(box);
-        document.body.append(backdrop);
-        const before = document.activeElement;
-        const close = answer => {
-            document.removeEventListener('keydown', key, true);
-            backdrop.remove();
-            before?.focus?.();
-            resolve(answer);
-        };
-        const key = event => {
-            if (event.key === 'Escape') {
-                event.preventDefault();
-                event.stopPropagation();
-                close(false);
-            }
-        };
-        no.addEventListener('click', () => close(false));
-        yes.addEventListener('click', () => close(true));
-        backdrop.addEventListener('click', event => {
-            if (event.target === backdrop) {
-                close(false);
-            }
-        });
-        document.addEventListener('keydown', key, true);
-        backdrop.hidden = false;
-        no.focus();
-    });
+    // A confirm here is always about deleting or binning something: the yes button is red.
+    const confirmDialog = options => DocHamster.confirm({ danger: true, ...options });
 
     DocHamster.docs = { html, config, token, fill, docsLabel, still, toast, post, fail, refresh, confirmDialog };
 })();

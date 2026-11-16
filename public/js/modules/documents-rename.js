@@ -149,7 +149,7 @@
             return;
         }
         const box = document.createElement('span');
-        box.className = 'doc-rename';
+        box.className = 'doc-rename edit-field';
         const field = document.createElement('input');
         field.className = 'input-small';
         field.value = title.textContent.trim();
@@ -158,8 +158,8 @@
         const ok = document.createElement('button');
         ok.type = 'button';
         ok.className = 'control-button';
-        ok.setAttribute('aria-label', button.dataset.save ?? 'OK');
-        ok.dataset.tooltip = button.dataset.save ?? 'OK';
+        ok.setAttribute('aria-label', button.dataset.save ?? '');
+        ok.dataset.tooltip = button.dataset.save ?? '';
         ok.innerHTML = CHECK;
         box.append(field, ok);
         const link = title.closest('a') ?? title;

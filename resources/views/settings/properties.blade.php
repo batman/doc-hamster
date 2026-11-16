@@ -7,7 +7,7 @@
 @section('page')
     <p class="muted">{{ __('properties.intro') }}</p>
     @if (session('status'))
-        <p class="check-ok" role="status">{{ session('status') }}</p>
+        <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
     @endif
     @if ($errors->any())
         <p class="error" role="alert">{{ $errors->first() }}</p>
@@ -29,7 +29,7 @@
                 <input class="input-small" name="name" maxlength="60" value="{{ old('name') }}" placeholder="{{ __('properties.new_name') }}" aria-label="{{ __('properties.name') }}" autocomplete="off">
                 <span class="addon-end"><button type="submit" class="control-button addon-button" aria-label="{{ __('properties.create') }}" data-tooltip="{{ __('properties.create') }}" @unless ($adding) hidden @endunless><x-icon name="check" /></button></span>
             </div>
-            @include('documents._search-choice', ['name' => 'type', 'value' => $newType, 'options' => $typeNames, 'toggle' => false, 'label' => __('properties.type')])
+            @include('documents._search-choice', ['name' => 'type', 'value' => $newType, 'options' => $typeNames, 'icons' => \App\Domain\Properties\Property::ICONS, 'toggle' => false, 'label' => __('properties.type')])
             <div class="field" data-show-when="type:choice" @if ($newType !== 'choice') hidden @endif>
                 <label for="property-new-options">{{ __('properties.options') }}</label>
                 <textarea id="property-new-options" name="options" rows="3">{{ old('options') }}</textarea>
@@ -59,7 +59,7 @@
                     <span class="row-actions">
                         <button type="button" class="control-button" data-dialog-open="property-{{ $property->id }}" aria-label="{{ __('properties.edit') }}: {{ $property->name }}" data-tooltip="{{ __('properties.edit') }}"><x-icon name="settings" /></button>
                         @unless ($property->isDefault())
-                            <button type="button" class="control-button" data-dialog-open="delete-property-{{ $property->id }}" aria-label="{{ __('properties.delete') }}: {{ $property->name }}" data-tooltip="{{ __('properties.delete') }}"><x-icon name="trash" /></button>
+                            <button type="button" class="control-button control-danger" data-dialog-open="delete-property-{{ $property->id }}" aria-label="{{ __('properties.delete') }}: {{ $property->name }}" data-tooltip="{{ __('properties.delete') }}"><x-icon name="trash" /></button>
                         @endunless
                     </span>
                 </li>
@@ -114,7 +114,6 @@
                     <h2 id="delete-property-{{ $property->id }}-title">{{ __('properties.delete_title') }}</h2>
                     <p>{{ __('properties.delete_text', ['name' => $property->name]) }}</p>
                     <div class="dialog-actions">
-                        <button type="button" class="button-quiet" data-dialog-close>{{ __('properties.cancel') }}</button>
                         <form method="post" action="{{ route('properties.destroy', $property->id) }}">
                             @csrf
                             <button type="submit" class="button-danger">{{ __('properties.delete') }}</button>

@@ -125,7 +125,7 @@ input.win-title-field {
 
 /* A101: head buttons small and quiet, on the title line, a fixed gap to the content */
 .win-head { padding-bottom: 1rem; }
-:is(.win-head, .win-tools) :is(.icon-button, .dropdown > .icon-button) { width: 36px; min-width: 36px; height: 36px; min-height: 36px; padding: 0; border-width: 1px; border-color: transparent; border-radius: 8px; }
+:is(.win-head, .win-tools) :is(.icon-button, .dropdown > .icon-button) { width: 40px; min-width: 40px; height: 40px; min-height: 40px; padding: 0; border-width: 1px; border-color: transparent; border-radius: 8px; }
 :is(.win-head, .win-tools) :is(.icon-button, .dropdown > .icon-button) .icon { width: 1.1rem; height: 1.1rem; }
 .win-tools .win-actions, .win-tools .win-actions .toolbar { gap: .4rem; }
 /* Knopfgruppe (point 200): toolbar actions sit like the Umschalter – grey rail, no frame, hover a darker grey, never
@@ -134,7 +134,7 @@ input.win-title-field {
 .win-tools :is(.icon-button, .dropdown > .icon-button) { border-color: transparent; border-radius: 10px; background: var(--surface); box-shadow: none; }
 .win-tools :is(.icon-button, .dropdown > .icon-button):hover { background: color-mix(in srgb, var(--text) 8%, var(--surface)); box-shadow: none; }
 .win-tools :is(.icon-button, .dropdown > .icon-button):is([aria-expanded="true"], .is-active) { border-color: transparent; color: var(--primary-ink); }
-.win-tools .switcher.is-actions > :is(button, a) { min-height: 30px; padding-inline: .5rem; }
+.win-tools .switcher.is-actions > :is(button, a) { min-height: 34px; padding-inline: .5rem; }
 @container win (width < 28rem) { .switcher.win-wide-only { display: none; } }
 @media (prefers-color-scheme: dark) {
     .win-tools :is(.icon-button, .dropdown > .icon-button) { background: var(--surface); }

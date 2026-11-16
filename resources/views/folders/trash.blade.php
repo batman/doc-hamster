@@ -8,9 +8,10 @@
 
 @section('content')
     <div class="windows" data-windows>
-        <x-window :title="$name" icon="trash" :url="route('folders.index', ['folder' => 'trash'])" :close="route('documents.index')">
+        {{-- PO 2026-11-16: the name is changed by a click on the title (Feld mit ✓); its colour stays. --}}
+        <x-window :title="$name" icon="trash" :url="route('folders.index', ['folder' => 'trash'])" :close="route('documents.index')" :rename-url="route('folders.trash')">
             @if (session('status'))
-                <p class="check-ok" role="status">{{ session('status') }}</p>
+                <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
             @endif
             @if ($errors->any())
                 <p class="error" role="alert">{{ $errors->first() }}</p>
@@ -20,14 +21,8 @@
             <form method="post" action="{{ route('folders.trash') }}" data-autosave>
                 @csrf
                 <input type="hidden" name="look" value="1">
-                <div class="field">
-                    <label for="name-trash">{{ __('folders.name') }}</label>
-                    <div class="field-addon">
-                        <input id="name-trash" name="name" value="{{ old('name', $name) }}" maxlength="100" required>
-                        <span class="addon-end"><button type="button" class="control-button addon-button" data-field-save aria-label="{{ __('folders.save') }}" data-tooltip="{{ __('folders.save') }}" hidden><x-icon name="check" /></button></span>
-                    </div>
-                    <p class="field-hint">{{ __('folders.trash_note') }}</p>
-                </div>
+                <input type="hidden" name="name" value="{{ old('name', $name) }}">
+                <p class="field-hint">{{ __('folders.trash_note') }}</p>
                 <x-color-picker name="color" :value="old('color_hex') ?: old('color', $color ?? 'none')" :allow-none="true" :allow-own="true" key="trash" :legend="__('folders.color')" />
                 <div class="actions">
                     <noscript><button type="submit">{{ __('folders.save') }}</button></noscript>

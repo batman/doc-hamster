@@ -5,7 +5,7 @@
 @section('content')
     <h1>{{ __('auth.login') }}</h1>
     @if (session('status'))
-        <p class="check-ok" role="status">{{ session('status') }}</p>
+        <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
     @endif
     <form method="post" action="{{ route('login.attempt') }}">
         @csrf
@@ -17,7 +17,7 @@
             <label for="password">{{ __('auth.password') }}</label>
             <input id="password" type="password" name="password" autocomplete="current-password" required>
         </div>
-        <label class="chip"><input type="checkbox" name="remember" value="1" checked> <span>{{ __('auth.remember') }}</span></label>
+        <label><input type="checkbox" name="remember" value="1" checked> {{ __('auth.remember') }}</label>
         @error('username')<p class="error" role="alert">{{ $message }}</p>@enderror
         <button type="submit">{{ __('auth.login') }}</button>
     </form>

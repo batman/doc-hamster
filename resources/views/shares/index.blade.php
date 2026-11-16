@@ -4,38 +4,37 @@
 
 @section('page')
     @if (session('status'))
-        <p class="check-ok" role="status">{{ session('status') }}</p>
+        <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
     @endif
 
     @if ($canSetDays)
-        {{-- Point 170.2: one value – the ✓ in the field saves it (Enter or ✓, FRAMEWORK.md "Properties module"). --}}
-        <form method="post" action="{{ route('shares.days') }}" data-autosave>
-            @csrf
-            <label for="days">{{ __('shares.days') }}</label>
-            <div class="field-addon">
-                <input id="days" name="days" type="number" min="1" max="365" value="{{ old('days', $days) }}" required>
-                <span class="addon-end"><button type="button" class="control-button addon-button" data-field-save aria-label="{{ __('shares.save') }}" data-tooltip="{{ __('shares.save') }}" hidden><x-icon name="check" /></button></span>
-            </div>
-            @error('days')<p class="error" role="alert">{{ $message }}</p>@enderror
-            <noscript><button type="submit">{{ __('shares.save') }}</button></noscript>
-        </form>
+        {{-- PO 2026-11-16: a saved value is changed by click (Feld mit ✓). --}}
+        <div class="field">
+            <label id="share-days-label">{{ __('shares.days') }}</label>
+            <x-edit-in-place name="days" :value="(string) $days" :action="route('shares.days')" :label="__('shares.days')" inputmode="numeric" maxlength="3" aria-labelledby="share-days-label" />
+        </div>
     @else
-        <p class="muted">{{ __('shares.days_set', ['days' => $days]) }}</p>
+        <p class="field-hint">{{ __('shares.days_set', ['days' => $days]) }}</p>
     @endif
 
     <h2>{{ __('shares.active') }}</h2>
     @if ($links->isEmpty())
         <x-empty icon="link" :text="__('shares.none')" />
     @else
-        <ul class="documents">
+        <ul class="pick-list">
             @foreach ($links as $link)
-                <li>
-                    {{ $link->document?->title ?? '–' }}
-                    <span class="muted">{{ __('shares.until', ['date' => $link->expires_at->format('d.m.Y H:i')]) }}</span>
-                    <form method="post" action="{{ route('shares.revoke', $link->id) }}">
-                        @csrf
-                        <button type="submit" class="button-quiet">{{ __('shares.revoke') }}</button>
-                    </form>
+                <li class="pick-row is-static">
+                    <span class="row-icon"><x-icon name="link" /></span>
+                    <span>
+                        <strong>{{ $link->document?->title ?? '–' }}</strong>
+                        <small>{{ __('shares.until', ['date' => $link->expires_at->format('d.m.Y H:i')]) }}</small>
+                    </span>
+                    <span class="row-actions">
+                        <form method="post" action="{{ route('shares.revoke', $link->id) }}">
+                            @csrf
+                            <button type="submit" class="control-button control-danger" aria-label="{{ __('shares.revoke') }}: {{ $link->document?->title }}" data-tooltip="{{ __('shares.revoke') }}"><x-icon name="unlink" /></button>
+                        </form>
+                    </span>
                 </li>
             @endforeach
         </ul>

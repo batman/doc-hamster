@@ -403,7 +403,7 @@ it('shows folders as windows: the list as root, a folder or a new one to its rig
     $this->get('/folders?parent='.$travel->id)->assertOk()->assertSee('data-folder-import', false);
     $this->get('/folders?folder='.$travel->id)->assertOk()
         ->assertSee('data-dialog="delete-folder-'.$travel->id.'"', false)
-        ->assertSee('id="name-'.$travel->id.'"', false)
+        ->assertSee('data-window-rename="'.route('folders.update', $travel).'"', false)
         ->assertSee('data-window-url="'.route('folders.index', ['folder' => $travel->id]).'"', false);
     $this->get('/documents?folder='.$travel->id)->assertOk()->assertSee('data-window-title="Reisen"', false);
 });

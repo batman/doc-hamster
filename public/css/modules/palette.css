@@ -35,7 +35,5 @@
 
 /* Colour palette (points 14-15) */
 .palette-rows { margin: 1rem 0; }
-.palette-edit { display: flex; flex: 1; align-items: center; gap: .5rem; min-width: 0; margin: 0; }
-.palette-edit input[type="color"] { flex: none; width: 2.5rem; height: 2.5rem; min-height: 0; margin: 0; padding: 0; border-radius: 50%; cursor: pointer; }
-.palette-edit > .field-addon { flex: 1; min-width: 0; }
+.palette-edit { display: flex; flex: none; align-items: center; margin: 0; }
 .palette-edit .field-addon > input { max-width: none; }

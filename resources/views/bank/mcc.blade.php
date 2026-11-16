@@ -7,7 +7,7 @@
 @section('page')
     <p class="muted">{{ __('bank.mcc_intro') }}</p>
     @if (session('status'))
-        <p class="check-ok" role="status">{{ session('status') }}</p>
+        <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
     @endif
     @if ($errors->any())
         <p class="error" role="alert">{{ $errors->first() }}</p>
@@ -32,11 +32,11 @@
             <li class="pick-row is-static">
                 <span class="row-icon"><x-icon name="credit-card" /></span>
                 <span><strong>{{ $entry->mcc }}</strong></span>
-                <span class="pill">#{{ $entry->tag }}</span>
+                <span class="tag">{{ $entry->tag }}</span>
                 <span class="row-actions">
                     <form method="post" action="{{ route('bank.mcc.destroy', $entry->id) }}">
                         @csrf
-                        <button type="submit" class="control-button" aria-label="{{ __('bank.mcc_delete') }}: {{ $entry->mcc }}" data-tooltip="{{ __('bank.mcc_delete') }}"><x-icon name="trash" /></button>
+                        <button type="submit" class="control-button control-danger" aria-label="{{ __('bank.mcc_delete') }}: {{ $entry->mcc }}" data-tooltip="{{ __('bank.mcc_delete') }}"><x-icon name="trash" /></button>
                     </form>
                 </span>
             </li>

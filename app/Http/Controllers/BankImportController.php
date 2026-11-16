@@ -228,18 +228,27 @@ final class BankImportController
         if ($pending === null || $pending['columns'] === null) {
             return redirect()->route('bank.import')->withErrors(['file' => __('bank.expired')]);
         }
-        $data = $request->validate(['decide' => ['nullable', 'array'], 'decide.*' => ['in:new,known']]);
+        // Each unclear booking is decided (an Umschalter, PO 2026-11-16 – no browser "required" as with radios).
+        $data = $request->validate(['decide' => ['nullable', 'array'], 'decide.*' => ['required', 'in:new,known']], ['decide.*.required' => __('bank.decide_missing')]);
         $response = $this->proceed($request, $audit, $org, $matcher, $pending, $this->statement($pending['path']), $data['decide'] ?? [], force: true);
 
         return $response instanceof RedirectResponse ? $response : redirect()->route('bank.index');
     }
 
     /** 142: renaming stays possible. */
-    public function rename(Request $request, string $id): RedirectResponse
+    /** Renamed by click (PO 2026-11-16, x-edit-in-place sends field + value as JSON) or by the old form (name). */
+    public function rename(Request $request, string $id): RedirectResponse|JsonResponse
     {
         $account = BankAccount::query()->whereKey($id)->firstOrFail();
+        if ($request->input('field') === 'name') {
+            $request->merge(['name' => $request->input('value')]);
+        }
         $data = $request->validate(['name' => ['required', 'string', 'max:150']]);
         $account->update(['name' => trim($data['name'])]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['value' => $account->name, 'message' => __('bank.renamed')]);
+        }
 
         return redirect()->route('bank.import')->with('status', __('bank.renamed'));
     }

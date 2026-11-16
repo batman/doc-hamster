@@ -26,7 +26,6 @@
                     <button type="button" class="button-quiet" data-device-test="device-header" data-url="{{ route('api.upload.check') }}"
                         data-running="{{ __('devices.test_running') }}" data-msg401="{{ __('devices.test_401') }}" data-msg403="{{ __('devices.test_403') }}"
                         data-msg-other="{{ __('devices.test_other', ['status' => ':status']) }}" data-msg-failed="{{ __('devices.test_failed') }}"><x-icon name="plug" />{{ __('devices.test') }}</button>
-                    <button type="button" data-dialog-close>{{ __('devices.done') }}</button>
                 </div>
             </div>
         </div>
@@ -51,7 +50,7 @@
                     <span class="pill">{{ __('devices.kinds.'.$device->kind) }}</span>
                     <span class="row-actions">
                         <button type="button" class="control-button" data-dialog-open="rekey-device-{{ $device->id }}" aria-label="{{ __('devices.rekey') }}: {{ $device->name }}" data-tooltip="{{ __('devices.rekey') }}"><x-icon name="refresh" /></button>
-                        <button type="button" class="control-button" data-dialog-open="delete-device-{{ $device->id }}" aria-label="{{ __('devices.delete') }}: {{ $device->name }}" data-tooltip="{{ __('devices.delete') }}"><x-icon name="trash" /></button>
+                        <button type="button" class="control-button control-danger" data-dialog-open="delete-device-{{ $device->id }}" aria-label="{{ __('devices.delete') }}: {{ $device->name }}" data-tooltip="{{ __('devices.delete') }}"><x-icon name="trash" /></button>
                     </span>
                 </li>
             @empty
@@ -71,10 +70,9 @@
                 </div>
                 <fieldset>
                     <legend>{{ __('devices.kind') }}</legend>
-                    @include('documents._search-choice', ['name' => 'kind', 'value' => 'iphone', 'options' => __('devices.kinds'), 'toggle' => false, 'label' => __('devices.kind')])
+                    @include('documents._search-choice', ['name' => 'kind', 'value' => 'iphone', 'options' => __('devices.kinds'), 'icons' => ['iphone' => 'device-mobile', 'program' => 'device-desktop'], 'toggle' => false, 'label' => __('devices.kind')])
                 </fieldset>
                 <div class="dialog-actions">
-                    <button type="button" class="button-quiet" data-dialog-close>{{ __('devices.cancel') }}</button>
                     <button type="submit"><x-icon name="plus" />{{ __('devices.add') }}</button>
                 </div>
             </form>
@@ -87,7 +85,6 @@
                 <h2 id="rekey-device-{{ $device->id }}-title">{{ __('devices.rekey_title') }}</h2>
                 <p>{{ __('devices.rekey_text') }}</p>
                 <div class="dialog-actions">
-                    <button type="button" class="button-quiet" data-dialog-close>{{ __('devices.cancel') }}</button>
                     <form method="post" action="{{ route('devices.rekey', $device->id) }}" data-confirm-sudo>
                         @csrf
                         <button type="submit"><x-icon name="refresh" />{{ __('devices.rekey') }}</button>
@@ -100,7 +97,6 @@
                 <h2 id="delete-device-{{ $device->id }}-title">{{ __('devices.delete_title') }}</h2>
                 <p>{{ __('devices.delete_text') }}</p>
                 <div class="dialog-actions">
-                    <button type="button" class="button-quiet" data-dialog-close>{{ __('devices.cancel') }}</button>
                     <form method="post" action="{{ route('devices.destroy', $device->id) }}" data-confirm-sudo>
                         @csrf
                         <button type="submit" class="button-danger">{{ __('devices.delete') }}</button>
@@ -113,7 +109,7 @@
     {{-- Point 202:the ready-made shortcut (QR + link) and its four steps. --}}
     <x-fold-card fold="devices.shortcut" :title="__('devices.shortcut_title')" icon="device-mobile">
         <div class="device-shortcut">
-            <img class="phone-qr" src="{{ $shortcutQr }}" width="180" height="180" alt="{{ __('devices.shortcut_qr') }}">
+            <figure class="qr-card"><img src="{{ $shortcutQr }}" width="180" height="180" alt="{{ __('devices.shortcut_qr') }}"><figcaption>{{ __('devices.shortcut_qr') }}</figcaption></figure>
             <div>
                 <a class="button button-small" href="{{ $shortcutUrl }}" target="_blank" rel="noopener"><x-icon name="download" />{{ __('devices.shortcut_load') }}</a>
                 <ol class="card-text">
@@ -133,7 +129,7 @@
     <x-fold-card fold="devices.photo" :title="__('devices.photo_title')" icon="photo">
         <div class="device-shortcut">
             @if ($photoUrl !== null)
-                <img class="phone-qr" src="{{ $photoQr }}" width="180" height="180" alt="{{ __('devices.shortcut_qr') }}">
+                <figure class="qr-card"><img src="{{ $photoQr }}" width="180" height="180" alt="{{ __('devices.shortcut_qr') }}"><figcaption>{{ __('devices.shortcut_qr') }}</figcaption></figure>
             @endif
             <div>
                 @if ($photoUrl !== null)
@@ -158,9 +154,9 @@
                 <li>
                     <span>{{ $step['text'] }}</span>
                     <span class="device-compare">
-                        <span class="device-state is-wrong"><x-icon name="x" /><span class="visually-hidden">{{ __('devices.wrong') }}:</span> {{ $step['wrong'] }}</span>
+                        <span class="pill pill-error"><x-icon name="x" /><span class="visually-hidden">{{ __('devices.wrong') }}:</span> {{ $step['wrong'] }}</span>
                         <span aria-hidden="true">→</span>
-                        <span class="device-state is-right"><x-icon name="check" /><span class="visually-hidden">{{ __('devices.right') }}:</span> {{ $step['right'] }}</span>
+                        <span class="pill pill-ok"><x-icon name="check" /><span class="visually-hidden">{{ __('devices.right') }}:</span> {{ $step['right'] }}</span>
                     </span>
                 </li>
             @endforeach

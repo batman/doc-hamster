@@ -41,7 +41,7 @@
     // Switched on from this page: the work starts by itself, so the figures follow.
     window.DocHamster?.on?.('properties:saved', ({ form }) => {
         const page = form?.closest?.('main, body')?.querySelector('[data-optimize-page]');
-        if (page && form.querySelector('[name="on"][type="checkbox"]')?.checked) {
+        if (page && form.querySelector('[name="on"]')?.value === '1') {
             page.dataset.busy = '1';
             delete page.dataset.optimizePolling;
             start(page.parentElement ?? document);

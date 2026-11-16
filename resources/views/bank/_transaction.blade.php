@@ -14,7 +14,7 @@
           min="28rem" optimal="38rem" max="56rem" priority="2"
           :url="route('bank.show', $transaction->id)" :close="route('bank.account', $transaction->bank_account_id)">
     @if (session('status'))
-        <p class="check-ok" role="status">{{ session('status') }}</p>
+        <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
     @endif
     @if ($errors->any())
         <p class="error" role="alert">{{ $errors->first() }}</p>
@@ -173,7 +173,6 @@
                 </form>
             </div>
             <div class="dialog-actions">
-                <button type="button" class="button-quiet" data-dialog-close>{{ __('bank.cancel') }}</button>
             </div>
         </div>
     </div>
@@ -207,16 +206,19 @@
                         @if ($match->isSuggested())
                             <span class="pill pill-new">{{ __('bank.status.suggested') }}@if ($match->score) · {{ __('bank.score', ['score' => $match->score]) }}@endif</span>
                             @if ($mayEdit)
-                            <form method="post" action="{{ route('bank.confirm', $transaction->id) }}" data-bank-action>
-                                @csrf
-                                <input type="hidden" name="document_id" value="{{ $document->id }}">
-                                <button type="submit" class="button-small"><x-icon name="check" />{{ __('bank.confirm') }}</button>
-                            </form>
-                            <form method="post" action="{{ route('bank.reject', $transaction->id) }}" data-bank-action>
-                                @csrf
-                                <input type="hidden" name="document_id" value="{{ $document->id }}">
-                                <button type="submit" class="control-button control-danger" aria-label="{{ __('bank.reject') }}" data-tooltip="{{ __('bank.reject') }}"><x-icon name="x" /></button>
-                            </form>
+                            {{-- ✓ confirms, X rejects – row actions like everywhere (one main button per area stays the card's). --}}
+                            <span class="row-actions">
+                                <form method="post" action="{{ route('bank.confirm', $transaction->id) }}" data-bank-action>
+                                    @csrf
+                                    <input type="hidden" name="document_id" value="{{ $document->id }}">
+                                    <button type="submit" class="control-button" aria-label="{{ __('bank.confirm') }}: {{ $document->title }}" data-tooltip="{{ __('bank.confirm') }}"><x-icon name="check" /></button>
+                                </form>
+                                <form method="post" action="{{ route('bank.reject', $transaction->id) }}" data-bank-action>
+                                    @csrf
+                                    <input type="hidden" name="document_id" value="{{ $document->id }}">
+                                    <button type="submit" class="control-button control-danger" aria-label="{{ __('bank.reject') }}" data-tooltip="{{ __('bank.reject') }}"><x-icon name="x" /></button>
+                                </form>
+                            </span>
                             @endif
                         @elseif ($mayEdit)
                             <span class="row-actions">

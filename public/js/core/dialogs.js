@@ -6,12 +6,14 @@
         const shut = dialog => { dialog.hidden = true; };
         // Point 48 / A36: every dialog closes with an X at the top right instead of "Abbrechen".
         const addX = root => (root.matches?.('.dialog') ? [root] : [...root.querySelectorAll('[data-dialog] .dialog, .dialog-backdrop .dialog')]).forEach(box => {
-            if (box.querySelector(':scope > .dialog-x') || box.closest('[data-update-progress], .update-progress')) return;
+            if (box.querySelector(':scope > .dialog-x') || box.closest('[data-update-progress], .update-progress, .is-progress')) return;
             const x = document.createElement('button');
             x.type = 'button';
             x.className = 'icon-button button-small dialog-x';
             x.setAttribute('data-dialog-close', '');
-            x.setAttribute('aria-label', document.documentElement.lang === 'en' ? 'Close' : 'Schließen');
+            const label = document.querySelector('[data-app-texts]')?.dataset.close ?? '';
+            x.setAttribute('aria-label', label);
+            x.dataset.tooltip = label;
             x.innerHTML = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>';
             box.prepend(x);
         });

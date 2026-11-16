@@ -73,6 +73,8 @@
 {{-- Point 164.8: data-prefetch = Einstellungen → Geschwindigkeit → Vorladen (core/window-cache.js). --}}
 <body data-pdfjs="{{ asset('vendor/pdfjs') }}" @auth data-prefetch="{{ isset($layoutOrg) && $layoutOrg->isSet() ? \App\Domain\Org\SpeedOptions::prefetch($layoutOrg->id()) : 'normal' }}" data-user="{{ auth()->id() }}" data-prefetch-small="{{ implode(' ', $prefetchSmall ?? []) }}" @endauth @if ($ocrBrowser) data-ocr-browser="{{ asset('vendor/tesseract') }}" data-ocr-next="{{ route('ocr.next') }}" data-ocr-engine="{{ route('ocr.engine') }}" data-ocr-log="{{ route('ocr.log') }}" @endif @if ($queueTick) data-queue-tick="{{ route('queue.tick') }}" @endif>
     <a class="skip-link" href="#main">{{ __('app.skip_to_content') }}</a>
+    {{-- The framework's own texts for core/toasts.js (toast "Rückgängig", confirm "Abbrechen") and core/dialogs.js (the X). --}}
+    <div hidden data-app-texts data-undo="{{ __('app.texts.undo') }}" data-cancel="{{ __('app.texts.cancel') }}" data-close="{{ __('app.texts.close') }}"></div>
     <div class="shell">
         @auth
             @php
@@ -84,7 +86,7 @@
             @endphp
             <aside class="side" data-badges="{{ route('badges') }}">
                 <header class="site-header">
-                    <button type="button" class="nav-toggle" aria-controls="nav" aria-expanded="true" aria-label="{{ __('app.nav.toggle') }}"><x-icon name="menu-2" /><span class="nav-dot" data-badge-any @unless (array_sum($badges) > 0) hidden @endunless></span></button>
+                    <button type="button" class="nav-toggle" aria-controls="nav" aria-expanded="true" aria-label="{{ __('app.nav.toggle') }}" data-tooltip="{{ __('app.nav.toggle') }}"><x-icon name="menu-2" /><span class="nav-dot" data-badge-any @unless (array_sum($badges) > 0) hidden @endunless></span></button>
                     <a class="brand" href="{{ route('home') }}"><img src="{{ asset('img/logo.png') }}" alt="{{ config('app.name') }}" width="476" height="186"></a>
                 </header>
                 <nav id="nav" class="sidebar" aria-label="{{ __('app.nav.label') }}">
@@ -127,12 +129,12 @@
                             </span>
                         </{{ $ocrLink ? 'a' : 'span' }}>
                         @if ($ocrBrowser)
-                            <button type="button" class="nav-ocr-toggle tooltip-right" data-ocr-toggle data-pause="{{ __('ocr.pause') }}" data-resume="{{ __('ocr.resume') }}" data-tooltip="{{ __('ocr.pause') }}" aria-label="{{ __('ocr.pause') }}" aria-pressed="false"><x-icon name="player-pause" /><x-icon name="player-play" /></button>
+                            <button type="button" class="control-button nav-ocr-toggle tooltip-right" data-ocr-toggle data-pause="{{ __('ocr.pause') }}" data-resume="{{ __('ocr.resume') }}" data-tooltip="{{ __('ocr.pause') }}" aria-label="{{ __('ocr.pause') }}" aria-pressed="false"><x-icon name="player-pause" /><x-icon name="player-play" /></button>
                         @endif
                         <progress class="nav-ocr-bar" max="{{ max(1, $ocrOpen['total']) }}" value="{{ $ocrOpen['done'] }}" data-ocr-nav-bar aria-label="{{ __('ocr.nav_title') }}"></progress>
                     </div>
                     <small class="nav-version tooltip-right" data-tooltip="{{ __('app.version', ['version' => config('dochamster.version')]) }}"><span class="nav-text">{{ __('app.version', ['version' => config('dochamster.version')]) }}</span></small>
-                    <button type="button" class="nav-collapse" aria-label="{{ __('app.nav.collapse') }}" data-collapse="{{ __('app.nav.collapse') }}" data-expand="{{ __('app.nav.expand') }}"><x-icon name="chevron-left" /></button>
+                    <button type="button" class="control-button nav-collapse tooltip-right" aria-label="{{ __('app.nav.collapse') }}" data-tooltip="{{ __('app.nav.collapse') }}" data-collapse="{{ __('app.nav.collapse') }}" data-expand="{{ __('app.nav.expand') }}"><x-icon name="chevron-left" /></button>
                 </nav>
             </aside>
             <div class="nav-backdrop"></div>

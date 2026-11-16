@@ -68,7 +68,7 @@
         </div>
     </x-slot:searchOptions>
     @if (session('status') && ! $transaction)
-        <p class="check-ok" role="status">{{ session('status') }}</p>
+        <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
     @endif
     <div data-search-count="{{ ($from ? 1 : 0) + ($to ? 1 : 0) }}" hidden></div>
     @if ($periodChip !== null)

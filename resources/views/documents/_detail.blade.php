@@ -103,12 +103,12 @@
         {{-- Zoom bar for the viewer above (app.js "Document viewer"): wheel, slider, box zoom and box copy. --}}
         <div class="doc-zoom" data-doc-zoom data-label-zoom="{{ __('documents.zoom_in_area') }}" data-label-copy="{{ __('documents.copy_area') }}" data-label-copied="{{ __('documents.copied') }}">
             {{-- Two modes (point 25): Bewegen pans, Markieren draws a box; Bewegen is the default. --}}
-            <div class="button-group" role="group" aria-label="{{ __('documents.zoom_mode') }}">
-                <button type="button" class="icon-button button-small" aria-pressed="true" data-zoom-mode="move" aria-label="{{ __('documents.mode_move') }}" data-tooltip="{{ __('documents.mode_move') }}"><x-icon name="hand-stop" /></button>
-                <button type="button" class="icon-button button-small" aria-pressed="false" data-zoom-mode="select" aria-label="{{ __('documents.mode_select') }}" data-tooltip="{{ __('documents.mode_select') }}"><x-icon name="zoom-in-area" /></button>
-            </div>
-            <input type="range" min="0" max="1000" step="1" value="376" aria-label="{{ __('documents.zoom') }}" data-zoom-range title="{{ __('documents.zoom_reset') }}">
-            <button type="button" class="doc-zoom-value" data-zoom-reset aria-label="{{ __('documents.zoom_reset') }}" data-tooltip="{{ __('documents.zoom_reset') }}"><output data-zoom-value>100 %</output></button>
+            <span class="switcher" role="group" aria-label="{{ __('documents.zoom_mode') }}" data-switch-static>
+                <button type="button" aria-pressed="true" data-zoom-mode="move" aria-label="{{ __('documents.mode_move') }}" data-tooltip="{{ __('documents.mode_move') }}"><x-icon name="hand-stop" /></button>
+                <button type="button" aria-pressed="false" data-zoom-mode="select" aria-label="{{ __('documents.mode_select') }}" data-tooltip="{{ __('documents.mode_select') }}"><x-icon name="zoom-in-area" /></button>
+            </span>
+            <input type="range" min="0" max="1000" step="1" value="376" aria-label="{{ __('documents.zoom') }}" data-zoom-range>
+            <button type="button" class="button-link is-quiet doc-zoom-value" data-zoom-reset aria-label="{{ __('documents.zoom_reset') }}" data-tooltip="{{ __('documents.zoom_reset') }}"><output data-zoom-value>100 %</output></button>
             @if ($file?->mime === 'application/pdf')
                 {{-- Pages of a PDF (A19); app.js shows them only when there is more than one. --}}
                 <div class="doc-pages" data-doc-pages data-label="{{ __('documents.page_of') }}" hidden>
@@ -240,7 +240,7 @@
                 @unless ($isText)
                     <span class="pill">{{ __('ocr.state.'.$ocrState) }}</span>
                     @if ($canEdit && $ocrState !== 'running')
-                        <form method="post" action="{{ route('ocr.redo', $document->id) }}">
+                        <form class="field-row" method="post" action="{{ route('ocr.redo', $document->id) }}">
                             @csrf
                             {{-- A345: with extra OCR languages installed, one document can be read with a language of its own. --}}
                             @php($ocrLanguages = app(\App\Infrastructure\Environment\LocalOcr::class)->installedLanguages(false))
@@ -264,7 +264,7 @@
             @if ($document->ocr_text)
                 <p class="edit-in-place-small is-plain">{{ $document->ocr_text }}</p>
             @elseif ($canEdit)
-                <p class="muted">{{ __('documents.ocr_placeholder') }}</p>
+                <x-empty icon="text-scan-2" :text="__('documents.ocr_placeholder')" />
             @endif
             @include('documents._translations')
         </x-fold-card>
@@ -299,24 +299,27 @@
         <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="share-document-{{ $document->id }}-title">
             <h2 id="share-document-{{ $document->id }}-title">{{ __('documents.send') }}</h2>
             @if ($shareUrl)
-                <label for="share-url-{{ $document->id }}" class="visually-hidden">{{ __('documents.share_copy') }}</label>
-                <input id="share-url-{{ $document->id }}" value="{{ $shareUrl }}" readonly data-share-url>
+                {{-- The framework's Kopierfeld (PO 2026-11-16): the link with its copy symbol inside. --}}
+                <div class="field">
+                    <label for="share-url-{{ $document->id }}">{{ __('documents.share_url_label') }}</label>
+                    <div class="field-addon is-copy">
+                        <input id="share-url-{{ $document->id }}" value="{{ $shareUrl }}" readonly data-share-url>
+                        <span class="addon-end"><button type="button" class="control-button addon-button" data-copy="share-url-{{ $document->id }}" data-copied="{{ __('documents.share_copied') }}" aria-label="{{ __('documents.share_copy') }}" data-tooltip="{{ __('documents.share_copy') }}"><x-icon name="copy" /></button></span>
+                    </div>
+                </div>
                 <div class="dialog-actions">
                     <a class="button button-quiet" href="mailto:?subject={{ rawurlencode(__('documents.share_mail_subject', ['title' => $document->title])) }}&amp;body={{ rawurlencode($shareUrl) }}">{{ __('documents.share_mail') }}</a>
-                    <button type="button" data-copy="share-url-{{ $document->id }}" data-copied="{{ __('documents.share_copied') }}">{{ __('documents.share_copy') }}</button>
                 </div>
             @else
                 @can('exports.create')
                 <form method="post" action="{{ route('documents.share', $document->id) }}">
                     @csrf
                     <div class="dialog-actions">
-                        <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
                         <button type="submit">{{ __('documents.share_link') }}</button>
                     </div>
                 </form>
                 @else
                 <div class="dialog-actions">
-                    <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
                     <a class="button" href="{{ route('documents.download', $file->id) }}">{{ __('documents.download') }}</a>
                 </div>
                 @endcan
@@ -348,7 +351,6 @@
                 </form>
             </noscript>
             <div class="dialog-actions">
-                <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
             </div>
         </div>
     </div>
@@ -360,7 +362,6 @@
             <h2 id="delete-document-{{ $document->id }}-title">{{ __('documents.delete_title') }}</h2>
             <p>{{ __('documents.delete_text', ['title' => $document->title]) }}</p>
             <div class="dialog-actions">
-                <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
                 <form method="post" action="{{ route('documents.destroy', $document->id) }}">
                     @csrf
                     <button type="submit" class="button-danger">{{ __('documents.delete') }}</button>

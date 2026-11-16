@@ -25,11 +25,8 @@
 .nav-list + .nav-list { margin-top: .5rem; padding-top: .5rem; border-top: 1px solid var(--border); }
 /* Menu entries (.nav-item, .menu-item) are the Listeneintrag building block: base and states in lists.css (point 163). */
 .nav-logout { margin-top: auto; }
-.nav-collapse {
-    align-self: flex-end; width: 2.25rem; min-height: 2.25rem; margin: .25rem 0 0; padding: 0;
-    border: 1px solid var(--border); border-radius: 50%; background: var(--bg); color: var(--muted);
-}
-.nav-collapse:hover { color: var(--text); }
+/* The menu's "verkleinern" arrow: a control button (PO 2026-11-16), here only its place. */
+.nav-collapse { align-self: flex-end; margin: .25rem 0 0; }
 .nav-backdrop { display: none; }
 .sidebar [data-tooltip]::before, .sidebar [data-tooltip]::after { display: none; }
 

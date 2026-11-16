@@ -26,6 +26,7 @@ return [
         'list' => 'List',
         'tiles' => 'Tiles',
     ],
+    'texts' => ['undo' => 'Undo', 'cancel' => 'Cancel', 'close' => 'Close'],
     'window' => [
         'open' => 'Open: :title',
         'remove' => 'Remove :title from the history',

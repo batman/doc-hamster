@@ -86,7 +86,8 @@
                     @php $state = $backup->status === \App\Domain\Backup\Backup::DONE && ! $backup->isReady() ? \App\Domain\Backup\Backup::EXPIRED : $backup->status; @endphp
                     <span class="pill {{ $state === 'done' ? 'pill-ok' : ($state === 'failed' ? 'pill-error' : '') }}">{{ __('backup.status.'.$state, ['progress' => $backup->progress]) }}</span>
                     @if ($backup->isReady())
-                        <form method="post" action="{{ route('backup.download', $backup->id) }}" class="row-actions" data-confirm-sudo>
+                        {{-- Always visible (not a hover row action): its red badge leads to the download (badges lead to the target). --}}
+                        <form method="post" action="{{ route('backup.download', $backup->id) }}" data-confirm-sudo>
                             @csrf
                             <button type="submit" class="icon-button" aria-label="{{ __('backup.download') }}" data-tooltip="{{ __('backup.download') }}"><x-icon name="download" />@if ($backup->downloaded_at === null)<span class="badge badge-alert">1</span>@endif</button>
                         </form>

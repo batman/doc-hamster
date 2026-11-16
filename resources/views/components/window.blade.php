@@ -71,13 +71,13 @@
         <span class="strip-label"><x-icon :name="$icon" /><span>{{ $title }}</span></span>
     </button>
     @if ($close)
-        <button type="button" class="win-strip-x" data-window-close aria-label="{{ __('app.window.remove', ['title' => $title]) }}" data-tooltip="{{ __('app.window.remove_short') }}"><x-icon name="x" /></button>
+        <button type="button" class="control-button win-strip-x" data-window-close aria-label="{{ __('app.window.remove', ['title' => $title]) }}" data-tooltip="{{ __('app.window.remove_short') }}"><x-icon name="x" /></button>
     @endif
     <div class="win-frame">
         <header class="win-head" @if ($dragDoc) data-doc-drag="{{ $dragDoc }}" data-doc-file="{{ $dragFile }}" @endif>
-            <button type="button" class="win-back icon-button" data-window-back aria-label="{{ __('app.window.back') }}" hidden><x-icon name="chevron-left" /></button>
+            <button type="button" class="win-back icon-button" data-window-back aria-label="{{ __('app.window.back') }}" data-tooltip="{{ __('app.window.back') }}" hidden><x-icon name="chevron-left" /></button>
             <x-icon :name="$icon" />
-            <h1 class="win-title" title="{{ $title }}" @if ($dragDoc) data-doc-title @endif @if ($renameUrl) data-window-rename="{{ $renameUrl }}" data-rename-field="{{ $renameField }}" data-rename-data="{{ json_encode((object) $renameData) }}" data-rename-label="{{ __('app.window.rename') }}" data-apply="{{ __('app.edit_in_place.apply') }}" data-rename-failed="{{ __('app.edit_in_place.failed') }}" tabindex="0" aria-description="{{ __('app.window.rename_hint') }}" @endif>{{ $title }}</h1>
+            <h1 class="win-title" data-tooltip="{{ $title }}" data-tooltip-overflow @if ($dragDoc) data-doc-title @endif @if ($renameUrl) data-window-rename="{{ $renameUrl }}" data-rename-field="{{ $renameField }}" data-rename-data="{{ json_encode((object) $renameData) }}" data-rename-label="{{ __('app.window.rename') }}" data-apply="{{ __('app.edit_in_place.apply') }}" data-rename-failed="{{ __('app.edit_in_place.failed') }}" tabindex="0" aria-description="{{ __('app.window.rename_hint') }}" @endif>{{ $title }}</h1>
             {{-- The window controls (points 70, 72, A116-A124): frameless, always this order; on phones only X. --}}
             <button type="button" class="control-button win-minimise" data-window-fold aria-label="{{ __('app.window.minimise') }}" data-tooltip="{{ __('app.window.minimise') }}"><x-icon name="chevron-left" /></button>
             <button type="button" class="control-button win-maximise" data-window-maximise aria-pressed="false" aria-label="{{ __('app.window.maximise') }}" data-tooltip="{{ __('app.window.maximise') }}" data-label-max="{{ __('app.window.maximise') }}" data-label-restore="{{ __('app.window.restore') }}"><x-icon name="window-maximise" /><x-icon name="window-restore" /></button>
@@ -138,5 +138,5 @@
         <div class="win-body" @if ($fit) data-window-fit="{{ $fit }}" @endif @if ($content) data-window-content="{{ $content }}" @endif>{{ $slot }}</div>
     </div>
     {{-- The drag edge on the right (point 44): drag, arrow keys, double-click = default width. --}}
-    <div class="win-edge" data-window-edge role="separator" aria-orientation="vertical" tabindex="0" aria-label="{{ __('app.window.resize') }}" title="{{ __('app.window.resize_hint') }}"></div>
+    <div class="win-edge" data-window-edge role="separator" aria-orientation="vertical" tabindex="0" aria-label="{{ __('app.window.resize') }}" data-tooltip="{{ __('app.window.resize_hint') }}"></div>
 </section>

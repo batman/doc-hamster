@@ -3,7 +3,7 @@
 @can('documents.edit')
     @php($translate = $document->ocr_text ? \App\Http\Controllers\TranslationController::config($document) : null)
     @if ($translate)
-        <span class="ocr-translate" data-translate="{{ json_encode($translate) }}"
+        <span class="ocr-translate field-row" data-translate="{{ json_encode($translate) }}"
             data-labels="{{ json_encode(['running' => __('translate.running'), 'failed' => __('translate.failed')]) }}">
             @if (count($translate['targets']) > 1)
                 <select class="input-small" aria-label="{{ __('translate.target') }}">

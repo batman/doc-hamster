@@ -16,7 +16,7 @@
     };
 @endphp
 
-<p><a href="{{ route('log.ocr') }}"><x-icon name="list-details" /> {{ __('settings.links.log_ocr.title') }}: {{ __('log.title') }}</a></p>
+<p><a href="{{ route('log.ocr') }}" data-window><x-icon name="list-details" /> {{ __('settings.links.log_ocr.title') }}: {{ __('log.title') }}</a></p>
 
 @if (session('status'))
     <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
@@ -49,7 +49,7 @@
         :summary="__('ocr.mode.'.$mode)" :summary-tone="$modeTone">
         <ul class="pick-list">
             <li class="pick-row is-static">
-                <x-icon :name="in_array($mode, ['system', 'app'], true) ? 'circle-check' : 'text-scan-2'" />
+                <span class="row-icon"><x-icon :name="in_array($mode, ['system', 'app'], true) ? 'circle-check' : 'text-scan-2'" /></span>
                 <span>
                     <strong>{{ __('ocr.mode.'.$mode) }}</strong>
                     @if ($state === 'running')
@@ -74,7 +74,7 @@
             @if ($server['engine'] === 'app' && ! $pdfReady && $state !== 'running')
                 {{-- Point 69/A113: adds the PDF converter to a working app-owned Tesseract. --}}
                 <li class="pick-row is-static">
-                    <x-icon name="download" />
+                    <span class="row-icon"><x-icon name="download" /></span>
                     <span>
                         <strong>{{ __('ocr.set_up_pdf') }}</strong>
                         <small>{{ __('ocr.set_up_pdf_hint') }}</small>
@@ -88,7 +88,7 @@
             @if ($server['engine'] === null && $state !== 'running')
                 {{-- A65/A68: runs in the request; JS shows the progress dialog, without JS the page just waits. --}}
                 <li class="pick-row is-static">
-                    <x-icon name="download" />
+                    <span class="row-icon"><x-icon name="download" /></span>
                     <span>
                         <strong>{{ __('ocr.set_up') }}</strong>
                         <small>{{ __('ocr.set_up_hint') }}</small>
@@ -109,7 +109,7 @@
         :summary-tone="$server['engine'] !== null && $server['on'] ? 'ok' : null">
         <ul class="pick-list">
             <li class="pick-row is-static">
-                <x-icon :name="$server['engine'] !== null ? 'circle-check' : 'circle-x'" />
+                <span class="row-icon"><x-icon :name="$server['engine'] !== null ? 'circle-check' : 'circle-x'" /></span>
                 <span>
                     <strong>{{ __('ocr.server.installed') }}: {{ __($server['engine'] !== null ? 'ocr.server.yes' : 'ocr.server.no') }}</strong>
                     @if ($server['engine'] !== null)
@@ -125,7 +125,7 @@
         @if ($server['engine'] !== null)
             <form method="post" action="{{ route('ocr.server') }}" data-autosave>
                 @csrf
-                <fieldset class="pick-list">
+                <fieldset class="pick-list option-cards">
                     <legend>{{ __('ocr.server.use') }}</legend>
                     @foreach ([1 => 'on', 0 => 'off'] as $value => $key)
                         <label class="pick-row">
@@ -143,15 +143,15 @@
                 <button type="button" class="button-small" data-ocr-server-run><x-icon name="player-play" /><span>{{ __('ocr.server.test') }}</span></button>
                 <ul class="pick-list" data-ocr-server-out hidden>
                     <li class="pick-row is-static" data-ocr-server-row>
-                        <x-icon name="text-scan-2" />
+                        <span class="row-icon"><x-icon name="text-scan-2" /></span>
                         <span><strong data-ocr-server-summary></strong></span>
                     </li>
                     <li class="pick-row is-static">
-                        <x-icon name="file-text" />
+                        <span class="row-icon"><x-icon name="file-text" /></span>
                         <span><strong>{{ __('ocr.server.expected') }}</strong><span data-ocr-server-expected></span></span>
                     </li>
                     <li class="pick-row is-static">
-                        <x-icon name="text-scan-2" />
+                        <span class="row-icon"><x-icon name="text-scan-2" /></span>
                         <span><strong>{{ __('ocr.server.recognized') }}</strong><span data-ocr-server-text></span></span>
                     </li>
                 </ul>
@@ -166,7 +166,7 @@
         :summary="__($cronRunning ? 'ocr.summary.cron_ok' : 'ocr.summary.cron_missing')" :summary-tone="$cronRunning ? 'ok' : 'warning'">
         <ul class="pick-list">
             <li class="pick-row is-static">
-                <x-icon :name="$cronRunning ? 'circle-check' : 'alert-triangle'" />
+                <span class="row-icon"><x-icon :name="$cronRunning ? 'circle-check' : 'alert-triangle'" /></span>
                 <span>
                     @if ($cronRunning)
                         <strong>{{ __('ocr.cron_running', ['time' => \Illuminate\Support\Carbon::createFromTimestamp((int) $cronLast, config('app.timezone'))->format('H:i')]) }}</strong>
@@ -182,7 +182,7 @@
 </div>
 
 {{-- Progress dialog (FRAMEWORK §5): not closable while the set-up runs. --}}
-<div class="dialog-backdrop" data-ocr-setup-progress hidden data-failed="{{ __('ocr.setup_failed') }}">
+<div class="dialog-backdrop is-progress" data-ocr-setup-progress hidden data-failed="{{ __('ocr.setup_failed') }}">
     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="ocr-setup-title">
         <h2 id="ocr-setup-title">{{ __('ocr.setup_title') }}</h2>
         <progress data-progress-bar></progress>

@@ -36,6 +36,8 @@
         $itemIcon = $entry['icon'] ?? ($current['icon'] ?? 'settings');
         $itemUrl = $entry !== null ? route($entry['route']) : $groupUrl;
         $pageTitle = html_entity_decode(trim($__env->yieldContent('page_title')), ENT_QUOTES | ENT_HTML5);
+        // PO 2026-11-16: @section('page_rename', <POST url>) makes the page window's title renamable (Feld mit ✓).
+        $pageRename = trim($__env->yieldContent('page_rename'));
         // The window left of the page marks the row that opened it (opener row): the entry, else the group.
         $pageOpener = $hasPane ? null : ($withEntries ? $itemUrl : $groupUrl);
         $pageClose = $hasPane ? $itemUrl : $groupUrl;
@@ -62,7 +64,7 @@
         @endif
 
         @if ($hasPage)
-            <x-window :title="$pageTitle !== '' ? $pageTitle : $itemTitle" :icon="$itemIcon" kind="settings-page" :close="$pageClose" min="28rem" optimal="44rem" max="72rem" priority="2" class="win-page" :data-window-opener="$pageOpener">
+            <x-window :title="$pageTitle !== '' ? $pageTitle : $itemTitle" :icon="$itemIcon" kind="settings-page" :close="$pageClose" min="28rem" optimal="44rem" max="72rem" priority="2" class="win-page" :data-window-opener="$pageOpener" :rename-url="$pageRename !== '' ? $pageRename : null">
                 @yield('page')
             </x-window>
         @endif

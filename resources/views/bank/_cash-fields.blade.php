@@ -13,8 +13,8 @@
     <span class="button-choice" data-choice>
         <input type="hidden" name="flow" value="{{ $flowValue }}">
         <span class="switcher" role="group" aria-label="{{ __('bank.cash_flow') }}">
-            <button type="button" data-value="in" aria-pressed="{{ $flowValue === 'in' ? 'true' : 'false' }}">{{ __('bank.cash_in') }}</button>
-            <button type="button" data-value="out" aria-pressed="{{ $flowValue === 'out' ? 'true' : 'false' }}">{{ __('bank.cash_out') }}</button>
+            <button type="button" data-value="in" aria-pressed="{{ $flowValue === 'in' ? 'true' : 'false' }}"><x-icon name="arrow-down-left" />{{ __('bank.cash_in') }}</button>
+            <button type="button" data-value="out" aria-pressed="{{ $flowValue === 'out' ? 'true' : 'false' }}"><x-icon name="arrow-up-right" />{{ __('bank.cash_out') }}</button>
         </span>
     </span>
 </fieldset>

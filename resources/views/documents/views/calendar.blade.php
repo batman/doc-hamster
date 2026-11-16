@@ -8,7 +8,7 @@
         @if ($range !== null && $target->betweenIncluded($range['first'], $range['last']))
             <a class="icon-button" href="{{ request()->fullUrlWithQuery(['month' => $target->format('Y-m')]) }}" aria-label="{{ __('documents.'.$label) }}" data-tooltip="{{ __('documents.'.$label) }}"><x-icon :name="$icon" /></a>
         @else
-            <button type="button" class="icon-button" disabled aria-label="{{ __('documents.'.$label) }}"><x-icon :name="$icon" /></button>
+            <button type="button" class="icon-button" disabled aria-label="{{ __('documents.'.$label) }}" data-tooltip="{{ __('documents.'.$label) }}"><x-icon :name="$icon" /></button>
         @endif
     @endforeach
 </div>

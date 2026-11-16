@@ -22,9 +22,6 @@
                 <p class="card-text"><strong>{{ __('members.password_once', ['name' => $fresh['name']]) }}</strong></p>
                 @include('settings._device-copy', ['id' => 'member-username', 'label' => __('auth.username'), 'value' => $fresh['username']])
                 @include('settings._device-copy', ['id' => 'member-password', 'label' => __('auth.password'), 'value' => $fresh['password']])
-                <div class="dialog-actions">
-                    <button type="button" data-dialog-close>{{ __('members.done') }}</button>
-                </div>
             </div>
         </div>
     @endif
@@ -32,6 +29,8 @@
     @php
         $adding = old('display_name') !== null && $errors->any();
         $roleOptions = [$adminValue => __('members.roles.owner'), ...$roles->pluck('name', 'id')->all()];
+    // PO 2026-11-16: the symbols of the Rollen rows – Admin a star, every role the shield.
+    $roleIcons = array_map(static fn ($key): string => $key === $adminValue ? 'star' : 'user-shield', array_combine(array_keys($roleOptions), array_keys($roleOptions)));
         $newRole = (string) old('role', $roles->first()?->id ?? $adminValue);
     @endphp
     <form method="post" action="{{ route('members.store') }}" class="expand-plus is-row @if ($adding) is-open is-filled @endif" data-expand-plus data-confirm-sudo>
@@ -43,7 +42,7 @@
                 <span class="addon-end"><button type="submit" class="control-button addon-button" aria-label="{{ __('members.create') }}" data-tooltip="{{ __('members.create') }}" @unless ($adding) hidden @endunless><x-icon name="check" /></button></span>
             </div>
             <input class="input-small" name="username" maxlength="64" value="{{ old('username') }}" placeholder="{{ __('members.username_hint') }}" aria-label="{{ __('auth.username') }}" autocomplete="off" data-username-field>
-            @include('documents._search-choice', ['name' => 'role', 'value' => $newRole, 'options' => $roleOptions, 'toggle' => false, 'label' => __('members.role')])
+            @include('documents._search-choice', ['name' => 'role', 'value' => $newRole, 'options' => $roleOptions, 'icons' => $roleIcons, 'toggle' => false, 'label' => __('members.role')])
             <input class="input-small" type="date" name="access_from" value="{{ old('access_from') }}" aria-label="{{ __('members.access_from') }}" data-tooltip="{{ __('members.access_from') }}">
             <input class="input-small" type="date" name="access_until" value="{{ old('access_until') }}" aria-label="{{ __('members.access_until') }}" data-tooltip="{{ __('members.access_until') }}">
         </div>

@@ -7,17 +7,7 @@
 (() => {
     const DocHamster = window.DocHamster;
     const token = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
-    const note = (text, failed) => {
-        if (!text) return;
-        const el = document.createElement('div');
-        el.className = failed ? 'toast toast-error' : 'toast';
-        el.setAttribute('role', failed ? 'alert' : 'status');
-        el.textContent = text;
-        document.body.append(el);
-        const leave = () => { el.classList.add('is-leaving'); setTimeout(() => el.remove(), 300); };
-        el.addEventListener('click', leave);
-        setTimeout(leave, failed ? 5000 : 2000);
-    };
+    const note = (text, failed) => DocHamster?.toast?.(text, { error: failed });
 
     // A184: the new title in every open window that matches (head, strip, label, the tab's title when active).
     const retitle = (matches, name) => document.querySelectorAll('section[data-window]').forEach(win => {
@@ -26,7 +16,7 @@
         if (!matches(url, win)) return;
         win.dataset.windowTitle = name;
         win.setAttribute('aria-label', name);
-        win.querySelectorAll(':scope .win-title').forEach(h => { h.textContent = name; h.title = name; });
+        win.querySelectorAll(':scope .win-title').forEach(h => { h.textContent = name; h.dataset.tooltip = name; });
         const label = win.querySelector(':scope > .win-strip .strip-label > span');
         if (label) label.textContent = name;
         if (win.classList.contains('is-active')) {
@@ -75,6 +65,10 @@
                 .then(json => {
                     const url = title.dataset.windowRename;
                     retitle((_, other) => other.querySelector(':scope .win-title[data-window-rename]')?.dataset.windowRename === url, name);
+                    // A properties form in the window that carries the name as a hidden field (it saves on change) keeps
+                    // the new one, so a later save never brings the old name back.
+                    const field = CSS.escape(title.dataset.renameField || 'name');
+                    win.querySelectorAll(`form input[type="hidden"][name="${field}"]`).forEach(input => { input.value = name; });
                     note(json.message, false);
                     DocHamster?.emit('window:renamed', { win, name, json });
                 })

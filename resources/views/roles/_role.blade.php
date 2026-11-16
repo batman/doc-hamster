@@ -26,13 +26,9 @@
                 <span class="accordion-pills" data-restriction-pills>@foreach ($restriction->pills() as $pill)<span class="pill">{{ $pill }}</span>@endforeach</span>
             </span>
         </button>
+        {{-- Row actions (PO 2026-11-16): a row never has a ⋯ menu – Löschen is the red trash. --}}
         <span class="row-actions">
-            <div class="dropdown">
-                <button type="button" class="control-button" aria-expanded="false" aria-haspopup="true" aria-label="{{ __('app.more') }}: {{ $role->name }}" data-tooltip="{{ __('app.more') }}"><x-icon name="dots" /></button>
-                <div class="dropdown-panel" role="menu" hidden>
-                    <button type="button" class="menu-item menu-danger" data-dialog-open="role-delete-{{ $role->id }}"><x-icon name="trash" /><span>{{ __('roles.delete') }}</span></button>
-                </div>
-            </div>
+            <button type="button" class="control-button control-danger" data-dialog-open="role-delete-{{ $role->id }}" aria-label="{{ __('roles.delete') }}: {{ $role->name }}" data-tooltip="{{ __('roles.delete') }}"><x-icon name="trash" /></button>
         </span>
     </div>
     <div class="accordion-body" id="role-body-{{ $role->id }}" @unless ($isOpen) hidden @endunless>
@@ -95,9 +91,18 @@
 
         <form method="post" action="{{ route('roles.pause', $role->id) }}" data-autosave>
             @csrf
-            <input type="hidden" name="paused" value="0">
-            <label class="switch"><input type="checkbox" role="switch" name="paused" value="1" @checked($role->isPaused())
-                data-confirm-title="{{ __('roles.pause_title') }}" data-confirm-text="{{ $pauseText }}" data-confirm-ok="{{ __('roles.pause_ok') }}"> {{ __('roles.paused') }}</label>
+            {{-- PO 2026-11-16: an Umschalter instead of the toggle switch; "Pausiert" asks first. --}}
+            <fieldset>
+                <legend>{{ __('roles.status') }}</legend>
+                <span class="button-choice" data-choice>
+                    <input type="hidden" name="paused" value="{{ $role->isPaused() ? '1' : '0' }}">
+                    <span class="switcher" role="group" aria-label="{{ __('roles.status') }}">
+                        <button type="button" data-value="0" aria-pressed="{{ $role->isPaused() ? 'false' : 'true' }}"><x-icon name="player-play" />{{ __('roles.active') }}</button>
+                        <button type="button" data-value="1" aria-pressed="{{ $role->isPaused() ? 'true' : 'false' }}"
+                            data-confirm-title="{{ __('roles.pause_title') }}" data-confirm-text="{{ $pauseText }}" data-confirm-ok="{{ __('roles.pause_ok') }}"><x-icon name="player-pause" />{{ __('roles.paused') }}</button>
+                    </span>
+                </span>
+            </fieldset>
             <p class="field-hint">{{ __('roles.paused_hint') }}</p>
         </form>
     </div>
@@ -107,13 +112,11 @@
             @if ($role->isPreinstalled() || $role->memberships_count > 0)
                 <h2 id="role-delete-{{ $role->id }}-title">{{ __('roles.cannot_delete') }}</h2>
                 <p>{{ $role->isPreinstalled() ? __('roles.cannot_preinstalled') : trans_choice('roles.cannot_in_use', $role->memberships_count, ['count' => $role->memberships_count]) }}</p>
-                <div class="dialog-actions"><button type="button" data-dialog-close>{{ __('roles.ok') }}</button></div>
             @else
                 <h2 id="role-delete-{{ $role->id }}-title">{{ __('roles.delete_title') }}</h2>
                 <p>{{ __('roles.delete_text', ['name' => $role->name]) }}</p>
                 <form method="post" action="{{ route('roles.destroy', $role->id) }}" class="dialog-actions" data-confirm-sudo>
                     @csrf
-                    <button type="button" class="button-quiet" data-dialog-close>{{ __('roles.cancel') }}</button>
                     <button type="submit" class="button-danger"><x-icon name="trash" />{{ __('roles.delete') }}</button>
                 </form>
             @endif

@@ -7,7 +7,7 @@
 @section('page')
     <p class="muted">{{ __('bank.reasons_intro') }}</p>
     @if (session('status'))
-        <p class="check-ok" role="status">{{ session('status') }}</p>
+        <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
     @endif
     @if ($errors->any())
         <p class="error" role="alert">{{ $errors->first() }}</p>
@@ -30,14 +30,8 @@
         @foreach ($reasons as $reason)
             <li class="pick-row is-static @unless ($reason->active) is-off @endunless" data-id="{{ $reason->id }}">
                 <button type="button" class="pick-handle" aria-label="{{ __('bank.reason_drag', ['name' => $reason->name]) }}"><x-icon name="grip-vertical" /></button>
-                <form method="post" action="{{ route('bank.reasons.update', $reason->id) }}" data-autosave class="row-field">
-                    @csrf
-                    <div class="field-addon">
-                        <input class="input-small" name="name" value="{{ $reason->name }}" maxlength="100" required aria-label="{{ __('bank.reason_name') }}">
-                        <span class="addon-end"><button type="button" class="control-button addon-button" data-field-save aria-label="{{ __('bank.save') }}" data-tooltip="{{ __('bank.save') }}" hidden><x-icon name="check" /></button></span>
-                    </div>
-                    <noscript><button type="submit">{{ __('bank.save') }}</button></noscript>
-                </form>
+                {{-- PO 2026-11-16: the saved name by click (Feld mit ✓). --}}
+                <span><strong><x-edit-in-place name="name" :value="$reason->name" :action="route('bank.reasons.update', $reason->id)" :label="__('bank.reason_name')" maxlength="100" /></strong></span>
                 @if ($used->has($reason->id))
                     <span class="pill">{{ __('bank.reason_used') }}</span>
                 @endif
@@ -53,7 +47,7 @@
                     @else
                         <form method="post" action="{{ route('bank.reasons.destroy', $reason->id) }}">
                             @csrf
-                            <button type="submit" class="control-button" aria-label="{{ __('bank.reason_delete') }}: {{ $reason->name }}" data-tooltip="{{ __('bank.reason_delete') }}"><x-icon name="trash" /></button>
+                            <button type="submit" class="control-button control-danger" aria-label="{{ __('bank.reason_delete') }}: {{ $reason->name }}" data-tooltip="{{ __('bank.reason_delete') }}"><x-icon name="trash" /></button>
                         </form>
                     @endif
                 </span>

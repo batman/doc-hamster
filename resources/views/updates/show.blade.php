@@ -20,7 +20,7 @@
             <x-icon name="git-branch" />{{ __('updates.versions') }}
             <form method="post" action="{{ route('updates.check') }}" class="card-action" data-ajax="#version-list">
                 @csrf
-                <button type="submit" class="button-small"><x-icon name="refresh" />{{ __('updates.refresh') }}</button>
+                <button type="submit" class="icon-button" aria-label="{{ __('updates.refresh') }}" data-tooltip="{{ __('updates.refresh') }}"><x-icon name="refresh" /></button>
             </form>
         </h2>
         <p class="card-text">{{ __('updates.privacy') }}</p>
@@ -40,7 +40,6 @@
                         <h2 id="{{ $key }}-title" data-dialog-heading>{{ __($key === 'switch-main' ? 'updates.switch_main_title' : 'updates.update_short') }}</h2>
                         <p>{{ __($text) }}</p>
                         <div class="dialog-actions">
-                            <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
                             <button type="submit">{{ __($key === 'switch-main' ? 'updates.switch' : 'updates.update_short') }}</button>
                         </div>
                     </form>
@@ -59,7 +58,6 @@
                             <h2 id="{{ $key }}-title" data-dialog-heading>{{ __($key === 'switch-preview' ? 'updates.switch' : 'updates.update_short') }}</h2>
                             <p>{{ __($text) }}</p>
                             <div class="dialog-actions">
-                                <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
                                 <button type="submit">{{ __($key === 'switch-preview' ? 'updates.switch' : 'updates.update_short') }}</button>
                             </div>
                         </form>

@@ -39,8 +39,8 @@
     <section class="card">
         <h2 class="card-head"><x-icon name="list-details" />{{ $filters['books'] === $books ? __('settings.links.log.title') : $bookNames }}
             <span class="card-action">
-                <a class="button button-small button-quiet" href="{{ route('log.export', $query) }}"><x-icon name="file-export" /><span>{{ __('log.export') }}</span></a>
-                <button type="button" class="button-small button-quiet" data-dialog-open="log-clear"><x-icon name="trash" /><span>{{ __('log.clear') }}</span></button>
+                <a class="icon-button" href="{{ route('log.export', $query) }}" aria-label="{{ __('log.export') }}" data-tooltip="{{ __('log.export') }}"><x-icon name="file-export" /></a>
+                <button type="button" class="icon-button" data-dialog-open="log-clear" aria-label="{{ __('log.clear') }}" data-tooltip="{{ __('log.clear') }}"><x-icon name="trash" /></button>
             </span>
         </h2>
         <p class="muted">{{ __('log.keep') }}</p>
@@ -55,30 +55,37 @@
             @if ($filters['doc'] !== '')
                 <input type="hidden" name="doc" value="{{ $filters['doc'] }}">
             @endif
-            <fieldset class="log-books">
-                <legend class="visually-hidden">{{ __('log.books_label') }}</legend>
+            {{-- PO 2026-11-16: the logbooks are a Mehrfachauswahl (the rail with boxes). --}}
+            <div class="chips chips-small" role="group" aria-label="{{ __('log.books_label') }}">
                 @foreach ($books as $book)
-                    <label class="check"><input type="checkbox" name="books[]" value="{{ $book }}" @checked(in_array($book, $filters['books'], true))> {{ __('log.books.'.$book) }}</label>
+                    <label class="chip"><input type="checkbox" name="books[]" value="{{ $book }}" @checked(in_array($book, $filters['books'], true))><span>{{ __('log.books.'.$book) }}</span></label>
                 @endforeach
-            </fieldset>
+            </div>
+            @php $levelIcons = ['errors' => 'alert-triangle', 'hints' => 'alert-circle']; @endphp
             <div class="switcher" role="group" aria-label="{{ __('log.level_label') }}">
                 @foreach (__('log.level_filter') as $value => $label)
-                    <button type="submit" name="level" value="{{ $value }}" aria-pressed="{{ $filters['level'] === $value ? 'true' : 'false' }}">{{ $label }}</button>
+                    <button type="submit" name="level" value="{{ $value }}" aria-pressed="{{ $filters['level'] === $value ? 'true' : 'false' }}">@if ($levelIcons[$value] ?? null)<x-icon :name="$levelIcons[$value]" />@endif{{ $label }}</button>
                 @endforeach
             </div>
             @if (in_array('ocr', $filters['books'], true))
-                {{-- 186.4: who read it – server or browser (only the Texterkennung logbook). --}}
-                <div class="button-group" role="group" aria-label="{{ __('log.engine_label') }}">
+                {{-- 186.4: who read it – server or browser (only the Texterkennung logbook); an Umschalter (a choice). --}}
+                @php $engineIcons = ['server' => 'server', 'browser' => 'device-laptop']; @endphp
+                <div class="switcher" role="group" aria-label="{{ __('log.engine_label') }}">
                     @foreach (__('log.engine_filter') as $value => $label)
-                        <button type="submit" name="engine" value="{{ $value }}" class="button-small button-quiet" aria-pressed="{{ $filters['engine'] === $value ? 'true' : 'false' }}">{{ $label }}</button>
+                        <button type="submit" name="engine" value="{{ $value }}" aria-pressed="{{ $filters['engine'] === $value ? 'true' : 'false' }}">@if ($engineIcons[$value] ?? null)<x-icon :name="$engineIcons[$value]" />@endif{{ $label }}</button>
                     @endforeach
                 </div>
             @endif
-            <label class="log-date"><span>{{ __('log.from') }}</span><input type="date" class="input-small" name="from" value="{{ $filters['from'] }}"></label>
-            <label class="log-date"><span>{{ __('log.to') }}</span><input type="date" class="input-small" name="to" value="{{ $filters['to'] }}"></label>
-            <input type="search" class="input-small" name="q" value="{{ $filters['q'] }}" placeholder="{{ __('log.search') }}" aria-label="{{ __('log.search') }}">
-            {{-- A305: a search button is always the magnifier with the tooltip "Suchen". --}}
-            <button type="submit" class="icon-button button-small" name="level" value="{{ $filters['level'] }}" aria-label="{{ __('app.window.search_run') }}" data-tooltip="{{ __('app.window.search_run') }}"><x-icon name="search" /></button>
+            {{-- Von – bis as the framework's Suchzeile, the text search as a Feld mit Symbol (A305: the magnifier searches). --}}
+            <span class="search-row">
+                <input type="date" class="input-small" name="from" value="{{ $filters['from'] }}" aria-label="{{ __('log.from') }}" data-tooltip="{{ __('log.from') }}">
+                <span class="muted">–</span>
+                <input type="date" class="input-small" name="to" value="{{ $filters['to'] }}" aria-label="{{ __('log.to') }}" data-tooltip="{{ __('log.to') }}">
+            </span>
+            <div class="field-addon log-search">
+                <input type="search" class="input-small" name="q" value="{{ $filters['q'] }}" placeholder="{{ __('log.search') }}" aria-label="{{ __('log.search') }}">
+                <span class="addon-end"><button type="submit" class="control-button addon-button" name="level" value="{{ $filters['level'] }}" aria-label="{{ __('app.window.search_run') }}" data-tooltip="{{ __('app.window.search_run') }}"><x-icon name="search" /></button></span>
+            </div>
             @if ($query !== [])
                 <a class="button button-small button-quiet" href="{{ route('log.index') }}">{{ __('log.reset_filter') }}</a>
             @endif
@@ -155,7 +162,6 @@
                     <input type="hidden" name="books[]" value="{{ $book }}">
                 @endforeach
                 <div class="dialog-actions">
-                    <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
                     <button type="submit" class="button-danger">{{ __('log.clear_confirm') }}</button>
                 </div>
             </form>

@@ -47,20 +47,8 @@
     });
 
     // --- Account window toolbar (point 150, A326) ----------------------------------------------------------------
-    // After a reload of only the body (search, an action) its template carries the filters with fresh counts. The
-    // groups show as dropdowns whenever they do not fit beside the search (is-filters-tight), whatever the width.
-    const fit = win => {
-        const filters = win.querySelector('.win-actions [data-bank-filters]');
-        if (!filters) {
-            return;
-        }
-        win.classList.remove('is-filters-tight');
-        if (filters.scrollWidth > filters.clientWidth + 1) {
-            win.classList.add('is-filters-tight');
-        }
-    };
-    const watched = new WeakSet();
-    const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(entries => requestAnimationFrame(() => entries.forEach(entry => fit(entry.target)))) : null;
+    // After a reload of only the body (search, an action) its template carries the filters with fresh counts. Too narrow,
+    // each Umschalter becomes the framework's dropdown by itself (core/button-choice.js).
     DocHamster.on('window:open', root => {
         const wins = root instanceof Element
             ? [root.matches('section[data-window]') ? root : root.closest('section[data-window]')]
@@ -71,11 +59,6 @@
             const next = fresh?.content.querySelector('[data-bank-filters]');
             if (old && next) {
                 old.replaceWith(document.importNode(next, true));
-            }
-            fit(win);
-            if (resize && !watched.has(win)) {
-                watched.add(win);
-                resize.observe(win);
             }
         });
     });

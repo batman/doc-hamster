@@ -25,7 +25,7 @@
                         <small>{{ __('print_tray.paired_at', ['date' => $printer->created_at->format('d.m.Y H:i')]) }} · {{ __('print_tray.last_used', ['date' => $printer->last_used_at?->format('d.m.Y H:i') ?? __('documents.never')]) }}</small>
                     </span>
                     <span class="row-actions">
-                        <button type="button" class="control-button" data-dialog-open="delete-printer-{{ $printer->id }}" aria-label="{{ __('print_tray.delete') }}: {{ $printer->name }}" data-tooltip="{{ __('print_tray.delete') }}"><x-icon name="trash" /></button>
+                        <button type="button" class="control-button control-danger" data-dialog-open="delete-printer-{{ $printer->id }}" aria-label="{{ __('print_tray.delete') }}: {{ $printer->name }}" data-tooltip="{{ __('print_tray.delete') }}"><x-icon name="trash" /></button>
                     </span>
                 </li>
             @empty
@@ -40,7 +40,6 @@
                 <h2 id="delete-printer-{{ $printer->id }}-title">{{ __('print_tray.delete_title') }}</h2>
                 <p>{{ __('print_tray.delete_text') }}</p>
                 <div class="dialog-actions">
-                    <button type="button" class="button-quiet" data-dialog-close>{{ __('print_tray.cancel') }}</button>
                     <form method="post" action="{{ route('printers.destroy', $printer->id) }}">
                         @csrf
                         <button type="submit" class="button-danger">{{ __('print_tray.delete') }}</button>

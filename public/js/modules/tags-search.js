@@ -11,4 +11,11 @@
             item.hidden = !item.dataset.tagName.includes(wanted);
         });
     });
+    // A tag renamed by its window title (PO 2026-11-16): its pills everywhere follow at once.
+    window.DocHamster?.on?.('window:renamed', ({ json, name }) => {
+        const id = json?.tag?.id;
+        if (!id) return;
+        document.querySelectorAll(`.tag-${CSS.escape(id)}`).forEach(pill => { pill.textContent = name; });
+        document.querySelectorAll(`[data-tag-name] > .tag-${CSS.escape(id)}`).forEach(pill => { pill.parentElement.dataset.tagName = name.toLowerCase(); });
+    });
 })();

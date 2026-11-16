@@ -17,16 +17,16 @@
     <legend>{{ $legend }}</legend>
     <div class="tag-colors">
         @if ($allowNone)
-            <label class="tag-color" title="{{ __('palette.none') }}"><input type="radio" name="{{ $name }}" value="none" @checked(! $isHex) aria-label="{{ __('palette.none') }}"><span class="no-color"></span></label>
+            <label class="tag-color" data-tooltip="{{ __('palette.none') }}"><input type="radio" name="{{ $name }}" value="none" @checked(! $isHex) aria-label="{{ __('palette.none') }}"><span class="no-color"></span></label>
         @endif
         @if ($own !== null && ! $allowOwn)
-            <label class="tag-color" title="{{ $own }}"><input type="radio" name="{{ $name }}" value="{{ $own }}" checked aria-label="{{ $own }}"><span class="{{ \App\Domain\Palette\PaletteColor::cssClass($own) }}"></span></label>
+            <label class="tag-color" data-tooltip="{{ $own }}"><input type="radio" name="{{ $name }}" value="{{ $own }}" checked aria-label="{{ $own }}"><span class="{{ \App\Domain\Palette\PaletteColor::cssClass($own) }}"></span></label>
         @endif
         @foreach ($palette as $color)
-            <label class="tag-color" title="{{ $color->name }}"><input type="radio" name="{{ $name }}" value="{{ $color->hex }}" @checked($value === $color->hex) aria-label="{{ $color->name }}"><span class="{{ \App\Domain\Palette\PaletteColor::cssClass($color->hex) }}"></span></label>
+            <label class="tag-color" data-tooltip="{{ $color->name }}"><input type="radio" name="{{ $name }}" value="{{ $color->hex }}" @checked($value === $color->hex) aria-label="{{ $color->name }}"><span class="{{ \App\Domain\Palette\PaletteColor::cssClass($color->hex) }}"></span></label>
         @endforeach
         @if ($allowOwn)
-            <label class="tag-color" title="{{ __('palette.own') }}"><input type="radio" name="{{ $name }}" value="{{ $own ?? '' }}" @checked($own !== null) aria-label="{{ __('palette.own') }}" data-color-own><span class="own-color @if ($own !== null) has-color {{ \App\Domain\Palette\PaletteColor::cssClass($own) }} @endif"><x-icon name="plus" /></span></label>
+            <label class="tag-color" data-tooltip="{{ __('palette.own') }}"><input type="radio" name="{{ $name }}" value="{{ $own ?? '' }}" @checked($own !== null) aria-label="{{ __('palette.own') }}" data-color-own><span class="own-color @if ($own !== null) has-color {{ \App\Domain\Palette\PaletteColor::cssClass($own) }} @endif"><x-icon name="plus" /></span></label>
         @endif
     </div>
     @if ($allowOwn)

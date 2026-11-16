@@ -9,9 +9,11 @@
 @section('content')
     <div class="windows" data-windows>
     @if ($folder)
-        <x-window :title="$folder->name" :icon="$folder->iconName()" :url="route('folders.index', ['folder' => $folder->id])" :close="route('documents.index', ['folder' => $folder->id])">
+        {{-- PO 2026-11-16: the name is changed by a click on the title (Feld mit ✓; only_name keeps place and look). --}}
+        <x-window :title="$folder->name" :icon="$folder->iconName()" :url="route('folders.index', ['folder' => $folder->id])" :close="route('documents.index', ['folder' => $folder->id])"
+                  :rename-url="route('folders.update', $folder->id)" :rename-data="['only_name' => 1]">
             @if (session('status'))
-                <p class="check-ok" role="status">{{ session('status') }}</p>
+                <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
             @endif
             @if ($errors->any())
                 <p class="error" role="alert">{{ $errors->first() }}</p>
@@ -52,7 +54,6 @@
                             <p>{{ __('folders.delete_content_text') }}</p>
                         @endcan
                         <div class="dialog-actions">
-                            <button type="button" class="button-quiet" data-dialog-close>{{ __('folders.cancel') }}</button>
                             <form method="post" action="{{ route('folders.destroy', $folder->id) }}">
                                 @csrf
                                 <button type="submit" class="button-quiet">{{ __('folders.delete_keep') }}</button>
@@ -88,7 +89,7 @@
                       data-running="{{ __('folders.import_running') }}" data-done="{{ __('folders.import_done') }}" data-skipped="{{ __('folders.import_skipped') }}"
                       data-failed="{{ __('folders.import_failed') }}" data-empty="{{ __('folders.import_empty') }}" data-unsupported="{{ __('folders.import_unsupported') }}">
                     <h2>{{ __('folders.import') }}</h2>
-                    <p class="muted">{{ __('folders.import_hint') }}</p>
+                    <p class="field-hint">{{ __('folders.import_hint') }}</p>
                     <label for="import-parent-new">{{ __('folders.parent') }}</label>
                     <select id="import-parent-new" name="import_parent">
                         <option value="">{{ __('folders.top') }}</option>
@@ -98,8 +99,8 @@
                             @endif
                         @endforeach
                     </select>
-                    <label class="button" for="import-folder-new"><x-icon name="folder-up" /> {{ __('folders.import_pick') }}</label>
-                    <input id="import-folder-new" class="visually-hidden" type="file" webkitdirectory directory multiple>
+                    {{-- The framework's file button (one main button per area: "Anlegen" above is it). --}}
+                    <label class="button button-quiet file-button"><input id="import-folder-new" class="visually-hidden" type="file" webkitdirectory directory multiple><x-icon name="folder-up" />{{ __('folders.import_pick') }}</label>
                     <progress hidden></progress>
                     <p data-import-status role="status" aria-live="polite"></p>
                     <a href="#" data-import-open hidden>{{ __('folders.import_open') }}</a>

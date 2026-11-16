@@ -29,16 +29,7 @@
     window.DocHamster = window.DocHamster ?? {};
     window.DocHamster.checkField = checkField;
     const token = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
-    const note = (text, failed) => {
-        const el = document.createElement('div');
-        el.className = failed ? 'toast toast-error' : 'toast';
-        el.setAttribute('role', failed ? 'alert' : 'status');
-        el.textContent = text;
-        document.body.append(el);
-        const leave = () => { el.classList.add('is-leaving'); setTimeout(() => el.remove(), 300); };
-        el.addEventListener('click', leave);
-        setTimeout(leave, failed ? 5000 : 2000);
-    };
+    const note = (text, failed) => window.DocHamster?.toast?.(text, { error: failed });
     const grow = field => {
         if (field.tagName === 'TEXTAREA') {
             field.style.height = 'auto';
@@ -61,6 +52,8 @@
         const body = new FormData();
         body.append('field', box.dataset.field);
         body.append('value', value);
+        // PO 2026-11-16: also under the field's own name, so a plain update action (e.g. name=…) takes it unchanged.
+        if (!['field', 'value', '_token'].includes(box.dataset.field)) body.append(box.dataset.field, value);
         fetch(box.dataset.editInPlace, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' }, credentials: 'same-origin' })
             .then(async response => {
                 const json = await response.json().catch(() => ({}));
@@ -87,6 +80,9 @@
         field.className = `edit-in-place-field ${box.className.replace(/\bedit-in-place\b/, '')}`.trim();
         field.value = box.textContent;
         field.placeholder = box.dataset.placeholder ?? '';
+        if (box.dataset.inputmode) {
+            field.inputMode = box.dataset.inputmode;
+        }
         if (box.dataset.maxlength) {
             field.maxLength = Number(box.dataset.maxlength);
         }

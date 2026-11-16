@@ -20,7 +20,7 @@
         @endif
 
         @if (session('status'))
-            <p class="check-ok" role="status">{{ session('status') }}</p>
+            <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
         @endif
         @if ($errors->any())
             <p class="error" role="alert">{{ $errors->first() }}</p>
@@ -53,11 +53,12 @@
                                 <button type="button" class="icon-button button-small" data-rt="{{ $command }}" aria-label="{{ __('documents.text.'.$command) }}" data-tooltip="{{ __('documents.text.'.$command) }}"><x-icon :name="$icon" /></button>
                             @endforeach
                         </div>
-                        <div class="button-group" role="group">
+                        {{-- The alignment is a state of the text, one of four: an Umschalter (PO 2026-11-16), symbols with tooltips. --}}
+                        <span class="switcher" role="group" aria-label="{{ __('documents.text.align') }}" data-switch-static>
                             @foreach (['left' => 'align-left', 'center' => 'align-center', 'right' => 'align-right', 'justify' => 'align-justified'] as $align => $icon)
-                                <button type="button" class="icon-button button-small" data-rt="align" data-rt-value="{{ $align }}" aria-pressed="false" aria-label="{{ __('documents.text.align_'.$align) }}" data-tooltip="{{ __('documents.text.align_'.$align) }}"><x-icon :name="$icon" /></button>
+                                <button type="button" data-rt="align" data-rt-value="{{ $align }}" aria-pressed="false" aria-label="{{ __('documents.text.align_'.$align) }}" data-tooltip="{{ __('documents.text.align_'.$align) }}"><x-icon :name="$icon" /></button>
                             @endforeach
-                        </div>
+                        </span>
                     </div>
                     <div id="text-area-{{ $document->id }}" class="rich-text rt-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-label="{{ $document->title }}" data-rt-area>{!! $content !!}</div>
                     <input type="hidden" name="content" value="" data-rt-content>
@@ -67,7 +68,7 @@
                 <noscript><button type="submit">{{ __('documents.text.save') }}</button></noscript>
             </form>
         @else
-            <p class="muted">{{ __('documents.text.read_only') }}</p>
+            <div class="notice">{{ __('documents.text.read_only') }}</div>
             @if ($rich)
                 <div class="rich-text">{!! $content !!}</div>
             @else

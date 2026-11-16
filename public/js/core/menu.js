@@ -23,7 +23,9 @@
         const sync = () => {
             const open = mobile.matches ? root.classList.contains('nav-open') : !root.classList.contains('nav-closed');
             toggle.setAttribute('aria-expanded', String(open));
-            collapse.setAttribute('aria-label', root.classList.contains('nav-rail') ? collapse.dataset.expand : collapse.dataset.collapse);
+            const label = root.classList.contains('nav-rail') ? collapse.dataset.expand : collapse.dataset.collapse;
+            collapse.setAttribute('aria-label', label);
+            collapse.dataset.tooltip = label;
         };
         const store = () => save(root.classList.contains('nav-closed') ? 'closed' : (root.classList.contains('nav-rail') ? 'rail' : 'open'));
         const closeDrawer = () => {

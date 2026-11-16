@@ -214,5 +214,5 @@ it('saves folder properties on change and answers what other windows need (A191-
         ->assertJsonPath('folder.name', 'B2')
         ->assertJsonPath('folder.rowClass', 'row-color c-1e5bc6')
         ->assertJsonPath('folder.moved', true);
-    $this->get('/folders?folder='.$b->id)->assertOk()->assertSee('data-autosave', false)->assertSee('data-field-save', false);
+    $this->get('/folders?folder='.$b->id)->assertOk()->assertSee('data-autosave', false)->assertSee('data-window-rename', false);
 });

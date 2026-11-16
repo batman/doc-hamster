@@ -68,19 +68,19 @@
             {{-- Point 236: built in, off after install (F46); switched on and set up on its own page. --}}
             @php($optimizeOn = \App\Domain\Optimize\OptimizeSettings::enabled(app(\App\Domain\Org\CurrentOrg::class)->organization()))
             <li class="pick-row is-static">
-                <x-icon name="arrows-minimize" />
+                <span class="row-icon"><x-icon name="arrows-minimize" /></span>
                 <span>
                     <strong>{{ __('optimize.title') }}</strong>
                     <small>{{ __('optimize.module_text') }}</small>
                 </span>
                 <span @class(['pill', 'pill-ok' => $optimizeOn])>{{ __($optimizeOn ? 'optimize.on_pill' : 'extensions.off_pill') }}</span>
                 <span class="row-actions">
-                    <a class="control-button" href="{{ route('optimize.show') }}" aria-label="{{ __('optimize.module_settings') }}" data-tooltip="{{ __('optimize.module_settings') }}"><x-icon name="settings" /></a>
+                    <a class="control-button" href="{{ route('optimize.show') }}" data-window aria-label="{{ __('optimize.module_settings') }}" data-tooltip="{{ __('optimize.module_settings') }}"><x-icon name="settings" /></a>
                 </span>
             </li>
             @foreach ($modules as $row)
                 <li class="pick-row is-static">
-                    <x-icon name="puzzle" />
+                    <span class="row-icon"><x-icon name="puzzle" /></span>
                     <span>
                         <strong>{{ \App\Http\Controllers\ExtensionController::name($row['ext']) }}</strong>
                         <small>{{ \App\Http\Controllers\ExtensionController::text($row['ext']) }} · {{ __('extensions.later') }}</small>
@@ -98,7 +98,6 @@
                     <h2 id="remove-extension-{{ $row['ext']->key }}-title">{{ __('extensions.remove_title') }}</h2>
                     <p>{{ __('extensions.remove_text', ['name' => \App\Http\Controllers\ExtensionController::name($row['ext'])]) }}</p>
                     <div class="dialog-actions">
-                        <button type="button" class="button-quiet" data-dialog-close>{{ __('extensions.cancel') }}</button>
                         <form method="post" action="{{ route('extensions.remove', $row['ext']->key) }}">
                             @csrf
                             <button type="submit" class="button-danger"><x-icon name="trash" />{{ __('extensions.remove') }}</button>

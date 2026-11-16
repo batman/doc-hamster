@@ -7,8 +7,8 @@
 // Every Umschalter (.switcher, point 188.4): when its rail does not fit its room, our own dropdown takes its place
 // (PO 2026-11-16: never the browser's select – it cannot show symbols): .is-tight + .dropdown.switcher-select, built here
 // once – a button with the chosen entry's symbol and name, a panel of menu entries with their symbols. Picking an entry
-// clicks that segment, so links, submit buttons and choices work as before. Measured whenever its parent changes size
-// (like the bank toolbar's is-filters-tight). data-switch-static = never a dropdown (the module has its own narrow form).
+// clicks that segment, so links, submit buttons and choices work as before. Measured whenever its parent changes size.
+// data-switch-static = never a dropdown (the module has its own narrow form).
 (() => {
     const fieldOf = choice => choice.querySelector(':scope > input');
     const segmentsOf = rail => [...rail.children].filter(el => el.matches('button, a'));
@@ -105,9 +105,22 @@
         const again = button.getAttribute('aria-pressed') === 'true';
         const value = again && choice.hasAttribute('data-choice-toggle') ? '' : button.dataset.value;
         if (value === field.value) return;
-        field.value = value;
-        choice.querySelectorAll('[data-value]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.value === value)));
-        field.dispatchEvent(new Event('change', { bubbles: true }));
+        const apply = () => {
+            field.value = value;
+            choice.querySelectorAll('[data-value]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.value === value)));
+            field.dispatchEvent(new Event('change', { bubbles: true }));
+        };
+        // PO 2026-11-16 (the toggle switch is gone): an option with data-confirm-title (-text, -ok) asks in the framework
+        // confirm dialog first, e.g. "Pausieren"; only a yes chooses it.
+        if (button.dataset.confirmTitle) {
+            const ask = window.DocHamster?.confirm;
+            const answer = ask
+                ? ask({ title: button.dataset.confirmTitle, text: button.dataset.confirmText ?? '', ok: button.dataset.confirmOk ?? button.dataset.confirmTitle })
+                : Promise.resolve(window.confirm(button.dataset.confirmTitle));
+            answer.then(yes => { if (yes) apply(); });
+            return;
+        }
+        apply();
     });
     // The dropdown in place of a rail that does not fit: picking an entry clicks its segment (core/dropdowns.js closes it).
     document.addEventListener('click', event => {

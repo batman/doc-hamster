@@ -21,21 +21,11 @@ a.nav-ocr-link[aria-current="page"] .nav-ocr-title { font-weight: 700; }
 .nav-ocr-body { display: grid; min-width: 0; line-height: 1.25; }
 .nav-ocr-title { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nav-ocr-count { color: var(--muted); font-size: .8125rem; white-space: nowrap; }
-.sidebar .nav-ocr-toggle {
-    display: inline-grid; place-items: center; width: 2rem; min-height: 2rem; margin: 0; padding: 0;
-    border: 1px solid var(--border); border-radius: 50%; background: var(--bg); color: var(--muted); box-shadow: none;
-}
-.sidebar .nav-ocr-toggle:hover { background: var(--bg); color: var(--text); box-shadow: none; }
-.nav-ocr-toggle .icon { width: 1rem; height: 1rem; }
+/* Pause / resume: a control button (PO 2026-11-16); which symbol shows follows the state. */
 .nav-ocr-toggle .icon + .icon, .nav-ocr.is-paused .nav-ocr-toggle .icon:first-child { display: none; }
 .nav-ocr.is-paused .nav-ocr-toggle .icon + .icon { display: block; }
-.nav-ocr-bar {
-    grid-column: 1 / -1; display: block; width: 100%; height: .3rem; margin: .3rem 0 0;
-    appearance: none; border: 0; border-radius: .15rem; overflow: hidden; background: var(--border); accent-color: var(--primary);
-}
-.nav-ocr-bar::-webkit-progress-bar { background: var(--border); }
-.nav-ocr-bar::-webkit-progress-value { background: var(--primary); transition: width .3s; }
-.nav-ocr-bar::-moz-progress-bar { background: var(--primary); }
+/* The menu's slim OCR bar: the framework's progress bar, only lower. */
+.nav-ocr-bar { grid-column: 1 / -1; height: .3rem; margin: .3rem 0 0; }
 .nav-ocr.is-paused .nav-ocr-icon { color: var(--muted); }
 .nav-ocr.is-paused .nav-ocr-icon .icon { animation-play-state: paused; }
 .nav-ocr.is-paused .nav-ocr-bar::-webkit-progress-value { background: var(--muted); }
@@ -49,14 +39,7 @@ a.nav-ocr-link[aria-current="page"] .nav-ocr-title { font-weight: 700; }
 .ocr-counts li { display: grid; }
 .ocr-counts strong { font-size: 1.5rem; line-height: 1.2; }
 .ocr-counts span { color: var(--muted); font-size: .875rem; }
-.ocr-progress progress {
-    display: block; width: 100%; height: .75rem; margin: 0 0 .5rem;
-    appearance: none; border: 0; border-radius: var(--radius); overflow: hidden;
-    background: var(--surface); accent-color: var(--primary);
-}
-.ocr-progress progress::-webkit-progress-bar { background: var(--surface); }
-.ocr-progress progress::-webkit-progress-value { background: var(--primary); transition: width .3s; }
-.ocr-progress progress::-moz-progress-bar { background: var(--primary); }
+.ocr-progress progress { margin: 0 0 .5rem; } /* the framework's progress bar */
 .ocr-progress p { margin: 0 0 .25rem; }
 .ocr-rerun { margin-top: 1rem; }
 
@@ -72,11 +55,11 @@ a.nav-ocr-link[aria-current="page"] .nav-ocr-title { font-weight: 700; }
 .ocr-head .ocr-copy { margin: 0 0 0 auto; }
 .ocr-head form + .ocr-copy { margin-left: 0; }
 /* Point 172: "Übersetzen" (target language + button) before "Alles kopieren"; the translations below the original. */
-.ocr-head .ocr-translate { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 0 0 0 auto; }
+.ocr-head .ocr-translate { margin: 0 0 0 auto; } /* a .field-row: the language and its button side by side */
 .ocr-head form + .ocr-translate, .ocr-head .ocr-translate + .ocr-copy { margin-left: 0; }
 .ocr-head h4 { margin: 0; }
 .ocr-translation { margin-top: 1rem; }
-.detail-section .ocr-head button, .win-detail .ocr-head form > button[type="submit"] { margin-top: 0; }
+.detail-section .ocr-head button { margin-top: 0; }
 
 /* Live card (point 124, A255-A258): the page being read with the recognised words as orange boxes, its details,
    figures and the last ten finished documents. Boxes are the framework's .doc-mark (is-faint = unsure word). */

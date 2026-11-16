@@ -36,6 +36,9 @@ final class BankAccount extends Model
 
     public const KINDS = [self::BUSINESS, self::PRIVATE, self::CASH];
 
+    /** PO 2026-11-16: the symbol of each kind in its Umschalter (Geschäft, Privat, Kasse). */
+    public const KIND_ICONS = [self::BUSINESS => 'briefcase', self::PRIVATE => 'home', self::CASH => 'cash'];
+
     protected $fillable = ['org_id', 'name', 'currency', 'import_profile', 'iban', 'source_key', 'kind', 'opening_balance_minor'];
 
     /**

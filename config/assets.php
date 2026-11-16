@@ -27,7 +27,7 @@ return [
         'modules/text-editor', 'core/edit-in-place', 'modules/ocr-progress', 'modules/ocr-live', 'modules/ocr-server', 'modules/optimize', 'modules/note-options',
         'modules/properties', 'modules/girocode', 'modules/bank', 'modules/inbox', 'core/window-edge', 'core/top-layer', 'core/layout-debug',
         'core/pwa', 'modules/share', 'modules/speed', 'core/window-pin', 'modules/dashboard', 'modules/notes-pins', 'modules/devices', 'modules/backup',
-        'core/accordion', 'core/switch', 'modules/people',
+        'core/accordion', 'modules/people',
         'modules/doc-viewer-pdf', 'modules/doc-viewer-touch', 'modules/ocr-popup', 'modules/ocr-block', 'modules/mark-as',
         'core/confirm',
     ],

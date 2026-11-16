@@ -11,9 +11,9 @@
 
     <h2>{{ __('phone_check.qr_step_page') }}</h2>
     <p>{{ __('phone_check.qr_step_page_hint') }}</p>
-    <img class="phone-qr" src="{{ $pageQr }}" alt="{{ __('phone_check.qr_step_page') }}">
+    <figure class="qr-card"><img src="{{ $pageQr }}" alt="{{ __('phone_check.qr_step_page') }}" width="240" height="240"><figcaption>{{ __('phone_check.qr_step_page') }}</figcaption></figure>
 
     <h2>{{ __('phone_check.qr_step_test') }}</h2>
     <p>{{ __('phone_check.qr_step_test_hint') }}</p>
-    <img class="phone-qr" src="{{ $testQr }}" alt="{{ __('phone_check.qr_step_test') }}">
+    <figure class="qr-card"><img src="{{ $testQr }}" alt="{{ __('phone_check.qr_step_test') }}" width="240" height="240"><figcaption>{{ __('phone_check.qr_step_test') }}</figcaption></figure>
 @endsection

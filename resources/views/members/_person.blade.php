@@ -20,6 +20,8 @@
     $isAdmin = $membership->role === \App\Domain\Org\Role::Owner;
     $roleValue = $isAdmin ? $adminValue : (string) $membership->org_role_id;
     $roleOptions = [$adminValue => __('members.roles.owner'), ...$roles->pluck('name', 'id')->all()];
+    // PO 2026-11-16: the symbols of the Rollen rows – Admin a star, every role the shield.
+    $roleIcons = array_map(static fn ($key): string => $key === $adminValue ? 'star' : 'user-shield', array_combine(array_keys($roleOptions), array_keys($roleOptions)));
     $paused = $membership->isPaused();
 @endphp
 <li @class(['accordion-row', 'is-open' => $isOpen && ! $self]) id="person-{{ $membership->id }}">
@@ -52,7 +54,7 @@
                     <span class="prop-value">
                         <form method="post" action="{{ route('members.role', $membership->id) }}" data-autosave>
                             @csrf
-                            @include('documents._search-choice', ['name' => 'role', 'value' => $roleValue, 'options' => $roleOptions, 'toggle' => false, 'label' => __('members.role')])
+                            @include('documents._search-choice', ['name' => 'role', 'value' => $roleValue, 'options' => $roleOptions, 'icons' => $roleIcons, 'toggle' => false, 'label' => __('members.role')])
                         </form>
                     </span>
                 </li>
@@ -72,13 +74,20 @@
                     <span class="prop-value"><button type="button" class="button-link" data-dialog-open="person-reset-{{ $membership->id }}" data-tooltip="{{ __('members.new_password') }}"><x-icon name="refresh" />{{ __('members.new_password') }}</button></span>
                 </li>
                 <li class="prop-row">
-                    <span class="prop-name">{{ __('members.paused') }}</span>
+                    <span class="prop-name">{{ __('members.status') }}</span>
                     <span class="prop-value">
+                        {{-- PO 2026-11-16: an Umschalter instead of the toggle switch; "Pausiert" asks first. --}}
                         <form method="post" action="{{ route('members.pause', $membership->id) }}" data-autosave>
                             @csrf
-                            <input type="hidden" name="paused" value="0">
-                            <label class="switch" data-tooltip="{{ __('members.paused_hint') }}"><input type="checkbox" role="switch" name="paused" value="1" @checked($membership->paused_at !== null) aria-label="{{ __('members.paused') }}"
-                                data-confirm-title="{{ __('members.pause_title') }}" data-confirm-text="{{ __('members.pause_text', ['name' => $name]) }}" data-confirm-ok="{{ __('members.pause_ok') }}"></label>
+                            @php $isPaused = $membership->paused_at !== null; @endphp
+                            <span class="button-choice" data-choice>
+                                <input type="hidden" name="paused" value="{{ $isPaused ? '1' : '0' }}">
+                                <span class="switcher" role="group" aria-label="{{ __('members.status') }}" data-tooltip="{{ __('members.paused_hint') }}">
+                                    <button type="button" data-value="0" aria-pressed="{{ $isPaused ? 'false' : 'true' }}"><x-icon name="player-play" />{{ __('members.active') }}</button>
+                                    <button type="button" data-value="1" aria-pressed="{{ $isPaused ? 'true' : 'false' }}"
+                                        data-confirm-title="{{ __('members.pause_title') }}" data-confirm-text="{{ __('members.pause_text', ['name' => $name]) }}" data-confirm-ok="{{ __('members.pause_ok') }}"><x-icon name="player-pause" />{{ __('members.paused') }}</button>
+                                </span>
+                            </span>
                         </form>
                     </span>
                 </li>
@@ -102,7 +111,6 @@
                 <p>{{ __('members.new_password_text', ['name' => $name]) }}</p>
                 <form method="post" action="{{ route('members.reset', $membership->id) }}" class="dialog-actions" data-confirm-sudo>
                     @csrf
-                    <button type="button" class="button-quiet" data-dialog-close>{{ __('members.cancel') }}</button>
                     <button type="submit"><x-icon name="refresh" />{{ __('members.new_password') }}</button>
                 </form>
             </div>
@@ -113,7 +121,6 @@
                 <p>{{ __('members.revoke_text', ['name' => $name]) }}</p>
                 <form method="post" action="{{ route('members.revoke', $membership->id) }}" class="dialog-actions" data-confirm-sudo>
                     @csrf
-                    <button type="button" class="button-quiet" data-dialog-close>{{ __('members.cancel') }}</button>
                     <button type="submit" class="button-danger"><x-icon name="trash" />{{ __('members.revoke') }}</button>
                 </form>
             </div>

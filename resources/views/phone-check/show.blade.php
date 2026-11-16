@@ -34,14 +34,11 @@
     <button type="button" id="start-camera">{{ __('phone_check.start_camera') }}</button>
     <video id="camera" playsinline muted hidden></video>
 
-    <label class="file-button">
-        {{ __('phone_check.take_photo') }}
-        <input type="file" id="photo-input" accept="image/*" capture="environment">
-    </label>
-    <label class="file-button">
-        {{ __('phone_check.pick_file') }}
-        <input type="file" id="file-input" accept="image/*,application/pdf">
-    </label>
+    {{-- The framework's file buttons (PO 2026-11-16). --}}
+    <div class="actions">
+        <label class="button button-quiet file-button"><input class="visually-hidden" type="file" id="photo-input" accept="image/*" capture="environment"><x-icon name="photo" />{{ __('phone_check.take_photo') }}</label>
+        <label class="button button-quiet file-button"><input class="visually-hidden" type="file" id="file-input" accept="image/*,application/pdf"><x-icon name="upload" />{{ __('phone_check.pick_file') }}</label>
+    </div>
 
     <p><small class="muted" id="phone-check-device"></small></p>
 @endsection

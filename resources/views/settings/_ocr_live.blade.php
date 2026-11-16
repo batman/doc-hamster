@@ -47,7 +47,7 @@
     <ul class="ocr-live-recent" data-ocr-live-recent>
         @forelse ($recent as $row)
             <li>
-                <a class="ocr-live-doc" href="{{ $row['url'] }}" data-window title="{{ $row['title'] }}">
+                <a class="ocr-live-doc" href="{{ $row['url'] }}" data-window data-tooltip="{{ $row['title'] }}">
                     <span class="thumb-frame">
                         @if ($row['thumb'])<img class="thumb" src="{{ $row['thumb'] }}" alt="" loading="lazy" draggable="false">@else<x-icon name="file-text" />@endif
                     </span>
@@ -56,7 +56,7 @@
                 </a>
             </li>
         @empty
-            <li class="list-empty">{{ __('ocr.live.recent_empty') }}</li>
+            <x-empty tag="li" icon="file-text" :text="__('ocr.live.recent_empty')" />
         @endforelse
     </ul>
 </x-fold-card>

@@ -111,16 +111,7 @@
         const st = states.get(box.parentElement);
         if (st) clearBox(st); else box.remove();
     });
-    const toast = text => {
-        const el = document.createElement('div');
-        el.className = 'toast';
-        el.setAttribute('role', 'status');
-        el.textContent = text;
-        document.body.append(el);
-        const leave = () => { el.classList.add('is-leaving'); setTimeout(() => el.remove(), 300); };
-        el.addEventListener('click', leave);
-        setTimeout(leave, 3000);
-    };
+    const toast = text => DocHamster.toast?.(text);
     // Box (frame coords) to natural pixels of the shown picture (object-fit: contain).
     const crop = (st, b) => {
         const img = st.img, w = img.clientWidth, h = img.clientHeight;

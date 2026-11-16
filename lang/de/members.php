@@ -25,6 +25,8 @@ return [
     'new_password_title' => 'Neues Einmalpasswort?',
     'new_password_text' => ':name wird sofort abgemeldet und braucht das neue Passwort. Bei der nächsten Anmeldung legt :name ein eigenes fest.',
     'paused' => 'Pausiert',
+    'status' => 'Status',
+    'active' => 'Aktiv',
     'paused_pill' => 'pausiert',
     'paused_hint' => 'Abmelden, keine Anmeldung und keine Uploads mit Geräteschlüsseln, bis Sie die Pause beenden.',
     'pause_title' => 'Person pausieren?',

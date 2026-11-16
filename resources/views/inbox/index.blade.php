@@ -17,7 +17,7 @@
                 {{-- A359: Dokumente as the next window on the right; rows dragged onto its folder rows are filed there. --}}
                 {{-- Point 226: "Auswählen" shows the checkboxes (documents-pick.js). --}}
                 @if ($documents->isNotEmpty() && Gate::allows('documents.edit'))
-                    <span class="switcher is-actions"><button type="button" data-pick-toggle aria-pressed="false" aria-label="{{ __('documents.pick.toggle') }}" data-tooltip="{{ __('documents.pick.toggle') }}"><x-icon name="square-check" /></button></span>
+                    <span class="switcher is-actions" role="group" aria-label="{{ __('documents.pick.toggle') }}"><button type="button" data-pick-toggle aria-pressed="false" aria-label="{{ __('documents.pick.toggle') }}" data-tooltip="{{ __('documents.pick.toggle') }}"><x-icon name="square-check" /></button></span>
                 @endif
                 <a class="icon-button" href="{{ route('documents.index') }}" data-window aria-label="{{ __('inbox.open_folders') }}" data-tooltip="{{ __('inbox.open_folders') }}"><x-icon name="layout-columns" /></a>
                 @if ($documents->isNotEmpty())
@@ -52,7 +52,7 @@
         </nav>
 
         @if (session('status'))
-            <p class="check-ok" role="status">{{ session('status') }}</p>
+            <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
         @endif
         @if ($errors->any())
             <p class="error" role="alert">{{ $errors->first() }}</p>
@@ -67,7 +67,7 @@
             @endif
             @unless ($hasPrinter)
                 {{-- A266: gone once a computer is paired. --}}
-                <p class="muted" data-no-printer>{{ __('print_tray.no_printer_hint') }} <a href="{{ route('printers.index') }}">{{ __('print_tray.no_printer_link') }}</a></p>
+                <p class="notice" data-no-printer>{{ __('print_tray.no_printer_hint') }} <a href="{{ route('printers.index') }}">{{ __('print_tray.no_printer_link') }}</a></p>
             @endunless
         @else
             @php $canPick = Gate::allows('documents.edit'); @endphp

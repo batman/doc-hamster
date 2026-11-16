@@ -31,7 +31,7 @@
                  folded unless a filter in them is set, each head with a summary of what is set (documents-search.js keeps it
                  current). Umschalter instead of radios and "egal" selects. All fields keep their address names (point 7). --}}
             @php
-                $choice = fn (string $name, string $value, array $options, ?string $label = null, bool $toggle = false) => view('documents._search-choice', compact('name', 'value', 'options', 'label', 'toggle'));
+                $choice = fn (string $name, string $value, array $options, ?string $label = null, bool $toggle = false, array $icons = []) => view('documents._search-choice', compact('name', 'value', 'options', 'label', 'toggle', 'icons'));
                 $preset = $search->preset();
                 $ranges = [];
                 foreach (\App\Http\Documents\DocumentSearch::PRESETS as $key) { $ranges[$key] = implode(' ', \App\Http\Documents\DocumentSearch::presetRange($key)); }
@@ -41,7 +41,7 @@
                 $statusSummary = implode(' · ', array_filter([
                     $match !== '' ? __('documents.adv.match').': '.__('documents.adv.'.$match) : null,
                     $read !== '' ? __('documents.adv.read').': '.__('documents.adv.'.$read) : null,
-                    $type !== '' ? ($type === 'pdf' ? 'PDF' : __('documents.adv.image')) : null,
+                    $type !== '' ? ($type === 'pdf' ? __('documents.adv.pdf') : __('documents.adv.image')) : null,
                     $noDate ? __('receipt_date.chip') : null,
                 ]));
                 $propSummary = $properties->filter(fn ($p) => isset($propFilters[$p->id]))->pluck('name')->implode(', ');
@@ -86,7 +86,7 @@
                     </div>
                     <div class="search-line">
                         <span>{{ __('documents.adv.basis') }}</span>
-                        {!! $choice('by', $by === 'upload' ? 'upload' : '', ['' => __('documents.dates.doc'), 'upload' => __('documents.dates.upload')]) !!}
+                        {!! $choice('by', $by === 'upload' ? 'upload' : '', ['' => __('documents.dates.doc'), 'upload' => __('documents.dates.upload')], null, false, ['' => 'receipt', 'upload' => 'upload']) !!}
                     </div>
                 </x-fold-card>
                 @if ($tags->isNotEmpty())
@@ -111,7 +111,7 @@
                     @endforeach
                     <div class="search-line">
                         <span>{{ __('documents.adv.type') }}</span>
-                        {!! $choice('type', $type, ['' => __('documents.adv.any'), 'pdf' => 'PDF', 'image' => __('documents.adv.image')]) !!}
+                        {!! $choice('type', $type, ['' => __('documents.adv.any'), 'pdf' => __('documents.adv.pdf'), 'image' => __('documents.adv.image')], null, false, ['pdf' => 'file-type-pdf', 'image' => 'photo']) !!}
                     </div>
                     {{-- Point 214: documents that only have their upload day ("Belegdatum fehlt"). --}}
                     <div class="search-line">
@@ -170,28 +170,19 @@
                         @csrf
                         <input type="hidden" name="back" value="{{ $back }}">
                         @foreach (['doc', 'upload'] as $basis)
-                            <button type="submit" name="date" value="{{ $basis }}" aria-pressed="{{ $basis === $dates ? 'true' : 'false' }}">{{ __('documents.dates.'.$basis) }}</button>
+                            <button type="submit" name="date" value="{{ $basis }}" aria-pressed="{{ $basis === $dates ? 'true' : 'false' }}"><x-icon :name="$basis === 'doc' ? 'receipt' : 'upload'" />{{ __('documents.dates.'.$basis) }}</button>
                         @endforeach
                     </form>
                 @else
-                    {{-- The display modes of the folder view as a button group (points 16, 98); in a narrow window one dropdown button
-                         (point 41). The view belongs to this window (?view=…, point 52); app.js reloads only this window and saves the choice. --}}
-                    <form class="switcher win-wide-only" data-switch-static data-view-switch role="group" aria-label="{{ __('documents.view') }}" method="post" action="{{ route('documents.view') }}">
+                    {{-- The display modes of the folder view as an Umschalter (points 16, 98), symbol + text (PO 2026-11-16); too
+                         narrow, the framework makes it a dropdown (core/button-choice.js). The view belongs to this window (?view=…,
+                         point 52); app.js reloads only this window and saves the choice. --}}
+                    <form class="switcher" data-view-switch role="group" aria-label="{{ __('documents.view') }}" method="post" action="{{ route('documents.view') }}">
                         @csrf
                         <input type="hidden" name="back" value="{{ $back }}">
                         @foreach ($folderViews as $name)
-                            <button type="submit" name="view" value="{{ $name }}" aria-pressed="{{ $name === $view ? 'true' : 'false' }}" aria-label="{{ __('documents.views.'.$name) }}" data-tooltip="{{ __('documents.views.'.$name) }}"><x-icon :name="$views[$name]" /></button>
+                            <button type="submit" name="view" value="{{ $name }}" aria-pressed="{{ $name === $view ? 'true' : 'false' }}"><x-icon :name="$views[$name]" />{{ __('documents.views.'.$name) }}</button>
                         @endforeach
-                    </form>
-                    <form class="dropdown win-narrow-only" data-view-switch method="post" action="{{ route('documents.view') }}">
-                        @csrf
-                        <input type="hidden" name="back" value="{{ $back }}">
-                        <button type="button" class="icon-button" aria-label="{{ __('documents.view') }}: {{ __('documents.views.'.$view) }}" data-tooltip="{{ __('documents.view') }}" aria-haspopup="true" aria-expanded="false"><x-icon :name="$views[$view] ?? 'list'" /></button>
-                        <div class="dropdown-panel" role="menu" hidden>
-                            @foreach ($folderViews as $name)
-                                <button type="submit" name="view" value="{{ $name }}" class="menu-item" role="menuitemradio" aria-checked="{{ $name === $view ? 'true' : 'false' }}"><x-icon :name="$views[$name]" /><span>{{ __('documents.views.'.$name) }}</span></button>
-                            @endforeach
-                        </div>
                     </form>
                 @endif
                 @php
@@ -282,13 +273,13 @@
                             <label for="{{ $newText }}-name">{{ __('documents.name') }}</label>
                             <input id="{{ $newText }}-name" name="name" maxlength="250" required placeholder="{{ __('documents.text.name_placeholder') }}">
                         </div>
-                        <fieldset class="text-kinds">
+                        {{-- PO 2026-11-16: an Umschalter instead of radios; what each kind can goes in the hint below. --}}
+                        <fieldset>
                             <legend>{{ __('documents.text.kind') }}</legend>
-                            <label class="text-kind"><input type="radio" name="kind" value="plain" checked><span><strong>{{ __('documents.text.plain') }}</strong><small>{{ __('documents.text.plain_hint') }}</small></span></label>
-                            <label class="text-kind"><input type="radio" name="kind" value="rich"><span><strong>{{ __('documents.text.rich') }}</strong><small>{{ __('documents.text.rich_hint') }}</small></span></label>
+                            @include('documents._search-choice', ['name' => 'kind', 'value' => 'plain', 'options' => ['plain' => __('documents.text.plain'), 'rich' => __('documents.text.rich')], 'icons' => ['plain' => 'file-text', 'rich' => 'bold'], 'label' => __('documents.text.kind')])
+                            <p class="field-hint">{{ __('documents.text.plain') }}: {{ __('documents.text.plain_hint') }} · {{ __('documents.text.rich') }}: {{ __('documents.text.rich_hint') }}</p>
                         </fieldset>
                         <div class="dialog-actions">
-                            <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
                             <button type="submit">{{ __('documents.text.create') }}</button>
                         </div>
                     </form>
@@ -312,7 +303,7 @@
                             <span class="row-icon"><x-icon name="trash" /></span>
                             <span data-folder-name><strong><a href="{{ route('documents.trash') }}" data-window>{{ $trashName }}</a></strong><small>{{ trans_choice('folders.used', $trashed, ['count' => $trashed]) }}</small></span>
                             @if ($canEdit)
-                                <form class="folder-rename" method="post" action="{{ route('folders.trash') }}" data-folder-rename-form hidden>
+                                <form class="folder-rename edit-field" method="post" action="{{ route('folders.trash') }}" data-folder-rename-form hidden>
                                     @csrf
                                     <input class="input-small" name="name" value="{{ $trashName }}" maxlength="100" required aria-label="{{ __('folders.name') }}">
                                     <button type="submit" class="control-button" aria-label="{{ __('folders.save') }}" data-tooltip="{{ __('folders.save') }}"><x-icon name="check" /></button>
@@ -333,7 +324,7 @@
                             <span data-folder-name><strong><a href="{{ route('documents.index', ['folder' => $f->id]) }}" data-window>{{ $f->name }}</a></strong><x-row-stats :folders="$row['folders']" :documents="$row['documents']" :total="$row['total']" /></span>
                             @if ($canEdit)
                                 {{-- Rename in place (pencil or a long press on the name, A161, A188-A190); also "Dokumente allgemein" (A18). --}}
-                                <form class="folder-rename" method="post" action="{{ route('folders.update', $f->id) }}" data-folder-rename-form hidden>
+                                <form class="folder-rename edit-field" method="post" action="{{ route('folders.update', $f->id) }}" data-folder-rename-form hidden>
                                     @csrf
                                     <input type="hidden" name="parent_id" value="{{ $f->parent_id }}">
                                     @if ($f->bank_matching)<input type="hidden" name="bank_matching" value="1">@endif
@@ -355,7 +346,7 @@
             </ul>
         @endif
         @if (session('status'))
-            <p class="check-ok" role="status">{{ session('status') }}</p>
+            <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
         @endif
         @if ($errors->any())
             <p class="error" role="alert">{{ $errors->first() }}</p>
@@ -376,14 +367,14 @@
                 if (isset($period['to'])) { $chips[] = ['to', null, __('documents.adv.to').' '.\Carbon\Carbon::parse($period['to'])->format('d.m.Y')]; }
                 if ($match !== '') { $chips[] = ['match', null, __('documents.adv.match').': '.__('documents.adv.'.$match)]; }
                 if ($read !== '') { $chips[] = ['read', null, __('documents.adv.read').': '.__('documents.adv.'.$read)]; }
-                if ($type !== '') { $chips[] = ['type', null, $type === 'pdf' ? 'PDF' : __('documents.adv.image')]; }
+                if ($type !== '') { $chips[] = ['type', null, $type === 'pdf' ? __('documents.adv.pdf') : __('documents.adv.image')]; }
                 if ($noDate) { $chips[] = ['nodate', null, __('receipt_date.chip')]; }
                 foreach (\App\Domain\Properties\PropertySearch::chips($propFilters, $properties) as [$chipName, $chipLabel]) { $chips[] = [$chipName, null, $chipLabel]; }
             @endphp
             @if ($chips !== [])
                 <div class="filter-chips">
                     @foreach ($chips as [$name, $value, $label])
-                        <span class="filter-chip">{{ $label }}<button type="button" class="control-button" data-window-search-drop="{{ $name }}" @if ($value !== null) data-value="{{ $value }}" @endif aria-label="{{ __('documents.adv.remove', ['name' => $label]) }}"><x-icon name="x" /></button></span>
+                        <span class="filter-chip">{{ $label }}<button type="button" class="control-button" data-window-search-drop="{{ $name }}" @if ($value !== null) data-value="{{ $value }}" @endif aria-label="{{ __('documents.adv.remove', ['name' => $label]) }}" data-tooltip="{{ __('documents.adv.remove', ['name' => $label]) }}"><x-icon name="x" /></button></span>
                     @endforeach
                 </div>
             @endif

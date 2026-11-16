@@ -21,7 +21,7 @@
             }
         @endphp
         <li class="pick-row is-static @if ($row['installed']) is-marked @endif">
-            <x-icon :name="$preview ? 'git-pull-request' : 'cloud-download'" />
+            <span class="row-icon"><x-icon :name="$preview ? 'git-pull-request' : 'cloud-download'" /></span>
             <span><strong>{{ $row['label'] }}</strong><small>{{ $sub }}</small></span>
             @if ($row['installed'])
                 <span class="pill pill-ok">{{ __('updates.installed_badge') }}</span>

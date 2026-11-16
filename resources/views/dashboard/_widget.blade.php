@@ -10,7 +10,7 @@
     {{-- Point 192: no grip – the whole tool line drags (and takes the arrow keys when focused). --}}
     <div class="dash-tools dash-grip" data-dash-grip tabindex="0" aria-label="{{ __('dashboard.move') }}">
         <span class="dash-tools-name">{{ $name }}</span>
-        <span class="switcher" data-switch-static role="group" aria-label="{{ __('dashboard.size') }}">
+        <span class="switcher" role="group" aria-label="{{ __('dashboard.size') }}">
             @foreach (\App\Domain\Dashboard\DashboardLayout::SIZES as $size)
                 <button type="button" data-dash-size="{{ $size }}" aria-pressed="{{ $size === $widget['size'] ? 'true' : 'false' }}" aria-label="{{ __('dashboard.sizes.'.$size) }}" data-tooltip="{{ __('dashboard.sizes.'.$size) }}">{{ strtoupper($size) }}</button>
             @endforeach

@@ -13,11 +13,11 @@
         }
         const say = (text, ok) => {
             result.textContent = text;
-            result.classList.toggle('is-ok', ok);
-            result.classList.toggle('is-error', !ok);
+            result.classList.toggle('check-ok', ok);
+            result.classList.toggle('check-fail', !ok);
         };
         result.textContent = button.dataset.running;
-        result.classList.remove('is-ok', 'is-error');
+        result.classList.remove('check-ok', 'check-fail');
         button.disabled = true;
         fetch(button.dataset.url, { headers: { Authorization: field.value.trim(), Accept: 'application/json' }, credentials: 'omit' })
             .then(response => response.json().catch(() => ({})).then(body => {

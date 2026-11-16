@@ -30,7 +30,7 @@
                 @include('bank._add-account')
             @endif
             @if (session('status') && ! $account)
-                <p class="check-ok" role="status">{{ session('status') }}</p>
+                <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
             @endif
             <ul class="pick-list">
                 @forelse ($accounts as $entry)

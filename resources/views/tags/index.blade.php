@@ -23,22 +23,29 @@
 
 @if ($tag || request()->boolean('new') || session('status') || session('confirm_delete') || $errors->any())
 @section('page_title', $tag?->name ?? __('tags.new'))
+@if ($tag)
+    @section('page_rename', route('tags.update', $tag->id))
+@endif
 
 @section('page')
     @if (session('status'))
-        <p class="check-ok" role="status">{{ session('status') }}</p>
+        <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
     @endif
     @if ($errors->any())
         <p class="error" role="alert">{{ $errors->first() }}</p>
     @endif
     @if ($confirm = session('confirm_delete'))
-        <div class="notice" role="alert">
-            <p><strong>{{ trans_choice('tags.confirm_delete', $confirm['count'], ['name' => $confirm['name'], 'count' => $confirm['count']]) }}</strong></p>
-            <form method="post" action="{{ route('tags.destroy', $confirm['id']) }}">
-                @csrf
-                <input type="hidden" name="confirmed" value="1">
-                <button type="submit" class="button-danger">{{ __('tags.delete') }}</button>
-            </form>
+        {{-- Without JavaScript the first "Löschen" lands here: the same question as the dialog, shown at once. --}}
+        <div class="dialog-backdrop" data-dialog="delete-tag-confirm">
+            <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="delete-tag-confirm-title">
+                <h2 id="delete-tag-confirm-title">{{ __('tags.delete_title') }}</h2>
+                <p>{{ trans_choice('tags.confirm_delete', $confirm['count'], ['name' => $confirm['name'], 'count' => $confirm['count']]) }}</p>
+                <form class="dialog-actions" method="post" action="{{ route('tags.destroy', $confirm['id']) }}">
+                    @csrf
+                    <input type="hidden" name="confirmed" value="1">
+                    <button type="submit" class="button-danger">{{ __('tags.delete') }}</button>
+                </form>
+            </div>
         </div>
     @endif
 
@@ -60,7 +67,6 @@
                 <h2 id="delete-tag-title">{{ __('tags.delete_title') }}</h2>
                 <p>{{ __('tags.delete_text', ['name' => $tag->name]) }}</p>
                 <div class="dialog-actions">
-                    <button type="button" class="button-quiet" data-dialog-close>{{ __('tags.cancel') }}</button>
                     <form method="post" action="{{ route('tags.destroy', $tag->id) }}">
                         @csrf
                         <input type="hidden" name="confirmed" value="1">

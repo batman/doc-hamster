@@ -16,7 +16,7 @@
                     <input type="hidden" name="kind" value="business">
                     <span class="switcher" role="group" aria-label="{{ __('bank.kind') }}">
                         @foreach (\App\Domain\Banking\BankAccount::KINDS as $kindValue)
-                            <button type="button" data-value="{{ $kindValue }}" aria-pressed="{{ $kindValue === 'business' ? 'true' : 'false' }}">{{ __('bank.kinds.'.$kindValue) }}</button>
+                            <button type="button" data-value="{{ $kindValue }}" aria-pressed="{{ $kindValue === 'business' ? 'true' : 'false' }}"><x-icon :name="\App\Domain\Banking\BankAccount::KIND_ICONS[$kindValue]" />{{ __('bank.kinds.'.$kindValue) }}</button>
                         @endforeach
                     </span>
                 </span>
@@ -36,7 +36,6 @@
                 <input id="add-account-currency" name="currency" value="EUR" maxlength="3" required>
             </div>
             <div class="dialog-actions">
-                <button type="button" class="button-quiet" data-dialog-close>{{ __('bank.cancel') }}</button>
                 <button type="submit">{{ __('bank.create') }}</button>
             </div>
         </form>

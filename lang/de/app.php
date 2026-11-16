@@ -26,6 +26,8 @@ return [
         'list' => 'Liste',
         'tiles' => 'Kacheln',
     ],
+    // PO 2026-11-16: the framework's own words (core/toasts.js, core/dialogs.js).
+    'texts' => ['undo' => 'Rückgängig', 'cancel' => 'Abbrechen', 'close' => 'Schließen'],
     'window' => [
         'open' => 'Öffnen: :title',
         'remove' => ':title aus dem Verlauf entfernen',

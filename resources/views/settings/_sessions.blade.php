@@ -45,7 +45,6 @@
                 @csrf
                 <p>{{ __('devices.sessions.end_others_text') }}</p>
                 <div class="dialog-actions">
-                    <button type="button" class="button-quiet" data-dialog-close>{{ __('devices.cancel') }}</button>
                     <button type="submit" class="button-danger"><x-icon name="power" />{{ __('devices.sessions.end_others') }}</button>
                 </div>
             </form>

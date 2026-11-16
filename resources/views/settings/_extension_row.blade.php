@@ -2,7 +2,7 @@
 @php($ext = $row['ext'])
 @php($name = \App\Http\Controllers\ExtensionController::name($ext))
 <li class="pick-row is-static">
-    <x-icon :name="$row['installed'] ? 'circle-check' : 'language'" />
+    <span class="row-icon"><x-icon :name="$row['installed'] ? 'circle-check' : 'language'" /></span>
     <span>
         <strong>{{ $name }}</strong>
         <small>{{ \App\Http\Controllers\ExtensionController::text($ext) }} · {{ \App\Http\Controllers\ExtensionController::size($ext) }} · {{ __('extensions.version', ['version' => $row['version'] ?? $ext->version]) }}</small>
@@ -31,7 +31,7 @@
             </form>
         @endif
         @if ($row['installed'])
-            <button type="button" class="control-button" data-dialog-open="remove-extension-{{ $ext->key }}" aria-label="{{ __('extensions.remove') }}: {{ $name }}" data-tooltip="{{ __('extensions.remove') }}"><x-icon name="trash" /></button>
+            <button type="button" class="control-button control-danger" data-dialog-open="remove-extension-{{ $ext->key }}" aria-label="{{ __('extensions.remove') }}: {{ $name }}" data-tooltip="{{ __('extensions.remove') }}"><x-icon name="trash" /></button>
         @endif
     </span>
 </li>

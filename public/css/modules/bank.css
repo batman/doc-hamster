@@ -1,11 +1,9 @@
 /* Bank module (point 243, A437: moved from core/lists.css): the account window's filters and calendar, the
    "Dauerbeleg" line and the ticks above a booking's candidates. */
-/* The account window's filters (point 150): labels never wrap; when the groups do not fit, modules/bank.js marks the
-   window is-filters-tight and the dropdowns take their place (beside the narrow-window rule of windows.css). */
-.bank-filters { display: flex; align-items: center; gap: .4rem; min-width: 0; }
-.bank-filters .button { white-space: nowrap; }
-.win.is-filters-tight .bank-filters-wide { display: none; }
-.win.is-filters-tight .bank-filters-narrow { display: block; }
+/* The account window's filters (point 150): three Umschalter side by side, wrapping onto the next line when the window is
+   too narrow; only one that does not fit even a line of its own becomes the framework's dropdown (core/button-choice.js,
+   PO 2026-11-16). */
+.bank-filters { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; min-width: 0; }
 /* The account window as a calendar (159.2, A332–A334; on the .calendar block of Dokumente): a day head with the date, an
    orange dot while a booking lacks a document and the day's sum; then up to three bookings with their signed amount
    (green "+" in, text-colour "−" out, A309). The whole day is a link to the list of that day (A333). In a narrow window

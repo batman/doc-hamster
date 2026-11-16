@@ -39,8 +39,3 @@
 .rt-font-sans { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
 .rt-font-serif { font-family: Georgia, "Times New Roman", serif; }
 .rt-font-mono { font-family: ui-monospace, Consolas, "Courier New", monospace; }
-.text-kinds { display: grid; gap: .5rem; margin: 1rem 0 0; padding: 0; border: 0; }
-.text-kinds legend { padding: 0; font-size: .875rem; font-weight: 600; color: var(--primary-ink); }
-.text-kind { display: flex; align-items: flex-start; gap: .6rem; margin: 0; color: var(--text); cursor: pointer; }
-.text-kind span { display: grid; }
-.text-kind small { color: var(--muted); }

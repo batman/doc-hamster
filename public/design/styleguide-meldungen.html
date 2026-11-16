@@ -63,6 +63,10 @@
             <div class="dialog" role="dialog" aria-labelledby="sg-sudo-title-2"><button type="button" class="icon-button button-small dialog-x" aria-label="Schließen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></button><h2 id="sg-sudo-title-2">Bitte bestätigen</h2><p class="card-text">Diese Aktion ist geschützt. Bitte bestätigen Sie mit Ihrem Passwort. Danach fragt docHamster fünf Minuten lang nicht noch einmal.</p><form onsubmit="return false"><div class="field has-error"><label for="sg-sudo-password-2">Ihr Passwort</label><input id="sg-sudo-password-2" type="password" value="falsch" autocomplete="off"><p class="field-hint" role="alert">Das Passwort stimmt nicht.</p></div><div class="dialog-actions"><button type="submit"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6z"/><path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0"/><path d="M8 11v-4a4 4 0 1 1 8 0v4"/></svg>Bestätigen</button></div></form></div>
             </div>
 
+            <h3 class="sg-pad" id="progress">Fortschrittsbalken</h3>
+            <p class="sg-note"><code>&lt;progress&gt;</code>: grauer Grund, orange Füllung, runde Enden – ein Balken für alles (Update, Einrichtung der Texterkennung, Ordner-Import). Ein Dialog, der läuft, bekommt <code>is-progress</code> (kein X, solange er arbeitet).</p>
+            <div class="sg-pad" style="max-width: 26rem;"><progress value="62" max="100"></progress><p class="sg-note">Lade herunter … 62 %</p></div>
+
         </section>
 
         <section id="sg-meldungen" class="sg-section">

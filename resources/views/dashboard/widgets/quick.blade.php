@@ -7,7 +7,7 @@
         @foreach ($pins as $pin)
             @php $external = \App\Domain\Dashboard\DashboardLayout::isExternal($pin['url']); @endphp
             <li class="dash-tile-item">
-                <a class="dash-tile" href="{{ $pin['url'] }}" @if ($external) target="_blank" rel="noopener noreferrer" @else data-window @endif title="{{ $pin['title'] }}">
+                <a class="dash-tile" href="{{ $pin['url'] }}" @if ($external) target="_blank" rel="noopener noreferrer" @else data-window @endif data-tooltip="{{ $pin['title'] }}" data-tooltip-overflow>
                     <x-icon :name="$pin['icon']" /><span>{{ $pin['title'] }}</span>
                 </a>
                 <button type="button" class="control-button dash-tile-x dash-edit-only" data-dash-unpin="{{ $pin['url'] }}" aria-label="{{ __('dashboard.unpin') }}" data-tooltip="{{ __('dashboard.unpin') }}"><x-icon name="x" /></button>

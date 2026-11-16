@@ -5,7 +5,8 @@
     <p>{{ __('setup.wizard.finish_text') }}</p>
     <h2>{{ __('setup.wizard.cron_title') }}</h2>
     <p>{{ __('setup.wizard.cron_text') }}</p>
-    <p><code>{{ $cronCommand }}</code></p>
+    {{-- The framework's Kopierfeld: the command with its copy symbol inside. --}}
+    @include('settings._device-copy', ['id' => 'cron-command', 'label' => __('setup.wizard.cron_title'), 'value' => $cronCommand])
     <form method="post" action="{{ route('setup.finish.save') }}">
         @csrf
         @if ($needsOwner)

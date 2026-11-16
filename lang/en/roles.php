@@ -51,6 +51,8 @@ return [
     'until' => 'until :date',
     'accounts_count' => '{1} 1 account|[2,*] :count accounts',
     'folders_count' => '{1} 1 folder|[2,*] :count folders',
+    'status' => 'Status',
+    'active' => 'Active',
     'paused' => 'Paused',
     'paused_pill' => 'paused',
     'paused_hint' => 'Everyone with this role is signed out and can not sign in; uploads with device keys are refused.',

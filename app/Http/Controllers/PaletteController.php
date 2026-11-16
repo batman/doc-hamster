@@ -36,6 +36,8 @@ final class PaletteController
     public function update(Request $request, string $id): JsonResponse|RedirectResponse
     {
         $color = PaletteColor::query()->whereKey($id)->firstOrFail();
+        // PO 2026-11-16: the name (click-to-edit) and the colour (Farbkreis) save on their own – the other one stays.
+        $request->mergeIfMissing(['name' => $color->name, 'hex' => $color->hex]);
         $color->update($this->validated($request));
 
         if ($request->wantsJson()) {

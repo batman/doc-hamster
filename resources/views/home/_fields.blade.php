@@ -9,10 +9,10 @@
     <label for="body-{{ $key }}">{{ __('home.body') }}</label>
     <textarea id="body-{{ $key }}" class="note-new-text" name="body" rows="4"></textarea>
 @else
-    <p class="note-hint">{{ __('home.text_hint') }}</p>
+    <p class="field-hint">{{ __('home.text_hint') }}</p>
 @endif
 @else
-<p class="note-hint">{{ __('home.list_hint') }}</p>
+<p class="field-hint">{{ __('home.list_hint') }}</p>
 
 <label for="link-{{ $key }}">{{ __('home.link') }}</label>
 <input id="link-{{ $key }}" name="link" list="note-documents" autocomplete="off" placeholder="{{ __('home.link_hint') }}">

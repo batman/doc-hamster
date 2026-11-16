@@ -72,16 +72,20 @@ function isHttpsRequest(array $server): bool
 function page(string $title, string $body): void
 {
     echo '<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
-        .'<meta name="robots" content="noindex"><title>'.h($title).' – DocHamster</title><style>'
-        .':root{color-scheme:light dark;--p:#ff7622;--ink:#dd4000;--bg:#faf9f5;--sf:#f0eee6;--tx:#1f1e1d;--bd:#d9d6cc;--ok:#10a65b;--err:#ee1717}'
-        .'@media (prefers-color-scheme:dark){:root{--ink:#ff7622;--bg:#262624;--sf:#30302e;--tx:#f5f4ee;--bd:#4a4945;--ok:#68d391;--err:#fc8181}}'
+        .'<meta name="robots" content="noindex"><title>'.h($title).' – docHamster</title><style>'
+        .':root{color-scheme:light dark;--p:#ff7622;--ink:#dd4000;--bg:#faf9f5;--sf:#f0eee6;--tx:#1f1e1d;--bd:#d9d6cc;--ok:#10a65b;--err:#ee1717;--field:#fff}'
+        .'@media (prefers-color-scheme:dark){:root{--ink:#ff7622;--bg:#262624;--sf:#30302e;--tx:#f5f4ee;--bd:#4a4945;--ok:#68d391;--err:#fc8181;--field:#1f1f1d}}'
         .'*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}'
         .'header{display:flex;align-items:center;height:3.5rem;padding:0 1rem;background:#30302e;color:#faf9f5;font-weight:700}header small{margin-left:auto;font-weight:400;opacity:.8}'
         .'main{max-width:40rem;padding:1.5rem 2rem 3rem}a{color:var(--ink)}label{display:block;margin-top:1rem;font-weight:600;color:var(--p)}'
-        .'input{width:100%;max-width:32rem;min-height:48px;padding:.6rem .75rem;font:inherit;color:var(--tx);background:var(--bg);border:2px solid var(--p);border-radius:20px}'
-        .'input[type=checkbox]{width:auto;min-height:0;accent-color:var(--p)}label:has(input[type=checkbox]){color:var(--tx);font-weight:400}'
-        .'button,.button{display:inline-flex;align-items:center;min-height:48px;margin-top:1.5rem;padding:.7rem 1.4rem;border:0;border-radius:20px;background:var(--p);color:#fff;'
-        .'font:inherit;font-size:1.125rem;font-weight:600;letter-spacing:.07em;text-decoration:none;cursor:pointer}'
+        .'input{width:100%;max-width:32rem;min-height:40px;margin-top:.4rem;padding:0 .65rem;font:inherit;color:var(--tx);background:var(--field);border:1px solid var(--bd);border-radius:8px;outline:none}'
+        .'input:focus{border-color:rgb(255 118 34 / .7);box-shadow:0 0 0 3px rgb(255 118 34 / .28)}'
+        .'input[type=checkbox]{appearance:none;flex:none;display:inline-block;width:30px;height:30px;min-height:0;margin:0;padding:0;border:0;border-radius:7px;vertical-align:middle;cursor:pointer;background:var(--sf) url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23a8a59b%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M3 5a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2l0 -14%27/%3E%3C/svg%3E") center/18px no-repeat}'
+        .'input[type=checkbox]:checked{background-color:#fff;background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23ff7622%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M9 11l3 3l8 -8%27/%3E%3Cpath d=%27M20 12v6a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h9%27/%3E%3C/svg%3E");box-shadow:0 1px 3px rgb(60 40 20 / .18),0 4px 10px rgb(60 40 20 / .08)}'
+        .'label:has(input[type=checkbox]){display:flex;align-items:center;gap:.6rem;color:var(--tx);font-weight:400}'
+        .'button,.button{display:inline-flex;align-items:center;min-height:40px;margin-top:1.5rem;padding:0 1rem;border:0;border-radius:10px;background:var(--p);color:#fff;'
+        .'box-shadow:0 1px 0 rgb(0 0 0 / .12),0 2px 6px rgb(0 0 0 / .14);font:inherit;font-size:1rem;font-weight:600;letter-spacing:0;text-decoration:none;cursor:pointer}'
+        .'.row{display:flex;align-items:center;gap:.5rem;max-width:32rem;margin-top:.4rem}.row input{flex:1;min-width:0;margin:0}.row button{flex:none;margin:0}'
         .'.ok{color:var(--ok)}.fail{color:var(--err)}code{background:var(--sf);padding:.1rem .3rem;border-radius:4px;word-break:break-all}</style></head><body>'
         .'<header>docHamster<small>Installation · Version '.h(DH_INSTALLER_VERSION).'</small></header><main><h1>'.h($title).'</h1>'.$body.'</main></body></html>';
     exit;
@@ -172,7 +176,7 @@ function releaseFromManifest(mixed $manifest, string $phpVersion): array
         throw new RuntimeException('Die Beschreibung der neuesten Version ist nicht lesbar. Bitte später erneut versuchen.');
     }
     if (version_compare($phpVersion, (string) $manifest['php'], '<')) {
-        throw new RuntimeException('Keine passende DocHamster-Version für PHP '.$phpVersion.' gefunden.');
+        throw new RuntimeException('Keine passende docHamster-Version für PHP '.$phpVersion.' gefunden.');
     }
     $manifest['url'] = DH_DOWNLOADS.'/download/v'.rawurlencode($manifest['version']).'/'.rawurlencode($manifest['zip']);
 
@@ -615,7 +619,7 @@ if (! is_file($codeFile)) {
 $_SESSION['csrf'] = $_SESSION['csrf'] ?? bin2hex(random_bytes(16));
 $csrf = '<input type="hidden" name="csrf" value="'.h($_SESSION['csrf']).'">';
 $posted = $_SERVER['REQUEST_METHOD'] === 'POST' && hash_equals($_SESSION['csrf'], (string) ($_POST['csrf'] ?? ''));
-$httpsWarning = $https ? '' : '<p class="fail">Achtung: Diese Seite läuft ohne HTTPS. DocHamster braucht ein gültiges Zertifikat – bitte zuerst in der Verwaltung Ihres Webhosters HTTPS einschalten.</p>';
+$httpsWarning = $https ? '' : '<p class="fail">Achtung: Diese Seite läuft ohne HTTPS. docHamster braucht ein gültiges Zertifikat – bitte zuerst in der Verwaltung Ihres Webhosters HTTPS einschalten.</p>';
 
 // Step 1: prove access to the web space with the code from the file.
 if (empty($_SESSION['unlocked'])) {
@@ -638,7 +642,7 @@ if (empty($_SESSION['unlocked'])) {
         sleep(2);
     }
     page('Willkommen', $httpsWarning.'<p>Zuerst zeigen Sie, dass Ihnen dieser Webspace gehört. Öffnen Sie mit Ihrem FTP-Programm oder dem Dateimanager Ihres Webhosters diese Datei und tippen Sie den Code ein:</p>'
-        .'<p><code>'.h($codeFile).'</code></p>'.$error.'<form method="post">'.$csrf.'<input name="code" autocomplete="off" required autofocus><button>Weiter</button></form>');
+        .'<p><code>'.h($codeFile).'</code></p>'.$error.'<form method="post">'.$csrf.'<div class="row"><input name="code" autocomplete="off" required autofocus aria-label="Code"><button>Weiter</button></div></form>');
 }
 
 // Never touch the folder this script is served from.
@@ -691,20 +695,20 @@ if ($existing) {
         $blocked = '<p class="fail">Der Server erfüllt gerade nicht alle Voraussetzungen'.($release ? '' : ' oder die neue Version ist nicht erreichbar').'. Bitte laden Sie die Seite später neu.</p>'
             .($failed !== '' ? '<ul class="fail">'.$failed.'</ul>' : '');
         if (! $finished) {
-            page('Installation gefunden', '<p>In <code>'.h($appDir).'</code> liegt schon eine DocHamster-Kopie, deren Einrichtung nie abgeschlossen wurde.</p><p>Soll ich sie löschen und neu installieren?</p>'
+            page('Installation gefunden', '<p>In <code>'.h($appDir).'</code> liegt schon eine docHamster-Kopie, deren Einrichtung nie abgeschlossen wurde.</p><p>Soll ich sie löschen und neu installieren?</p>'
                 .($allOk ? '<form method="post">'.$csrf.'<input type="hidden" name="action" value="fresh"><button>Ja, überschreiben</button></form>' : $blocked));
         }
         $boxes = '';
         foreach (DH_WIPE_GROUPS as $key => $group) {
             $boxes .= '<p><label><input type="checkbox" name="wipe[]" value="'.h($key).'"> '.h($group['label']).'</label></p>';
         }
-        page('DocHamster ist bereits installiert', '<p>In <code>'.h($appDir).'</code> läuft DocHamster mit Ihren Daten.</p>'.$available.(! $allOk ? $blocked
+        page('docHamster ist bereits installiert', '<p>In <code>'.h($appDir).'</code> läuft docHamster mit Ihren Daten.</p>'.$available.(! $allOk ? $blocked
             : '<h2>Aktualisieren</h2><p>Alle Belege, Konten und Einstellungen bleiben erhalten.</p>'
             .'<form method="post">'.$csrf.'<input type="hidden" name="action" value="update"><button>Jetzt aktualisieren</button></form>'
             .'<h2>Neu installieren</h2><p>Das Programm wird frisch installiert. Die Zugangsdaten zur Datenbank bleiben immer erhalten.</p>'
             .'<p class="fail"><strong>Haken Sie an, was gelöscht werden soll.</strong> Das lässt sich nicht rückgängig machen. Alles ohne Haken bleibt erhalten.</p>'
             .'<form method="post">'.$csrf.'<input type="hidden" name="action" value="fresh">'.$boxes.'<label for="confirm">Tippen Sie zur Bestätigung LÖSCHEN ein:</label>'
-            .'<input id="confirm" name="confirm" autocomplete="off"><button>Neu installieren</button></form>'));
+            .'<div class="row"><input id="confirm" name="confirm" autocomplete="off"><button>Neu installieren</button></div></form>'));
     }
 
     @set_time_limit(300);
@@ -776,7 +780,7 @@ if ($existing) {
     session_destroy();
     $selfDeleted = is_file(__FILE__) ? ' <strong class="fail">install.php konnte sich nicht selbst löschen, bitte löschen Sie sie per FTP!</strong>' : '';
     if ($needsOwner) {
-        page('Fast fertig', '<p class="ok">DocHamster '.h($release['version']).' ist installiert.'.$selfDeleted.'</p><p>Jetzt legen Sie noch Ihr Inhaber-Konto an.</p>'
+        page('Fast fertig', '<p class="ok">docHamster '.h($release['version']).' ist installiert.'.$selfDeleted.'</p><p>Jetzt legen Sie noch Ihr Inhaber-Konto an.</p>'
             .'<a class="button" href="/setup?code='.rawurlencode($code).'">Weiter</a>');
     }
     reportProgress('done', 100, 'done');
@@ -785,7 +789,7 @@ if ($existing) {
         header('Location: /update?updated=1');
         exit;
     }
-    page($action === 'update' ? 'Aktualisiert' : 'Neu installiert', '<p class="ok">DocHamster ist jetzt auf Version '.h($release['version']).'.'.$selfDeleted.'</p><a class="button" href="/">Zu DocHamster</a>');
+    page($action === 'update' ? 'Aktualisiert' : 'Neu installiert', '<p class="ok">docHamster ist jetzt auf Version '.h($release['version']).'.'.$selfDeleted.'</p><a class="button" href="/">Zu docHamster</a>');
 }
 
 if (! $posted || ! isset($_POST['install'])) {
@@ -793,8 +797,8 @@ if (! $posted || ! isset($_POST['install'])) {
     foreach ($checks as $label => $ok) {
         $list .= '<li class="'.($ok ? 'ok' : 'fail').'">'.h($label).($ok ? ' ✔' : ' ✘').'</li>';
     }
-    $where = $outside ? '<p>DocHamster wird außerhalb des Webordners installiert (sicher), der Webordner bekommt nur den Einstieg. Dateien, die dort schon liegen und ersetzt werden, bleiben als <code>.bak-…</code> erhalten.</p>'
-        : '<p class="fail">Der Ordner über dem Webordner ist nicht beschreibbar. DocHamster wird in <code>'.h($appDir).'</code> installiert. Danach müssen Sie in der Verwaltung Ihres Webhosters den Dokumentenstamm (Zielverzeichnis der Domain) auf <code>'.h($appDir.'/public').'</code> setzen, bevor Sie die Einrichtung starten.</p>';
+    $where = $outside ? '<p>docHamster wird außerhalb des Webordners installiert (sicher), der Webordner bekommt nur den Einstieg. Dateien, die dort schon liegen und ersetzt werden, bleiben als <code>.bak-…</code> erhalten.</p>'
+        : '<p class="fail">Der Ordner über dem Webordner ist nicht beschreibbar. docHamster wird in <code>'.h($appDir).'</code> installiert. Danach müssen Sie in der Verwaltung Ihres Webhosters den Dokumentenstamm (Zielverzeichnis der Domain) auf <code>'.h($appDir.'/public').'</code> setzen, bevor Sie die Einrichtung starten.</p>';
     page('Server prüfen', '<ul>'.$list.'</ul>'.($release ? '<p>Passende Version: <strong>'.h($release['version']).'</strong> (ab PHP '.h($release['php']).')</p>'.$where : '')
         .($allOk ? '<form method="post">'.$csrf.'<input type="hidden" name="install" value="1"><button>Installieren</button></form>'
             : '<p class="fail">Bitte beheben Sie die rot markierten Punkte (meist in den PHP- bzw. SSL-Einstellungen Ihres Webhosters) und laden Sie die Seite neu.</p>'));
@@ -841,5 +845,5 @@ try {
 $next = $outside
     ? '<a class="button" href="/setup?code='.rawurlencode($code).'">Weiter zur Einrichtung</a>'
     : '<p class="fail">Setzen Sie jetzt in der Verwaltung Ihres Webhosters den Dokumentenstamm (Zielverzeichnis der Domain) auf <code>'.h($appDir.'/public').'</code>. Erst danach <code>/setup</code> öffnen – der Assistent zeigt Ihnen dann, wo sein Code liegt.</p>';
-page('Dateien installiert', '<p class="ok">DocHamster '.h($release['version']).' ist entpackt. install.php hat sich selbst gelöscht'
+page('Dateien installiert', '<p class="ok">docHamster '.h($release['version']).' ist entpackt. install.php hat sich selbst gelöscht'
     .(is_file(__FILE__) ? ' <strong class="fail">– das hat nicht geklappt, bitte löschen Sie install.php per FTP!</strong>' : '').'.</p>'.$next);

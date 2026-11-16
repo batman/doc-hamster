@@ -7,6 +7,6 @@
     <section class="card">
         <h2 class="card-head"><x-icon name="mail" />{{ __('inbox.mail_title') }}</h2>
         <p class="card-text">{{ __('inbox.mail_soon') }}</p>
-        <p class="card-text"><a href="{{ route('inbox.index', ['source' => 'mail']) }}">{{ __('inbox.title') }} → {{ __('inbox.sources.mail') }}</a></p>
+        <p class="card-text"><a href="{{ route('inbox.index', ['source' => 'mail']) }}" data-window>{{ __('inbox.title') }} → {{ __('inbox.sources.mail') }}</a></p>
     </section>
 @endsection

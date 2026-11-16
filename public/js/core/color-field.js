@@ -155,6 +155,31 @@
             });
         });
     });
-    document.addEventListener('DOMContentLoaded', () => setupColorField(document));
-    window.DocHamster?.on?.('window:open', setupColorField);
+    // Farbkreis (<x-color-swatch>): one colour in a hidden field; the circle shows it and opens the same dialog.
+    const paintSwatches = root => root?.querySelectorAll?.('[data-color-swatch]').forEach(wrap => {
+        const value = wrap.querySelector('input[type="hidden"]')?.value;
+        if (value) wrap.querySelector('.color-swatch')?.style.setProperty('--tag', value);
+    });
+    document.addEventListener('click', event => {
+        const swatch = event.target.closest?.('[data-color-swatch] .color-swatch');
+        if (!swatch) return;
+        const wrap = swatch.closest('[data-color-swatch]');
+        const input = wrap.querySelector('input[type="hidden"]');
+        openDialog(wrap, input?.value ?? '', value => {
+            if (!input) return;
+            input.value = value;
+            swatch.style.setProperty('--tag', value);
+            swatch.setAttribute('aria-label', `${wrap.dataset.colorTitle ?? ''}: ${value}`);
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        setupColorField(document);
+        paintSwatches(document);
+    });
+    window.DocHamster?.on?.('window:open', root => {
+        setupColorField(root);
+        paintSwatches(root);
+    });
 })();

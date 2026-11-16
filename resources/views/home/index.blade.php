@@ -40,7 +40,6 @@
                     <label class="note-lock-choice"><input type="checkbox" name="locked" value="1"> {{ __('home.locked') }}</label>
                 </details>
                 <div class="dialog-actions">
-                    <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
                     <button type="submit">{{ __('home.save') }}</button>
                 </div>
             </form>
@@ -129,7 +128,6 @@
                             @csrf
                             <x-color-picker :name="$field" :value="$value" :allow-none="$none" :key="$field.'-'.$column->id" :legend="$column->name" />
                             <div class="dialog-actions">
-                                <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
                                 <button type="submit">{{ __('home.save') }}</button>
                             </div>
                         </form>
@@ -143,7 +141,6 @@
                     <h2 id="delete-column-{{ $column->id }}-title">{{ __('home.column_delete_title', ['name' => $column->name]) }}</h2>
                     <p>{{ __('home.column_delete_hint') }}</p>
                     <div class="dialog-actions">
-                        <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
                         <form method="post" action="{{ route('notes.columns.destroy', $column->id) }}">
                             @csrf
                             <button type="submit" class="button-danger">{{ __('home.column_delete') }}</button>
@@ -173,7 +170,6 @@
                             <label class="note-lock-choice"><input type="checkbox" name="locked" value="1" @checked($note->locked) data-note-lock> {{ __('home.locked') }}</label>
                         </details>
                         <div class="dialog-actions">
-                            <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
                             <button type="submit">{{ __('home.save') }}</button>
                         </div>
                     </form>
@@ -184,7 +180,6 @@
                 <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="delete-note-{{ $note->id }}-title">
                     <h2 id="delete-note-{{ $note->id }}-title">{{ __('home.delete_title') }}</h2>
                     <div class="dialog-actions">
-                        <button type="button" class="button-quiet" data-dialog-close>{{ __('documents.cancel') }}</button>
                         <form method="post" action="{{ route('notes.destroy', $note->id) }}">
                             @csrf
                             <button type="submit" class="button-danger">{{ __('home.delete') }}</button>

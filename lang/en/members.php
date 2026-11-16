@@ -24,6 +24,8 @@ return [
     'new_password' => 'Make a new one-time password',
     'new_password_title' => 'New one-time password?',
     'new_password_text' => ':name is signed out at once and needs the new password, then sets an own one at the next sign-in.',
+    'status' => 'Status',
+    'active' => 'Active',
     'paused' => 'Paused',
     'paused_pill' => 'paused',
     'paused_hint' => 'Signed out, no sign-in and no uploads with device keys until you end the pause.',

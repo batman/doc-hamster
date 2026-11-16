@@ -29,8 +29,17 @@
         <h2 class="card-head"><x-icon name="settings" />{{ __('optimize.settings') }}</h2>
         <form method="post" action="{{ route('optimize.save') }}" data-autosave>
             @csrf
-            <input type="hidden" name="on" value="0">
-            <label class="switch"><input type="checkbox" role="switch" name="on" value="1" @checked($settings['on'])> {{ __('optimize.on') }}</label>
+            {{-- PO 2026-11-16: an Umschalter instead of the toggle switch. --}}
+            <fieldset>
+                <legend>{{ __('optimize.state') }}</legend>
+                <span class="button-choice" data-choice>
+                    <input type="hidden" name="on" value="{{ $settings['on'] ? '1' : '0' }}">
+                    <span class="switcher" role="group" aria-label="{{ __('optimize.state') }}">
+                        <button type="button" data-value="1" aria-pressed="{{ $settings['on'] ? 'true' : 'false' }}">{{ __('optimize.state_on') }}</button>
+                        <button type="button" data-value="0" aria-pressed="{{ $settings['on'] ? 'false' : 'true' }}">{{ __('optimize.state_off') }}</button>
+                    </span>
+                </span>
+            </fieldset>
 
             <div class="field">
                 <label for="optimize-mb">{{ __('optimize.mb') }}</label>
