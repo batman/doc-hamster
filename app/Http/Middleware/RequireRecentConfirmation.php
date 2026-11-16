@@ -30,6 +30,7 @@ final class RequireRecentConfirmation
         'members.store', 'members.reset', 'members.revoke', 'members.role', 'members.access', 'members.pause',
         'devices.store', 'devices.rekey', 'devices.destroy',
         'sessions.end', 'sessions.others',
+        'access-keys.store', 'access-keys.destroy',
         'updates.install', 'updates.install-main', 'updates.install-preview',
     ];
 

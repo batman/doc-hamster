@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 use App\Domain\Log\LogEntry;
 use App\Http\CardFolds;
+use App\Http\Controllers\Api\BankApiController;
+use App\Http\Controllers\Api\DocumentApiController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\PrinterApiController;
 use App\Http\Controllers\UploadApiController;
 use App\Http\MenuViews;
+use App\Http\Middleware\AuthenticateAccessKey;
 use App\Http\Middleware\ForgetBadgesOnChange;
 use App\Http\Middleware\RedirectToSetup;
 use App\Http\Middleware\RequireRecentConfirmation;
@@ -43,6 +46,22 @@ return Application::configure(basePath: dirname(__DIR__))
             Route::post('api/upload', UploadApiController::class)->middleware('throttle:120,1')->name('api.upload');
             // Point 201.5: "Verbindung testen" – the same key check, nothing is stored.
             Route::get('api/upload', [UploadApiController::class, 'check'])->middleware('throttle:30,1')->name('api.upload.check');
+
+            // D-040: the interface for programs and assistants – a person's access key (Mein Konto → Zugangsschlüssel),
+            // no session. Reading bookings and documents; linking only with a "Lesen + Verknüpfen" key. Never deletes.
+            Route::prefix('api/v1')->name('api.v1.')->middleware(['throttle:api-key', AuthenticateAccessKey::ALIAS])->group(function (): void {
+                Route::get('/', [BankApiController::class, 'me'])->name('me');
+                Route::get('accounts', [BankApiController::class, 'accounts'])->name('accounts');
+                Route::get('transactions', [BankApiController::class, 'transactions'])->name('transactions');
+                Route::get('transactions/{id}', [BankApiController::class, 'transaction'])->name('transaction');
+                Route::post('transactions/{id}/link', [BankApiController::class, 'link'])->name('link');
+                Route::post('transactions/{id}/unlink', [BankApiController::class, 'unlink'])->name('unlink');
+                Route::post('transactions/{id}/confirm', [BankApiController::class, 'confirm'])->name('confirm');
+                Route::post('transactions/{id}/reject', [BankApiController::class, 'reject'])->name('reject');
+                Route::get('folders', [DocumentApiController::class, 'folders'])->name('folders');
+                Route::get('documents', [DocumentApiController::class, 'documents'])->name('documents');
+                Route::get('documents/{id}', [DocumentApiController::class, 'document'])->name('document');
+            });
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -58,6 +77,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'org' => ResolveCurrentOrg::class,
             'api.same-origin' => RequireSameOriginApi::class,
+            AuthenticateAccessKey::ALIAS => AuthenticateAccessKey::class,
             RequireRecentConfirmation::ALIAS => RequireRecentConfirmation::class,
         ]);
     })

@@ -300,6 +300,13 @@ Short entries for product decisions that were taken while building and were not 
 - **Decision:** an optional built-in module, off after install. Switched on, it shrinks photos and pure scan PDFs (every page one JPEG picture, no fonts) to 300 dpi, JPEG quality 80, gray pages gray, when the average size per page is over the threshold (default 2 MB) and the result is at least 30 % smaller. Born-digital PDFs, PDFs with embedded files (ZUGFeRD / XRechnung / Factur-X), signed, encrypted or edited PDFs are never changed. The optimised document keeps its id, tags, properties, bank links and text; the original becomes a document of its own (`original_of`) – in the Papierkorb (default, purged with it) or in an archive folder ("Originale"); it never takes part in matching or invoice reading.
 - **Reason:** big scans fill the server; nothing that carries legal meaning in the file itself (e-invoice data, signatures) may change.
 
+### D-040 · An interface with access keys in the core; the assistant adapter (MCP) in its own repo — Owner: PO (F1–F3, 2026-11-16)
+- **Status:** decided and built (2026-11-16)
+- **Decision:** docHamster works completely without any AI assistant (D-019 stays). For the heavy work of sorting many documents an assistant may help – through a door the user opens on purpose:
+  - **Core:** a plain, AI-neutral interface `api/v1` (bookings, documents with their recognised text and properties, folders; link, unlink, confirm, reject). It opens only with a person's **Zugangsschlüssel** (Mein Konto; making and removing need a fresh confirmation, shown once, only the SHA-256 stored, revocable). The key acts as that person – rights, role restriction, own organisation only – limited further by its scope: **"Nur lesen"** or **"Lesen + Verknüpfen"**; it never deletes. Text only: no scans or files leave the server this way. Every change is in the audit log and the Log "(über die Schnittstelle)"; 300 requests a minute per key.
+  - **Adapter:** the MCP translation is a separate small program in its own repo (`DocHamster-mcp`, MIT, no dependencies) that runs on the user's computer next to the assistant and talks to `api/v1`. The server never knows about AI, and no code-module installer is needed.
+- **Reason:** the server stays AI-free and the interface also serves scripts and other programs; whoever wants no assistant never installs the adapter and creates no key.
+
 ## Decide before the relevant phase
 
 | ID | Topic | Owner | Needed by | Status | Input |

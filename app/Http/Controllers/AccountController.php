@@ -87,6 +87,7 @@ final class AccountController
             'user' => $user,
             'forced' => $forced,
             'sessions' => SessionSettingsController::rows($request, $org->membership()->user_id),
+            ...AccessKeyController::pageData($request, $org->membership()->user_id),
         ]);
     }
 

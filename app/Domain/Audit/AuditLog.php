@@ -44,7 +44,7 @@ final readonly class AuditLog
         $subjectKey = $subject?->getKey();
 
         // Point 115: the readable logbook gets the same event (the audit trail itself stays append-only).
-        self::toLog($action, $orgId, $userId, $subject);
+        self::toLog($action, $orgId, $userId, $subject, ($meta['via'] ?? null) === 'api');
 
         return AuditLogEntry::create([
             'org_id' => $orgId,
@@ -59,13 +59,17 @@ final readonly class AuditLog
     }
 
     /** One line for Einstellungen → Log: "Dokument hochgeladen: Tankquittung.pdf"; updates go to their own logbook. */
-    private static function toLog(string $action, ?string $orgId, ?string $userId, ?Model $subject): void
+    private static function toLog(string $action, ?string $orgId, ?string $userId, ?Model $subject, bool $viaApi = false): void
     {
         $key = 'log.actions.'.$action;
         $text = Lang::has($key) ? (string) __($key) : $action;
         $name = $subject?->getAttribute('title') ?? $subject?->getAttribute('name');
         if (is_string($name) && $name !== '') {
             $text .= ': '.$name;
+        }
+        // D-040: what an access key did says so.
+        if ($viaApi) {
+            $text .= ' '.__('log.via_api');
         }
         $document = $subject instanceof Document ? $subject->getKey() : null;
         LogEntry::write(str_starts_with($action, 'update.') ? 'updates' : 'general', 'event', $text, $action, $orgId, $userId, is_string($document) ? $document : null);

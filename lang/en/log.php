@@ -53,7 +53,8 @@ return [
             'trash_emptied' => 'Bin emptied', 'trash_unemptied' => 'Emptying undone', 'trash_swept' => 'Bin cleaned up',
         ],
         'folder' => ['deleted' => 'Folder deleted', 'imported' => 'Folder imported', 'trash_changed' => 'Bin changed'],
-        'bank' => ['imported' => 'Statement imported', 'matched' => 'Transaction matched', 'confirmed' => 'Match confirmed', 'unmatched' => 'Match removed', 'account_deleted' => 'Account deleted'],
+        'bank' => ['imported' => 'Statement imported', 'matched' => 'Transaction matched', 'confirmed' => 'Match confirmed', 'unmatched' => 'Match removed', 'rejected' => 'Suggestion rejected', 'account_deleted' => 'Account deleted'],
+        'api' => ['key_created' => 'Access key added', 'key_revoked' => 'Access key removed'],
         'export' => ['created' => 'Export created'],
         'backup' => ['started' => 'Backup started', 'downloaded' => 'Backup downloaded'],
         'printer' => ['paired' => 'Printer paired', 'revoked' => 'Printer removed', 'setup_started' => 'Printer set-up started'],
@@ -61,6 +62,7 @@ return [
         'pack' => ['created' => 'Receipt pack created', 'downloaded' => 'Receipt pack downloaded', 'document_added' => 'Added to the receipt pack', 'document_removed' => 'Removed from the receipt pack'],
     ],
     'new' => 'New',
+    'via_api' => '(through the interface)',
     // Point 207: one line per organisation when the daily Papierkorb job deleted something.
     'trash_swept' => 'Bin cleaned up: :undo deleted for good after the undo period, :kept after :days days in the bin',
 ];

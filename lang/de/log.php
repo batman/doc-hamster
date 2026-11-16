@@ -56,7 +56,8 @@ return [
             'trash_emptied' => 'Papierkorb geleert', 'trash_unemptied' => 'Leerung rückgängig gemacht', 'trash_swept' => 'Papierkorb aufgeräumt',
         ],
         'folder' => ['deleted' => 'Ordner gelöscht', 'imported' => 'Ordner importiert', 'trash_changed' => 'Papierkorb geändert'],
-        'bank' => ['imported' => 'Kontoauszug importiert', 'matched' => 'Buchung zugeordnet', 'confirmed' => 'Zuordnung bestätigt', 'unmatched' => 'Zuordnung gelöst', 'account_deleted' => 'Konto gelöscht'],
+        'bank' => ['imported' => 'Kontoauszug importiert', 'matched' => 'Buchung zugeordnet', 'confirmed' => 'Zuordnung bestätigt', 'unmatched' => 'Zuordnung gelöst', 'rejected' => 'Vorschlag verworfen', 'account_deleted' => 'Konto gelöscht'],
+        'api' => ['key_created' => 'Zugangsschlüssel angelegt', 'key_revoked' => 'Zugangsschlüssel entfernt'],
         'export' => ['created' => 'Export erstellt'],
         'backup' => ['started' => 'Backup gestartet', 'downloaded' => 'Backup heruntergeladen'],
         'printer' => ['paired' => 'Drucker verbunden', 'revoked' => 'Drucker getrennt', 'setup_started' => 'Drucker-Einrichtung gestartet'],
@@ -64,6 +65,7 @@ return [
         'pack' => ['created' => 'Belegpaket erstellt', 'downloaded' => 'Belegpaket heruntergeladen', 'document_added' => 'Ins Belegpaket aufgenommen', 'document_removed' => 'Aus dem Belegpaket genommen'],
     ],
     'new' => 'Neu',
+    'via_api' => '(über die Schnittstelle)',
     // Point 207: one line per organisation when the daily Papierkorb job deleted something.
     'trash_swept' => 'Papierkorb aufgeräumt: :undo nach Ablauf der Rückgängig-Frist, :kept nach :days Tagen im Papierkorb endgültig gelöscht',
 ];

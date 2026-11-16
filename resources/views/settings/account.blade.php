@@ -1,5 +1,5 @@
 {{-- Einstellungen → Mein Konto (point 222): the person's own name (click to edit, saves at once), password and the
-     card "Angemeldete Geräte". After a sign-in with a one-time password ($forced) the password card opens in that mode. --}}
+     card "Angemeldete Geräte" and the Zugangsschlüssel for the interface (D-040). After a sign-in with a one-time password ($forced) the password card opens in that mode. --}}
 @extends('layouts.settings')
 
 @section('title', __('account.title'))
@@ -49,4 +49,6 @@
     </x-fold-card>
 
     @include('settings._sessions')
+
+    @include('settings._access-keys')
 @endsection

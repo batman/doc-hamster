@@ -114,6 +114,9 @@ class AppServiceProvider extends ServiceProvider
         });
         RateLimiter::for('pairing', static fn (Request $request): Limit => Limit::perMinute(10)
             ->by('pairing:'.app(IpHasher::class)->hash((string) $request->ip())));
+        // D-040: the interface, per access key (hashed) – enough for an assistant working through a backlog.
+        RateLimiter::for('api-key', static fn (Request $request): Limit => Limit::perMinute(300)
+            ->by('api-key:'.hash('sha256', (string) ($request->bearerToken() ?? app(IpHasher::class)->hash((string) $request->ip())))));
         RateLimiter::for('setup', static fn (Request $request): Limit => Limit::perMinute(5)
             ->by('setup:'.app(IpHasher::class)->hash((string) $request->ip())));
 

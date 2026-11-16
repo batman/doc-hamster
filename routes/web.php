@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\AccessKeyController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
@@ -216,6 +217,9 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         // Point 208: Angemeldete Geräte – end one sign-in or all others (the person's own sessions only).
         Route::post('sessions/others', [SessionSettingsController::class, 'destroyOthers'])->middleware('throttle:10,1')->name('sessions.others');
         Route::post('sessions/{id}/end', [SessionSettingsController::class, 'destroy'])->name('sessions.end');
+        // D-040: Zugangsschlüssel for the interface (api/v1) – the person's own keys.
+        Route::post('keys', [AccessKeyController::class, 'store'])->middleware('throttle:10,1')->name('access-keys.store');
+        Route::post('keys/{id}/delete', [AccessKeyController::class, 'destroy'])->name('access-keys.destroy');
     });
 
     // "Teilen → DocHamster" (points 151, A328): the service worker keeps the share, this page sends it (also after login).
