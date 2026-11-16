@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#30302e">
+<title>Formulare – docHamster Styleguide</title>
+    <link rel="stylesheet" href="../css/core/base.css">
+    <link rel="stylesheet" href="../css/core/layout.css">
+    <link rel="stylesheet" href="../css/core/forms.css">
+    <link rel="stylesheet" href="../css/core/components.css">
+    <link rel="stylesheet" href="../css/core/buttons.css">
+    <link rel="stylesheet" href="../css/core/menus.css">
+    <link rel="stylesheet" href="../css/core/lists.css">
+    <link rel="stylesheet" href="../css/core/windows.css">
+    <link rel="stylesheet" href="../css/core/menu-window.css">
+    <link rel="stylesheet" href="../css/core/pane-edge.css">
+    <link rel="stylesheet" href="../css/modules/bank.css">
+    <link rel="stylesheet" href="../css/modules/documents.css">
+    <link rel="stylesheet" href="../css/modules/notes.css">
+    <link rel="stylesheet" href="../css/modules/text-editor.css">
+    <link rel="stylesheet" href="../css/modules/ocr.css">
+    <link rel="stylesheet" href="../css/modules/log.css">
+    <link rel="stylesheet" href="../css/modules/updates.css">
+    <link rel="stylesheet" href="../css/modules/palette.css">
+    <link rel="stylesheet" href="../css/modules/pages.css">
+    <link rel="stylesheet" href="../css/modules/properties.css">
+    <link rel="stylesheet" href="../css/modules/ocr-text.css">
+    <link rel="stylesheet" href="../css/modules/girocode.css">
+    <link rel="stylesheet" href="../css/modules/dnd.css">
+    <link rel="stylesheet" href="../css/modules/doc-fullscreen.css">
+    <link rel="stylesheet" href="../css/modules/dashboard.css">
+    <link rel="stylesheet" href="../css/core/layout-debug.css">
+    <link rel="stylesheet" href="styleguide.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Zum Inhalt springen</a>
+<div class="shell">
+<aside class="side side-plain"><header class="site-header"><a class="brand" href="styleguide.html"><img src="../img/logo.png" alt="docHamster" width="476" height="186"></a></header></aside>
+<div class="content">
+<main id="main" class="page sg-main">
+        <nav class="sg-pages" aria-label="Styleguide"><a href="styleguide.html">Übersicht</a><a href="styleguide-grundlagen.html">Grundlagen</a><a href="styleguide-aktionen.html">Aktionen</a><a href="styleguide-formulare.html" aria-current="page">Formulare</a><a href="styleguide-meldungen.html">Meldungen und Dialoge</a><a href="styleguide-listen.html">Listen und Daten</a><a href="styleguide-fenster.html">Fenster und Layout</a><a href="styleguide-dokumente.html">Dokument-Bausteine</a><a href="styleguide-seiten.html">Ganze Seiten</a></nav>
+        <h1>Formulare</h1>
+        <p class="sg-note">Felder, Auswahl, Bearbeiten an Ort und Stelle, Hochladen. Regeln: <code>docs/design/framework/formulare.md</code>.</p>
+        <section class="sg-section">
+            <h3 class="sg-pad" id="option-cards">Optionskarten</h3>
+            <p class="sg-note">Die <strong>senkrechte</strong> Standard-Auswahl (Punkt 188.1, Quelle: Einstellungen → Geschwindigkeit): graue Zeilen mit Titel und Beschreibung, die gewählte weiß mit leichtem Schatten (markierter Look) und oranger Haken. <code>&lt;fieldset class="pick-list option-cards"&gt;</code> mit <code>&lt;label class="pick-row"&gt;</code> (verstecktes Radio, <code>&lt;strong&gt;</code> + <code>&lt;small&gt;</code>, <code>.pick-mark</code>).</p>
+            <form onsubmit="return false" style="max-width: 32rem;">
+                <fieldset class="pick-list option-cards">
+                    <legend>Vorladen</legend>
+                    <label class="pick-row"><input type="radio" class="visually-hidden" name="sg-prefetch" checked><span><strong>Beim Zeigen</strong><small>Lädt ein Fenster, sobald die Maus darauf zeigt.</small></span><span class="pick-mark"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5l10 -10"/></svg></span></label>
+                    <label class="pick-row"><input type="radio" class="visually-hidden" name="sg-prefetch"><span><strong>Nie</strong><small>Lädt erst beim Klick.</small></span><span class="pick-mark"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5l10 -10"/></svg></span></label>
+                </fieldset>
+            </form>
+
+            <h3 id="sg-formularfelder" class="sg-pad">Formularfelder</h3>
+            <div style="max-width: 26rem;">
+                <div class="field"><label for="sg-user">Benutzername</label><input id="sg-user" value="max.mustermann" autocomplete="off"></div>
+                <div class="field"><label for="sg-pass">Passwort</label><input id="sg-pass" type="password" value="geheimgeheim" autocomplete="off"></div>
+                <div class="field"><label for="sg-kind">Art</label><select id="sg-kind"><option>Quittung</option><option>Rechnung</option></select></div>
+                <div class="field"><label for="sg-note">Notiz</label><textarea id="sg-note" placeholder="Notiz zu diesem Dokument"></textarea></div>
+                <div class="field"><input id="sg-find" class="input-small" type="search" placeholder="Suchen" aria-label="Suchen"></div>
+                <fieldset><legend>Tags</legend><div class="tags"><span class="tag">Quittung</span> <span class="tag">Rechnung</span></div></fieldset>
+                <div class="field has-error"><label for="sg-mail">E-Mail</label><input id="sg-mail" value="max@" aria-invalid="true"><p class="field-hint">Bitte eine vollständige Adresse eingeben.</p></div>
+                <button type="button" style="margin-top: 1.5rem;">Anmelden</button>
+            </div>
+
+            <h3 class="sg-pad" id="field-addon">Feld mit Symbol</h3>
+            <p class="sg-note">Baustein <code>.field-addon</code> (A195–A199): Symbol oder Text vorn, Knopf im Feld hinten (✓ speichern, X leeren, Auge), Zustand grün/rot. Gleiche Höhe wie Felder (48 px, klein 40 px).</p>
+            <div style="max-width: 26rem;">
+                <div class="field"><label for="sg-fa-mail">E-Mail</label><div class="field-addon"><span class="addon-lead" aria-hidden="true"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M16 12v1.5a2.5 2.5 0 0 0 5 0v-1.5a9 9 0 1 0 -5.5 8.28"/></svg></span><input id="sg-fa-mail" value="max@example.com" autocomplete="off"></div></div>
+                <div class="field"><label for="sg-fa-sum">Betrag</label><div class="field-addon"><span class="addon-lead" aria-hidden="true">€</span><input id="sg-fa-sum" value="42,10" inputmode="decimal" autocomplete="off"></div></div>
+                <div class="field"><label for="sg-fa-name">Name (geändert, noch nicht gespeichert)</label><div class="field-addon"><input id="sg-fa-name" value="Reisekosten 2026" autocomplete="off"><span class="addon-end"><button type="button" class="control-button addon-button" aria-label="Speichern" data-tooltip="Speichern"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">  <path d="M5 12l5 5l10 -10"/></svg></button></span></div></div>
+                <div class="field"><label for="sg-fa-find">Suche mit Leeren</label><div class="field-addon"><span class="addon-lead" aria-hidden="true"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">  <path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg></span><input id="sg-fa-find" value="Tankstelle" autocomplete="off"><span class="addon-end"><button type="button" class="control-button addon-button" aria-label="Leeren" data-tooltip="Leeren"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></button></span></div></div>
+                <div class="field"><label for="sg-fa-pass">Passwort</label><div class="field-addon"><input id="sg-fa-pass" type="password" value="geheimgeheim" autocomplete="off"><span class="addon-end"><button type="button" class="control-button addon-button" aria-pressed="false" aria-label="Passwort anzeigen" data-tooltip="Passwort anzeigen"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"/><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"/></svg><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.585 10.587a2 2 0 0 0 2.829 2.828"/><path d="M16.681 16.673a8.717 8.717 0 0 1 -4.681 1.327c-3.6 0 -6.6 -2 -9 -6c1.272 -2.12 2.712 -3.678 4.32 -4.674m2.86 -1.146a9.055 9.055 0 0 1 1.82 -.18c3.6 0 6.6 2 9 6c-.666 1.11 -1.379 2.067 -2.138 2.87"/><path d="M3 3l18 18"/></svg></button></span></div></div>
+                <div class="field"><label for="sg-fa-ok">Benutzername (frei)</label><div class="field-addon is-ok"><input id="sg-fa-ok" value="max.mustermann" autocomplete="off"><span class="addon-end"><span class="addon-state" role="img" aria-label="In Ordnung"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">  <path d="M5 12l5 5l10 -10"/></svg></span></span></div></div>
+                <div class="field has-error"><label for="sg-fa-err">Ordnername</label><div class="field-addon is-error"><input id="sg-fa-err" value="Reisen" aria-invalid="true" autocomplete="off"><span class="addon-end"><span class="addon-state" role="img" aria-label="Fehler"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg></span><button type="button" class="control-button addon-button" aria-label="Speichern" data-tooltip="Speichern"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">  <path d="M5 12l5 5l10 -10"/></svg></button></span></div><p class="field-hint">Diesen Namen gibt es hier schon.</p></div>
+                <div class="field"><div class="field-addon"><span class="addon-lead" aria-hidden="true"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">  <path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg></span><input class="input-small" type="search" value="Hotel" aria-label="Suchen" autocomplete="off"><span class="addon-end"><button type="button" class="control-button addon-button" aria-label="Leeren" data-tooltip="Leeren"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></button></span></div></div>
+            </div>
+
+            <h3 class="sg-pad" id="copy-field">Kopierfeld</h3>
+            <p class="sg-note">Baustein <code>.field-addon.is-copy</code> (Punkte 152, A329): ein fester Wert (Schlüssel, Adresse) zum Kopieren, Schrift gleich breit; das Symbol im Feld kopiert (<code>data-copy</code>) und meldet „Kopiert.“ als Toast. Ein Schlüssel, der nur einmal sichtbar ist, steht mit Hinweis in einer Karte.</p>
+            <div style="max-width: 26rem;">
+                <div class="field"><label for="sg-copy-key">Schlüssel</label><div class="field-addon is-copy"><input id="sg-copy-key" value="dhk_0000000000000000000000000000000000000000" readonly><span class="addon-end"><button type="button" class="control-button addon-button" data-copy="sg-copy-key" data-copied="Kopiert." aria-label="Kopieren" data-tooltip="Kopieren"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667l0 -8.666"/><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1"/></svg></button></span></div></div>
+            </div>
+
+            <h3 class="sg-pad" id="expand-plus">Aufklapp-Plus</h3>
+            <p class="sg-note">Baustein <code>.expand-plus</code> (Punkt 178, A354): ein kleiner Plus-Knopf, der sich beim Darüberfahren, beim Fokus oder Antippen zu einem Namensfeld mit ✓ aufklappt. Enter oder ✓ legt an, Esc bricht ab, leer klappt es wieder zu; mit Text oder Fokus bleibt es offen. Breite offen: <code>--expand-plus-width</code>. Z. B. „Neue Spalte“ in den Notizen, später „+ Tag“.</p>
+            <div class="sg-pad" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                <form class="expand-plus" data-expand-plus onsubmit="return false"><button type="button" class="icon-button expand-plus-open" aria-label="Neue Spalte hinzufügen" data-tooltip="Neue Spalte hinzufügen"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg></button><div class="field-addon expand-plus-field"><input class="input-small" name="name" placeholder="Name der Spalte" aria-label="Name der Spalte" autocomplete="off"><span class="addon-end"><button type="submit" class="control-button addon-button" aria-label="Spalte anlegen" data-tooltip="Spalte anlegen"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l10 -10"/></svg></button></span></div></form>
+                <form class="expand-plus is-open is-filled" data-expand-plus onsubmit="return false"><button type="button" class="icon-button expand-plus-open" aria-label="Neue Spalte hinzufügen" data-tooltip="Neue Spalte hinzufügen"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg></button><div class="field-addon expand-plus-field"><input class="input-small" name="name" value="Erledigt" aria-label="Name der Spalte" autocomplete="off"><span class="addon-end"><button type="submit" class="control-button addon-button" aria-label="Spalte anlegen" data-tooltip="Spalte anlegen"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l10 -10"/></svg></button></span></div></form>
+            </div>
+
+            <h3 class="sg-pad" id="expand-plus-row">Aufklapp-Plus als Zeile</h3>
+            <p class="sg-note">Variante <code>.expand-plus.is-row</code> (Punkte 220, 221, A388): „+ … hinzufügen“ als erste Zeile <strong>über</strong> einer Liste statt eines Formulars unten. Ein Klick, Antippen oder Fokus (nie Darüberfahren) öffnet eine Zeile im Look der Listenzeilen: Namensfeld (✓ erst, sobald ein Name dasteht; Enter oder ✓ legt an, Esc leert alles und klappt zu) und die weiteren Felder des neuen Eintrags nebeneinander, z. B. ein Umschalter für die Art oder der Farbkreis. <code>data-show-when="type:choice"</code> zeigt einen Teil nur bei diesem Wert („Auswahlwerte“ nur bei Art = Auswahl). Der neue Eintrag steht danach oben in der Liste. Kein großer oranger Knopf.</p>
+            <div class="sg-pad" style="max-width: 40rem;">
+                <form class="expand-plus is-row" data-expand-plus onsubmit="return false"><button type="button" class="list-entry expand-plus-open"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg><span>Eigenschaft hinzufügen</span></button><div class="pick-row is-static expand-plus-row"><div class="field-addon expand-plus-field"><input class="input-small" name="name" placeholder="Name der Eigenschaft" aria-label="Name" autocomplete="off"><span class="addon-end"><button type="submit" class="control-button addon-button" aria-label="Eigenschaft anlegen" data-tooltip="Eigenschaft anlegen" hidden><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l10 -10"/></svg></button></span></div><span class="button-choice" data-choice><input type="hidden" name="type" value="text"><span class="switcher" role="group" aria-label="Art"><button type="button" data-value="text" aria-pressed="true">Text</button><button type="button" data-value="number" aria-pressed="false">Zahl</button><button type="button" data-value="amount" aria-pressed="false">Betrag</button><button type="button" data-value="date" aria-pressed="false">Datum</button><button type="button" data-value="iban" aria-pressed="false">IBAN</button><button type="button" data-value="choice" aria-pressed="false">Auswahl</button></span></span><div class="field" data-show-when="type:choice" hidden><label for="sg-expand-options">Auswahlwerte</label><textarea id="sg-expand-options" name="options" rows="3"></textarea><p class="field-hint">Nur bei „Auswahl“: ein Wert pro Zeile.</p></div></div></form>
+                <form class="expand-plus is-row" data-expand-plus onsubmit="return false"><button type="button" class="list-entry expand-plus-open"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg><span>Farbe hinzufügen</span></button><div class="pick-row is-static expand-plus-row"><input type="color" name="hex" value="#ff7622" aria-label="Farbe"><div class="field-addon expand-plus-field"><input class="input-small" name="name" placeholder="Name der Farbe" aria-label="Name" autocomplete="off"><span class="addon-end"><button type="submit" class="control-button addon-button" aria-label="Farbe anlegen" data-tooltip="Farbe anlegen" hidden><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l10 -10"/></svg></button></span></div></div></form>
+            </div>
+
+            <h3 class="sg-pad" id="accordion-list">Aufklappliste, Initialen-Kreis, Schalter</h3>
+            <p class="sg-note">Punkte 216, 218, 223: <code>ul.accordion-list</code> &gt; <code>li.accordion-row</code> (eine Zeile ohne Körper zeigt nur: <code>span.accordion-static</code> statt des Knopfs, z. B. Inhaber); der Kopf ist ein Listeneintrag-Button (<code>data-accordion-toggle</code>), ein Klick öffnet den Körper (weiß markiert), die anderen schließen (<code>core/accordion.js</code>). Darin speichert jedes Feld sofort. <code>.initials</code> statt Zeilen-Symbol bei Personen (grau: <code>is-paused</code>), <code>.switch</code> für Ein/Aus, <code>button-link is-danger</code> als leiser roter Link.</p>
+            <div class="sg-pad" style="max-width: 40rem;">
+                <ul class="accordion-list">
+                    <li class="accordion-row">
+                        <div class="accordion-head"><span class="accordion-static"><span class="row-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"/></svg></span><span><strong>Inhaber</strong><small>1 Person · darf alles</small></span></span></div>
+                    </li>
+                    <li class="accordion-row is-open">
+                        <div class="accordion-head">
+                            <button type="button" class="list-entry accordion-toggle" data-accordion-toggle aria-expanded="true"><span class="initials">MM</span><span><strong>Max Mustermann</strong><small>max.mustermann · zuletzt aktiv vor 2 Stunden</small></span><span class="accordion-pills"><span class="pill">Steuerberater</span><span class="pill">01.03.–31.05.</span></span></button>
+                        </div>
+                        <div class="accordion-body">
+                            <ul class="prop-list">
+                                <li class="prop-row"><span class="prop-name">Rolle</span><span class="prop-value"><span class="switcher" role="group" aria-label="Rolle"><button type="button" aria-pressed="false">Admin</button><button type="button" aria-pressed="false">Mitarbeiter</button><button type="button" aria-pressed="true">Steuerberater</button></span></span></li>
+                                <li class="prop-row"><span class="prop-name">Pausiert</span><span class="prop-value"><label class="switch"><input type="checkbox" role="switch" aria-label="Pausiert"></label></span></li>
+                            </ul>
+                            <p><button type="button" class="button-link is-danger">Zugang entfernen</button></p>
+                        </div>
+                    </li>
+                    <li class="accordion-row">
+                        <div class="accordion-head">
+                            <button type="button" class="list-entry accordion-toggle" data-accordion-toggle aria-expanded="false"><span class="initials is-paused">EM</span><span><strong>Erika Musterfrau</strong><small>erika · noch nie angemeldet</small></span><span class="accordion-pills"><span class="pill">Mitarbeiter</span><span class="pill">pausiert</span></span></button>
+                        </div>
+                        <div class="accordion-body" hidden></div>
+                    </li>
+                    <li class="accordion-row">
+                        <div class="accordion-head">
+                            <button type="button" class="list-entry accordion-toggle" data-accordion-toggle aria-expanded="false"><span class="row-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21v-2a4 4 0 0 1 4 -4h2"/><path d="M22 16c0 4 -2.5 6 -3.5 6s-3.5 -2 -3.5 -6c1 0 2.5 -.5 3.5 -1.5c1 1 2.5 1.5 3.5 1.5z"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/></svg></span><span><strong>Steuerberater</strong><small>1 Person · Alle sehen, Belegpakete</small></span><span class="accordion-pills"><span class="pill">nur 2026</span><span class="pill">2 Konten</span></span></button>
+                            <span class="row-actions"><button type="button" class="control-button" aria-label="Mehr" data-tooltip="Mehr"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M19 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/></svg></button></span>
+                        </div>
+                        <div class="accordion-body" hidden></div>
+                    </li>
+                </ul>
+            </div>
+
+            <h3 id="sg-umbenennen-in-der-zeile" class="sg-pad">Umbenennen in der Zeile</h3>
+            <p class="sg-note">Stift oder langes Drücken auf den Namen (Maus ~2 s, Finger ~1 s; dabei füllt sich eine dünne orange Linie unter dem Namen). Enter oder ✓ speichert, Esc oder ein Klick außerhalb der Zeile bricht ab – kein X.</p>
+            <ul class="pick-list folder-rows sg-rows" style="max-width: 26rem;">
+                <li class="pick-row is-static folder-row"><span class="row-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2"/></svg></span><span data-folder-name><strong class="is-pressing" style="animation: none; background-size: 60% 2px;"><a href="#field-addon">Reisekosten</a></strong><small>12 Dokumente</small></span></li>
+                <li class="pick-row is-static folder-row is-renaming"><span class="row-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2"/></svg></span><form class="folder-rename"><input class="input-small" name="name" value="Reisekosten 2026" aria-label="Name"><button type="button" class="control-button" aria-label="Speichern" data-tooltip="Speichern"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">  <path d="M5 12l5 5l10 -10"/></svg></button></form></li>
+            </ul>
+
+            <h3 id="sg-eigenschaften-ohne-speichern-knopf" class="sg-pad">Eigenschaften ohne Speichern-Knopf</h3>
+            <p class="sg-note">Farbe, Symbol, Häkchen und Auswahl speichern sofort (Toast „Gespeichert.“); der Name nur mit Enter oder ✓, das ✓ erscheint erst, wenn er sich unterscheidet. Andere offene Module folgen sofort (Name, Farbe, Symbol).</p>
+
+            <h3 id="sg-klick-zum-bearbeiten" class="sg-pad">Klick zum Bearbeiten</h3>
+            <div style="max-width: 26rem;">
+                <div class="edit-in-place is-multiline" tabindex="0" role="button" data-placeholder="Notiz zu diesem Dokument">Parken am Flughafen, 2 Tage</div>
+            </div>
+
+            <h3 class="sg-pad" id="color-picker">Farbwahl</h3>
+            <p class="sg-note"><code>&lt;x-color-picker&gt;</code>: <code>fieldset.tag-color-field</code> mit der Palette der Organisation, optional „Keine Farbe“ und <code>.tag-color-own</code> (eigene Farbe mit Farbfeld und #rrggbb).</p>
+            <div style="max-width: 26rem;">
+                <fieldset class="tag-color-field color-picker"><legend>Farbe</legend><div class="tag-colors"><label class="tag-color" title="Keine Farbe"><input type="radio" name="sg-color" value="none" aria-label="Keine Farbe"><span class="no-color"></span></label><label class="tag-color" title="Mint"><input type="radio" name="sg-color" value="#a5e6c8" checked aria-label="Mint"><span style="--tag: #a5e6c8;"></span></label><label class="tag-color" title="Gelb"><input type="radio" name="sg-color" value="#fdd835" aria-label="Gelb"><span style="--tag: #fdd835;"></span></label><label class="tag-color" title="Bordeaux"><input type="radio" name="sg-color" value="#800020" aria-label="Bordeaux"><span style="--tag: #800020;"></span></label></div>
+                    <div class="tag-color-own"><label for="sg-color-own">Eigene Farbe</label><input id="sg-color-own" type="color" value="#1e5bc6" data-color-picker><label for="sg-color-hex" class="visually-hidden">Hex-Wert</label><input id="sg-color-hex" value="" placeholder="#rrggbb" maxlength="7" data-color-hex></div>
+                </fieldset>
+            </div>
+
+            <h3 class="sg-pad" id="edit-in-place">Klick zum Bearbeiten</h3>
+            <p class="sg-note"><code>&lt;x-edit-in-place&gt;</code>: in Ruhe Text mit leisem Hover-Rahmen; ein Klick macht daraus <code>.edit-in-place-field</code> (gleiche Schrift, Enter oder Klick außerhalb speichert). <code>edit-in-place-small</code>: kleine, leise Variante (Übersetzung, erkannter Text).</p>
+            <div style="max-width: 26rem;">
+                <div class="edit-in-place" tabindex="0" role="button" data-placeholder="Notiz hinzufügen">Bewirtung mit Max Mustermann, Projekt Musterbau</div>
+                <textarea class="edit-in-place-field sg-pad" aria-label="Notiz">Bewirtung mit Max Mustermann, Projekt Musterbau</textarea>
+                <p class="edit-in-place-small is-plain">Quittung Nr. 4711 · Musterstraße 1 · 12345 Musterstadt</p>
+            </div>
+
+        </section>
+
+        <section id="sg-formularfelder-2" class="sg-section">
+            <h2>Formularfelder</h2>
+            <form onsubmit="return false">
+                <label for="sg-text">Textfeld</label>
+                <input id="sg-text" type="text" placeholder="Platzhalter">
+
+                <label for="sg-pw">Passwort</label>
+                <input id="sg-pw" type="password" value="geheim123">
+
+                <label for="sg-date">Datum</label>
+                <input id="sg-date" type="date" value="2026-11-02">
+
+                <label for="sg-select">Auswahl</label>
+                <select id="sg-select"><option>Alle Dokumente</option><option>Nur offene</option></select>
+
+                <label for="sg-area">Mehrzeilig</label>
+                <textarea id="sg-area" rows="3">Notiz zum Dokument</textarea>
+
+                <label for="sg-err">Feld mit Fehler</label>
+                <input id="sg-err" type="text" value="12,5x" aria-invalid="true" aria-describedby="sg-err-msg">
+                <p class="error" id="sg-err-msg">Bitte einen gültigen Betrag eingeben.</p>
+
+                <label class="file-button">Datei wählen
+                    <input type="file">
+                </label>
+
+                <fieldset class="rights">
+                    <legend>Rechte (fieldset .rights)</legend>
+                    <label><input type="checkbox" checked> Dokumente hochladen</label>
+                    <label><input type="checkbox"> Bank importieren</label>
+                </fieldset>
+
+                <label>Tags (Chips)</label>
+                <div class="chips">
+                    <label class="chip"><input type="checkbox" checked><span>#reise</span></label>
+                    <label class="chip"><input type="checkbox"><span>#büro</span></label>
+                    <label class="chip"><input type="checkbox"><span>#bewirtung</span></label>
+                </div>
+                <label>Kleine Chips (<code>.chips.chips-small</code>, z. B. „Suchen in“)</label>
+                <div class="chips chips-small">
+                    <label class="chip"><input type="checkbox" checked><span>Name</span></label>
+                    <label class="chip"><input type="checkbox" checked><span>Erkannter Text</span></label>
+                    <label class="chip"><input type="checkbox"><span>Notiz</span></label>
+                </div>
+
+                <button type="submit">Absenden</button>
+            </form>
+        </section>
+
+        <section id="sg-dateien-auswaehlen" class="sg-section">
+            <h2>Dateien auswählen</h2>
+<label for="sg-file">CSV-Datei</label><input id="sg-file" type="file"><label class="file-button">Foto aufnehmen<input type="file"></label>
+<p class="sg-note">Der Auswahlknopf ist wie ein normaler Knopf gestaltet, der Dateiname erscheint daneben. Im Menü bleibt „Dokument hochladen“ als eigener Knopf.</p>
+        </section>
+
+        <section id="sg-checkbox-gruppe-rechte" class="sg-section">
+            <h2>Checkbox-Gruppe (Rechte)</h2>
+<fieldset class="rights"><legend>Das darf diese Rolle</legend><label><input type="checkbox" checked> Dokumente hochladen</label><label><input type="checkbox"> Alle Belege sehen (sonst nur die eigenen)</label><label><input type="checkbox" checked> Belege bearbeiten</label><label><input type="checkbox"> Belege löschen</label><label><input type="checkbox"> Bankdaten importieren und abgleichen</label><label><input type="checkbox" checked> Exportieren</label><label><input type="checkbox"> Tags bearbeiten</label></fieldset><fieldset class="rights"><legend>Deaktiviert</legend><label><input type="checkbox" disabled> Nicht änderbar</label><label><input type="checkbox" checked disabled> Nicht änderbar, aktiv</label></fieldset>
+<p class="sg-note">Die Checkbox ist das echte Eingabefeld, nur gestaltet. Es gibt aktiv, nicht aktiv und deaktiviert. Punkt 217: eine Checkbox-Zeile hat keinen Abstand oben (der gehört zum Label über einem Feld) und ist am Desktop kompakt 36 px hoch; 48 px (Fingergröße) nur bei Touch (<code>pointer: coarse</code>). Eine einzelne Checkbox – oder die erste einer Reihe – nach anderen Formularteilen hält einen kleinen Abstand.</p>
+        </section>
+
+        <section id="sg-hochladen" class="sg-section">
+            <h2>Hochladen</h2>
+<div class="sg-frame sg-mini sg-pad"><div class="nav-drop is-drop-target"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 9l5 -5l5 5"/><path d="M12 4l0 12"/></svg><span class="nav-text">Loslassen zum Hochladen</span></div></div>
+ <div class="sg-row"><div class="sg-frame sg-pad"><label class="button button-small file-button"><input class="visually-hidden" type="file" multiple><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 9l5 -5l5 5"/><path d="M12 4l0 12"/></svg>Hochladen</label> <label class="button button-small file-button is-busy"><input class="visually-hidden" type="file" multiple><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 9l5 -5l5 5"/><path d="M12 4l0 12"/></svg>Hochladen</label></div></div>
+<p class="sg-note">Oben das Ablegefeld über dem Menü, wenn Dateien über die Seite gezogen werden (kein Overlay mehr; Ziel Posteingang). Das Menü hat keinen Upload-Knopf mehr (Punkt 180); Ziel ist der Posteingang, auf einer Ordnerzeile oder in einem Ordnerfenster dieser Ordner (181). Unten der Datei-Knopf „Hochladen“ (Posteingang, 182), normal und beschäftigt.</p>
+        </section>
+</main>
+<footer class="site-footer"><hr><small class="muted">docHamster Version 0.1.0</small></footer>
+</div>
+</div>
+<template id="tpl-side"><aside class="side"><header class="site-header"><button type="button" class="nav-toggle" aria-label="Menü ein- und ausblenden"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 6l16 0"/><path d="M4 12l16 0"/><path d="M4 18l16 0"/></svg></button><a class="brand" href="#"><img src="../img/logo.png" alt="docHamster" width="476" height="186"></a></header><nav class="sidebar" aria-label="Hauptmenü">
+
+<ul class="nav-list"><li><a class="nav-item tooltip-right" href="#" data-tooltip="Dokumente" aria-current="page"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16l-3 -2l-2 2l-2 -2l-2 2l-2 -2l-3 2m4 -14h6m-6 4h6m-2 4h2"/></svg><span class="nav-text">Belege</span></a></li><li><a class="nav-item tooltip-right" href="#" data-tooltip="Bank"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l18 0"/><path d="M3 10l18 0"/><path d="M5 6l7 -3l7 3"/><path d="M4 10l0 11"/><path d="M20 10l0 11"/><path d="M8 14l0 3"/><path d="M12 14l0 3"/><path d="M16 14l0 3"/></svg><span class="nav-text">Bank</span></a></li><li><a class="nav-item tooltip-right" href="#" data-tooltip="Einstellungen"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-settings"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" />
+  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+</svg><span class="nav-text">Einstellungen</span></a></li></ul>
+<form class="nav-logout" onsubmit="return false"><button type="button" class="nav-item tooltip-right" data-tooltip="Abmelden"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 6a7.75 7.75 0 1 0 10 0"/><path d="M12 4l0 8"/></svg><span class="nav-text">Abmelden</span></button></form>
+<button type="button" class="nav-collapse" aria-label="Menü verkleinern"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-left"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M15 6l-6 6l6 6" />
+</svg></button>
+</nav></aside></template>
+<template id="tpl-side-plain"><aside class="side side-plain"><header class="site-header"><a class="brand" href="#"><img src="../img/logo.png" alt="docHamster" width="476" height="186"></a></header></aside></template>
+
+<script src="../js/core/card-fold.js"></script>
+<script src="../js/core/button-choice.js"></script>
+<script src="../js/core/expand-plus.js"></script>
+<script src="../js/core/accordion.js"></script>
+<script src="styleguide.js"></script>
+</body>
+</html>

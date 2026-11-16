@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#30302e">
+<title>Ganze Seiten – docHamster Styleguide</title>
+    <link rel="stylesheet" href="../css/core/base.css">
+    <link rel="stylesheet" href="../css/core/layout.css">
+    <link rel="stylesheet" href="../css/core/forms.css">
+    <link rel="stylesheet" href="../css/core/components.css">
+    <link rel="stylesheet" href="../css/core/buttons.css">
+    <link rel="stylesheet" href="../css/core/menus.css">
+    <link rel="stylesheet" href="../css/core/lists.css">
+    <link rel="stylesheet" href="../css/core/windows.css">
+    <link rel="stylesheet" href="../css/core/menu-window.css">
+    <link rel="stylesheet" href="../css/core/pane-edge.css">
+    <link rel="stylesheet" href="../css/modules/bank.css">
+    <link rel="stylesheet" href="../css/modules/documents.css">
+    <link rel="stylesheet" href="../css/modules/notes.css">
+    <link rel="stylesheet" href="../css/modules/text-editor.css">
+    <link rel="stylesheet" href="../css/modules/ocr.css">
+    <link rel="stylesheet" href="../css/modules/log.css">
+    <link rel="stylesheet" href="../css/modules/updates.css">
+    <link rel="stylesheet" href="../css/modules/palette.css">
+    <link rel="stylesheet" href="../css/modules/pages.css">
+    <link rel="stylesheet" href="../css/modules/properties.css">
+    <link rel="stylesheet" href="../css/modules/ocr-text.css">
+    <link rel="stylesheet" href="../css/modules/girocode.css">
+    <link rel="stylesheet" href="../css/modules/dnd.css">
+    <link rel="stylesheet" href="../css/modules/doc-fullscreen.css">
+    <link rel="stylesheet" href="../css/modules/dashboard.css">
+    <link rel="stylesheet" href="../css/core/layout-debug.css">
+    <link rel="stylesheet" href="styleguide.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Zum Inhalt springen</a>
+<div class="shell">
+<aside class="side side-plain"><header class="site-header"><a class="brand" href="styleguide.html"><img src="../img/logo.png" alt="docHamster" width="476" height="186"></a></header></aside>
+<div class="content">
+<main id="main" class="page sg-main">
+        <nav class="sg-pages" aria-label="Styleguide"><a href="styleguide.html">Übersicht</a><a href="styleguide-grundlagen.html">Grundlagen</a><a href="styleguide-aktionen.html">Aktionen</a><a href="styleguide-formulare.html">Formulare</a><a href="styleguide-meldungen.html">Meldungen und Dialoge</a><a href="styleguide-listen.html">Listen und Daten</a><a href="styleguide-fenster.html">Fenster und Layout</a><a href="styleguide-dokumente.html">Dokument-Bausteine</a><a href="styleguide-seiten.html" aria-current="page">Ganze Seiten</a></nav>
+        <h1>Ganze Seiten</h1>
+        <p class="sg-note">Ganze Seiten und Module im Zusammenhang. Regeln: <code>docs/design/framework/seiten.md</code>.</p>
+        <section class="sg-section" id="sg-ganze-seiten">
+            <p class="muted">So sieht jede Seite im Zusammenhang aus. Das Markup stammt aus dem echten Seitencode, die Texte sind Beispiele.</p>
+<h3 class="sg-screen-title">Bank</h3><p class="sg-note">Der Link „Kontoauszug importieren“ ist in die Einstellungen gewandert.</p><div class="sg-screen" data-active="1"><main class="page"><h1>Bank</h1><nav class="tabs"><a href="#" aria-current="page">Buchungen ohne Beleg</a><a href="#">Zugeordnete Buchungen</a><a href="#">Belege ohne Buchung</a></nav><ul class="documents"><li><a href="#">28.10.2026 · −42,10 € · Tankstelle Musterstadt</a> <span class="muted">Girokonto</span> <span class="muted statement-purpose">Kartenzahlung girocard 28.10.</span></li><li><a href="#">27.10.2026 · −19,99 € · Bürobedarf GmbH</a> <span class="muted">Girokonto</span></li></ul><nav class="tabs"><a href="#">Weiter</a></nav></main></div>
+<h3 class="sg-screen-title">Bank: Buchung</h3><div class="sg-screen" data-active="1"><main class="page"><h1>−42,10 €</h1><p>28.10.2026 · Tankstelle Musterstadt</p><p class="muted">Girokonto</p><p><a href="#">Zurück zur Liste</a></p><h2>Zugeordnete Belege</h2><ul class="documents"><li><a href="#"><img alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='200'%3E%3Crect width='160' height='200' fill='%23e9e6dc'/%3E%3Cg fill='%23b8b3a5'%3E%3Crect x='20' y='24' width='90' height='10'/%3E%3Crect x='20' y='50' width='120' height='6'/%3E%3Crect x='20' y='64' width='100' height='6'/%3E%3Crect x='20' y='78' width='110' height='6'/%3E%3Crect x='80' y='160' width='60' height='12'/%3E%3C/g%3E%3C/svg%3E">Tankstelle Musterstadt</a> <span class="muted">30.10.2026 14:12</span><form onsubmit="return false"><button type="submit">Zuordnung lösen</button></form></li></ul><h2>Beleg zuordnen</h2><p class="muted">Die Belege stehen nach Nähe zum Buchungsdatum sortiert.</p><ul class="documents"><li><a href="#"><img alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='200'%3E%3Crect width='160' height='200' fill='%23e9e6dc'/%3E%3Cg fill='%23b8b3a5'%3E%3Crect x='20' y='24' width='90' height='10'/%3E%3Crect x='20' y='50' width='120' height='6'/%3E%3Crect x='20' y='64' width='100' height='6'/%3E%3Crect x='20' y='78' width='110' height='6'/%3E%3Crect x='80' y='160' width='60' height='12'/%3E%3C/g%3E%3C/svg%3E">Parkhaus Mitte</a> <span class="muted">29.10.2026 18:03</span><form onsubmit="return false"><button type="submit">Zuordnen</button></form></li></ul></main></div>
+<h3 class="sg-screen-title">Einstellungen</h3><p class="sg-note">Läuft auf dem Fenstersystem: Menü-Fenster (Bereiche als Kacheln) → Menü-Fenster (Einträge als Liste) → Fenster mit der Seite. Muster oben unter <a href="styleguide-fenster.html#menu-window">Menü-Fenster</a>.</p>
+<h3 class="sg-screen-title">Tags</h3><p class="sg-note">Ein Fenster „Tags“ mit Suche und Pillen (+ legt einen neuen an), ein Klick auf eine Pille öffnet sie rechts zum Bearbeiten.</p>
+<h3 class="sg-screen-title">Einstellungen: Konten und Import</h3><div class="sg-screen" data-active="2"><main class="page"><h1>Kontoauszug importieren</h1><p>Laden Sie den Kontoauszug als CSV-Datei hoch, wie Ihre Bank ihn ausgibt. Bereits importierte Buchungen werden nicht doppelt angelegt.</p><form onsubmit="return false"><label for="sg-f">CSV-Datei</label><input id="sg-f" type="file" value=""><label for="sg-a">Konto</label><select id="sg-a"><option>Neues Konto</option><option>Girokonto</option></select><label for="sg-n">Name des neuen Kontos</label><input id="sg-n" type="text" value=""><p class="error" role="alert">Bitte einen Namen eingeben.</p><label for="sg-c">Währung des neuen Kontos</label><input id="sg-c" type="text" value="EUR"><button type="submit">Weiter</button></form><h2>Konten</h2><ul class="documents"><li>Girokonto <span class="muted">EUR · 128 Buchungen</span><form onsubmit="return false"><button type="submit">Konto löschen</button></form></li></ul></main></div>
+<h3 class="sg-screen-title">Einstellungen: Spalten zuordnen</h3><div class="sg-screen" data-active="2"><main class="page"><h1>Spalten zuordnen</h1><p>Konto: Girokonto. Prüfen Sie, welche Spalte was enthält.</p><form onsubmit="return false"><label for="sg-d">Buchungsdatum</label><select id="sg-d"><option>Datum</option></select><label for="sg-b">Betrag</label><select id="sg-b"><option>Betrag</option></select><button type="submit">Importieren</button></form><h2>Die ersten Zeilen der Datei</h2><div class="table-scroll"><table><thead><tr><th scope="col">Datum</th><th scope="col">Empfänger</th><th scope="col">Betrag</th></tr></thead><tbody><tr><td>28.10.2026</td><td>Tankstelle Musterstadt</td><td>−42,10</td></tr><tr><td>27.10.2026</td><td>Bürobedarf GmbH</td><td>−19,99</td></tr></tbody></table></div></main></div>
+<h3 class="sg-screen-title">Einstellungen: Export</h3><div class="sg-screen" data-active="2"><main class="page"><h1>Export</h1><p>Laden Sie alle Belege eines Zeitraums als ZIP-Datei herunter, zum Beispiel für Ihren Steuerberater.</p><form onsubmit="return false"><label for="sg-from">Von</label><input id="sg-from" type="date" value="2026-10-01"><label for="sg-to">Bis</label><input id="sg-to" type="date" value="2026-10-31"><label for="sg-pw">Ihr Passwort zur Bestätigung</label><input id="sg-pw" type="password" value=""><p class="error" role="alert">Das Passwort stimmt nicht.</p><button type="submit">ZIP herunterladen</button></form></main></div>
+<h3 class="sg-screen-title">Einstellungen: Personen</h3><div class="sg-screen" data-active="2"><main class="page"><h1>Personen</h1><div class="notice" role="status"><p><strong>Zugang für Erika Muster: Bitte jetzt notieren und weitergeben. Dieses Passwort wird nur dieses eine Mal angezeigt.</strong></p><p>Benutzername: <code>erika</code></p><p>Passwort: <code>Beispiel-1234</code></p></div><ul class="documents"><li><strong>Max Mustermann</strong> <span class="muted">Admin · max</span></li><li><strong>Erika Muster</strong> <span class="muted">Mitarbeiter · erika</span><form onsubmit="return false"><label for="sg-r">Rolle</label><select id="sg-r"><option>Mitarbeiter</option></select><button type="submit">Rolle ändern</button> <button type="submit">Neues Passwort</button> <button type="submit">Zugang entfernen</button></form></li></ul><h2>Person hinzufügen</h2><form onsubmit="return false"><label for="sg-pn">Name</label><input id="sg-pn" type="text" value=""><label for="sg-pu">Benutzername</label><input id="sg-pu" type="text" value=""><button type="submit">Konto anlegen</button></form></main></div>
+<h3 class="sg-screen-title">Einstellungen: Rollen</h3><div class="sg-screen" data-active="2"><main class="page"><h1>Rollen</h1><p class="muted">Admins dürfen immer alles. Nur Admins verwalten Personen, Rollen und Updates.</p><ul class="documents"><li><form onsubmit="return false"><label for="sg-rn">Name der Rolle</label><input id="sg-rn" type="text" value="Mitarbeiter"><fieldset class="rights"><legend>Das darf diese Rolle</legend><label><input type="checkbox" checked> Dokumente hochladen</label><label><input type="checkbox"> Alle Belege sehen (sonst nur die eigenen)</label><label><input type="checkbox" checked> Belege bearbeiten</label><label><input type="checkbox"> Belege löschen</label><label><input type="checkbox"> Bankdaten importieren und abgleichen</label><label><input type="checkbox"> Exportieren</label><label><input type="checkbox"> Tags bearbeiten</label></fieldset><p class="muted">2 Personen haben diese Rolle · vorinstalliert, kann nicht gelöscht werden</p><label for="sg-rw">Ihr Passwort zur Bestätigung</label><input id="sg-rw" type="password" value=""><button type="submit">Speichern</button></form></li></ul></main></div>
+<h3 class="sg-screen-title">Einstellungen: Update</h3><p class="sg-note">Eine Karte „Versionen“; Muster oben unter „Karte mit Kopf-Aktion und markierter Zeile“.</p><div class="sg-screen" data-active="2"><main class="page"><h1>Update</h1><section class="card"><h2 class="card-head">Versionen <span class="card-action"><button type="button" class="button-small">Update</button></span></h2><p class="card-text">Beim Klick fragt docHamster einmalig bei GitHub nach. Dabei werden keine Daten von Ihnen übertragen.</p><ul class="pick-list"><li class="pick-row is-static is-marked"><span><strong>Hauptversion</strong><small>0.4.12 · 10.11.2026</small></span><span class="pill pill-ok">installiert</span></li><li class="pick-row is-static"><span><strong>#129 · dev</strong><small>Neue Update-Seite · 12.11.2026</small></span><button type="button" class="button-small button-quiet">Wechseln</button></li></ul></section></main></div>
+<h3 class="sg-screen-title">Einstellungen: Handy-Test</h3><div class="sg-screen" data-active="2"><main class="page"><h1>Handy-Test</h1><p>Diese Seite prüft, ob Ihr Handy alles kann, was docHamster braucht. Es wird nichts an den Server gesendet.</p><ol class="phone-checks"><li>Läuft als Seite auf dem Homescreen: <strong class="check-state check-ok">ja</strong> <small class="check-detail muted"></small></li><li>Kamera in der Seite: <strong class="check-state">offen</strong> <small class="check-detail muted"></small></li></ol><button type="button">Kamera starten</button><label class="file-button">Foto aufnehmen <input type="file"></label></main></div>
+<h3 class="sg-screen-title">Anmelden</h3><p class="sg-note">Ohne Menü: nur das Logo im dunklen Block.</p><div class="sg-screen" data-active="-1"><main class="page"><h1>Anmelden</h1><form onsubmit="return false"><label>Benutzername <input value="max"></label><label>Passwort <input type="password"></label><p class="error" role="alert">Benutzername oder Passwort ist falsch.</p><button type="submit">Anmelden</button></form></main></div>
+<h3 class="sg-screen-title">Einrichtung: Willkommen</h3><div class="sg-screen" data-active="-1"><main class="page"><h1>Willkommen bei docHamster</h1><p>Wir richten docHamster jetzt Schritt für Schritt ein.</p><p>Öffnen Sie dazu diese Datei und tippen Sie den Code darin hier ein: <code>storage/app/setup-code.txt</code></p><form onsubmit="return false"><label for="sg-code">Einrichtungscode</label><input id="sg-code"><button type="submit">Weiter</button></form></main></div>
+<h3 class="sg-screen-title">Einrichtung: Server prüfen</h3><div class="sg-screen" data-active="-1"><main class="page"><h1>Server prüfen</h1><p>Wir prüfen, ob Ihr Server alles hat, was docHamster braucht.</p><ul class="checks"><li class="check-ok"><strong>PHP-Version:</strong> OK – 8.3.12 (mindestens 8.3)</li><li class="check-warning"><strong>Zusatzfunktion Texterkennung:</strong> Hinweis – Nicht verfügbar. Der Kern funktioniert trotzdem.</li></ul><a class="button" href="#">Weiter</a></main></div>
+<h3 class="sg-screen-title">Einrichtung: Datenbank</h3><div class="sg-screen" data-active="-1"><main class="page"><h1>Datenbank</h1><p>docHamster speichert seine Daten in einer MariaDB- oder MySQL-Datenbank.</p><form onsubmit="return false"><label for="sg-h">Server (Host)</label><input id="sg-h" type="text" value="localhost"><label for="sg-p">Port</label><input id="sg-p" type="text" value="3306"><label for="sg-dn">Name der Datenbank</label><input id="sg-dn" type="text" value="dochamster"><label for="sg-du">Benutzername</label><input id="sg-du" type="text" value=""><label for="sg-dp">Passwort</label><input id="sg-dp" type="password" value=""><p class="error">Benutzername oder Passwort stimmen nicht.</p><button type="submit">Verbindung prüfen und Datenbank einrichten</button></form></main></div>
+<h3 class="sg-screen-title">Fehlerseite 404</h3><div class="sg-screen" data-active="-1"><main class="page"><div class="error-page"><p class="error-code">404</p><h1>Seite nicht gefunden</h1><p>Diese Seite gibt es nicht (mehr).</p><a class="button" href="#">Zur Startseite</a></div></main></div>
+        </section>
+        <section class="sg-section">
+        </section>
+
+        <section id="sg-pruefliste-server" class="sg-section">
+            <h2>Prüfliste (Server)</h2>
+<ul class="checks"><li class="check-ok"><strong>PHP-Version:</strong> OK – 8.3.12 (mindestens 8.3)</li><li class="check-warning"><strong>Cron (Hintergrundaufgaben):</strong> Hinweis – Cron ist noch nicht gelaufen.</li><li class="check-fail"><strong>HTTPS:</strong> Fehler – APP_URL muss mit https:// beginnen.</li></ul>
+<p class="sg-note">Die drei Zustände aus dem Einrichtungs-Assistenten und dem Server-Check.</p>
+        </section>
+
+        <section id="sg-handy-test" class="sg-section">
+            <h2>Handy-Test</h2>
+<ol class="phone-checks"><li>Läuft als Seite auf dem Homescreen: <strong class="check-state check-ok">ja</strong> <small class="check-detail muted"></small></li><li>Geheimer Schlüssel funktioniert: <strong class="check-state check-ok">ja</strong> <small class="check-detail muted">neu erzeugt</small></li><li>Kamera in der Seite: <strong class="check-state">offen</strong> <small class="check-detail muted"></small></li></ol><button type="button">Kamera starten</button><label class="file-button">Foto aufnehmen <input type="file"></label>
+<p class="sg-note">Zeilen mit „offen / ja / unklar / nein“: Status fett, Detail klein darunter.</p>
+        </section>
+</main>
+<footer class="site-footer"><hr><small class="muted">docHamster Version 0.1.0</small></footer>
+</div>
+</div>
+<template id="tpl-side"><aside class="side"><header class="site-header"><button type="button" class="nav-toggle" aria-label="Menü ein- und ausblenden"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 6l16 0"/><path d="M4 12l16 0"/><path d="M4 18l16 0"/></svg></button><a class="brand" href="#"><img src="../img/logo.png" alt="docHamster" width="476" height="186"></a></header><nav class="sidebar" aria-label="Hauptmenü">
+
+<ul class="nav-list"><li><a class="nav-item tooltip-right" href="#" data-tooltip="Dokumente" aria-current="page"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16l-3 -2l-2 2l-2 -2l-2 2l-2 -2l-3 2m4 -14h6m-6 4h6m-2 4h2"/></svg><span class="nav-text">Belege</span></a></li><li><a class="nav-item tooltip-right" href="#" data-tooltip="Bank"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l18 0"/><path d="M3 10l18 0"/><path d="M5 6l7 -3l7 3"/><path d="M4 10l0 11"/><path d="M20 10l0 11"/><path d="M8 14l0 3"/><path d="M12 14l0 3"/><path d="M16 14l0 3"/></svg><span class="nav-text">Bank</span></a></li><li><a class="nav-item tooltip-right" href="#" data-tooltip="Einstellungen"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-settings"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" />
+  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+</svg><span class="nav-text">Einstellungen</span></a></li></ul>
+<form class="nav-logout" onsubmit="return false"><button type="button" class="nav-item tooltip-right" data-tooltip="Abmelden"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 6a7.75 7.75 0 1 0 10 0"/><path d="M12 4l0 8"/></svg><span class="nav-text">Abmelden</span></button></form>
+<button type="button" class="nav-collapse" aria-label="Menü verkleinern"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-left"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M15 6l-6 6l6 6" />
+</svg></button>
+</nav></aside></template>
+<template id="tpl-side-plain"><aside class="side side-plain"><header class="site-header"><a class="brand" href="#"><img src="../img/logo.png" alt="docHamster" width="476" height="186"></a></header></aside></template>
+
+<script src="../js/core/card-fold.js"></script>
+<script src="../js/core/button-choice.js"></script>
+<script src="../js/core/expand-plus.js"></script>
+<script src="../js/core/accordion.js"></script>
+<script src="styleguide.js"></script>
+</body>
+</html>

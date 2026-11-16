@@ -1,0 +1,918 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#30302e">
+<title>Listen und Daten – docHamster Styleguide</title>
+    <link rel="stylesheet" href="../css/core/base.css">
+    <link rel="stylesheet" href="../css/core/layout.css">
+    <link rel="stylesheet" href="../css/core/forms.css">
+    <link rel="stylesheet" href="../css/core/components.css">
+    <link rel="stylesheet" href="../css/core/buttons.css">
+    <link rel="stylesheet" href="../css/core/menus.css">
+    <link rel="stylesheet" href="../css/core/lists.css">
+    <link rel="stylesheet" href="../css/core/windows.css">
+    <link rel="stylesheet" href="../css/core/menu-window.css">
+    <link rel="stylesheet" href="../css/core/pane-edge.css">
+    <link rel="stylesheet" href="../css/modules/bank.css">
+    <link rel="stylesheet" href="../css/modules/documents.css">
+    <link rel="stylesheet" href="../css/modules/notes.css">
+    <link rel="stylesheet" href="../css/modules/text-editor.css">
+    <link rel="stylesheet" href="../css/modules/ocr.css">
+    <link rel="stylesheet" href="../css/modules/log.css">
+    <link rel="stylesheet" href="../css/modules/updates.css">
+    <link rel="stylesheet" href="../css/modules/palette.css">
+    <link rel="stylesheet" href="../css/modules/pages.css">
+    <link rel="stylesheet" href="../css/modules/properties.css">
+    <link rel="stylesheet" href="../css/modules/ocr-text.css">
+    <link rel="stylesheet" href="../css/modules/girocode.css">
+    <link rel="stylesheet" href="../css/modules/dnd.css">
+    <link rel="stylesheet" href="../css/modules/doc-fullscreen.css">
+    <link rel="stylesheet" href="../css/modules/dashboard.css">
+    <link rel="stylesheet" href="../css/core/layout-debug.css">
+    <link rel="stylesheet" href="styleguide.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Zum Inhalt springen</a>
+<div class="shell">
+<aside class="side side-plain"><header class="site-header"><a class="brand" href="styleguide.html"><img src="../img/logo.png" alt="docHamster" width="476" height="186"></a></header></aside>
+<div class="content">
+<main id="main" class="page sg-main">
+        <nav class="sg-pages" aria-label="Styleguide"><a href="styleguide.html">Übersicht</a><a href="styleguide-grundlagen.html">Grundlagen</a><a href="styleguide-aktionen.html">Aktionen</a><a href="styleguide-formulare.html">Formulare</a><a href="styleguide-meldungen.html">Meldungen und Dialoge</a><a href="styleguide-listen.html" aria-current="page">Listen und Daten</a><a href="styleguide-fenster.html">Fenster und Layout</a><a href="styleguide-dokumente.html">Dokument-Bausteine</a><a href="styleguide-seiten.html">Ganze Seiten</a></nav>
+        <h1>Listen und Daten</h1>
+        <p class="sg-note">Zeilen, Tabellen, Tags, Suche, Filter und Ansicht. Regeln: <code>docs/design/framework/listen.md</code>.</p>
+        <section class="sg-section">
+            <h3 class="sg-pad" id="search-panel">Erweiterte Suche (Karte mit Reiter)</h3>
+            <p class="sg-note">Punkt 187: eine Karte direkt unter der Suchzeile, der Chevron wird ihr Reiter (gleicher Hintergrund und Rahmen, unten offen, links eine kleine Hohlkehle, die Ecke oben rechts eckig). Oben immer sichtbar „Suchen in“ (kleine Chips) und „Wo“ (Umschalter), darunter klappbare Abschnitte in <strong>einer</strong> Spalte; unten in der Karte „Zurücksetzen“ (ruhiger Link) und „Suchen“. Schmal: Beschriftung über dem Feld, nie waagrecht scrollen.</p>
+            <div class="sg-frame" style="max-width: 34rem;">
+                <section class="win is-active" style="min-width: 0;"><div class="win-frame">
+                    <div class="win-tools" style="padding-top: 1rem;">
+                        <form class="win-search" role="search" onsubmit="return false" style="order: 1; flex: 1 0 100%; align-self: stretch;">
+                            <div class="field-addon"><input type="search" class="input-small" placeholder="Dokumente durchsuchen" aria-label="Suchen"><span class="addon-end"><button type="submit" class="control-button addon-button" aria-label="Suchen" data-tooltip="Suchen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg></button></span></div>
+                            <button type="button" class="icon-button win-search-toggle" aria-expanded="true" aria-label="Erweiterte Suche" data-tooltip="Erweiterte Suche"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6l6 -6"/></svg></button>
+                        </form>
+                    </div>
+                    <div class="win-search-area">
+                        <div class="search-top">
+                            <div class="search-line"><span>Suchen in:</span><div class="chips chips-small" role="group" aria-label="Suchen in"><label class="chip"><input type="checkbox" checked><span>Name</span></label><label class="chip"><input type="checkbox" checked><span>Erkannter Text</span></label><label class="chip"><input type="checkbox"><span>Notiz</span></label><label class="chip"><input type="checkbox"><span>Tags</span></label><label class="chip"><input type="checkbox"><span>Eigenschaften</span></label></div></div>
+                            <div class="search-line"><span>Wo:</span><span class="button-choice" data-choice><input type="hidden" value=""><span class="switcher" role="group" aria-label="Wo"><button type="button" data-value="" aria-pressed="true">Dieser Ordner</button><button type="button" data-value="1" aria-pressed="false">Alle Ordner</button></span></span></div>
+                        </div>
+                        <div class="search-sections">
+                            <section class="card card-fold is-compact is-folded"><h2 class="card-head"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/></svg><span class="card-title">Zeitraum</span><span class="card-summary" hidden><span></span></span><button type="button" class="control-button card-fold-button" aria-expanded="false" aria-label="Aufklappen" data-tooltip="Aufklappen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6l6 -6"/></svg></button></h2><div class="card-body" hidden></div></section>
+                            <section class="card card-fold is-compact"><h2 class="card-head"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5l10 -10"/></svg><span class="card-title">Status</span><span class="card-summary"><span>Bank zugeordnet: Nein</span></span><button type="button" class="control-button card-fold-button" aria-expanded="true" aria-label="Zuklappen" data-tooltip="Zuklappen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6l6 -6"/></svg></button></h2>
+                                <div class="card-body"><div class="search-line"><span>Bank zugeordnet</span><span class="button-choice" data-choice><input type="hidden" value="no"><span class="switcher" role="group" aria-label="Bank zugeordnet"><button type="button" data-value="" aria-pressed="false">Alle</button><button type="button" data-value="yes" aria-pressed="false">Ja</button><button type="button" data-value="no" aria-pressed="true">Nein</button></span></span></div></div></section>
+                        </div>
+                        <div class="win-search-actions"><button type="button" class="button-link is-quiet">Zurücksetzen</button><button type="button" class="button-small"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg>Suchen</button></div>
+                    </div>
+                </div></section>
+            </div>
+
+            <h3 class="sg-pad" id="row-amount">Betrag in der Zeile</h3>
+            <p class="sg-note">Bank-Buchungen (A267, A309): <code>row-amount</code> am rechten Ende einer Zeile (Ziffern bündig, kein Umbruch), immer mit Vorzeichen: eingehendes Geld <code>is-income</code> grün mit „+“, ausgehendes in Textfarbe mit „−“ (nie rot). Davor der Status als <code>pill</code>. Das Zeilen-Symbol zeigt die Art der Buchung (A312). Darüber die Summenzeile <code>amount-summary</code> (A310).</p>
+            <p class="amount-summary sg-pad"><span>Eingänge <span class="row-amount is-income">+25,00 EUR</span></span><span>Ausgänge <span class="row-amount">&minus;340,00 EUR</span></span><span>Saldo <span class="row-amount">&minus;315,00 EUR</span></span></p>
+            <p class="sg-note">Eintragszeile (Punkt 190, Bargeldkasse): <code>form.cash-entry</code> – Felder nebeneinander, umbrechend, der Knopf am Ende.</p>
+            <form class="cash-entry sg-pad"><div class="field"><label for="sg-cash-date">Datum</label><input id="sg-cash-date" type="date" value="2026-11-14"></div><fieldset><legend>Richtung</legend><span class="button-choice" data-choice><input type="hidden" value="out"><span class="switcher" role="group" aria-label="Richtung"><button type="button" data-value="in" aria-pressed="false">Einnahme</button><button type="button" data-value="out" aria-pressed="true">Ausgabe</button></span></span></fieldset><div class="field"><label for="sg-cash-amount">Betrag</label><input id="sg-cash-amount" name="amount" placeholder="0,00"></div><div class="field cash-entry-text"><label for="sg-cash-text">Text</label><input id="sg-cash-text" placeholder="Wofür?"></div><button type="button">Buchen</button></form>
+            <ul class="pick-list sg-rows" style="max-width: 32rem;">
+                <li class="pick-row is-static"><span class="row-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M21 17l-18 0"/><path d="M6 10l-3 -3l3 -3"/><path d="M3 7l18 0"/><path d="M18 20l3 -3l-3 -3"/></svg></span><span><strong><a href="#row-amount">Muster Handwerk GmbH</a></strong><small>01.02.2026 · Rechnung 4711</small></span><span class="pill pill-warning">offen</span><span class="row-amount">&minus;340,00 EUR</span></li>
+                <li class="pick-row is-static"><span class="row-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M21 17l-18 0"/><path d="M6 10l-3 -3l3 -3"/><path d="M3 7l18 0"/><path d="M18 20l3 -3l-3 -3"/></svg></span><span><strong><a href="#row-amount">Max Mustermann</a></strong><small>03.02.2026 · Erstattung</small></span><span class="pill pill-ok">verknüpft</span><span class="row-amount is-income">+25,00 EUR</span></li>
+            </ul>
+
+            <h3 class="sg-pad" id="list-entry">Listeneintrag</h3>
+            <p class="sg-note">Ein Baustein für jeden klickbaren Eintrag (Punkt 163): Hauptmenü (<code>nav-item</code>), Dropdown- und ⋯-Einträge (<code>menu-item</code>), Menü-Fenster und Einstellungen (<code>menu-entry</code>), Fensterlisten (<code>pick-row</code>, <code>view-list li</code>), Neues als <code>list-entry</code>. Zustände einmal in <code>core/lists.css</code>: Ruhe (ohne Füllung; in gefüllten Listen die Fläche der Zeile), Darüberfahren (eine Farbe auf jeder Fläche: Textfarbe 7 % über der Füllung), Tastaturfokus (oranger Ring innen), markiert (weiß mit leichtem Schatten, oranges Symbol – auch die Öffner-Zeile; Darüberfahren ändert nichts), gesperrt (blass, kein Darüberfahren). Größen: normal ab 48 px, kompakt (<code>is-compact</code>, <code>view-list</code>) ab 36 px.</p>
+            <div class="sg-pad" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 1rem; max-width: 52rem;">
+                <div style="display: grid; gap: .25rem; padding: .75rem; background: var(--surface); border-radius: var(--radius);">
+                    <a class="nav-item" href="#list-entry"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-text" > <path stroke="none" d="M0 0h24v24H0z" fill="none" /> <path d="M14 3v4a1 1 0 0 0 1 1h4" /> <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" /> <path d="M9 9l1 0" /> <path d="M9 13l6 0" /> <path d="M9 17l6 0" /> </svg><span class="nav-text">Ruhe</span></a>
+                    <a class="nav-item" href="#list-entry" style="background-image: linear-gradient(var(--row-tint), var(--row-tint));"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-text" > <path stroke="none" d="M0 0h24v24H0z" fill="none" /> <path d="M14 3v4a1 1 0 0 0 1 1h4" /> <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" /> <path d="M9 9l1 0" /> <path d="M9 13l6 0" /> <path d="M9 17l6 0" /> </svg><span class="nav-text">Darüberfahren</span></a>
+                    <a class="nav-item" href="#list-entry" style="outline: 2px solid var(--primary); outline-offset: -2px;"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-text" > <path stroke="none" d="M0 0h24v24H0z" fill="none" /> <path d="M14 3v4a1 1 0 0 0 1 1h4" /> <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" /> <path d="M9 9l1 0" /> <path d="M9 13l6 0" /> <path d="M9 17l6 0" /> </svg><span class="nav-text">Tastaturfokus</span></a>
+                    <a class="nav-item" href="#list-entry" aria-current="page"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-text" > <path stroke="none" d="M0 0h24v24H0z" fill="none" /> <path d="M14 3v4a1 1 0 0 0 1 1h4" /> <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" /> <path d="M9 9l1 0" /> <path d="M9 13l6 0" /> <path d="M9 17l6 0" /> </svg><span class="nav-text">Markiert</span></a>
+                    <a class="nav-item is-disabled" href="#list-entry" aria-disabled="true"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-text" > <path stroke="none" d="M0 0h24v24H0z" fill="none" /> <path d="M14 3v4a1 1 0 0 0 1 1h4" /> <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" /> <path d="M9 9l1 0" /> <path d="M9 13l6 0" /> <path d="M9 17l6 0" /> </svg><span class="nav-text">Gesperrt</span></a>
+                    <a class="nav-item is-compact" href="#list-entry"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-text" > <path stroke="none" d="M0 0h24v24H0z" fill="none" /> <path d="M14 3v4a1 1 0 0 0 1 1h4" /> <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" /> <path d="M9 9l1 0" /> <path d="M9 13l6 0" /> <path d="M9 17l6 0" /> </svg><span class="nav-text">Kompakt</span></a>
+                </div>
+                <div style="display: grid; gap: .25rem; padding: .75rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);">
+                    <button type="button" class="menu-item"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-settings" > <path stroke="none" d="M0 0h24v24H0z" fill="none" /> <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" /> <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /> </svg><span>Ruhe</span></button>
+                    <button type="button" class="menu-item" style="background-image: linear-gradient(var(--row-tint), var(--row-tint));"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-settings" > <path stroke="none" d="M0 0h24v24H0z" fill="none" /> <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" /> <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /> </svg><span>Darüberfahren</span></button>
+                    <button type="button" class="menu-item" role="menuitemradio" aria-checked="true"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-settings" > <path stroke="none" d="M0 0h24v24H0z" fill="none" /> <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" /> <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /> </svg><span>Markiert</span></button>
+                    <button type="button" class="menu-item menu-danger"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash" > <path stroke="none" d="M0 0h24v24H0z" fill="none" /> <path d="M4 7l16 0" /> <path d="M10 11l0 6" /> <path d="M14 11l0 6" /> <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /> <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /> </svg><span>Löschen</span></button>
+                    <button type="button" class="menu-item" disabled><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-settings" > <path stroke="none" d="M0 0h24v24H0z" fill="none" /> <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" /> <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /> </svg><span>Gesperrt</span></button>
+                </div>
+                <ul class="pick-list" style="margin: 0;">
+                    <li class="pick-row is-static"><span class="row-icon"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2"/></svg></span><span><strong><a href="#list-entry">Ruhe (gefüllt)</a></strong><small>Fläche der Zeile</small></span></li>
+                    <li class="pick-row is-static" style="background-image: linear-gradient(var(--row-tint), var(--row-tint));"><span class="row-icon"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2"/></svg></span><span><strong><a href="#list-entry">Darüberfahren</a></strong><small>7 % Textfarbe darüber</small></span></li>
+                    <li class="pick-row is-static is-opener"><span class="row-icon"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2"/></svg></span><span><strong><a href="#list-entry">Markiert / Öffner</a></strong><small>bleibt beim Darüberfahren</small></span></li>
+                </ul>
+            </div>
+
+            <h3 class="sg-pad" id="lists">Listen und Zeilen</h3>
+            <p class="sg-note">Ordner-, Papierkorb- und Dokumentzeilen (Punkte 75–87). Das Symbol sitzt in einem festen 38-px-Feld (<code>.row-icon</code>), app.js schneidet es auf seine eigene Form zu und macht es so hoch wie die zwei Textzeilen; der Strich bleibt 2 px. Kein Griff mehr – die ganze Zeile lässt sich ziehen (ab ein paar Pixeln). Kein ⋯-Menü mehr, stattdessen Zeilen-Aktionen.</p>
+            <ul class="pick-list folder-rows sg-rows" style="max-width: 32rem;">
+                <li class="pick-row is-static folder-row "><span class="row-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" /><path d="M9 7l1 0" /><path d="M9 13l6 0" /><path d="M13 17l2 0" /></svg></span><span data-folder-name><strong><a href="#lists">Rechnungen</a></strong><small class="row-stats"><span class="row-stat" data-tooltip="2 Ordner"><span aria-hidden="true">2<svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2"/></svg></span><span class="visually-hidden">2 Ordner</span></span><span class="row-stat-sep" aria-hidden="true">·</span><span class="row-stat" data-tooltip="4 Dokumente"><span aria-hidden="true">4<svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-text" > <path stroke="none" d="M0 0h24v24H0z" fill="none" /> <path d="M14 3v4a1 1 0 0 0 1 1h4" /> <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" /> <path d="M9 9l1 0" /> <path d="M9 13l6 0" /> <path d="M9 17l6 0" /> </svg></span><span class="visually-hidden">4 Dokumente</span></span><span class="row-stat is-total" data-tooltip="12 Dokumente insgesamt"><span aria-hidden="true">(12<svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-text" > <path stroke="none" d="M0 0h24v24H0z" fill="none" /> <path d="M14 3v4a1 1 0 0 0 1 1h4" /> <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" /> <path d="M9 9l1 0" /> <path d="M9 13l6 0" /> <path d="M9 17l6 0" /> </svg> insgesamt)</span><span class="visually-hidden">12 Dokumente insgesamt</span></span></small></span><span class="row-actions"><button type="button" class="control-button" aria-label="Umbenennen" data-tooltip="Umbenennen"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-pencil"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+  <path d="M13.5 6.5l4 4" />
+</svg></button><a class="control-button" href="#lists" aria-label="Eigenschaften" data-tooltip="Eigenschaften"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-settings"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" />
+  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+</svg></a></span></li>
+                <li class="pick-row is-static folder-row sg-show"><span class="row-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 5a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -14" /><path d="M8 8a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-6a1 1 0 0 1 -1 -1l0 -1" /><path d="M8 14l0 .01" /><path d="M12 14l0 .01" /><path d="M16 14l0 .01" /><path d="M8 17l0 .01" /><path d="M12 17l0 .01" /><path d="M16 17l0 .01" /></svg></span><span data-folder-name><strong><a href="#lists">Steuer 2026</a></strong><small>12 Dokumente</small></span><span class="row-actions"><button type="button" class="control-button" aria-label="Umbenennen" data-tooltip="Umbenennen"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-pencil"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+  <path d="M13.5 6.5l4 4" />
+</svg></button><a class="control-button" href="#lists" aria-label="Eigenschaften" data-tooltip="Eigenschaften"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-settings"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" />
+  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+</svg></a></span></li>
+            </ul>
+            <p class="sg-note">Normale Zeile; die zweite zeigt die <strong>Zeilen-Aktionen</strong> (<code>.row-actions</code>): Stift = umbenennen, Zahnrad = Eigenschaften rechts als Modul öffnen. Sie erscheinen beim Darüberfahren oder mit dem Fokus, auf Touch-Geräten immer; rahmenlos, beim Darüberfahren orange, mit Tooltip. Gleiche Aktionen für Dokumentzeilen (Stift = umbenennen, Zahnrad = Details).</p>
+
+            <h4 class="sg-pad">Farbige Zeile</h4>
+            <ul class="pick-list folder-rows sg-rows" style="max-width: 32rem;">
+                <li class="pick-row is-static folder-row row-color c-a5e6c8"><span class="row-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 5a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -14" /><path d="M8 8a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-6a1 1 0 0 1 -1 -1l0 -1" /><path d="M8 14l0 .01" /><path d="M12 14l0 .01" /><path d="M16 14l0 .01" /><path d="M8 17l0 .01" /><path d="M12 17l0 .01" /><path d="M16 17l0 .01" /></svg></span><span data-folder-name><strong><a href="#lists">Steuer 2026</a></strong><small>12 Dokumente</small></span><span class="row-actions"><button type="button" class="control-button" aria-label="Umbenennen" data-tooltip="Umbenennen"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-pencil"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+  <path d="M13.5 6.5l4 4" />
+</svg></button><a class="control-button" href="#lists" aria-label="Eigenschaften" data-tooltip="Eigenschaften"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-settings"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" />
+  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+</svg></a></span></li>
+                <li class="pick-row is-static folder-row row-color c-fdd835 sg-show"><span class="row-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" /><path d="M9 7l1 0" /><path d="M9 13l6 0" /><path d="M13 17l2 0" /></svg></span><span data-folder-name><strong><a href="#lists">Rechnungen</a></strong><small>4 Dokumente</small></span><span class="row-actions"><button type="button" class="control-button" aria-label="Umbenennen" data-tooltip="Umbenennen"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-pencil"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+  <path d="M13.5 6.5l4 4" />
+</svg></button><a class="control-button" href="#lists" aria-label="Eigenschaften" data-tooltip="Eigenschaften"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-settings"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" />
+  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+</svg></a></span></li>
+                <li class="pick-row is-static folder-row row-color c-800020 sg-show"><span class="row-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5" /></svg></span><span data-folder-name><strong><a href="#lists">Auto</a></strong><small>7 Dokumente</small></span><span class="row-actions"><button type="button" class="control-button" aria-label="Umbenennen" data-tooltip="Umbenennen"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-pencil"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+  <path d="M13.5 6.5l4 4" />
+</svg></button><a class="control-button" href="#lists" aria-label="Eigenschaften" data-tooltip="Eigenschaften"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-settings"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" />
+  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+</svg></a></span></li>
+                <li class="pick-row is-static folder-row row-color c-1e5bc6"><span class="row-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M16 10h4a2 2 0 0 1 0 4h-4l-4 7h-3l2 -7h-4l-2 2h-3l2 -4l-2 -4h3l2 2h4l-2 -7h3l4 7" /></svg></span><span data-folder-name><strong><a href="#lists">Reisen</a></strong><small>3 Dokumente</small></span><span class="row-actions"><button type="button" class="control-button" aria-label="Umbenennen" data-tooltip="Umbenennen"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-pencil"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+  <path d="M13.5 6.5l4 4" />
+</svg></button><a class="control-button" href="#lists" aria-label="Eigenschaften" data-tooltip="Eigenschaften"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-settings"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" />
+  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+</svg></a></span></li>
+            </ul>
+            <p class="sg-note"><code>row-color c-rrggbb</code>: die Farbe füllt die ganze Zeile. Schrift dunkel oder weiß nach WCAG-Kontrast, zweite Zeile etwas blasser; das Symbol bleibt orange, solange Orange mindestens 3:1 zur Zeile hat (Bordeaux), sonst in Schriftfarbe (Mint, Gelb, Blau). Die Klassen kommen wie die Palette aus <code>tags.css</code> – auch für Tags nutzbar.</p>
+
+            <h4 class="sg-pad">Ziehen und Ablegen</h4>
+            <ul class="pick-list folder-rows sg-rows" style="max-width: 32rem;">
+                <li class="pick-row is-static folder-row is-drop-target"><span class="row-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2"/></svg></span><span data-folder-name><strong><a href="#lists">Belege Januar</a></strong><small>5 Dokumente</small></span><span class="row-actions"><button type="button" class="control-button" aria-label="Umbenennen" data-tooltip="Umbenennen"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-pencil"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+  <path d="M13.5 6.5l4 4" />
+</svg></button><a class="control-button" href="#lists" aria-label="Eigenschaften" data-tooltip="Eigenschaften"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-settings"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" />
+  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+</svg></a></span></li>
+                <li class="pick-row is-static folder-row row-color c-800020 is-drop-target is-upload-target" data-upload-label="Loslassen zum Hochladen in „Auto“"><span class="row-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5" /></svg></span><span data-folder-name><strong><a href="#lists">Auto</a></strong><small>7 Dokumente</small></span><span class="row-actions"><button type="button" class="control-button" aria-label="Umbenennen" data-tooltip="Umbenennen"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-pencil"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+  <path d="M13.5 6.5l4 4" />
+</svg></button><a class="control-button" href="#lists" aria-label="Eigenschaften" data-tooltip="Eigenschaften"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-settings"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" />
+  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+</svg></a></span></li>
+            </ul>
+            <span class="drag-ghost sg-ghost">3 Dokumente</span>
+            <p class="sg-note">Oben: Zielzeile beim Darüberziehen – orange (Dokumente oder Ordner hinein). Das orange Schild hängt am Zeiger und nennt, was gezogen wird. Darunter: Dateien vom Computer über einer Ordnerzeile – die Zeile selbst wird zum Feld „Loslassen zum Hochladen in „X““. Keine Hervorhebung, wo nichts abgelegt werden kann (in sich selbst, zu tief, Dateien auf den Papierkorb).</p>
+            <ul class="pick-list sg-rows" style="max-width: 32rem;">
+                <li class="pick-row is-static drag-row" data-doc-drag="sample"><span><strong><a href="#lists">rechnung.pdf</a></strong><small>03.11.2026 · 404,60 EUR</small></span><span class="pill pill-new">92 %</span><span class="row-actions"><button type="button" class="control-button" aria-label="Mit dieser Buchung verknüpfen: rechnung.pdf" data-tooltip="Mit dieser Buchung verknüpfen"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 15l6 -6" /><path d="M11 6l.463 -.536a5 5 0 0 1 7.071 7.072l-.534 .464" /><path d="M13 18l-.397 .534a5.068 5.068 0 0 1 -7.127 0a4.972 4.972 0 0 1 0 -7.071l.524 -.463" /></svg></button></span></li>
+                <li class="pick-row is-static" data-doc-drop="#" style="outline: 2px dashed color-mix(in srgb, var(--primary) 55%, transparent); outline-offset: -2px;"><span><strong><a href="#lists">Muster Handwerk GmbH</a></strong><small>17.11.2026</small></span><span class="row-amount">−404,60 EUR</span></li>
+                <li class="pick-row is-static is-drop-target" data-doc-drop="#"><span><strong><a href="#lists">Cafe</a></strong><small>18.11.2026</small></span><span class="row-amount">−3,50 EUR</span></li>
+            </ul>
+            <p class="sg-note">Punkt 160: Ziehen zwischen Fenstern, Browser-Tabs und auf den Desktop. Oben eine Zeile im Fenster „Belegvorschläge“ (Punkte 192, 193): die ganze Zeile zieht, ohne Griff; am Zeilenende das Verknüpfen-Symbol „Mit dieser Buchung verknüpfen“ (Finger, Tastatur). Darunter: während des Ziehens gestrichelt jede Stelle, die nimmt; orange die unter dem Zeiger. Was nichts nimmt, zeigt „nicht ablegen“.</p>
+            <ul class="pick-list folder-rows sg-rows sg-reorder" style="max-width: 32rem;">
+                <li class="pick-row is-static folder-row "><span class="row-icon"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-file-text"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+  <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" />
+  <path d="M9 9l1 0" />
+  <path d="M9 13l6 0" />
+  <path d="M9 17l6 0" />
+</svg></span><span data-folder-name><strong><a href="#lists">Dokumente allgemein</a></strong><small>2 Dokumente</small></span></li>
+                <li class="pick-row is-static folder-row "><span class="row-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M16 10h4a2 2 0 0 1 0 4h-4l-4 7h-3l2 -7h-4l-2 2h-3l2 -4l-2 -4h3l2 2h4l-2 -7h3l4 7" /></svg></span><span data-folder-name><strong><a href="#lists">Reisen</a></strong><small class="row-stats">Leer</small></span></li>
+                <div class="pick-drop"></div>
+            </ul>
+            <p class="sg-note">Neue Reihenfolge: zwischen zwei Zeilen (oberes oder unteres Viertel) zeigt eine orange Linie, wohin der Ordner kommt; die Mitte einer Zeile legt ihn hinein. „Dokumente allgemein“ und der Papierkorb lassen sich nicht ziehen.</p>
+
+            <h4 class="sg-pad">Papierkorb-Zeile</h4>
+            <ul class="pick-list folder-rows sg-rows" style="max-width: 32rem;">
+                <li class="pick-row is-static folder-row sg-show"><span class="row-icon"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-trash"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 7l16 0" />
+  <path d="M10 11l0 6" />
+  <path d="M14 11l0 6" />
+  <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+  <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+</svg></span><span data-folder-name><strong><a href="#lists">Papierkorb</a></strong><small>2 Dokumente</small></span><span class="row-actions"><button type="button" class="control-button" aria-label="Umbenennen" data-tooltip="Umbenennen"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-pencil"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+  <path d="M13.5 6.5l4 4" />
+</svg></button><a class="control-button" href="#lists" aria-label="Eigenschaften" data-tooltip="Eigenschaften"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-settings"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" />
+  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+</svg></a></span></li>
+            </ul>
+            <p class="sg-note">Der Papierkorb verhält sich wie ein Ordner: Stift und Zahnrad, umbenennbar und einfärbbar; Eigenschaften nur Name, Farbe und „Papierkorb leeren“. Dokumente darauf ziehen = in den Papierkorb (mit „Rückgängig“), aus dem Papierkorb auf einen Ordner ziehen = dorthin wiederherstellen.</p>
+
+            <h4 class="sg-pad">Dokumentzeilen</h4>
+            <div class="view-details" style="max-width: 40rem;"><table><thead><tr><th scope="col">Name</th><th scope="col">Datum</th><th scope="col"><span class="visually-hidden">Aktionen</span></th></tr></thead><tbody>
+                <tr data-doc="1"><td><a href="#lists"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-photo"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M15 8h.01" />
+  <path d="M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12" />
+  <path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5" />
+  <path d="M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3" />
+</svg><span data-doc-title>Tankstelle Musterstadt</span></a></td><td>30.10.2026</td><td class="row-actions-cell"><span class="row-actions"><button type="button" class="control-button" aria-label="Umbenennen" data-tooltip="Umbenennen"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-pencil"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+  <path d="M13.5 6.5l4 4" />
+</svg></button><a class="control-button" href="#lists" aria-label="Details öffnen" data-tooltip="Details öffnen"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-settings"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" />
+  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+</svg></a></span></td></tr>
+                <tr data-doc="2" class="is-selected" aria-selected="true"><td><a href="#lists"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-photo"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M15 8h.01" />
+  <path d="M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12" />
+  <path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5" />
+  <path d="M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3" />
+</svg><span data-doc-title>Parkhaus Mitte</span></a></td><td>29.10.2026</td><td class="row-actions-cell"><span class="row-actions"><button type="button" class="control-button" aria-label="Umbenennen" data-tooltip="Umbenennen"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-pencil"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+  <path d="M13.5 6.5l4 4" />
+</svg></button><a class="control-button" href="#lists" aria-label="Details öffnen" data-tooltip="Details öffnen"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-settings"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" />
+  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+</svg></a></span></td></tr>
+                <tr data-doc="3" class="is-selected" aria-selected="true"><td><a href="#lists"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-pdf"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+  <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
+  <path d="M5 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6" />
+  <path d="M17 18h2" />
+  <path d="M20 15h-3v6" />
+  <path d="M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1" />
+</svg><span data-doc-title>Hotel Seeblick</span></a></td><td>27.08.2026</td><td class="row-actions-cell"><span class="row-actions"><button type="button" class="control-button" aria-label="Umbenennen" data-tooltip="Umbenennen"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-pencil"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+  <path d="M13.5 6.5l4 4" />
+</svg></button><a class="control-button" href="#lists" aria-label="Details öffnen" data-tooltip="Details öffnen"><svg
+ 
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-settings"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" />
+  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+</svg></a></span></td></tr>
+            </tbody></table></div>
+            <p class="sg-note">Strg/⌘-Klick wählt einzelne Zeilen dazu, Umschalt-Klick einen Bereich (orange getönt); gezogen werden alle gewählten zusammen. Danach eine Meldung „3 Dokumente nach „X“ verschoben“ mit „Rückgängig“.</p>
+            <div class="toast" role="status" style="position: static; animation: none; margin-top: .75rem;"><span>3 Dokumente nach „Steuer 2026“ verschoben</span><button type="button" class="button-quiet button-small toast-action">Rückgängig</button></div>
+            <div class="toast toast-error" role="alert" style="position: static; animation: none; margin-top: .75rem;"><span>Verschieben ging nicht: Der Ordner wurde gelöscht.</span></div>
+            <p class="sg-note">Fehler-Toast (<code>DocHamster.toast(text, { error: true })</code> → <code>toast toast-error</code>): roter Rand und roter Punkt.</p>
+
+            <h4 class="sg-pad">Maximieren und Wiederherstellen</h4>
+            <div class="sg-row">
+                <button type="button" class="control-button win-maximise" aria-label="Maximieren" data-tooltip="Maximieren"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path class="chev chev-tl" d="M5 10l0 -5l5 0"/><path class="chev chev-tr" d="M14 5l5 0l0 5"/><path class="chev chev-br" d="M19 14l0 5l-5 0"/><path class="chev chev-bl" d="M10 19l-5 0l0 -5"/></svg></button>
+                <button type="button" class="control-button win-maximise" aria-label="Wiederherstellen" data-tooltip="Wiederherstellen"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path class="chev chev-in chev-tl" d="M4 9l5 0l0 -5"/><path class="chev chev-in chev-tr" d="M20 9l-5 0l0 -5"/><path class="chev chev-in chev-br" d="M20 15l-5 0l0 5"/><path class="chev chev-in chev-bl" d="M4 15l5 0l0 5"/></svg></button>
+            </div>
+            <p class="sg-note">Vier kleine Winkel wie ‹ (<code>chevron-left</code>), gleicher Strich: nach außen = Maximieren, nach innen = Wiederherstellen. Beim Darüberfahren pulsieren sie nach außen bzw. innen; bei „Bewegung reduzieren“ nur der Farbwechsel.</p>
+
+            <h3 class="sg-pad" id="selection-bar">Auswahl-Leiste</h3>
+            <p class="sg-note">Kleine schwebende Leiste über einer Textauswahl (<code>DocHamster.selectionBar.show(rect, actions)</code>): leise kleine Knöpfe mit Symbol und Text, eine für die ganze Seite, über allen Fenstern. Verschwindet mit der Auswahl, bei Escape und beim Scrollen. In der Leseansicht: „Kopieren“ und „Markieren als …“.</p>
+            <div class="selection-bar" role="toolbar" style="position: static; display: inline-flex;"><button type="button" class="button-quiet button-small"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667l0 -8.666"/><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1"/></svg>Kopieren</button><button type="button" class="button-quiet button-small">Markieren als …</button></div>
+            <p class="sg-note">Angedockt (<code>selection-bar is-docked</code>): dieselbe Leiste für ausgewählte Listenzeilen – Kästchen vor jeder Zeile, „Alle auswählen“ oben, Umschalt = Bereich. Klebt unten im Fenster: „N ausgewählt“, Ordner-Menü (verschiebt / legt alle ab), im Posteingang ✓ „Erledigt“, X hebt die Auswahl auf.</p>
+            <label class="pick-all"><input type="checkbox" checked>Alle auswählen</label>
+            <div class="selection-bar is-docked" role="toolbar" aria-label="Auswahl" style="position: static; margin-left: 0;"><span class="selection-count">3 ausgewählt</span><button type="button" class="control-button" aria-label="Ablegen in …" data-tooltip="Ablegen in …"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2"/></svg></button><button type="button" class="control-button" aria-label="Erledigt" data-tooltip="Erledigt"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l10 -10"/></svg></button><button type="button" class="control-button" aria-label="Auswahl aufheben" data-tooltip="Auswahl aufheben"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></button></div>
+
+            <h3 class="sg-pad" id="search-head">Suchkopf, Filter-Chips, Suchzeile</h3>
+            <p class="sg-note">Punkte 6, 105: über den Treffern <code>.search-head</code> (Anzahl, X schließt die Suche), darunter jeder aktive Filter als <code>.filter-chips</code> &gt; <code>.filter-chip</code> mit eigenem X. <code>.search-row</code> stellt kleine Felder nebeneinander (von – bis) und bricht schmal um.</p>
+            <div style="max-width: 34rem;">
+                <div class="search-head"><h2>12 Dokumente gefunden</h2><a class="control-button" href="#search-head" aria-label="Suche schließen" data-tooltip="Suche schließen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></a></div>
+                <div class="filter-chips"><span class="filter-chip">„Tankstelle“<button type="button" class="control-button" aria-label="Filter „Tankstelle“ entfernen" data-tooltip="Entfernen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></button></span><span class="filter-chip">#Reise<button type="button" class="control-button" aria-label="Filter #Reise entfernen" data-tooltip="Entfernen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></button></span><span class="filter-chip">ab 01.03.2026<button type="button" class="control-button" aria-label="Filter ab 01.03.2026 entfernen" data-tooltip="Entfernen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></button></span></div>
+                <div class="search-row sg-pad"><input type="date" class="input-small" value="2026-03-01" aria-label="Von"><span class="muted">–</span><input type="date" class="input-small" value="2026-03-31" aria-label="Bis"></div>
+            </div>
+
+            <h3 class="sg-pad" id="row-extras">Zeilen-Zubehör</h3>
+            <p class="sg-note"><code>input.row-pick</code>: Häkchen vor einer Dokumentzeile (Auswählen, Punkt 196; in der Details-Tabelle die Kopfzelle <code>.col-pick</code>). <code>.one-line</code>: Text endet mit „…“ statt umzubrechen. <code>.row-note</code>: kleines Notiz-Zeichen, die Notiz im Tooltip (A319). <code>.control-button.control-danger</code>: Zeilen-Aktion, die beim Hover rot wird (Papierkorb). Zweite Zeile: <code>.pick-handle</code> (Griff einer sortierbaren Liste, nur mit Tastaturfokus sichtbar) und <code>form.row-field</code> (ein Feld füllt die Zeile, ✓ speichert).</p>
+            <ul class="pick-list sg-rows" style="max-width: 30rem;">
+                <li class="pick-row is-static sg-show"><input type="checkbox" class="row-pick" aria-label="Auswählen: Tankquittung"><span class="row-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16l-3 -2l-2 2l-2 -2l-2 2l-2 -2l-3 2m4 -14h6m-6 4h6m-2 4h2"/></svg></span><span><strong class="one-line">Tankquittung Raststätte Musterstadt Nord, Fahrt zum Kunden</strong><small>14.03.2026 · Reise</small></span><span class="row-note" data-tooltip="Mit Erika Musterfrau geteilt" aria-label="Notiz: Mit Erika Musterfrau geteilt"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 20l7 -7"/><path d="M13 20v-6a1 1 0 0 1 1 -1h6v-7a2 2 0 0 0 -2 -2h-12a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7"/></svg></span><span class="row-amount">−64,20 €</span><span class="row-actions"><button type="button" class="control-button control-danger" aria-label="In den Papierkorb" data-tooltip="In den Papierkorb"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7l16 0"/><path d="M10 11l0 6"/><path d="M14 11l0 6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/></svg></button></span></li>
+                <li class="pick-row is-static"><button type="button" class="pick-handle" aria-label="Verschieben: Bewirtung"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M9 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M9 19m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M15 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M15 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M15 19m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/></svg></button><form class="row-field" onsubmit="return false"><div class="field-addon"><input class="input-small" value="Bewirtung" aria-label="Name des Grunds"><span class="addon-end"><button type="button" class="control-button addon-button" aria-label="Speichern" data-tooltip="Speichern" hidden><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5l10 -10"/></svg></button></span></div></form></li>
+            </ul>
+            <ul class="pick-list" style="max-width: 30rem;"><li class="list-empty list-error">GitHub ist gerade nicht erreichbar. Bitte versuchen Sie es später noch einmal.</li></ul>
+            <p class="sg-note">Darüber: eine Liste, die nicht geladen werden konnte (<code>list-empty list-error</code>).</p>
+
+            <h3 class="sg-pad" id="pager">Blättern</h3>
+            <p class="sg-note"><code>nav.pager</code> unter einer langen Liste (Buchungen): „Zurück“ und „Weiter“, nur wenn es die Seite gibt.</p>
+            <nav class="pager" aria-label="Seiten"><a href="#pager">Zurück</a><a href="#pager">Weiter</a></nav>
+
+        </section>
+
+        <section id="sg-tabelle" class="sg-section">
+            <h2>Tabelle</h2>
+            <div class="table-scroll">
+                <table>
+                    <thead><tr><th>Datum</th><th>Verwendungszweck</th><th>Betrag</th><th>Beleg</th></tr></thead>
+                    <tbody>
+                        <tr><td>28.10.2026</td><td>Tankstelle Musterstadt</td><td>−42,10 €</td><td><a href="#">verknüpft</a></td></tr>
+                        <tr><td>30.10.2026</td><td>Bürobedarf GmbH</td><td>−19,99 €</td><td class="muted">offen</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="sg-filter-und-ansicht" class="sg-section">
+            <h2>Filter und Ansicht</h2>
+<div class="toolbar sg-pad"><button type="button" class="icon-button " data-tooltip="Filter" aria-label="Filter" aria-haspopup="true" aria-expanded="false"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-filter"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 4h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v7l-6 2v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227" />
+</svg></button><button type="button" class="icon-button is-active" data-tooltip="Filter" aria-label="Filter" aria-haspopup="true" aria-expanded="false"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-filter-check"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M11.18 20.274l-2.18 .726v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v3" />
+  <path d="M15 19l2 2l4 -4" />
+</svg><span class="badge">2</span></button><button type="button" class="icon-button " data-tooltip="Ansicht" aria-label="Ansicht" aria-haspopup="true" aria-expanded="false"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-layout-grid"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+  <path d="M14 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+  <path d="M4 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+  <path d="M14 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+</svg></button></div>
+ <div class="sg-row sg-top sg-panels"><div class="dropdown sg-open"><button type="button" class="icon-button is-active" data-tooltip="Filter" aria-label="Filter" aria-haspopup="true" aria-expanded="true"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-filter-check"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M11.18 20.274l-2.18 .726v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v3" />
+  <path d="M15 19l2 2l4 -4" />
+</svg><span class="badge">2</span></button><div class="dropdown-panel"><p class="dropdown-title">Nach Tags filtern</p><label><input type="checkbox" checked> Quittung</label><label><input type="checkbox" checked> Rechnung</label><label><input type="checkbox"> Vertrag</label><button type="button" class="dropdown-reset">Filter zurücksetzen</button></div></div><div class="dropdown sg-open"><button type="button" class="icon-button " data-tooltip="Ansicht" aria-label="Ansicht" aria-haspopup="true" aria-expanded="true"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-layout-grid"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+  <path d="M14 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+  <path d="M4 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+  <path d="M14 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+</svg></button><div class="dropdown-panel" role="menu"><p class="dropdown-title">Ansicht</p><button type="button" class="menu-item" role="menuitemradio" aria-checked="false"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-list-details"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M13 5h8" />
+  <path d="M13 9h5" />
+  <path d="M13 15h8" />
+  <path d="M13 19h5" />
+  <path d="M3 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+  <path d="M3 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+</svg><span>Details</span></button><button type="button" class="menu-item" role="menuitemradio" aria-checked="false"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-list"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M9 6l11 0" />
+  <path d="M9 12l11 0" />
+  <path d="M9 18l11 0" />
+  <path d="M5 6l0 .01" />
+  <path d="M5 12l0 .01" />
+  <path d="M5 18l0 .01" />
+</svg><span>Liste</span></button><button type="button" class="menu-item" role="menuitemradio" aria-checked="true"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-layout-grid"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+  <path d="M14 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+  <path d="M4 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+  <path d="M14 15a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
+</svg><span>Kleine Symbole</span></button><button type="button" class="menu-item" role="menuitemradio" aria-checked="false"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-layout-cards"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2l0 -12" />
+  <path d="M14 6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2l0 -6" />
+</svg><span>Große Symbole</span></button><button type="button" class="menu-item" role="menuitemradio" aria-checked="false"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-timeline"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 16l6 -7l5 5l5 -6" />
+  <path d="M14 14a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+  <path d="M9 9a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+  <path d="M3 16a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+  <path d="M19 8a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+</svg><span>Zeitstrahl</span></button><button type="button" class="menu-item" role="menuitemradio" aria-checked="false"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-calendar"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12" />
+  <path d="M16 3v4" />
+  <path d="M8 3v4" />
+  <path d="M4 11h16" />
+  <path d="M11 15h1" />
+  <path d="M12 15v3" />
+</svg><span>Kalender</span></button></div></div></div>
+<p class="sg-note">Icon-Knöpfe mit Tooltip. Filter aktiv: anderes Symbol, orange Rahmenfarbe und die Anzahl am Knopf. Das Dropdown wirkt sofort bei jedem Haken, „Filter zurücksetzen“ steht darin. Die Ansicht merkt sich die App pro Person. Die gleichen Knöpfe sind unten auf der Seite „Belege“ zum Ausprobieren.</p>
+        </section>
+
+        <section id="sg-tags-pillen" class="sg-section">
+            <h2>Tags (Pillen)</h2>
+            <p class="sg-note">Über den Pillen im Fenster Tags: <code>input.tag-search</code> filtert beim Tippen.</p>
+            <input class="tag-search" type="search" placeholder="Tags durchsuchen" aria-label="Tags durchsuchen">
+            <div class="tags sg-pad"><span class="tag tag-c1">Quittung</span><span class="tag tag-c2">Reise</span><span class="tag tag-c3">Rechnung</span><span class="tag tag-c4">Vertrag</span><span class="tag tag-c5">Telefon</span><span class="tag tag-c6">Bürobedarf</span></div>
+            <p class="sg-note">Nicht ausgewählt: nur Rahmen in der Tag-Farbe.</p>
+            <div class="tags sg-pad"><span class="tag tag-c1 is-selected">Quittung</span><span class="tag tag-c2 is-selected">Reise</span><span class="tag tag-c3 is-selected">Rechnung</span><span class="tag tag-c4 is-selected">Vertrag</span><span class="tag tag-c5 is-selected">Telefon</span><span class="tag tag-c6 is-selected">Bürobedarf</span></div>
+            <p class="sg-note">Ausgewählt: gefüllt, gleiche Größe. Ein Tag ist immer eine Pille und beginnt mit „#“. Pillen stehen nebeneinander und brechen wie Fließtext um, nie untereinander. Mehrere auswählen ändert nichts sofort, erst „Anwenden“ übernimmt die Auswahl.</p>
+            <div class="tags sg-pad"><label class="tag-choice"><input type="checkbox"><span class="tag tag-c1">Quittung</span></label><label class="tag-choice"><input type="checkbox" checked><span class="tag tag-c3">Rechnung</span></label><label class="tag-choice"><input type="checkbox"><span class="tag tag-c4">Vertrag</span></label></div>
+            <p class="sg-note">Zum Anklicken: das echte Eingabefeld steckt in der Pille. Auswahlfarben für neue Tags:</p>
+            <div class="tag-colors"><label class="tag-color tag-c1"><input type="radio" name="sgc" checked aria-label="Orange"><span></span></label><label class="tag-color tag-c2"><input type="radio" name="sgc" aria-label="Grün"><span></span></label><label class="tag-color tag-c3"><input type="radio" name="sgc" aria-label="Blau"><span></span></label><label class="tag-color tag-c4"><input type="radio" name="sgc" aria-label="Lila"><span></span></label><label class="tag-color tag-c5"><input type="radio" name="sgc" aria-label="Rosa"><span></span></label><label class="tag-color tag-c6"><input type="radio" name="sgc" aria-label="Gold"><span></span></label></div>
+        </section>
+
+        <section id="sg-buchungsliste" class="sg-section">
+            <h2>Buchungsliste</h2>
+<ul class="documents"><li><a href="#">28.10.2026 · −42,10 € · Tankstelle Musterstadt</a> <span class="muted">Girokonto · 1 Beleg</span> <span class="muted statement-purpose">Kartenzahlung girocard 28.10. 17:42 Terminal 4711</span></li><li><a href="#">27.10.2026 · −19,99 € · Bürobedarf GmbH</a> <span class="muted">Girokonto</span></li></ul><nav class="tabs" aria-label="Seiten"><a href="#">Zurück</a><a href="#">Weiter</a></nav>
+<p class="sg-note">Datum, Betrag, Gegenseite, darunter Konto, Anzahl Belege und Verwendungszweck. Darunter die Seitenumschaltung.</p>
+        </section>
+</main>
+<footer class="site-footer"><hr><small class="muted">docHamster Version 0.1.0</small></footer>
+</div>
+</div>
+<template id="tpl-side"><aside class="side"><header class="site-header"><button type="button" class="nav-toggle" aria-label="Menü ein- und ausblenden"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 6l16 0"/><path d="M4 12l16 0"/><path d="M4 18l16 0"/></svg></button><a class="brand" href="#"><img src="../img/logo.png" alt="docHamster" width="476" height="186"></a></header><nav class="sidebar" aria-label="Hauptmenü">
+
+<ul class="nav-list"><li><a class="nav-item tooltip-right" href="#" data-tooltip="Dokumente" aria-current="page"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16l-3 -2l-2 2l-2 -2l-2 2l-2 -2l-3 2m4 -14h6m-6 4h6m-2 4h2"/></svg><span class="nav-text">Belege</span></a></li><li><a class="nav-item tooltip-right" href="#" data-tooltip="Bank"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l18 0"/><path d="M3 10l18 0"/><path d="M5 6l7 -3l7 3"/><path d="M4 10l0 11"/><path d="M20 10l0 11"/><path d="M8 14l0 3"/><path d="M12 14l0 3"/><path d="M16 14l0 3"/></svg><span class="nav-text">Bank</span></a></li><li><a class="nav-item tooltip-right" href="#" data-tooltip="Einstellungen"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-settings"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" />
+  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+</svg><span class="nav-text">Einstellungen</span></a></li></ul>
+<form class="nav-logout" onsubmit="return false"><button type="button" class="nav-item tooltip-right" data-tooltip="Abmelden"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 6a7.75 7.75 0 1 0 10 0"/><path d="M12 4l0 8"/></svg><span class="nav-text">Abmelden</span></button></form>
+<button type="button" class="nav-collapse" aria-label="Menü verkleinern"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-left"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M15 6l-6 6l6 6" />
+</svg></button>
+</nav></aside></template>
+<template id="tpl-side-plain"><aside class="side side-plain"><header class="site-header"><a class="brand" href="#"><img src="../img/logo.png" alt="docHamster" width="476" height="186"></a></header></aside></template>
+
+<script src="../js/core/card-fold.js"></script>
+<script src="../js/core/button-choice.js"></script>
+<script src="../js/core/expand-plus.js"></script>
+<script src="../js/core/accordion.js"></script>
+<script src="styleguide.js"></script>
+</body>
+</html>

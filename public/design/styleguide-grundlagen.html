@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#30302e">
+<title>Grundlagen – docHamster Styleguide</title>
+    <link rel="stylesheet" href="../css/core/base.css">
+    <link rel="stylesheet" href="../css/core/layout.css">
+    <link rel="stylesheet" href="../css/core/forms.css">
+    <link rel="stylesheet" href="../css/core/components.css">
+    <link rel="stylesheet" href="../css/core/buttons.css">
+    <link rel="stylesheet" href="../css/core/menus.css">
+    <link rel="stylesheet" href="../css/core/lists.css">
+    <link rel="stylesheet" href="../css/core/windows.css">
+    <link rel="stylesheet" href="../css/core/menu-window.css">
+    <link rel="stylesheet" href="../css/core/pane-edge.css">
+    <link rel="stylesheet" href="../css/modules/bank.css">
+    <link rel="stylesheet" href="../css/modules/documents.css">
+    <link rel="stylesheet" href="../css/modules/notes.css">
+    <link rel="stylesheet" href="../css/modules/text-editor.css">
+    <link rel="stylesheet" href="../css/modules/ocr.css">
+    <link rel="stylesheet" href="../css/modules/log.css">
+    <link rel="stylesheet" href="../css/modules/updates.css">
+    <link rel="stylesheet" href="../css/modules/palette.css">
+    <link rel="stylesheet" href="../css/modules/pages.css">
+    <link rel="stylesheet" href="../css/modules/properties.css">
+    <link rel="stylesheet" href="../css/modules/ocr-text.css">
+    <link rel="stylesheet" href="../css/modules/girocode.css">
+    <link rel="stylesheet" href="../css/modules/dnd.css">
+    <link rel="stylesheet" href="../css/modules/doc-fullscreen.css">
+    <link rel="stylesheet" href="../css/modules/dashboard.css">
+    <link rel="stylesheet" href="../css/core/layout-debug.css">
+    <link rel="stylesheet" href="styleguide.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Zum Inhalt springen</a>
+<div class="shell">
+<aside class="side side-plain"><header class="site-header"><a class="brand" href="styleguide.html"><img src="../img/logo.png" alt="docHamster" width="476" height="186"></a></header></aside>
+<div class="content">
+<main id="main" class="page sg-main">
+        <nav class="sg-pages" aria-label="Styleguide"><a href="styleguide.html">Übersicht</a><a href="styleguide-grundlagen.html" aria-current="page">Grundlagen</a><a href="styleguide-aktionen.html">Aktionen</a><a href="styleguide-formulare.html">Formulare</a><a href="styleguide-meldungen.html">Meldungen und Dialoge</a><a href="styleguide-listen.html">Listen und Daten</a><a href="styleguide-fenster.html">Fenster und Layout</a><a href="styleguide-dokumente.html">Dokument-Bausteine</a><a href="styleguide-seiten.html">Ganze Seiten</a></nav>
+        <h1>Grundlagen</h1>
+        <p class="sg-note">Farben, Schrift und die kleinsten Zeichen. Regeln: <code>docs/design/framework/grundlagen.md</code>.</p>
+        <section class="sg-section">
+            <h3 id="sg-plaketten-und-zaehler" class="sg-pad">Plaketten und Zähler</h3>
+            <p class="sg-note">Eine Plakette (<code>pill</code>) für Zustände und Zahlen in Tabs (<code>pill-ok</code> grün, <code>pill-new</code>/<code>pill-warning</code> orange, <code>pill-hint</code> gelb („Hinweis“ im Log), <code>pill-error</code> rot („Kritisch“ im Log); ein Zähler (<code>badge</code>) als runde Zahl, orange am Filter-Knopf, rot (<code>badge-alert</code>) im Menü.</p>
+            <p class="sg-pad"><span class="pill">Vorschau</span> <span class="pill pill-ok">installiert</span> <span class="pill pill-new">verfügbar</span> <span class="badge">2</span> <span class="badge badge-alert">9+</span></p>
+
+        </section>
+
+        <section id="sg-farben" class="sg-section">
+            <h2>Farben</h2>
+            <div class="sg-swatches" id="swatches"></div>
+        </section>
+
+        <section id="sg-schrift" class="sg-section">
+            <h2>Schrift</h2>
+            <h1>Überschrift 1</h1>
+            <h2>Überschrift 2</h2>
+            <h3>Überschrift 3</h3>
+            <p>Fließtext: Beleg fotografieren, senden, fertig. Der Server ordnet ihn der Buchung zu. Ein <a href="#">Link im Text</a>.</p>
+            <p class="muted">Gedämpfter Text (.muted), z. B. Hinweise und Datum.</p>
+            <p><small>Kleiner Text (small)</small> · <code>Code / Passwort</code> · <strong>Fett</strong></p>
+        </section>
+</main>
+<footer class="site-footer"><hr><small class="muted">docHamster Version 0.1.0</small></footer>
+</div>
+</div>
+<template id="tpl-side"><aside class="side"><header class="site-header"><button type="button" class="nav-toggle" aria-label="Menü ein- und ausblenden"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 6l16 0"/><path d="M4 12l16 0"/><path d="M4 18l16 0"/></svg></button><a class="brand" href="#"><img src="../img/logo.png" alt="docHamster" width="476" height="186"></a></header><nav class="sidebar" aria-label="Hauptmenü">
+
+<ul class="nav-list"><li><a class="nav-item tooltip-right" href="#" data-tooltip="Dokumente" aria-current="page"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16l-3 -2l-2 2l-2 -2l-2 2l-2 -2l-3 2m4 -14h6m-6 4h6m-2 4h2"/></svg><span class="nav-text">Belege</span></a></li><li><a class="nav-item tooltip-right" href="#" data-tooltip="Bank"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l18 0"/><path d="M3 10l18 0"/><path d="M5 6l7 -3l7 3"/><path d="M4 10l0 11"/><path d="M20 10l0 11"/><path d="M8 14l0 3"/><path d="M12 14l0 3"/><path d="M16 14l0 3"/></svg><span class="nav-text">Bank</span></a></li><li><a class="nav-item tooltip-right" href="#" data-tooltip="Einstellungen"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-settings"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" />
+  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+</svg><span class="nav-text">Einstellungen</span></a></li></ul>
+<form class="nav-logout" onsubmit="return false"><button type="button" class="nav-item tooltip-right" data-tooltip="Abmelden"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 6a7.75 7.75 0 1 0 10 0"/><path d="M12 4l0 8"/></svg><span class="nav-text">Abmelden</span></button></form>
+<button type="button" class="nav-collapse" aria-label="Menü verkleinern"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-left"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M15 6l-6 6l6 6" />
+</svg></button>
+</nav></aside></template>
+<template id="tpl-side-plain"><aside class="side side-plain"><header class="site-header"><a class="brand" href="#"><img src="../img/logo.png" alt="docHamster" width="476" height="186"></a></header></aside></template>
+
+<script src="../js/core/card-fold.js"></script>
+<script src="../js/core/button-choice.js"></script>
+<script src="../js/core/expand-plus.js"></script>
+<script src="../js/core/accordion.js"></script>
+<script src="styleguide.js"></script>
+</body>
+</html>

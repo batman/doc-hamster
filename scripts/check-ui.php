@@ -8,7 +8,7 @@ declare(strict_types=1);
  *   - uses a CSS class that no stylesheet defines and no script uses as a hook (an element outside the framework),
  *   - has a style attribute (the CSP blocks every one the server writes; scripts set computed values instead),
  *   - puts two filled main buttons into one Aktionszeile (.actions).
- * Also lists framework classes (public/css/core) the styleguide (styleguide.html + styleguide.js) does not show yet –
+ * Also lists framework classes (public/css/core) the styleguide (every styleguide*.html page + styleguide.js) does not show yet –
  * information, not a failure; the goal is 0.
  * Usage: php scripts/check-ui.php [--list]   (--list prints those classes with their stylesheet)
  */
@@ -69,8 +69,13 @@ foreach (files($root.'/public/css', '.css') as $file) {
         $core += array_map(static fn (): string => substr($path, (int) strpos($path, 'public/css/')), $classes);
     }
 }
+// Batch 17: the styleguide is an index plus one page per category (public/design/styleguide*.html), all sharing
+// styleguide.css and styleguide.js – every page counts.
+$styleguidePages = glob($root.'/public/design/styleguide*.html') ?: [];
+$styleguide = implode('', array_map(static fn (string $file): string => (string) file_get_contents($file), $styleguidePages))
+    .file_get_contents($root.'/public/design/styleguide.js');
 // Generated stylesheets (tag colours …) and the styleguide's own classes.
-$defined += cssClasses((string) file_get_contents($root.'/public/design/styleguide.html'));
+$defined += cssClasses((string) file_get_contents($root.'/public/design/styleguide.css').$styleguide);
 
 $scripts = '';
 foreach (files($root.'/public/js', '.js') as $file) {
@@ -132,7 +137,6 @@ foreach (files($root.'/resources/views', '.blade.php') as $file) {
     }
 }
 
-$styleguide = file_get_contents($root.'/public/design/styleguide.html').file_get_contents($root.'/public/design/styleguide.js');
 $missing = array_values(array_filter(array_keys($core), static fn (string $c): bool => ! str_contains($styleguide, $c) && ! str_starts_with($c, 'is-') && ! str_starts_with($c, 'has-') && ! in_array($c, STATE_CLASSES, true)));
 sort($missing);
 

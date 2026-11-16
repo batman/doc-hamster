@@ -179,8 +179,11 @@ if (demoR) mountReceipts(demoR);
 const tokens = ['--primary', '--primary-text', '--primary-ink', '--secondary', '--secondary-text',
   '--bg', '--surface', '--text', '--muted', '--border', '--error', '--ok', '--warning'];
 const renderSwatches = () => {
+  // Only the page "Grundlagen" has the swatches (batch 17: the styleguide is split into pages).
+  const box = document.getElementById('swatches');
+  if (!box) return;
   const css = getComputedStyle(document.documentElement);
-  document.getElementById('swatches').innerHTML = tokens.map(t =>
+  box.innerHTML = tokens.map(t =>
     `<div class="sg-swatch"><div style="background:var(${t})"></div><p><strong>${t}</strong><br>${css.getPropertyValue(t).trim()}</p></div>`
   ).join('');
 };

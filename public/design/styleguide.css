@@ -1,0 +1,44 @@
+/* Styleguide pages only (public/design/styleguide*.html) – not part of the app CSS. */
+/* Sheet-only helpers, not part of the app CSS. */
+.sg-section { margin-top: 3rem; }
+.sg-section > h2 { border-bottom: 2px solid var(--primary); padding-bottom: .25rem; }
+.sg-note { font-size: .875rem; color: var(--muted); margin-top: .25rem; }
+.sg-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: .75rem; margin-top: 1rem; }
+.sg-swatch { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; font-size: .8rem; }
+.sg-swatch div { height: 3.5rem; }
+.sg-swatch p { margin: 0; padding: .4rem .5rem; }
+.sg-row { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+.sg-row > * { margin-top: 1rem; }
+.sg-main { max-width: 64rem; }
+.sg-top { align-items: flex-start; }
+.sg-pad { margin-top: 1rem; }
+.sg-frame { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg); }
+.sg-frame .shell { min-height: 0; }
+.sg-frame .side { position: static; height: 30rem; }
+.sg-frame .nav-closed .side, .sg-frame .shell.nav-closed .side { height: auto; }
+.sg-frame .page { padding: 1rem; }
+.sg-mini { padding: .75rem; width: 15rem; }
+.sg-panels { min-height: 22rem; }
+.sg-open .dropdown-panel { right: auto; left: 0; }
+.sg-screens { margin: 3rem 0 0; padding: 0 2rem; }
+.sg-screens > h2 { border-bottom: 2px solid var(--primary); padding-bottom: .25rem; }
+.sg-screen-title { margin: 2rem 0 .25rem; }
+.sg-screen { margin-top: .75rem; border: 1px solid var(--border); border-radius: var(--radius); overflow: auto; background: var(--bg); transform: translateZ(0); }
+.sg-screen .shell { min-height: 0; min-width: 52rem; }
+.sg-screen .shell:has(> .side-plain) { min-width: 0; }
+.sg-screen .side:not(.side-plain) { position: static; height: auto; min-height: 36rem; }
+.sg-screen .page { padding-bottom: 2rem; }
+/* "Listen und Zeilen": the row colour classes tags.css serves in the app. */
+.c-a5e6c8 { --row-bg:#a5e6c8;--row-ink:#1f1e1d;--row-sub:rgb(31 30 29 / .72);--row-icon:#1f1e1d; }
+.c-fdd835 { --row-bg:#fdd835;--row-ink:#1f1e1d;--row-sub:rgb(31 30 29 / .72);--row-icon:#1f1e1d; }
+.c-800020 { --row-bg:#800020;--row-ink:#ffffff;--row-sub:rgb(255 255 255 / .8);--row-icon:#ff7622; }
+.c-1e5bc6 { --row-bg:#1e5bc6;--row-ink:#ffffff;--row-sub:rgb(255 255 255 / .8);--row-icon:#ffffff; }
+.sg-rows .sg-show .row-actions { opacity: 1; }
+.sg-ghost { position: static; display: inline-block; margin-top: .5rem; }
+.sg-reorder .pick-drop { top: 50%; }
+/* Batch 17: the index (one tile per category) and the page navigation. */
+.sg-pages { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin: 0 0 1.5rem; font-size: .9rem; }
+.sg-pages a[aria-current="page"] { font-weight: 700; color: var(--text); text-decoration: none; }
+.sg-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+.sg-tile .card-head a { color: inherit; text-decoration: none; }
+.sg-tile-list { margin: .5rem 0 0; padding-left: 1.1rem; font-size: .9rem; columns: 2 10rem; }

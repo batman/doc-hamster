@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#30302e">
+<title>Meldungen und Dialoge – docHamster Styleguide</title>
+    <link rel="stylesheet" href="../css/core/base.css">
+    <link rel="stylesheet" href="../css/core/layout.css">
+    <link rel="stylesheet" href="../css/core/forms.css">
+    <link rel="stylesheet" href="../css/core/components.css">
+    <link rel="stylesheet" href="../css/core/buttons.css">
+    <link rel="stylesheet" href="../css/core/menus.css">
+    <link rel="stylesheet" href="../css/core/lists.css">
+    <link rel="stylesheet" href="../css/core/windows.css">
+    <link rel="stylesheet" href="../css/core/menu-window.css">
+    <link rel="stylesheet" href="../css/core/pane-edge.css">
+    <link rel="stylesheet" href="../css/modules/bank.css">
+    <link rel="stylesheet" href="../css/modules/documents.css">
+    <link rel="stylesheet" href="../css/modules/notes.css">
+    <link rel="stylesheet" href="../css/modules/text-editor.css">
+    <link rel="stylesheet" href="../css/modules/ocr.css">
+    <link rel="stylesheet" href="../css/modules/log.css">
+    <link rel="stylesheet" href="../css/modules/updates.css">
+    <link rel="stylesheet" href="../css/modules/palette.css">
+    <link rel="stylesheet" href="../css/modules/pages.css">
+    <link rel="stylesheet" href="../css/modules/properties.css">
+    <link rel="stylesheet" href="../css/modules/ocr-text.css">
+    <link rel="stylesheet" href="../css/modules/girocode.css">
+    <link rel="stylesheet" href="../css/modules/dnd.css">
+    <link rel="stylesheet" href="../css/modules/doc-fullscreen.css">
+    <link rel="stylesheet" href="../css/modules/dashboard.css">
+    <link rel="stylesheet" href="../css/core/layout-debug.css">
+    <link rel="stylesheet" href="styleguide.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Zum Inhalt springen</a>
+<div class="shell">
+<aside class="side side-plain"><header class="site-header"><a class="brand" href="styleguide.html"><img src="../img/logo.png" alt="docHamster" width="476" height="186"></a></header></aside>
+<div class="content">
+<main id="main" class="page sg-main">
+        <nav class="sg-pages" aria-label="Styleguide"><a href="styleguide.html">Übersicht</a><a href="styleguide-grundlagen.html">Grundlagen</a><a href="styleguide-aktionen.html">Aktionen</a><a href="styleguide-formulare.html">Formulare</a><a href="styleguide-meldungen.html" aria-current="page">Meldungen und Dialoge</a><a href="styleguide-listen.html">Listen und Daten</a><a href="styleguide-fenster.html">Fenster und Layout</a><a href="styleguide-dokumente.html">Dokument-Bausteine</a><a href="styleguide-seiten.html">Ganze Seiten</a></nav>
+        <h1>Meldungen und Dialoge</h1>
+        <p class="sg-note">Hinweise, Dialoge, Bestätigen, leere Zustände, Fehlerseite. Regeln: <code>docs/design/framework/meldungen.md</code>.</p>
+        <section class="sg-section">
+            <h3 id="sg-leerer-zustand" class="sg-pad">Leerer Zustand</h3>
+            <p class="sg-note">Punkt 213: Jede leere Liste sagt in einem Satz, was hierher gehört, mit kleinem orangem Symbol und – wenn es passt – einem Knopf rechts (schmal: darunter). Wo das Fenster Dateien annimmt, ist der Satz der Ablage-Hinweis. Blade: <code>&lt;x-empty icon="inbox" :text="…"&gt;…Knopf…&lt;/x-empty&gt;</code>, in einer Liste <code>tag="li"</code>. Ohne Treffer: Symbol Lupe. Das schlichte <code>.list-empty</code> bleibt für reine Text-Hinweise.</p>
+            <div class="sg-pad" style="display: grid; gap: .75rem; max-width: 40rem;">
+                <div class="list-empty empty-state"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12"/><path d="M4 13h3l3 3h4l3 -3h3"/></svg><span class="empty-text">Posteingang leer – Dokument hochladen oder hierher ziehen.</span><div class="empty-action"><label class="button button-small file-button"><input class="visually-hidden" type="file"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 9l5 -5l5 5"/><path d="M12 4l0 12"/></svg>Hochladen</label></div></div>
+                <ul class="pick-list"><li class="list-empty empty-state"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l18 0"/><path d="M3 10l18 0"/><path d="M5 6l7 -3l7 3"/><path d="M4 10l0 11"/><path d="M20 10l0 11"/><path d="M8 14l0 3"/><path d="M12 14l0 3"/><path d="M16 14l0 3"/></svg><span class="empty-text">Noch keine Konten – Kontoauszug (CSV oder Excel) hierher ziehen.</span><div class="empty-action"><a class="button button-small button-quiet" href="#framework"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 9l5 -5l5 5"/><path d="M12 4l0 12"/></svg>Kontoauszug importieren</a><button type="button" class="button-small"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>Konto hinzufügen</button></div></li></ul>
+                <div class="list-empty empty-state"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg><span class="empty-text">Nichts gefunden – andere Suchwörter oder weniger Filter versuchen.</span></div>
+            </div>
+
+            <h3 id="sg-dialog-mit-x" class="sg-pad">Dialog mit X</h3>
+            <div class="dialog" role="dialog" aria-labelledby="sg-dialog-title"><button type="button" class="icon-button button-small dialog-x" aria-label="Schließen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></button><h2 id="sg-dialog-title">Notiz löschen?</h2><p>Das lässt sich nicht rückgängig machen.</p><div class="dialog-actions"><button type="button" class="button-danger">Notiz löschen</button></div></div>
+
+            <h3 id="sg-bestaetigung-sudo" class="sg-pad">Bestätigung (Sudo)</h3>
+            <p class="sg-note">Vor geschützten Aktionen (Export, Backup, Belegpaket, endgültig löschen, Rollen, Personen, Geräte, Anmeldungen, Update), wenn die letzte Bestätigung älter als fünf Minuten ist. Danach läuft die Aktion weiter. Rechts: falsches Passwort.</p>
+            <div class="sg-row">
+            <div class="dialog" role="dialog" aria-labelledby="sg-sudo-title"><button type="button" class="icon-button button-small dialog-x" aria-label="Schließen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></button><h2 id="sg-sudo-title">Bitte bestätigen</h2><p class="card-text">Diese Aktion ist geschützt. Bitte bestätigen Sie mit Ihrem Passwort. Danach fragt docHamster fünf Minuten lang nicht noch einmal.</p><form onsubmit="return false"><div class="field"><label for="sg-sudo-password">Ihr Passwort</label><input id="sg-sudo-password" type="password" autocomplete="off"></div><div class="dialog-actions"><button type="submit"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6z"/><path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0"/><path d="M8 11v-4a4 4 0 1 1 8 0v4"/></svg>Bestätigen</button></div></form></div>
+            <div class="dialog" role="dialog" aria-labelledby="sg-sudo-title-2"><button type="button" class="icon-button button-small dialog-x" aria-label="Schließen"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg></button><h2 id="sg-sudo-title-2">Bitte bestätigen</h2><p class="card-text">Diese Aktion ist geschützt. Bitte bestätigen Sie mit Ihrem Passwort. Danach fragt docHamster fünf Minuten lang nicht noch einmal.</p><form onsubmit="return false"><div class="field has-error"><label for="sg-sudo-password-2">Ihr Passwort</label><input id="sg-sudo-password-2" type="password" value="falsch" autocomplete="off"><p class="field-hint" role="alert">Das Passwort stimmt nicht.</p></div><div class="dialog-actions"><button type="submit"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6z"/><path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0"/><path d="M8 11v-4a4 4 0 1 1 8 0v4"/></svg>Bestätigen</button></div></form></div>
+            </div>
+
+        </section>
+
+        <section id="sg-meldungen" class="sg-section">
+            <h2>Meldungen</h2>
+            <div class="notice">Hinweis (.notice): Neues Passwort <code>Kx7-pq2-Lm9</code>, wird nur einmal angezeigt.</div>
+            <p class="error">Fehlermeldung (.error): Die Datei ist zu groß.</p>
+            <ul class="checks">
+                <li class="check-ok">OK: PHP-Version passt</li>
+                <li class="check-warning">Warnung: Speicher fast voll</li>
+                <li class="check-fail">Fehler: Ordner nicht beschreibbar</li>
+            </ul>
+            <p class="sg-note">Eine Erfolgsmeldung („Gespeichert“) als Box gibt es noch nicht.</p>
+        </section>
+
+        <section id="sg-fehlerseite" class="sg-section error-page">
+            <h2>Fehlerseite</h2>
+            <p class="error-code">404</p>
+            <p>Diese Seite gibt es nicht.</p>
+        </section>
+
+        <section id="sg-leerer-zustand-2" class="sg-section">
+            <h2>Leerer Zustand</h2>
+<div class="empty-state"><p class="muted">Noch keine Dokumente. Laden Sie Ihren ersten hoch.</p></div>
+<p class="sg-note">Nur Text. Der Hamster ist vorerst aus der App entfernt.</p>
+        </section>
+</main>
+<footer class="site-footer"><hr><small class="muted">docHamster Version 0.1.0</small></footer>
+</div>
+</div>
+<template id="tpl-side"><aside class="side"><header class="site-header"><button type="button" class="nav-toggle" aria-label="Menü ein- und ausblenden"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 6l16 0"/><path d="M4 12l16 0"/><path d="M4 18l16 0"/></svg></button><a class="brand" href="#"><img src="../img/logo.png" alt="docHamster" width="476" height="186"></a></header><nav class="sidebar" aria-label="Hauptmenü">
+
+<ul class="nav-list"><li><a class="nav-item tooltip-right" href="#" data-tooltip="Dokumente" aria-current="page"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16l-3 -2l-2 2l-2 -2l-2 2l-2 -2l-3 2m4 -14h6m-6 4h6m-2 4h2"/></svg><span class="nav-text">Belege</span></a></li><li><a class="nav-item tooltip-right" href="#" data-tooltip="Bank"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l18 0"/><path d="M3 10l18 0"/><path d="M5 6l7 -3l7 3"/><path d="M4 10l0 11"/><path d="M20 10l0 11"/><path d="M8 14l0 3"/><path d="M12 14l0 3"/><path d="M16 14l0 3"/></svg><span class="nav-text">Bank</span></a></li><li><a class="nav-item tooltip-right" href="#" data-tooltip="Einstellungen"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-settings"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" />
+  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+</svg><span class="nav-text">Einstellungen</span></a></li></ul>
+<form class="nav-logout" onsubmit="return false"><button type="button" class="nav-item tooltip-right" data-tooltip="Abmelden"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 6a7.75 7.75 0 1 0 10 0"/><path d="M12 4l0 8"/></svg><span class="nav-text">Abmelden</span></button></form>
+<button type="button" class="nav-collapse" aria-label="Menü verkleinern"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-left"
+>
+  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+  <path d="M15 6l-6 6l6 6" />
+</svg></button>
+</nav></aside></template>
+<template id="tpl-side-plain"><aside class="side side-plain"><header class="site-header"><a class="brand" href="#"><img src="../img/logo.png" alt="docHamster" width="476" height="186"></a></header></aside></template>
+
+<script src="../js/core/card-fold.js"></script>
+<script src="../js/core/button-choice.js"></script>
+<script src="../js/core/expand-plus.js"></script>
+<script src="../js/core/accordion.js"></script>
+<script src="styleguide.js"></script>
+</body>
+</html>
