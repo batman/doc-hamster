@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 
 /**
  * An access key for the interface (D-040, api/v1): a person's own key for a program or an assistant (e.g. through the
- * separate MCP adapter). It acts as that person – with their rights, their role's restriction and only their
+ * separate MCP adapter, github.com/batman/doc-hamster-mcp). It acts as that person – with their rights, their role's restriction and only their
  * organisation – and on top only what its scope allows: READ ("Nur lesen") or LINK ("Lesen + Verknüpfen"). It never
  * deletes. Only its SHA-256 is stored; the key itself exists once, when it is made.
  *

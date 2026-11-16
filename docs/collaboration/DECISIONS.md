@@ -304,7 +304,7 @@ Short entries for product decisions that were taken while building and were not 
 - **Status:** decided and built (2026-11-16)
 - **Decision:** docHamster works completely without any AI assistant (D-019 stays). For the heavy work of sorting many documents an assistant may help – through a door the user opens on purpose:
   - **Core:** a plain, AI-neutral interface `api/v1` (bookings, documents with their recognised text and properties, folders; link, unlink, confirm, reject). It opens only with a person's **Zugangsschlüssel** (Mein Konto; making and removing need a fresh confirmation, shown once, only the SHA-256 stored, revocable). The key acts as that person – rights, role restriction, own organisation only – limited further by its scope: **"Nur lesen"** or **"Lesen + Verknüpfen"**; it never deletes. Text only: no scans or files leave the server this way. Every change is in the audit log and the Log "(über die Schnittstelle)"; 300 requests a minute per key.
-  - **Adapter:** the MCP translation is a separate small program in its own repo (`DocHamster-mcp`, MIT, no dependencies) that runs on the user's computer next to the assistant and talks to `api/v1`. The server never knows about AI, and no code-module installer is needed.
+  - **Adapter:** the MCP translation is a separate small program in its own repo ([doc-hamster-mcp](https://github.com/batman/doc-hamster-mcp), MIT, no dependencies) that runs on the user's computer next to the assistant and talks to `api/v1`. The server never knows about AI, and no code-module installer is needed.
 - **Reason:** the server stays AI-free and the interface also serves scripts and other programs; whoever wants no assistant never installs the adapter and creates no key.
 
 ## Decide before the relevant phase
