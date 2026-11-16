@@ -18,8 +18,7 @@
             <form method="post" action="{{ route('extensions.install', $ext->key) }}">
                 @csrf
                 {{-- Point 243: row actions are icon buttons (control-button) with tooltip, like every list row. --}}
-                @php $installLabel = __($row['installed'] ? 'extensions.update' : 'extensions.install'); @endphp
-                <button type="submit" class="control-button" aria-label="{{ $installLabel }}: {{ $name }}" data-tooltip="{{ $installLabel }}"><x-icon :name="$row['installed'] ? 'cloud-download' : 'download'" /></button>
+                <button type="submit" class="control-button" aria-label="{{ __($row['installed'] ? 'extensions.update' : 'extensions.install') }}: {{ $name }}" data-tooltip="{{ __($row['installed'] ? 'extensions.update' : 'extensions.install') }}"><x-icon :name="$row['installed'] ? 'cloud-download' : 'download'" /></button>
             </form>
         @endif
         @if ($row['installed'] && $ext->files !== [])
