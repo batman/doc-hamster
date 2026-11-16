@@ -13,7 +13,7 @@ return [
     'css' => [
         'core/base', 'core/layout', 'core/forms', 'core/components', 'core/buttons', 'core/menus', 'core/lists',
         'core/windows', 'core/menu-window', 'core/pane-edge',
-        'modules/documents', 'modules/notes', 'modules/text-editor', 'modules/ocr', 'modules/log', 'modules/updates',
+        'modules/bank', 'modules/documents', 'modules/notes', 'modules/text-editor', 'modules/ocr', 'modules/log', 'modules/updates',
         'modules/palette', 'modules/pages', 'modules/properties', 'modules/ocr-text', 'modules/girocode', 'modules/dnd', 'modules/doc-fullscreen', 'modules/dashboard', 'core/layout-debug',
     ],
     'js' => [

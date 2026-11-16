@@ -67,11 +67,8 @@ a { color: var(--primary-ink); }
 
 /* App additions to the design stylesheet */
 [hidden] { display: none !important; }
-.thumb-file { display: inline-grid; place-content: center; background: var(--surface); color: var(--muted); }
-.view-tiles .thumb-file .icon { width: 2.5rem; height: 2.5rem; }
 .calendar-head .icon-button { margin: 0; }
 .sidebar { overflow-x: hidden; }
-.view-tiles .thumb-file { display: grid; }
 
 /* ===== Round 2 of the design session ===== */
 

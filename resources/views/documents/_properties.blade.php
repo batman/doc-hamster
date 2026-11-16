@@ -18,7 +18,7 @@
         <x-slot:action><span class="card-action"><button type="button" class="button-quiet button-small" data-mark-as="{{ $document->id }}" aria-label="{{ __('properties.card.add_label') }}"><x-icon name="plus" />{{ __('properties.card.add') }}</button></span></x-slot:action>
     @endif
     @if ($propertyShown->isEmpty())
-        <p class="list-empty">{{ __('properties.card.none') }}</p>
+        <x-empty icon="list-details" :text="__('properties.card.none')" />
     @else
         <ul class="prop-list">
             @foreach ($propertyShown as $property)

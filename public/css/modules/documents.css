@@ -141,3 +141,29 @@
 .view-details td:not(.row-actions-cell) { overflow: hidden; text-overflow: ellipsis; }
 @container win (width < 36rem) { .view-details .col-tags { display: none; } }
 @container win (width < 28rem) { .view-details .col-time { display: none; } .view-details .col-date { width: 6.5rem; } }
+
+/* Moved from core (point 243, A437): styles only the documents and folders windows use. */
+.trash-list li { flex-wrap: wrap; row-gap: .1rem; }
+.trash-title { flex: 1 1 10rem; min-width: 0; overflow-wrap: anywhere; }
+.doc-rename { flex: 1; min-width: 8rem; display: inline-flex; align-items: center; gap: .25rem; margin: 0; }
+.doc-rename input { flex: 1; min-width: 0; margin: 0; }
+.pick-row.is-static > .doc-folder { position: relative; z-index: 1; }
+/* Folder window: one step up or down among the siblings (A163). */
+.folder-step form { margin: 0; }
+.folder-step button .icon { width: 1.1rem; height: 1.1rem; margin-right: .35rem; }
+/* Icon choice: the hidden radio covers the whole tile (the general radio size must not shrink it). */
+.folder-icon-choice > input[type="radio"] { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; margin: 0; opacity: 0; }
+.folder-icon-choice span:hover { border-color: var(--primary); }
+/* The receipt window keeps its old look inside */
+.win-detail .win-body { max-width: none; }
+.win-detail .detail-doc { height: 28rem; }
+/* Search results: each result with its folder as a quiet link (points 105, 106, A204). */
+.win-body a.doc-folder { display: inline-flex; align-items: center; gap: .3rem; min-width: 0; max-width: 100%; color: var(--muted); font-size: .85rem; text-decoration: none; }
+.doc-folder span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.doc-folder .icon { flex: none; width: 1rem; height: 1rem; }
+.win-body a.doc-folder:hover { color: var(--primary-ink); text-decoration: underline; }
+.win-body .view-tiles a.doc-folder { display: flex; margin-top: .15rem; }
+/* Preview overlay: the box drawn on the page and its buttons (modules/document-viewer.js). */
+.doc-box { position: absolute; z-index: 2; border: 2px dashed var(--primary); background: color-mix(in srgb, var(--primary) 12%, transparent); pointer-events: none; }
+.doc-box-actions { position: absolute; top: .35rem; left: .35rem; display: flex; gap: .35rem; pointer-events: auto; cursor: default; }
+.win-detail form > button[type="submit"] { margin-top: 1rem; }

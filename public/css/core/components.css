@@ -80,15 +80,7 @@ code { word-break: break-all; background: var(--surface); padding: .1rem .3rem; 
 .dropdown-title { margin: .25rem .5rem; font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 /* A button group as a choice inside a menu (point 179, A355: a column's width): below its .dropdown-title, saves at once. */
 .dropdown-panel > .button-choice { display: block; padding: 0 .5rem .5rem; }
-.preview-branches { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
-.preview-branches h2 { margin: 0 0 .5rem; font-size: 1.15rem; }
-.preview-list { margin: 1rem 0; padding: .75rem; border: 1px solid var(--border); border-radius: var(--radius); }
-.preview-list legend { padding-inline: .4rem; font-weight: 600; }
-.preview-branch { display: flex; align-items: flex-start; gap: .75rem; margin: .35rem 0; padding: .75rem; border-radius: var(--radius); background: var(--surface); cursor: pointer; }
 input[type="radio"] { width: 1.25rem; height: 1.25rem; min-height: 0; max-width: none; flex: none; margin: .25rem 0 0; accent-color: var(--primary); }
-.preview-warning { margin-top: 1rem; }
-.preview-warning p { margin-top: 0; }
-.preview-warning label { display: flex; align-items: center; gap: .6rem; min-height: 48px; }
 
 /* Tags: always a pill that starts with "#", side by side like running text, never one below the other.
    Selected and not selected have the same size; only the fill changes. The "#" is drawn by CSS. */
@@ -161,7 +153,6 @@ label.tag-choice { color: inherit; }
 .card-head .icon { width: 1.35rem; height: 1.35rem; color: var(--primary); }
 .card-text { max-width: 70ch; margin: .25rem 0 .75rem; color: var(--muted); }
 .card-note { max-width: 70ch; margin: .5rem 0 0; font-size: .8rem; color: var(--muted); }
-.card-row { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
 .card button { margin-top: 0; }
 .button-small { display: inline-flex; align-items: center; gap: .45rem; min-height: 40px; padding: 0 1rem; font-size: .95rem; }
 .button-small .icon { width: 1.15rem; height: 1.15rem; }
@@ -315,7 +306,6 @@ label.tag-choice:not(.chip):has(> input[type="checkbox"]) { display: inline-bloc
 .tag.is-selected, .tag[aria-pressed="true"], .tag-choice input:checked + .tag { color: var(--tag-text, #1a1a18); }
 .dialog-actions form { flex: 1; display: flex; }
 .dialog-actions form button { flex: 1; margin: 0; }
-.dropdown-tags { padding: .25rem .5rem .75rem; }
 .dropdown-panel .dialog-actions { margin-top: .25rem; padding: 0 .5rem .5rem; }
 .tag-color-field { margin: 1rem 0 0; padding: 0; border: 0; }
 .tag-color-field legend { padding: 0; font-weight: 600; color: var(--primary); }

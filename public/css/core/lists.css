@@ -153,10 +153,6 @@ html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
 .control-button.control-danger:hover { color: var(--error); }
 .view-details td.row-actions-cell { width: 1%; padding-block: 0; white-space: nowrap; }
 .view-list li .row-actions { margin-left: .25rem; }
-.trash-list li { flex-wrap: wrap; row-gap: .1rem; }
-.trash-title { flex: 1 1 10rem; min-width: 0; overflow-wrap: anywhere; }
-.doc-rename { flex: 1; min-width: 8rem; display: inline-flex; align-items: center; gap: .25rem; margin: 0; }
-.doc-rename input { flex: 1; min-width: 0; margin: 0; }
 .is-renaming .row-actions { display: none; }
 .folder-rows { position: relative; }
 .folder-rows > .folder-row { position: relative; }
@@ -177,7 +173,6 @@ html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
    the row itself takes the focus (tabindex=0), its title link is no extra tab stop. */
 [data-doc-row] { cursor: pointer; }
 [data-doc-row]:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
-.pick-row.is-static > .doc-folder { position: relative; z-index: 1; }
 
 /* Drag and drop: the row or window a drop lands on is orange (A131, A175); picked document rows (A132) are tinted. */
 :is(.is-drop-target:not(.win-body), .pick-row.row-color.is-static.is-opener.is-drop-target:has(> span a)) { background: color-mix(in srgb, var(--primary) 20%, var(--bg)); box-shadow: inset 0 0 0 2px var(--primary); color: var(--text); }
@@ -229,49 +224,15 @@ html.is-carrying, html.is-carrying * { cursor: grabbing !important; }
 .cash-entry > :is(.field, fieldset) { flex: 0 1 auto; min-width: 0; margin: 0; }
 .cash-entry > .cash-entry-text { flex: 1 1 12rem; }
 .cash-entry input[name="amount"] { width: 8rem; }
-/* The account window's filters (point 150): labels never wrap; when the groups do not fit, modules/bank.js marks the
-   window is-filters-tight and the dropdowns take their place (beside the narrow-window rule of windows.css). */
-.bank-filters { display: flex; align-items: center; gap: .4rem; min-width: 0; }
-.bank-filters .button { white-space: nowrap; }
-.win.is-filters-tight .bank-filters-wide { display: none; }
-.win.is-filters-tight .bank-filters-narrow { display: block; }
-/* The account window as a calendar (159.2, A332–A334; on the .calendar block of Dokumente): a day head with the date, an
-   orange dot while a booking lacks a document and the day's sum; then up to three bookings with their signed amount
-   (green "+" in, text-colour "−" out, A309). The whole day is a link to the list of that day (A333). In a narrow window
-   only the amounts show, the name is in the tooltip. */
-.bank-calendar .day.has-entries { cursor: pointer; }
-.bank-calendar .day.has-entries:hover { background: var(--surface); }
-.bank-calendar .day-head { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; min-width: 0; color: var(--text); text-decoration: none; }
-.bank-calendar .day-head b { display: inline; }
-.bank-calendar .day-head .row-amount { font-size: .75rem; font-weight: 500; color: var(--muted); }
-.bank-calendar .day-head .row-amount.is-income { color: color-mix(in srgb, var(--ok) 70%, var(--text)); }
-.bank-calendar .day-open { flex: none; width: .5rem; height: .5rem; border-radius: 50%; background: var(--warning); }
-.bank-calendar .entry { display: flex; gap: .3rem; align-items: baseline; padding-inline: .3rem; font-size: .8rem; }
-.bank-calendar .entry-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.bank-calendar .entry .row-amount { font-weight: 500; }
-.bank-calendar .more { font-size: .8rem; text-decoration: none; }
-@container win (width < 44rem) { .bank-calendar .entry-name { display: none; } }
 /* A319: a booking with a note shows a small note sign; the tooltip holds the note. */
 .row-note { flex: none; display: inline-flex; color: var(--muted); }
 .row-note .icon { width: 1rem; height: 1rem; }
-/* A325: "Dauerbeleg für: …" in the document detail, with its end button. */
-.standing-line { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .5rem; margin: .5rem 0; color: var(--muted); }
-.standing-line > form { margin: 0; }
-.standing-line .icon { flex: none; width: 1rem; height: 1rem; }
-/* Ticks above the candidates of a booking (A318, A322). */
-.bank-ticks { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; margin: 0 0 .5rem; }
 /* Choice stack (A286): menu entries one below the other in a dialog, each its own form (one click saves). */
 .menu-stack { display: grid; gap: .15rem; margin: 0 0 1rem; }
 .menu-stack > form { margin: 0; }
 .menu-stack .menu-item { width: 100%; }
 /* A field that fills a row (rename in place, A286). */
 .pick-row > .row-field { flex: 1; min-width: 0; margin: 0; }
-.folder-step form { margin: 0; }
-.folder-step button .icon { width: 1.1rem; height: 1.1rem; margin-right: .35rem; }
-
-/* Icon choice: the hidden radio covers the whole tile (the general radio size must not shrink it). */
-.folder-icon-choice > input[type="radio"] { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; margin: 0; opacity: 0; }
-.folder-icon-choice span:hover { border-color: var(--primary); }
 
 /* Long press on a row's name (A190): a thin orange line fills under the name, 2 s mouse / 1 s finger. */
 .is-pressing { background: linear-gradient(var(--primary), var(--primary)) no-repeat left bottom / 0 2px; animation: press-line 2s linear forwards; }

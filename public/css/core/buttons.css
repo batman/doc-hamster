@@ -128,7 +128,7 @@ input[type="file"]::file-selector-button { border-radius: 10px; font-size: 1rem;
    row actions, menu entries, links (also rows), summary, strips, tabs, colour swatches, icon choices, chips, checkbox and
    radio labels, selects. Zero specificity (:where), so a module's grab, text or col-resize cursor still wins. */
 :where(button, .button, [role="button"], a[href], summary, select, label[for], .control-button, .icon-button, .menu-item, .tab,
-    .win-strip, .tag-color, .tag-choice, .folder-icon-choice, .chip, .text-kind, label.check,
+    .win-strip, .tag-color, .tag-choice, .chip, label.check,
     label:has(> input:is([type="checkbox"], [type="radio"], [type="color"], [type="file"])),
     input:is([type="checkbox"], [type="radio"], [type="color"], [type="file"], [type="submit"], [type="button"], [type="reset"])):where(:not(:disabled, [aria-disabled="true"])) { cursor: pointer; }
-:where(.tag-color, .tag-choice, .folder-icon-choice) > * { cursor: inherit; }
+:where(.tag-color, .tag-choice) > * { cursor: inherit; }

@@ -8,11 +8,30 @@ declare(strict_types=1);
  *   - uses a CSS class that no stylesheet defines and no script uses as a hook (an element outside the framework),
  *   - sets inline styles other than CSS custom properties (style="--x: …" carries computed values, e.g. widths),
  *   - puts two filled main buttons into one Aktionszeile (.actions).
- * Also lists framework classes (public/css/core) the styleguide does not show yet – information, not a failure.
- * Usage: php scripts/check-ui.php
+ * Also lists framework classes (public/css/core) the styleguide (styleguide.html + styleguide.js) does not show yet –
+ * information, not a failure; the goal is 0.
+ * Usage: php scripts/check-ui.php [--list]   (--list prints those classes with their stylesheet)
  */
 
 $root = dirname(__DIR__);
+
+/*
+ * Framework classes the styleguide does not need to show (A437): no building blocks of their own, but states and helper
+ * parts that only scripts set or switch on, and the layout debug overlay. A new entry needs a reason here.
+ */
+const STATE_CLASSES = [
+    'can-size',          // .windows: the window row may be resized (core/window-edge.js)
+    'fit-probe',         // off-screen box that measures row symbols (modules/documents-rows.js)
+    'layout-probe',      // layout debug overlay (core/layout-debug.js)
+    'more-left',         // html: content scrolled sideways, shadow on that side (core/scroll-hint.js)
+    'more-right',
+    'nav-open',          // html: phone menu drawer is open (core/menu.js)
+    'nav-backdrop',      // dark backdrop behind the open drawer, only shown with nav-open
+    'nav-wall',          // drag edge of the main menu, built by core/menu.js
+    'pick-placeholder',  // dashed placeholder while a row is dragged (core/sortable.js)
+    'show-picks',        // html: "Auswählen" is on, row checkboxes show (modules/documents-pick.js)
+    'switcher-select',   // select a too narrow Umschalter turns into (core/button-choice.js)
+];
 
 /** @return list<string> */
 function files(string $dir, string $suffix): array
@@ -45,8 +64,9 @@ $core = [];
 foreach (files($root.'/public/css', '.css') as $file) {
     $classes = cssClasses((string) file_get_contents($file));
     $defined += $classes;
-    if (str_contains(str_replace('\\', '/', $file), '/public/css/core/')) {
-        $core += $classes;
+    $path = str_replace('\\', '/', $file);
+    if (str_contains($path, '/public/css/core/')) {
+        $core += array_map(static fn (): string => substr($path, (int) strpos($path, 'public/css/')), $classes);
     }
 }
 // Generated stylesheets (tag colours …) and the styleguide's own classes.
@@ -115,12 +135,17 @@ foreach (files($root.'/resources/views', '.blade.php') as $file) {
     }
 }
 
-$styleguide = (string) file_get_contents($root.'/public/design/styleguide.html');
-$missing = array_values(array_filter(array_keys($core), static fn (string $c): bool => ! str_contains($styleguide, $c) && ! str_starts_with($c, 'is-') && ! str_starts_with($c, 'has-')));
+$styleguide = file_get_contents($root.'/public/design/styleguide.html').file_get_contents($root.'/public/design/styleguide.js');
+$missing = array_values(array_filter(array_keys($core), static fn (string $c): bool => ! str_contains($styleguide, $c) && ! str_starts_with($c, 'is-') && ! str_starts_with($c, 'has-') && ! in_array($c, STATE_CLASSES, true)));
 sort($missing);
 
 if ($missing !== []) {
     fwrite(STDOUT, 'Info: '.count($missing)." framework classes are not shown in the styleguide yet.\n");
+    if (in_array('--list', $argv, true)) {
+        foreach ($missing as $class) {
+            fwrite(STDOUT, "  .{$class}  ({$core[$class]})\n");
+        }
+    }
 }
 if ($errors !== []) {
     fwrite(STDERR, implode("\n", $errors)."\n".count($errors)." UI problem(s). Rule: every element comes from the styleguide (docs/design/FRAMEWORK.md).\n");
