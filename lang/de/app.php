@@ -19,6 +19,7 @@ return [
         'hint' => 'Zum Bearbeiten klicken',
         'saved' => 'Gespeichert.',
         'failed' => 'Speichern fehlgeschlagen.',
+        'apply' => 'Übernehmen',
     ],
     'menu_window' => [
         'display' => 'Anzeige',

@@ -16,6 +16,7 @@ return [
     'card_fold' => 'Collapse',
     'card_unfold' => 'Expand',
     'edit_in_place' => [
+        'apply' => 'Apply',
         'hint' => 'Click to edit',
         'saved' => 'Saved.',
         'failed' => 'Saving failed.',

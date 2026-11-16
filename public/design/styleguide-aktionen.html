@@ -45,7 +45,13 @@
         <h1>Aktionen</h1>
         <p class="sg-note">Knöpfe, Knopfgruppen, Umschalter und Menüs. Regeln: <code>docs/design/framework/aktionen.md</code>.</p>
         <section class="sg-section">
-            <h3 id="buttons">Knöpfe</h3>
+                        <p class="sg-note">Tooltip unter dem Element (Standard) oder rechts (<code>tooltip-right</code>):</p>
+            <div class="sg-row">
+                <button type="button" data-tooltip="Tooltip unter dem Element">Tooltip unten</button>
+                <button type="button" class="tooltip-right" data-tooltip="Tooltip rechts">Tooltip rechts</button>
+            </div>
+
+<h3 id="buttons">Knöpfe</h3>
             <p class="sg-note">Punkt 243 (A433): das eine Knopfsystem – <strong>keine weiteren Varianten</strong>. Art: Haupt (<code>button</code>, orange, höchstens einer pro Bereich), Normal (<code>button-quiet</code>, grau gefüllt mit Schatten, ohne Rahmen – nie ein weißer Knopf mit Rahmen), Gefahr (<code>button-danger</code>), Textlink (<code>button-link</code>, <code>.is-quiet</code>, <code>.is-danger</code>). Größe: 48 px oder klein 40 px (<code>button-small</code>). Nur Symbol: <code>icon-button</code> (quadratisch, mit Tooltip). In Listenzeilen: Steuerknöpfe (<code>control-button</code>, ohne Rahmen). <code>scripts/check-ui.php</code> (CI) lehnt Klassen ab, die kein Stylesheet kennt.</p>
             <div class="sg-row">
                 <button type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>Haupt</button>
@@ -86,7 +92,17 @@
             </div>
             <p class="sg-note">Oben rechts in 15rem: passt nicht – das Auswahlfeld steht an seiner Stelle.</p>
 
-            <h3 class="sg-pad" id="action-group">Knopfgruppe</h3>
+                        <div class="sg-row">
+                <div class="switcher" data-switch-static role="group" aria-label="Ansicht"><button type="button" aria-pressed="true" aria-label="Details" data-tooltip="Details"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l11 0"/><path d="M9 12l11 0"/><path d="M9 18l11 0"/><path d="M5 6l0 .01"/><path d="M5 12l0 .01"/><path d="M5 18l0 .01"/></svg></button><button type="button" aria-pressed="false" aria-label="Kacheln" data-tooltip="Kacheln"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6v6h-6z"/><path d="M14 4h6v6h-6z"/><path d="M4 14h6v6h-6z"/><path d="M14 14h6v6h-6z"/></svg></button><button type="button" aria-pressed="false" aria-label="Kalender" data-tooltip="Kalender"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/></svg></button></div>
+                <span class="switcher" role="group" aria-label="Zeitraum"><button type="button" aria-pressed="true">Monat</button><button type="button" aria-pressed="false">Quartal</button><button type="button" aria-pressed="false">Jahr</button></span>
+            </div>
+            <p class="sg-note"><code>.button-group</code>: <strong>Aktionen</strong> direkt aneinander (Zoom-Leiste, Editor), außen 10 px rund, ein umgeschalteter mit <code>aria-pressed="true"</code>. Eine Ansicht wählen ist eine Auswahl – also ein Umschalter (oben).</p>
+            <div class="sg-row">
+                <span class="button-choice" data-choice><input type="hidden" value=""><span class="switcher" role="group" aria-label="Bank zugeordnet"><button type="button" data-value="" aria-pressed="true">Alle</button><button type="button" data-value="yes" aria-pressed="false">Ja</button><button type="button" data-value="no" aria-pressed="false">Nein</button></span></span>
+            </div>
+            <p class="sg-note"><strong>Eine Auswahl ist nie eine Knopfgruppe</strong> (Punkt 188.3), sondern der <a href="#switcher">Umschalter</a> – <code>.button-group</code> nur für Aktionen nebeneinander.</p>
+
+<h3 class="sg-pad" id="action-group">Knopfgruppe</h3>
             <p class="sg-note">Punkt 200: <strong>Aktionen</strong> in der Fensterleiste stehen wie der Umschalter in der grauen Schiene, <strong>ohne Rahmen</strong>; Hover etwas dunkleres Grau, nie der weiße/orange „gewählt“-Look. Ein einzelner Knopf ist seine eigene Schiene (<code>.icon-button</code> in <code>.win-tools</code>); was zusammengehört, teilt eine: <code>&lt;span class="switcher is-actions" role="group" aria-label="…"&gt;</code> um Knöpfe ohne Knopfklassen. Rechts daneben für sich das ⋯-Menü. Der Umschalter selbst bleibt unverändert.</p>
             <div class="win-tools" style="display: flex; align-items: center; gap: .4rem; flex-wrap: wrap;">
                 <span class="switcher" data-switch-static role="group" aria-label="Ansicht"><button type="button" aria-pressed="false" aria-label="Details"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 5h8" />
@@ -144,32 +160,6 @@
 
         </section>
 
-        <section id="sg-buttons" class="sg-section">
-            <h2>Buttons</h2>
-            <div class="sg-row">
-                <button type="submit">Speichern</button>
-                <a class="button" href="#">Link als Button</a>
-                <button type="submit" disabled>Deaktiviert</button>
-            </div>
-            <p class="sg-note">Es gibt nur eine Button-Art. Sekundär, Gefahr (Löschen) und Deaktiviert sind noch nicht gestaltet.</p>
-            <div class="sg-row">
-                <button type="button" data-tooltip="Tooltip unter dem Element">Tooltip unten</button>
-                <button type="button" class="tooltip-right" data-tooltip="Tooltip rechts">Tooltip rechts</button>
-            </div>
-        </section>
-
-        <section id="sg-knopfgruppe" class="sg-section">
-            <h2>Knopfgruppe</h2>
-            <div class="sg-row">
-                <div class="switcher" data-switch-static role="group" aria-label="Ansicht"><button type="button" aria-pressed="true" aria-label="Details" data-tooltip="Details"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l11 0"/><path d="M9 12l11 0"/><path d="M9 18l11 0"/><path d="M5 6l0 .01"/><path d="M5 12l0 .01"/><path d="M5 18l0 .01"/></svg></button><button type="button" aria-pressed="false" aria-label="Kacheln" data-tooltip="Kacheln"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6v6h-6z"/><path d="M14 4h6v6h-6z"/><path d="M4 14h6v6h-6z"/><path d="M14 14h6v6h-6z"/></svg></button><button type="button" aria-pressed="false" aria-label="Kalender" data-tooltip="Kalender"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/></svg></button></div>
-                <span class="switcher" role="group" aria-label="Zeitraum"><button type="button" aria-pressed="true">Monat</button><button type="button" aria-pressed="false">Quartal</button><button type="button" aria-pressed="false">Jahr</button></span>
-            </div>
-            <p class="sg-note"><code>.button-group</code>: <strong>Aktionen</strong> direkt aneinander (Zoom-Leiste, Editor), außen 10 px rund, ein umgeschalteter mit <code>aria-pressed="true"</code>. Eine Ansicht wählen ist eine Auswahl – also ein Umschalter (oben).</p>
-            <div class="sg-row">
-                <span class="button-choice" data-choice><input type="hidden" value=""><span class="switcher" role="group" aria-label="Bank zugeordnet"><button type="button" data-value="" aria-pressed="true">Alle</button><button type="button" data-value="yes" aria-pressed="false">Ja</button><button type="button" data-value="no" aria-pressed="false">Nein</button></span></span>
-            </div>
-            <p class="sg-note"><strong>Eine Auswahl ist nie eine Knopfgruppe</strong> (Punkt 188.3), sondern der <a href="#switcher">Umschalter</a> – <code>.button-group</code> nur für Aktionen nebeneinander.</p>
-        </section>
 </main>
 <footer class="site-footer"><hr><small class="muted">docHamster Version 0.1.0</small></footer>
 </div>
@@ -215,6 +205,7 @@
 <script src="../js/core/button-choice.js"></script>
 <script src="../js/core/expand-plus.js"></script>
 <script src="../js/core/accordion.js"></script>
+<script src="../js/core/dropdowns.js"></script>
 <script src="styleguide.js"></script>
 </body>
 </html>

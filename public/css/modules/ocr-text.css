@@ -25,6 +25,9 @@
 .word-crop-box { margin: 0 0 .75rem; padding: .5rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
 .word-crop { display: block; width: 100%; height: auto; max-height: 10rem; object-fit: contain; }
 .word-popup .field-addon input { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-.word-popup-notes { display: grid; gap: .4rem; margin: -.25rem 0 .5rem; justify-items: start; }
+/* PO 2026-11-16: the parts under the field stand apart – "+ Wort hinzufügen" with room above, the notes (recognised kind,
+   learned suggestion with its button) as one grey block, then the actions. */
+.word-popup form > .button-small { margin: .75rem 0 0; }
+.word-popup-notes { display: grid; gap: .5rem; margin: 1rem 0 .25rem; padding: .75rem; border-radius: 8px; background: var(--surface); justify-items: start; }
 .word-popup-note { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 0; color: var(--muted); font-size: .875rem; }
 .word-popup-note button { margin: 0; }

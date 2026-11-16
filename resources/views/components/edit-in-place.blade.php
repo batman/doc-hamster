@@ -7,6 +7,6 @@
 --}}
 @props(['name', 'value' => null, 'action', 'multiline' => false, 'placeholder' => '', 'label' => null, 'maxlength' => null])
 <div {{ $attributes->class(['edit-in-place', 'is-multiline' => $multiline]) }} tabindex="0" role="button" data-edit-in-place="{{ $action }}" data-field="{{ $name }}"
-    data-placeholder="{{ $placeholder }}" data-saved="{{ __('app.edit_in_place.saved') }}" data-failed="{{ __('app.edit_in_place.failed') }}"
+    data-placeholder="{{ $placeholder }}" data-saved="{{ __('app.edit_in_place.saved') }}" data-apply="{{ __('app.edit_in_place.apply') }}" data-failed="{{ __('app.edit_in_place.failed') }}"
     @if ($label) aria-label="{{ $label }}" @endif aria-description="{{ __('app.edit_in_place.hint') }}"
     @if ($maxlength) data-maxlength="{{ $maxlength }}" @endif>{{ $value }}</div>

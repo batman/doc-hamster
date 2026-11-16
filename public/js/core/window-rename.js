@@ -1,6 +1,7 @@
 // Fenstertitel umbenennen (points 185.2, A364; <x-window rename-url="…" rename-field="…" :rename-data="[…]">):
-// a click on the title (or Enter while it has focus) puts a field of the same size in its place. Enter or leaving the
-// field saves at once, Escape or an empty name cancels; no check mark. Afterwards every open window with the same
+// a click on the title (or Enter while it has focus) puts a field of the same font in its place, ✓ behind it (PO
+// 2026-11-16, DocHamster.checkField from core/edit-in-place.js). Enter, ✓ or leaving the field saves at once, Escape or
+// an empty name cancels. Afterwards every open window with the same
 // rename address gets the new title (head, strip, data-window-title, document.title) and
 // DocHamster.emit('window:renamed', { win, name, json }) lets the module update its rows.
 (() => {
@@ -43,17 +44,19 @@
         field.maxLength = Number(title.dataset.renameMax || 250);
         field.setAttribute('aria-label', title.dataset.renameLabel ?? '');
         title.hidden = true;
-        title.after(field);
+        let finish = () => {};
+        const wrap = DocHamster?.checkField ? DocHamster.checkField(field, title.dataset.apply, () => finish(true, true)) : field;
+        title.after(wrap);
         field.focus();
         field.select();
         // The head of a detail window drags its document: not while text is selected in the field.
         field.addEventListener('pointerdown', event => event.stopPropagation());
         let done = false;
-        const finish = (save, refocus) => {
+        finish = (save, refocus) => {
             if (done) return;
             done = true;
             const name = field.value.trim();
-            field.remove();
+            wrap.remove();
             title.hidden = false;
             if (refocus) title.focus({ preventScroll: true });
             if (!save || name === '' || name === old) return;

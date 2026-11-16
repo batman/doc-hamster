@@ -11,8 +11,6 @@
 .phone-qr { display: block; width: 18rem; max-width: 100%; }
 
 /* Bank */
-.tabs { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: var(--space); }
-.tabs [aria-current="page"] { font-weight: 600; text-decoration: none; }
 .statement-purpose { display: block; word-break: break-word; }
 .table-scroll { overflow-x: auto; }
 .table-scroll table { border-collapse: collapse; }

@@ -6,16 +6,18 @@ label:not(:has(input[type="checkbox"])) { color: var(--primary); }
 .chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
 .chips .chip { position: relative; margin: 0; font-weight: 400; }
 .chip input { position: absolute; opacity: 0; }
-.chip span { display: inline-block; min-height: 2.75rem; line-height: 2.75rem; padding: 0 1rem; border: 1px solid var(--border); border-radius: 1.375rem; cursor: pointer; }
-.chip input:checked + span { font-weight: 600; border: 2px solid var(--primary); }
-.chip input:checked + span::before { content: "✓ "; }
+.chip span { display: inline-block; min-height: 2.75rem; line-height: calc(2.75rem - 2px); padding: 0 1rem; border: 1px solid var(--primary); border-radius: 1.375rem; color: var(--text); font-weight: 600; cursor: pointer; transition: background-color .12s; }
+/* PO 2026-11-16: a chip works like a tag pill – chosen = filled (orange, white text), not chosen = only the frame; no
+   check mark, the same weight in both states, so a click never changes its width and nothing beside it moves. */
+.chip span:hover { background: rgb(255 118 34 / .12); }
+.chip input:checked + span { background: var(--primary); color: var(--primary-text); }
 .chip input:focus-visible + span { outline: 2px solid currentColor; outline-offset: 2px; }
 /* Small toggle chips (point 187.1, e.g. "Suchen in" in the search panel): 36 px high, for tight spots; they wrap. */
 .chips.chips-small { gap: .35rem; margin-top: 0; }
 .chips-small .chip input { inset: 0; width: 100%; height: 100%; min-height: 0; margin: 0; }
 .chips-small .chip span { min-height: 2.25rem; line-height: calc(2.25rem - 2px); padding: 0 .75rem; border-radius: 1.125rem; font-size: .9rem; white-space: nowrap; }
 input, select, textarea {
-    width: 100%; min-height: 48px; padding: .6rem .75rem; font: inherit; color: var(--text);
+    width: 100%; min-height: 40px; padding: 0 .65rem; font: inherit; color: var(--text);
     background: var(--bg); border: 2px solid var(--primary); border-radius: var(--radius);
     max-width: 32rem;
 }
@@ -63,7 +65,8 @@ button, .button {
 button:hover, .button:hover { box-shadow: var(--shadow); }
 
 /* Form fields (Go 2026-11-08, point 32, A82-A85), as the PO picked them in variant A: label above, a quiet
-   thin frame, 8 px corners, 48 px high; while typing an orange frame with a soft orange ring. */
+   thin frame, 8 px corners; while typing an orange frame with a soft orange ring. One height for every field (PO
+   2026-11-16): 40 px – as tall as an Umschalter – with a slim padding; input-small is the same size now. */
 :root { --field-bg: #ffffff; --field-line: #d9d6cc; --field-glow: rgb(255 118 34 / .28); }
 @media (prefers-color-scheme: dark) { :root { --field-bg: #1f1f1d; --field-line: #55534e; } }
 
@@ -77,13 +80,13 @@ label + :is(input:not([type="checkbox"], [type="radio"], [type="hidden"]), selec
 
 input:not([type="checkbox"], [type="radio"], [type="color"], [type="range"], [type="file"], [type="hidden"]),
 select, textarea {
-    box-sizing: border-box; width: 100%; max-width: 40rem; min-height: 48px;
-    padding: 0 .9rem; border: 1px solid var(--field-line); border-radius: 8px;
+    box-sizing: border-box; width: 100%; max-width: 40rem; min-height: 40px;
+    padding: 0 .65rem; border: 1px solid var(--field-line); border-radius: 8px;
     background-color: var(--field-bg); color: var(--text);
     font: inherit; font-size: 1rem; line-height: 1.4;
     outline: none; box-shadow: none; transition: box-shadow .12s;
 }
-textarea { min-height: 6rem; padding: .7rem .9rem; resize: vertical; field-sizing: content; }
+textarea { min-height: 6rem; padding: .5rem .65rem; resize: vertical; field-sizing: content; }
 select {
     padding-right: 2.5rem; appearance: none; cursor: pointer;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff7622' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6l6 -6'/%3E%3C/svg%3E");
@@ -113,12 +116,15 @@ input:autofill:focus, input:-webkit-autofill:focus { box-shadow: 0 0 0 1000px va
 fieldset { min-width: 0; max-width: 40rem; margin: 1rem 0 0; padding: 0; border: 0; }
 fieldset > legend { float: left; width: 100%; margin: 0 0 .4rem; padding: 0; font-size: .875rem; font-weight: 600; line-height: 1.2; color: var(--primary-ink); }
 fieldset > legend + * { clear: both; }
+/* PO 2026-11-16: fields and choices side by side line up – labels on one line, controls (40 px) on one line; a legend
+   above an Umschalter keeps the same gap as a label above its field (grid gap + the field's own .4rem). */
+fieldset > legend:has(+ :is(.switcher, .button-choice)) { margin-bottom: .8rem; }
 .rights, .tag-color-field { border: 0; padding: 0; border-radius: 0; }
 .rights label { display: flex; align-items: center; gap: .5rem; margin-top: 0; font-size: 1rem; color: var(--text); }
 
 /* A90: small field for tight spots – 40 px like small buttons, no label above. Every search field is small. */
-input.input-small, input[type="search"] { min-height: 40px; padding: 0 .75rem; font-size: .9375rem; }
-select.input-small { min-height: 40px; padding-left: .75rem; font-size: .9375rem; }
+input.input-small, input[type="search"] { min-height: 40px; padding: 0 .65rem; font-size: .9375rem; }
+select.input-small { min-height: 40px; padding-left: .65rem; font-size: .9375rem; }
 
 /* Point 36: a colour field shows its colour as one full round dot – no square inside, no extra frame */
 input[type="color"] { -webkit-appearance: none; appearance: none; border: 0; padding: 0; overflow: hidden; background: none; }
@@ -154,17 +160,24 @@ input[type="color"]:focus-visible { outline: 2px solid var(--primary); outline-o
 .crop-handle[data-handle="sw"] { left: 0; top: 100%; cursor: nesw-resize; }
 .crop-handle[data-handle="w"] { left: 0; top: 50%; cursor: ew-resize; }
 .crop-actions { position: absolute; top: 0; right: 0; display: flex; gap: .35rem; padding: .5rem; transform: scale(calc(1 / var(--doc-scale, 1))); transform-origin: 100% 0; cursor: default; }
-/* Click-to-edit (point 28): plain text with a light hover hint, a field of the same size while editing */
+/* Click-to-edit (point 28; PO 2026-11-16): plain text, a light grey on hover (no frame); a click turns it into a slim
+   field with ✓ behind it (.edit-field). Enter, ✓ or leaving saves, Escape cancels. */
 .edit-in-place {
-    min-height: 2.75rem; margin: 0 -.5rem; padding: .5rem; border: 1px solid transparent; border-radius: calc(var(--radius) / 2);
+    min-height: 40px; margin: 0 -.5rem; padding: .45rem .5rem; border: 1px solid transparent; border-radius: 8px;
     white-space: pre-wrap; overflow-wrap: anywhere; cursor: text;
 }
-.edit-in-place:hover { border-color: var(--border); background: var(--surface); }
+.edit-in-place:hover { background: var(--surface); }
 .edit-in-place:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .edit-in-place:empty::before { content: attr(data-placeholder); color: var(--muted); }
 .edit-in-place.is-saving { opacity: .6; }
-.edit-in-place-field { display: block; width: calc(100% + 1rem); max-width: none; margin: 0 -.5rem; padding: .5rem; font: inherit; line-height: inherit; }
-textarea.edit-in-place-field { min-height: 2.75rem; resize: vertical; field-sizing: content; }
+.edit-in-place-field { display: block; flex: 1; width: auto; min-width: 0; max-width: none; margin: 0; padding: 0 .5rem; font: inherit; line-height: inherit; }
+/* Feld mit ✓ (PO 2026-11-16): the one way to change a saved value in place – the field, ✓ right of it, no X. Used by
+   click-to-edit (core/edit-in-place.js, DocHamster.checkField), the window title and the row rename. */
+.edit-field { display: flex; align-items: center; gap: .35rem; min-width: 0; }
+.edit-field:has(> .edit-in-place-field) { margin: 0 -.5rem; }
+.edit-field:has(> textarea) { align-items: flex-start; }
+.edit-field > .control-button { flex: none; }
+textarea.edit-in-place-field { min-height: 40px; padding: .45rem .5rem; resize: vertical; field-sizing: content; }
 .edit-in-place-small, .edit-in-place-field.edit-in-place-small { font-size: .85rem; line-height: 1.45; color: var(--muted); }
 .edit-in-place-field.edit-in-place-small { color: var(--text); font-family: inherit; }
 p.edit-in-place-small.is-plain { white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -175,15 +188,15 @@ form > .field + :is(button, .button, .actions) { margin-top: 1.5rem; }
 
 /* Field with symbol ("Feld mit Symbol", A195-A199), like input groups: a leading symbol or text (@, €, search), a
    button inside the field on the right (✓ save, X clear, eye) and/or a state symbol (green ✓, red !). The field keeps
-   its own look, frame and focus ring; the parts lie on top of it. 48 px, small fields (input-small) 40 px. */
+   its own look, frame and focus ring; the parts lie on top of it. Every field is 40 px (PO 2026-11-16). */
 .field-addon { position: relative; display: block; width: 100%; max-width: 40rem; }
 .field-addon > :is(input, select) { margin: 0; }
-.field-addon > .addon-lead { position: absolute; inset: 0 auto 0 0; display: grid; place-items: center; width: 2.75rem;
+.field-addon > .addon-lead { position: absolute; inset: 0 auto 0 0; display: grid; place-items: center; width: 2.4rem;
     color: var(--muted); font-weight: 600; pointer-events: none; }
 .field-addon > .addon-lead .icon { width: 1.2rem; height: 1.2rem; }
-.field-addon:has(> .addon-lead) > :is(input, select) { padding-left: 2.6rem; }
-.field-addon > .addon-end { position: absolute; inset: 4px 4px 4px auto; display: flex; align-items: center; gap: 2px; }
-.field-addon > .addon-end > .control-button { width: 40px; min-width: 40px; height: 40px; min-height: 0; border-radius: 6px; }
+.field-addon:has(> .addon-lead) > :is(input, select) { padding-left: 2.3rem; }
+.field-addon > .addon-end { position: absolute; inset: 3px 3px 3px auto; display: flex; align-items: center; gap: 2px; }
+.field-addon > .addon-end > .control-button { width: 34px; min-width: 34px; height: 34px; min-height: 0; border-radius: 6px; }
 .field-addon > .addon-end > .control-button:hover { background: color-mix(in srgb, var(--primary) 10%, transparent); }
 .field-addon > .addon-end > .control-button[aria-pressed="true"] > .icon:first-of-type,
 .field-addon > .addon-end > .control-button:not([aria-pressed="true"]) > .icon + .icon { display: none; }
@@ -191,8 +204,8 @@ form > .field + :is(button, .button, .actions) { margin-top: 1.5rem; }
 .field-addon.is-copy > input { font-family: ui-monospace, "Cascadia Mono", Consolas, Menlo, "DejaVu Sans Mono", monospace; font-size: .875rem; }
 .field-addon > .addon-end > .addon-state { display: grid; place-items: center; width: 2rem; height: 100%; }
 .field-addon > .addon-end > .addon-state .icon { width: 1.25rem; height: 1.25rem; }
-.field-addon:has(> .addon-end > :not([hidden])) > :is(input, select) { padding-right: 3rem; }
-.field-addon:has(> .addon-end > :not([hidden]) ~ :not([hidden])) > :is(input, select) { padding-right: 5.25rem; }
+.field-addon:has(> .addon-end > :not([hidden])) > :is(input, select) { padding-right: 2.6rem; }
+.field-addon:has(> .addon-end > :not([hidden]) ~ :not([hidden])) > :is(input, select) { padding-right: 4.6rem; }
 .field-addon:has(> .addon-end > :not([hidden])) > select { background-position: right 3.2rem center; }
 .field-addon:has(> .input-small) > .addon-lead { width: 2.4rem; }
 .field-addon:has(> .input-small) > .addon-end { inset: 3px 3px 3px auto; }

@@ -220,9 +220,10 @@ html.is-carrying, html.is-carrying * { cursor: grabbing !important; }
 .amount-summary .row-amount.is-income { color: color-mix(in srgb, var(--ok) 70%, var(--text)); }
 /* Eintragszeile (point 190): a small create form above a list – its fields side by side, wrapping in a narrow window,
    the button at the bottom line; the text field takes the remaining room. */
-.cash-entry { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem .75rem; margin: 0 0 1rem; }
+.cash-entry { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .5rem .75rem; margin: 0 0 1rem; }
 .cash-entry > :is(.field, fieldset) { flex: 0 1 auto; min-width: 0; margin: 0; }
 .cash-entry > .cash-entry-text { flex: 1 1 12rem; }
+.cash-entry > :is(button, .button) { align-self: flex-end; margin: 0; } /* level with the fields, under the labels */
 .cash-entry input[name="amount"] { width: 8rem; }
 /* A319: a booking with a note shows a small note sign; the tooltip holds the note. */
 .row-note { flex: none; display: inline-flex; color: var(--muted); }

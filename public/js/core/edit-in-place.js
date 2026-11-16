@@ -1,8 +1,33 @@
 /* Package E */
-// Click-to-edit (point 28, <x-edit-in-place>): plain text until clicked or Enter, then a field of the same size.
-// Blur or Ctrl+Enter saves (POST field + value, JSON answer), Escape restores the old text. Works in windows
-// loaded later too (one listener for the page). Also: [data-focus="id"] menu entries focus that field.
+// Click-to-edit (point 28, <x-edit-in-place>): plain text until clicked or Enter, then a slim field with ✓ behind it
+// (PO 2026-11-16). ✓, blur or Enter (Ctrl+Enter in a text area) saves (POST field + value, JSON answer), Escape restores
+// the old text. Works in windows loaded later too (one listener for the page). Also: [data-focus="id"] menu entries
+// focus that field.
 (() => {
+    // Feld mit ✓: wraps a field in .edit-field with a ✓ control button behind it. The button keeps the focus in the field
+    // (pointerdown) and calls onApply; the window title rename uses the same (core/window-rename.js).
+    const CHECK = '<svg class="icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10"/></svg>';
+    const checkField = (field, label, onApply) => {
+        const wrap = document.createElement('span');
+        wrap.className = 'edit-field';
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'control-button';
+        button.innerHTML = CHECK;
+        if (label) {
+            button.setAttribute('aria-label', label);
+            button.dataset.tooltip = label;
+        }
+        button.addEventListener('pointerdown', event => event.preventDefault());
+        button.addEventListener('click', event => {
+            event.stopPropagation();
+            onApply();
+        });
+        wrap.append(field, button);
+        return wrap;
+    };
+    window.DocHamster = window.DocHamster ?? {};
+    window.DocHamster.checkField = checkField;
     const token = () => document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     const note = (text, failed) => {
         const el = document.createElement('div');
@@ -21,7 +46,7 @@
         }
     };
     const finish = (box, field) => {
-        field.remove();
+        (field.closest('.edit-field') ?? field).remove();
         box.hidden = false;
     };
     const save = (box, field) => {
@@ -70,8 +95,12 @@
             field.setAttribute('aria-labelledby', labelledBy);
         }
         const height = box.offsetHeight;
+        field.editBox = box;
         box.hidden = true;
-        box.after(field);
+        box.after(checkField(field, box.dataset.apply, () => {
+            field.blur();
+            box.focus();
+        }));
         if (multiline) {
             field.style.minHeight = `${height}px`;
             grow(field);
@@ -118,7 +147,7 @@
         if (field && event.key === 'Escape') {
             event.preventDefault();
             event.stopPropagation();
-            const box = field.previousElementSibling;
+            const box = field.editBox;
             field.dataset.cancelled = '1';
             finish(box, field);
             box.focus();
