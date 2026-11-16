@@ -187,7 +187,7 @@ final class UpdateController
     public function install(Request $request, UpdateSource $source, AuditLog $audit, CurrentOrg $org): JsonResponse|RedirectResponse
     {
         if ($this->previewInfo() !== null) {
-            return back()->withErrors(['update' => __('updates.stay_in_branch')]);
+            return $this->refuse($request, 'update', 'updates.stay_in_branch');
         }
         abort_unless($this->supported($request), 403);
 
@@ -195,11 +195,11 @@ final class UpdateController
             $latest = $source->latest(PHP_VERSION);
             $installer = $latest === null ? null : $source->installer($latest);
         } catch (Throwable) {
-            return back()->withErrors(['update' => __('updates.unreachable')]);
+            return $this->refuse($request, 'update', 'updates.unreachable', retry: true);
         }
 
         if ($latest === null || $installer === null) {
-            return back()->with('status', __('updates.up_to_date'));
+            return $this->refuse($request, 'status', 'updates.up_to_date');
         }
 
         return $this->handoff($request, $installer, $audit, $org, ['version' => $latest['version'], 'channel' => 'stable']);
@@ -214,11 +214,11 @@ final class UpdateController
             $latest = $source->latest(PHP_VERSION);
             $installer = $latest === null ? null : $source->installer($latest);
         } catch (Throwable) {
-            return back()->withErrors(['update' => __('updates.unreachable')]);
+            return $this->refuse($request, 'update', 'updates.unreachable', retry: true);
         }
 
         if ($latest === null || $installer === null) {
-            return back()->withErrors(['update' => __('updates.up_to_date')]);
+            return $this->refuse($request, 'update', 'updates.up_to_date');
         }
 
         return $this->handoff($request, $installer, $audit, $org, ['version' => $latest['version'], 'channel' => 'stable']);
@@ -235,11 +235,11 @@ final class UpdateController
         try {
             $preview = $source->preview((int) $data['preview_pr']);
             if (! version_compare(PHP_VERSION, $preview['php'], '>=')) {
-                return back()->withErrors(['preview' => __('updates.preview_php')]);
+                return $this->refuse($request, 'preview', 'updates.preview_php');
             }
             $installer = $source->installer($preview);
         } catch (Throwable) {
-            return back()->withErrors(['preview' => __('updates.preview_unavailable')]);
+            return $this->refuse($request, 'preview', 'updates.preview_unavailable', retry: true);
         }
 
         // Name and description of the branch, so the installed row can show them later without asking GitHub.
@@ -268,6 +268,21 @@ final class UpdateController
     private function answer(Request $request, array $data, callable $fallback): JsonResponse|RedirectResponse
     {
         return $request->expectsJson() ? response()->json(['html' => view('updates._versions', $data + ['supported' => $this->supported($request)])->render()]) : $fallback();
+    }
+
+    /**
+     * Why an install does not start. The pop-up (fetch) gets the reason as JSON (409) and shows it in its own words –
+     * before, it got the redirect's HTML, could not read it and said only "nicht angenommen (–)". Without JavaScript
+     * the page shows it as before ("status" = a plain notice, anything else an error of that field).
+     */
+    private function refuse(Request $request, string $field, string $key, bool $retry = false): JsonResponse|RedirectResponse
+    {
+        $message = (string) __($key);
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'retry' => $retry], 409);
+        }
+
+        return $field === 'status' ? back()->with('status', $message) : back()->withErrors([$field => $message]);
     }
 
     /**
@@ -304,7 +319,7 @@ final class UpdateController
             || @file_put_contents(dirname($webRoot).'/dochamster-install-code.txt', $code."\n") === false) {
             @unlink($webRoot.'/install.php');
 
-            return back()->withErrors(['update' => __('updates.not_writable')]);
+            return $this->refuse($request, 'update', 'updates.not_writable');
         }
 
         $audit->record('update.started', orgId: $org->id(), userId: $org->membership()->user_id, meta: $meta, ip: $request->ip());

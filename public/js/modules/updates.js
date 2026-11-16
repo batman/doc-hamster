@@ -94,14 +94,14 @@
         tick();
     };
 
-    const showUnreachable = (form, status) => {
+    const showUnreachable = (form, status, message = '') => {
         document.querySelectorAll('[data-dialog]').forEach(dialog => { dialog.hidden = true; });
         box.querySelector('[data-progress-title]').textContent = box.dataset.title.replace(':version', '');
         percent = 0;
         bar.value = 0;
         stepText.textContent = '';
         box.hidden = false;
-        fail((box.dataset.unreachable || box.dataset.failed).replace(':status', status ? String(status) : '–'), form);
+        fail(message || (box.dataset.unreachable || box.dataset.failed).replace(':status', status ? String(status) : '–'), form);
     };
     document.querySelectorAll('form[data-update-install]').forEach(form => form.addEventListener('submit', event => {
         event.preventDefault();
@@ -145,6 +145,12 @@
                 // A wrong password (422) or a redirect with a message: the page shows it, as before.
                 if (!(error instanceof Response) || error.status === 422) {
                     if (error instanceof Response) oldWay(); else showUnreachable(form, 0);
+                    return;
+                }
+                // 409: the server says in words why it does not start (up to date, GitHub unreachable, not writable …);
+                // "Erneut versuchen" only where trying again can help.
+                if (error.status === 409) {
+                    error.json().catch(() => ({})).then(data => showUnreachable(data.retry ? form : null, 409, data.message || ''));
                     return;
                 }
                 showUnreachable(form, error.status);
