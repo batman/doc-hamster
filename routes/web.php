@@ -226,8 +226,9 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('keys/{id}/delete', [AccessKeyController::class, 'destroy'])->name('access-keys.destroy');
     });
     // D-040: Einstellungen → Assistenten (owner only; before settings/{group}) and an assistant's consent page.
+    // A57: the address is also the Einstellungen group "Assistenten" – a role with only "Vorschläge bearbeiten" is sent on.
+    Route::get('settings/assistant', [AssistantSettingsController::class, 'show'])->middleware('can:proposals.view')->name('assistant.show');
     Route::middleware('can:assistant.manage')->prefix('settings/assistant')->name('assistant.')->controller(AssistantSettingsController::class)->group(function (): void {
-        Route::get('/', 'show')->name('show');
         Route::post('/', 'save')->name('save');
         Route::post('{id}/disconnect', 'disconnect')->name('disconnect');
     });

@@ -13,6 +13,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Einstellungen → Assistenten (D-040, owner only): "Zugang für Assistenten" Aus | An, the address and the three
@@ -21,8 +22,13 @@ use Illuminate\Http\Request;
  */
 final class AssistantSettingsController
 {
-    public function show(CurrentOrg $org): View
+    public function show(CurrentOrg $org): View|RedirectResponse
     {
+        // A57: staff with "Vorschläge bearbeiten" only – the door stays the owner's, they get the Vorschläge.
+        if (! Gate::allows('assistant.manage')) {
+            return redirect()->route('proposals.index');
+        }
+
         return view('settings.assistant', [
             'on' => AssistantAccess::enabled($org->organization()),
             'rights' => AssistantAccess::rights($org->organization()),

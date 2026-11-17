@@ -181,7 +181,10 @@ it('lets a role with "Vorschläge bearbeiten" handle proposals with its own righ
 
     $staff = Membership::factory()->withRights(RoleRight::ViewAll, RoleRight::Proposals)->create(['org_id' => $this->owner->org_id]);
     $this->actingAs($staff->user)->get('/proposals')->assertOk()->assertSee('Betrag passt.');
-    $this->get('/settings/assistant')->assertForbidden();
+    // The Einstellungen tile "Assistenten" (settings/assistant) leads them to the Vorschläge, never to the door page.
+    $this->get('/settings/assistant')->assertRedirect('/proposals');
+    $this->get('/settings')->assertOk()->assertSee(route('proposals.index'), false);
+    $this->post('/settings/assistant', ['on' => '1'])->assertForbidden();
     // Linking needs "Bank": the click fails with the reason, nothing is linked.
     $this->post("/proposals/{$proposal->id}/accept")->assertRedirect('/proposals');
     expect($proposal->fresh()->status)->toBe('failed')->and(TransactionMatch::query()->count())->toBe(0);

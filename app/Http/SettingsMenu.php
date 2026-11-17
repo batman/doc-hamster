@@ -124,7 +124,10 @@ final class SettingsMenu
                             'text' => $item['text'], ...$badge($item['key'])];
                     }
                 } else {
-                    $entries[] = ['href' => route('settings.group', $group), 'icon' => $groups[$group]['icon'], 'title' => __('settings.groups.'.$group),
+                    // A57: a group with one allowed entry links straight to it – settings/{group} may be another page's
+                    // address (settings/assistant is the owner's door page, a staff member only has the Vorschläge).
+                    $one = count($groups[$group]['items']) === 1 ? route($groups[$group]['items'][0]['route']) : null;
+                    $entries[] = ['href' => $one ?? route('settings.group', $group), 'icon' => $groups[$group]['icon'], 'title' => __('settings.groups.'.$group),
                         'text' => __('settings.group_texts.'.$group), ...$badge($group)];
                 }
             }
