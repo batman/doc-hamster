@@ -54,6 +54,7 @@ return [
         'extensions' => ['title' => 'Software', 'text' => 'Modules and data packs'],
         'optimize' => ['title' => 'Optimise document size', 'text' => 'Shrink large scans and photos'],
         'assistant' => ['title' => 'Assistants', 'text' => 'Access for AI assistants like Claude'],
+        'proposals' => ['title' => 'Proposals', 'text' => 'Take over or reject the proposals of assistants'],
         'bank' => ['title' => 'Accounts and import', 'text' => 'Import statements, manage accounts'],
         'bank_reasons' => ['title' => 'No receipt needed', 'text' => 'Reasons for bookings without a receipt'],
         'bank_mcc' => ['title' => 'Card categories', 'text' => 'Which merchant category suggests which tag'],

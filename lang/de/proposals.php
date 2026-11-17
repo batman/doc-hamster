@@ -75,4 +75,5 @@ return [
         'same_file' => 'docHamster: dieselbe Datei wurde zweimal hochgeladen.',
         'same_invoice' => 'docHamster: gleiche Rechnungsnummer und gleicher Betrag – wohl dasselbe Papier zweimal gescannt. Bleiben soll das bessere Bild; Verknüpfungen und Werte gehen mit.',
     ],
+    'not_allowed' => 'Das dürfen Sie mit Ihrer Rolle nicht übernehmen.',
 ];

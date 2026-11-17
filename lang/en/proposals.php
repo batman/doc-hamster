@@ -75,4 +75,5 @@ return [
         'same_file' => 'docHamster: the same file was uploaded twice.',
         'same_invoice' => 'docHamster: same invoice number and amount – probably the same paper scanned twice. The better picture stays; links and values go with it.',
     ],
+    'not_allowed' => 'Your role may not take this over.',
 ];

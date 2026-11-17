@@ -10,6 +10,7 @@ use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Membership;
+use App\Domain\Org\RoleRight;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -170,4 +171,18 @@ it('shows a page picture with its right and straightens a photo by proposal, kee
     $size = getimagesizefromstring((string) Storage::disk('local')->get($file->path));
     // 0.6 x 400 wide and 0.8 x 300 high, cut out of the turned picture.
     expect($size[0])->toBe(240)->and($size[1])->toBe(240);
+});
+
+it('lets a role with "Vorschläge bearbeiten" handle proposals with its own rights only (A57)', function (): void {
+    $proposal = Proposal::query()->create(['kind' => Proposal::LINK, 'payload' => ['document_id' => $this->document->id, 'transaction_id' => $this->booking->id],
+        'fingerprint' => str_repeat('a', 64), 'status' => Proposal::OPEN, 'reason' => 'Betrag passt.']);
+    $plain = Membership::factory()->withRights(RoleRight::ViewAll)->create(['org_id' => $this->owner->org_id]);
+    $this->actingAs($plain->user)->get('/proposals')->assertForbidden();
+
+    $staff = Membership::factory()->withRights(RoleRight::ViewAll, RoleRight::Proposals)->create(['org_id' => $this->owner->org_id]);
+    $this->actingAs($staff->user)->get('/proposals')->assertOk()->assertSee('Betrag passt.');
+    $this->get('/settings/assistant')->assertForbidden();
+    // Linking needs "Bank": the click fails with the reason, nothing is linked.
+    $this->post("/proposals/{$proposal->id}/accept")->assertRedirect('/proposals');
+    expect($proposal->fresh()->status)->toBe('failed')->and(TransactionMatch::query()->count())->toBe(0);
 });

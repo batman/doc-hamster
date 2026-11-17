@@ -9,7 +9,7 @@ namespace App\Domain\Org;
  * has no checkbox on purpose: someone could promote themselves. Updates do
  * (PO 2026-11-07): "System aktualisieren", and on top "Vorschau-Branches
  * installieren", which only counts together with it. Point 215: "Belegpakete"
- * (see and download the finished receipt packs).
+ * (see and download the finished receipt packs). A57: "Vorschläge bearbeiten" (the tiles of assistants and docHamster).
  */
 enum RoleRight: string
 {
@@ -24,6 +24,7 @@ enum RoleRight: string
     case Packs = 'packs';
     case Tags = 'tags';
     case Notes = 'notes';
+    case Proposals = 'proposals';
     case Update = 'update';
     case UpdatePreview = 'update_preview';
 
@@ -31,7 +32,7 @@ enum RoleRight: string
     public function group(): string
     {
         return match ($this) {
-            self::Upload, self::ViewAll, self::Edit, self::Delete, self::Tags, self::Notes => 'documents',
+            self::Upload, self::ViewAll, self::Edit, self::Delete, self::Tags, self::Notes, self::Proposals => 'documents',
             self::BankView, self::Banking => 'bank',
             self::Export, self::Packs => 'export',
             self::Update, self::UpdatePreview => 'system',

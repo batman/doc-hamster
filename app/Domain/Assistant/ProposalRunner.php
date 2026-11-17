@@ -15,15 +15,18 @@ use App\Domain\Optimize\OptimizeSettings;
 use App\Domain\Optimize\OriginalKeeper;
 use App\Domain\Optimize\ShrinkResult;
 use App\Domain\Org\CurrentOrg;
+use App\Domain\Org\Permission;
 use App\Domain\Properties\Property;
 use App\Domain\Properties\PropertyValues;
 use App\Jobs\Local\OptimizeDocument;
 use App\Jobs\Local\RecognizeText;
+use Illuminate\Support\Facades\Gate;
 use RuntimeException;
 
 /**
  * Takes over an assistant's proposal (D-040) as the person who clicked "Übernehmen" – with the same steps the app's
- * own buttons take, and an audit entry each. Deleting only ever moves into the Papierkorb. A proposal whose
+ * own buttons take, the same rights (A57: linking needs "Bank", tidying "Bearbeiten", duplicates "Löschen", settings the
+ * admin; only documents they may see), and an audit entry each. Deleting only ever moves into the Papierkorb. A proposal whose
  * documents or bookings are gone (or that no longer fits) fails with the reason instead.
  */
 final class ProposalRunner
@@ -36,11 +39,25 @@ final class ProposalRunner
     ) {}
 
     /** @return string what happened, for the toast and the tile */
+    /** A57: the right a person needs to take over each kind – the same as doing it by hand. */
+    private const NEEDS = [
+        Proposal::LINK => Permission::ImportBanking, Proposal::UNLINK => Permission::ImportBanking,
+        Proposal::MOVE => Permission::EditDocuments, Proposal::TITLE => Permission::EditDocuments, Proposal::CORRECT => Permission::EditDocuments,
+        Proposal::SHRINK => Permission::EditDocuments, Proposal::STRAIGHTEN => Permission::EditDocuments,
+        Proposal::DUPLICATE => Permission::TrashDocuments, Proposal::DELETE => Permission::TrashDocuments,
+        Proposal::SETTING => Permission::ManageSettings,
+    ];
+
     public function accept(Proposal $proposal, bool $swap = false, ?string $ip = null): string
     {
         $p = $proposal->payload;
         $user = $this->org->membership()->user_id;
         $meta = static fn (array $more = []): array => ['via' => 'assistant', 'proposal' => $proposal->id, ...$more];
+        // A57: the person who clicks takes it over with their own rights – no more than they could do by hand.
+        $needed = self::NEEDS[$proposal->kind] ?? null;
+        if ($needed === null || ! Gate::allows($needed->value)) {
+            throw new RuntimeException(__('proposals.not_allowed'));
+        }
 
         return match ($proposal->kind) {
             Proposal::LINK => (function () use ($p, $user, $meta, $ip): string {
@@ -66,6 +83,7 @@ final class ProposalRunner
                 return __('proposals.done.move', ['name' => (string) Folder::query()->whereKey($folder)->value('name')]);
             })(),
             Proposal::UNLINK => (function () use ($p, $user, $meta, $ip): string {
+                $this->document($p['document_id'] ?? '');
                 $match = TransactionMatch::query()->where('transaction_id', $p['transaction_id'] ?? '')->where('document_id', $p['document_id'] ?? '')->first()
                     ?? throw new RuntimeException(__('proposals.gone_link'));
                 $transaction = $match->transaction;
@@ -162,8 +180,9 @@ final class ProposalRunner
         };
     }
 
+    /** A57: only a document the clicking person may see (visibility and role restriction). */
     private function document(string $id): Document
     {
-        return Document::query()->find($id) ?? throw new RuntimeException(__('proposals.gone_document'));
+        return Document::query()->visibleTo($this->org->membership()->user_id, Gate::allows(Permission::ViewAllDocuments->value))->whereKey($id)->first() ?? throw new RuntimeException(__('proposals.gone_document'));
     }
 }

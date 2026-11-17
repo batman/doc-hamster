@@ -55,6 +55,7 @@ return [
         'extensions' => ['title' => 'Software', 'text' => 'Module und Datenpakete'],
         'optimize' => ['title' => 'Dokumentgröße optimieren', 'text' => 'Große Scans und Fotos verkleinern'],
         'assistant' => ['title' => 'Assistenten', 'text' => 'Zugang für KI-Assistenten wie Claude'],
+        'proposals' => ['title' => 'Vorschläge', 'text' => 'Vorschläge von Assistenten übernehmen oder ablehnen'],
         'bank' => ['title' => 'Konten und Import', 'text' => 'Kontoauszüge importieren, Konten verwalten'],
         'bank_reasons' => ['title' => 'Kein Dokument nötig', 'text' => 'Gründe für Buchungen ohne Dokument'],
         'bank_mcc' => ['title' => 'Kartenkategorien', 'text' => 'Welche Händlerkategorie welchen Tag vorschlägt'],

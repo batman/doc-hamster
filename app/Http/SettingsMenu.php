@@ -46,10 +46,11 @@ final class SettingsMenu
         'optimize' => ['arrows-minimize', [
             ['optimize', 'optimize.show', 'arrows-minimize', 'settings.manage', ['optimize.*']],
         ], true],
-        // D-040: the door for AI assistants such as Claude – the owner only.
+        // D-040: the door for AI assistants such as Claude – the owner only; A57: the Vorschläge for every role with the right.
         'assistant' => ['plug', [
             ['assistant', 'assistant.show', 'plug', 'assistant.manage', ['assistant.*']],
-        ], true],
+            ['proposals', 'proposals.index', 'checks', 'proposals.view', ['proposals.*']],
+        ], false],
         // Point 153.5: the sources of the Posteingang. Geräte comes with the Android share target (only once its route exists).
         'eingang' => ['inbox', [
             ['printer', 'printers.index', 'printer', 'documents.upload', ['printers.*']],

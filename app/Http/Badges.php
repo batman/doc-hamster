@@ -128,7 +128,7 @@ final class Badges
     public const SETTINGS_ALL = 'settings';
 
     /** Point 3: the badge of a settings group or entry, so the count leads down to its place (key => area). */
-    public const array SETTINGS = ['log' => self::LOG, 'backup' => self::BACKUP, 'export' => self::PACKS, 'packs' => self::PACKS, 'assistant' => self::PROPOSALS];
+    public const array SETTINGS = ['log' => self::LOG, 'backup' => self::BACKUP, 'export' => self::PACKS, 'packs' => self::PACKS, 'assistant' => self::PROPOSALS, 'proposals' => self::PROPOSALS];
 
     /** The badge key (and seen area) of one Posteingang source, e.g. "inbox-printer". */
     public static function inbox(string $source): string

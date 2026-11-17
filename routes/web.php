@@ -232,7 +232,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('{id}/disconnect', 'disconnect')->name('disconnect');
     });
     // D-040: Vorschläge – the assistant's proposals, taken over or not by the owner.
-    Route::middleware('can:assistant.manage')->prefix('proposals')->name('proposals.')->controller(ProposalController::class)->group(function (): void {
+    Route::middleware('can:proposals.view')->prefix('proposals')->name('proposals.')->controller(ProposalController::class)->group(function (): void {
         Route::get('/', 'index')->name('index');
         Route::post('all', 'acceptAll')->name('accept-all');
         Route::post('{id}/accept', 'accept')->name('accept');

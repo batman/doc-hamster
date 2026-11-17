@@ -28,6 +28,7 @@ dataset('rights', [
     'Audit-Log' => [Permission::ViewAuditLog, null],
     'Backup' => [Permission::CreateBackup, null],
     'Belegpakete' => [Permission::ViewPacks, RoleRight::Packs],
+    'Vorschläge bearbeiten' => [Permission::HandleProposals, RoleRight::Proposals],
 ]);
 
 it('maps every permission to its checkbox', function (Permission $permission, ?RoleRight $right): void {
@@ -35,7 +36,7 @@ it('maps every permission to its checkbox', function (Permission $permission, ?R
 })->with('rights');
 
 it('covers every permission', function (): void {
-    expect(Permission::cases())->toHaveCount(19);
+    expect(Permission::cases())->toHaveCount(20);
 });
 
 it('has the agreed defaults for the roles of a new organisation', function (): void {

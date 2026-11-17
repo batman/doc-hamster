@@ -134,9 +134,11 @@ class AppServiceProvider extends ServiceProvider
             && app(CurrentOrg::class)->membership()->user_id === $user->id
             && app(CurrentOrg::class)->membership()->role === Role::Owner);
 
-        // D-040, points 1, A60: the red count of "Vorschläge ansehen" (Einstellungen → Assistenten) – the owner, also while
-        // the door is closed: docHamster files duplicates itself (A49), and open proposals stay until decided.
-        Gate::define('proposals.view', static fn (User $user): bool => Gate::forUser($user)->allows('assistant.manage'));
+        // D-040, points 1, A60, A57: the Vorschläge page, its red count and Übernehmen / Ablehnen – the owner and every role
+        // with "Vorschläge bearbeiten", also while the door is closed: docHamster files duplicates itself (A49), and open
+        // proposals stay until decided. The door and the assistants' rights stay the owner's (assistant.manage).
+        Gate::define('proposals.view', static fn (User $user): bool => Gate::forUser($user)->allows('assistant.manage')
+            || Gate::forUser($user)->allows(Permission::HandleProposals->value));
 
         // Replaces Laravel's `database` session driver: same table, no client IP.
         Session::extend('database', static function (Application $app): NoIpDatabaseSessionHandler {

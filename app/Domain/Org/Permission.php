@@ -37,6 +37,9 @@ enum Permission: string
     /** Point 215: see and download the finished Belegpakete (Einstellungen → Export → Belegpaket). */
     case ViewPacks = 'packs.view';
 
+    /** A57: see the Vorschläge of assistants and docHamster and take them over or reject them – with one's own rights. */
+    case HandleProposals = 'proposals.handle';
+
     /**
      * The checkbox that grants this permission; null means Admins only.
      * Editing and trashing act on what the person can see, so resource checks
@@ -53,6 +56,7 @@ enum Permission: string
             self::ViewBanking => RoleRight::BankView,
             self::CreateReports, self::Export => RoleRight::Export,
             self::ViewPacks => RoleRight::Packs,
+            self::HandleProposals => RoleRight::Proposals,
             self::ManageTags => RoleRight::Tags,
             self::ShareNotes => RoleRight::Notes,
             self::UpdateSystem => RoleRight::Update,
