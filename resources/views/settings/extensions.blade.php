@@ -19,8 +19,9 @@
         <p class="error" role="alert">{{ session('error') }}</p>
     @endif
 
-    <section class="card">
-        <h2 class="card-head"><x-icon name="language" />{{ __('extensions.kinds.data') }}</h2>
+    {{-- PO 2026-11-17: the long lists fold and start folded; the head says which languages are on. --}}
+    <x-fold-card fold="extensions.ocr" :title="__('extensions.kinds.data')" icon="language" folded
+        :summary="implode(', ', array_map(static fn (string $l): string => __('extensions.languages.'.$l), $languages))">
         <p class="card-text">{{ __('extensions.kind_texts.data') }}</p>
         {{-- 171.3: more languages = slower and slightly less exact. --}}
         <p class="card-note">{{ __('extensions.ocr_note') }} {{ __('extensions.core_languages') }}
@@ -30,19 +31,18 @@
                 @include('settings._extension_row')
             @endforeach
         </ul>
-    </section>
+    </x-fold-card>
 
     @if ($translateRows !== [])
         {{-- Point 172: translation packs; a pair brings the runtime along, "Griechisch → Deutsch" both pairs over English. --}}
-        <section class="card">
-            <h2 class="card-head"><x-icon name="language" />{{ __('extensions.translate_title') }}</h2>
+        <x-fold-card fold="extensions.translate" :title="__('extensions.translate_title')" icon="language" folded>
             <p class="card-text">{{ __('extensions.translate_intro') }}</p>
             <ul class="pick-list">
                 @foreach ($translateRows as $row)
                     @include('settings._extension_row')
                 @endforeach
             </ul>
-        </section>
+        </x-fold-card>
     @endif
 
     @if ($broken !== null)

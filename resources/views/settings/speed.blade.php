@@ -1,21 +1,26 @@
 {{-- Einstellungen → Geschwindigkeit (point 164.7): measured server times per page (median, slowest 5 %), the speed
-     checks with tips (164.6), self tests from this browser (modules/speed.js) and the options. --}}
+     checks with tips (164.6), self tests from this browser (modules/speed.js) and the options. PO 2026-11-17: the long
+     cards fold and start folded (their summary in the head), so Optionen is reached without scrolling; "Jetzt
+     vorbereiten" is always there (it renews caches that exist but are stale, e.g. after an update). --}}
 @extends('layouts.settings')
 
 @section('title', __('speed.title'))
+
+@php
+    $warnings = collect($checks)->filter(static fn ($c): bool => $c->status !== \App\Infrastructure\Environment\CheckStatus::Ok)->count();
+@endphp
 
 @section('page')
     @if (session('status'))
         <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
     @endif
 
-    <section class="card" data-speed-tests
+    <x-fold-card fold="speed.tests" :title="__('speed.tests')" icon="player-play" folded data-speed-tests
              data-ping="{{ route('ping') }}" data-db="{{ route('speed.db') }}" data-download="{{ route('speed.download') }}" data-test-window="{{ route('documents.index') }}"
              data-running="{{ __('speed.running') }}" data-failed="{{ __('speed.failed') }}"
-             @foreach (__('speed.result') as $key => $text) data-result-{{ $key }}="{{ $text }}" @endforeach>
-        <h2 class="card-head"><x-icon name="player-play" />{{ __('speed.tests') }}
-            <form class="card-action" data-speed-run><button type="submit" class="button-small"><x-icon name="player-play" />{{ __('speed.run') }}</button></form>
-        </h2>
+             data-result-server="{{ __('speed.result.server') }}" data-result-db="{{ __('speed.result.db') }}" data-result-roundtrip="{{ __('speed.result.roundtrip') }}"
+             data-result-download="{{ __('speed.result.download') }}" data-result-window="{{ __('speed.result.window') }}">
+        <x-slot:action><form class="card-action" data-speed-run><button type="submit" class="button-small"><x-icon name="player-play" />{{ __('speed.run') }}</button></form></x-slot:action>
         <p class="card-note">{{ __('speed.tests_note') }}</p>
         <ul class="pick-list">
             @foreach (['server', 'db', 'roundtrip', 'download', 'window'] as $key)
@@ -26,17 +31,17 @@
                 </li>
             @endforeach
         </ul>
-    </section>
+    </x-fold-card>
 
-    <section class="card">
-        <h2 class="card-head"><x-icon name="list-details" />{{ __('speed.measured') }}
-            @if ($rows !== [])
+    <x-fold-card fold="speed.measured" :title="__('speed.measured')" icon="list-details" folded :summary="trans_choice('speed.measured_summary', count($rows), ['count' => count($rows)])">
+        @if ($rows !== [])
+            <x-slot:action>
                 <form method="post" action="{{ route('speed.reset') }}" class="card-action">
                     @csrf
                     <button type="submit" class="button-small button-quiet"><x-icon name="trash" />{{ __('speed.reset') }}</button>
                 </form>
-            @endif
-        </h2>
+            </x-slot:action>
+        @endif
         <p class="card-note">{{ __('speed.measured_note') }}</p>
         <ul class="pick-list">
             @forelse ($rows as $row)
@@ -50,17 +55,16 @@
                 <x-empty tag="li" icon="gauge" :text="__('speed.none')" />
             @endforelse
         </ul>
-    </section>
+    </x-fold-card>
 
-    <section class="card">
-        <h2 class="card-head"><x-icon name="circle-check" />{{ __('speed.checks') }}
-            @if ($uncached)
-                <form method="post" action="{{ route('speed.optimize') }}" class="card-action">
-                    @csrf
-                    <button type="submit" class="button-small"><x-icon name="refresh" />{{ __('speed.optimize') }}</button>
-                </form>
-            @endif
-        </h2>
+    <x-fold-card fold="speed.checks" :title="__('speed.checks')" icon="circle-check" folded
+        :summary="$warnings === 0 ? __('speed.checks_ok') : trans_choice('speed.checks_warn', $warnings, ['count' => $warnings])" :summary-tone="$warnings === 0 ? 'ok' : 'warning'">
+        <x-slot:action>
+            <form method="post" action="{{ route('speed.optimize') }}" class="card-action">
+                @csrf
+                <button type="submit" class="button-small"><x-icon name="refresh" />{{ __('speed.optimize') }}</button>
+            </form>
+        </x-slot:action>
         <ul class="pick-list">
             @foreach ($checks as $check)
                 <li class="pick-row is-static">
@@ -70,7 +74,7 @@
                 </li>
             @endforeach
         </ul>
-    </section>
+    </x-fold-card>
 
     <section class="card">
         <h2 class="card-head"><x-icon name="settings" />{{ __('speed.options') }}</h2>

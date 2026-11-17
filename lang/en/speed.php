@@ -18,6 +18,9 @@ return [
     'reset' => 'Reset',
 
     'checks' => 'Checks',
+    'measured_summary' => '{0} Nothing measured yet|{1} :count page measured|[2,*] :count pages measured',
+    'checks_ok' => 'All fine',
+    'checks_warn' => '{1} :count hint|[2,*] :count hints',
     'optimize' => 'Prepare now',
 
     'tests' => 'Self test',

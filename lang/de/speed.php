@@ -18,6 +18,9 @@ return [
     'reset' => 'Zurücksetzen',
 
     'checks' => 'Prüfungen',
+    'measured_summary' => '{0} Noch nichts gemessen|{1} :count Seite gemessen|[2,*] :count Seiten gemessen',
+    'checks_ok' => 'Alles in Ordnung',
+    'checks_warn' => '{1} :count Hinweis|[2,*] :count Hinweise',
     'optimize' => 'Jetzt vorbereiten',
 
     'tests' => 'Selbsttest',

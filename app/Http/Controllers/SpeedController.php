@@ -7,7 +7,6 @@ namespace App\Http\Controllers;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\SpeedOptions;
 use App\Http\Speed\SpeedLog;
-use App\Infrastructure\Environment\CheckStatus;
 use App\Infrastructure\Environment\SpeedCheck;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -44,7 +43,6 @@ final class SpeedController
                 return [...$row, 'title' => trim($method.' '.$title), 'window' => $window];
             }, $log->summary()),
             'checks' => $checks,
-            'uncached' => collect($checks)->contains(static fn ($c): bool => in_array($c->key, ['speed_config', 'speed_routes', 'speed_events'], true) && $c->status !== CheckStatus::Ok),
             'options' => SpeedOptions::of($org->organization()),
         ]);
     }
