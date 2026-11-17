@@ -25,6 +25,7 @@ final class AssistantSettingsController
     {
         return view('settings.assistant', [
             'on' => AssistantAccess::enabled($org->organization()),
+            'rights' => AssistantAccess::rights($org->organization()),
             'mcpUrl' => route('mcp'),
             'connections' => AccessKey::query()->whereNotNull('client_id')->whereNull('revoked_at')->with('user')->latest('last_used_at')->get(),
         ]);
@@ -32,13 +33,19 @@ final class AssistantSettingsController
 
     public function save(Request $request, CurrentOrg $org): JsonResponse|RedirectResponse
     {
-        $on = (bool) $request->validate(['on' => ['required', 'boolean']])['on'];
+        $data = $request->validate(['on' => ['required', 'boolean'], 'rights' => ['nullable', 'array'], 'rights.*' => ['string', 'in:'.implode(',', AssistantAccess::RIGHTS)]]);
         $organization = $org->organization();
-        if ($on !== AssistantAccess::enabled($organization)) {
-            AssistantAccess::save($organization, $on);
+        $wasOn = AssistantAccess::enabled($organization);
+        $rights = array_values($data['rights'] ?? []);
+        AssistantAccess::save($organization, (bool) $data['on'], $rights);
+        $on = AssistantAccess::enabled($organization);
+        if ($on !== $wasOn) {
             LogEntry::write('general', 'event', (string) __($on ? 'assistant.log.on' : 'assistant.log.off'), 'assistant.switched', $organization->id, $org->membership()->user_id);
         }
-        $message = __($on ? 'assistant.saved_on' : 'assistant.saved_off');
+        $message = match (true) {
+            (bool) $data['on'] && $rights === [] => __('assistant.rights_first'),
+            default => __($on ? 'assistant.saved_on' : 'assistant.saved_off'),
+        };
 
         // The page shows more (or less) once the door opens or closes: the module reloads its window.
         return $request->expectsJson() ? response()->json(['message' => $message, 'reload' => true]) : redirect()->route('assistant.show')->with('status', $message);

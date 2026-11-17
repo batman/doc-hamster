@@ -72,6 +72,7 @@ final class DocumentApiController
         return response()->json([
             ...$shape->documents(collect([$document]))[0],
             'note' => $document->note,
+            'files' => $document->files()->get(['mime', 'size'])->map(static fn ($f): array => ['type' => $f->mime, 'size_bytes' => (int) $f->size])->all(),
             'properties' => $document->properties()->with('property')->get()->map(static fn (DocumentProperty $p): array => [
                 'name' => $p->property->name,
                 'value' => $p->value_text ?? ($p->value_int !== null ? ($p->property->type === 'amount' ? ApiShape::decimal($p->value_int).' '.($p->currency ?? '') : (string) $p->value_int) : $p->value_date?->format('Y-m-d')),

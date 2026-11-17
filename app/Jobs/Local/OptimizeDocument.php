@@ -41,7 +41,8 @@ final class OptimizeDocument implements ShouldQueue
 
     public int $timeout = 600;
 
-    public function __construct(public readonly string $fileId, public readonly bool $ocrAfter = false)
+    /** $forced (D-040, F5): a person took over an assistant's "verkleinern" for this one document – also with the module off. */
+    public function __construct(public readonly string $fileId, public readonly bool $ocrAfter = false, public readonly bool $forced = false)
     {
         $this->onQueue(($ocrAfter ? QueueName::Local : QueueName::LocalLow)->value);
     }
@@ -78,7 +79,7 @@ final class OptimizeDocument implements ShouldQueue
     {
         $organization = Organization::query()->find($document->org_id);
         // Switched off meanwhile, in the Papierkorb, an original itself or done already: back to "not looked at".
-        if ($organization === null || ! OptimizeSettings::enabled($organization) || $document->trashed() || $document->getAttribute('original_of') !== null
+        if ($organization === null || (! $this->forced && ! OptimizeSettings::enabled($organization)) || $document->trashed() || $document->getAttribute('original_of') !== null
             || ! in_array($file->getAttribute('optimize'), [null, OptimizeQueue::QUEUED], true)) {
             if ($file->getAttribute('optimize') === OptimizeQueue::QUEUED) {
                 $file->forceFill(['optimize' => null])->save();

@@ -341,3 +341,15 @@ progress::-moz-progress-bar { background: var(--primary); }
 .color-swatch-field { display: inline-flex; flex: none; }
 button.color-swatch, button.color-swatch:hover { display: block; width: 2.25rem; min-width: 0; height: 2.25rem; min-height: 0; margin: 0; padding: 0; border: 2px solid var(--bg); border-radius: 50%; background: var(--tag, var(--surface)); box-shadow: 0 0 0 2px var(--border); }
 button.color-swatch:focus-visible { outline: 2px solid var(--text); outline-offset: 4px; }
+
+/* Empfehlungskachel (D-040, PO 2026-11-17): an assistant's proposal as a card in a grid – symbol and kind, the reason,
+   what it names (label + value, links open a window), the actions at the bottom (Übernehmen / Ablehnen). Grouped by
+   kind under a card head with its count and "Alle übernehmen". */
+.proposal-group { margin: 0 0 1.5rem; }
+.proposal-group > .card-head { margin-bottom: .75rem; }
+.proposal-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); gap: .75rem; }
+.proposal-tiles > .card { display: flex; flex-direction: column; margin: 0; }
+.proposal-tiles > .card > .actions { margin-top: auto; padding-top: .5rem; }
+.proposal-lines { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .25rem .75rem; margin: 0 0 .5rem; }
+.proposal-lines dt { color: var(--muted); }
+.proposal-lines dd { margin: 0; overflow-wrap: anywhere; }

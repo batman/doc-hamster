@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Assistant;
 
+use App\Domain\Org\CurrentOrg;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -19,12 +20,15 @@ final class McpController
 
     private const KNOWN = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
 
-    private const INSTRUCTIONS = 'docHamster collects receipts and links them to bank bookings. Work like this: list_transactions with '
-        .'status "open" (or "suggested"), get_transaction for its candidates, get_document when unsure, then confirm_suggestion or '
-        .'link_document. Link only when amount, date and counterparty clearly fit; ask the person about anything unclear. '
-        .'A connection with scope "read" cannot change anything. Nothing here deletes documents or bookings.';
+    private const INSTRUCTIONS = 'docHamster collects receipts and links them to bank bookings. You change nothing yourself: '
+        .'every change is a proposal (propose_*) that the person takes over or not under "Vorschläge" – give each a short, '
+        .'concrete reason. Linking: list_transactions with status "open", get_transaction for its candidates, get_document when '
+        .'unsure, then propose_link only when amount, date and counterparty clearly fit. Also tidy up where your rights allow: '
+        .'propose_move, propose_duplicate, propose_delete (Papierkorb only), propose_shrink for too large scans, '
+        .'propose_correction for values the text recognition read wrong, propose_setting. Check list_proposals first so '
+        .'nothing is proposed twice. whoami shows which rights the owner ticked.';
 
-    public function handle(Request $request): JsonResponse|Response
+    public function handle(Request $request, CurrentOrg $org): JsonResponse|Response
     {
         // DNS rebinding: a browser page of another site never gets an answer.
         $origin = $request->headers->get('Origin');
@@ -36,11 +40,11 @@ final class McpController
             return self::error(null, -32700, 'Parse error', 400);
         }
         if (array_is_list($message)) {
-            $answers = array_values(array_filter(array_map(fn (mixed $m): ?array => is_array($m) ? $this->answer($m, $request) : null, $message)));
+            $answers = array_values(array_filter(array_map(fn (mixed $m): ?array => is_array($m) ? $this->answer($m, $request, $org) : null, $message)));
 
             return $answers === [] ? response()->noContent(202) : response()->json($answers);
         }
-        $answer = $this->answer($message, $request);
+        $answer = $this->answer($message, $request, $org);
 
         return $answer === null ? response()->noContent(202) : response()->json($answer);
     }
@@ -55,7 +59,7 @@ final class McpController
      * @param  array<mixed>  $message
      * @return array<string, mixed>|null null for a notification or a response (nothing to answer)
      */
-    private function answer(array $message, Request $request): ?array
+    private function answer(array $message, Request $request, CurrentOrg $org): ?array
     {
         $id = $message['id'] ?? null;
         $method = $message['method'] ?? null;
@@ -77,13 +81,13 @@ final class McpController
             case 'ping':
                 return self::result($id, new \stdClass);
             case 'tools/list':
-                return self::result($id, ['tools' => McpTools::listed()]);
+                return self::result($id, ['tools' => McpTools::listed($org)]);
             case 'tools/call':
                 $name = is_string($params['name'] ?? null) ? $params['name'] : '';
                 if (! array_key_exists($name, McpTools::definitions())) {
                     return ['jsonrpc' => '2.0', 'id' => $id, 'error' => ['code' => -32602, 'message' => 'Unknown tool: '.$name]];
                 }
-                [$failed, $text] = McpTools::call($name, is_array($params['arguments'] ?? null) ? $params['arguments'] : [], $request);
+                [$failed, $text] = McpTools::call($name, is_array($params['arguments'] ?? null) ? $params['arguments'] : [], $request, $org);
 
                 return self::result($id, ['content' => [['type' => 'text', 'text' => $text]], 'isError' => $failed]);
             default:

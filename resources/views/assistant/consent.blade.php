@@ -14,10 +14,13 @@
             @foreach ($fields as $name => $value)
                 <input type="hidden" name="{{ $name }}" value="{{ $value }}">
             @endforeach
-            <fieldset>
-                <legend>{{ __('assistant.consent.scope') }}</legend>
-                @include('documents._search-choice', ['name' => 'scope', 'value' => 'read', 'options' => __('account.keys.scopes'), 'icons' => ['read' => 'eye', 'link' => 'link'], 'toggle' => false, 'label' => __('assistant.consent.scope')])
-            </fieldset>
+            {{-- The owner chose the rights on Einstellungen → Assistenten; here they are only shown. --}}
+            <p class="card-text"><strong>{{ __('assistant.consent.scope') }}</strong></p>
+            <ul class="card-text">
+                @foreach ($rights as $right)
+                    <li>{{ __('assistant.rights.'.$right) }}</li>
+                @endforeach
+            </ul>
             <div class="notice">{{ __('assistant.consent.never') }}</div>
             <div class="actions">
                 <button type="submit" name="decision" value="allow"><x-icon name="check" />{{ __('assistant.consent.allow') }}</button>

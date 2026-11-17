@@ -111,6 +111,7 @@ final class OAuthController
             'client' => $ask['client'],
             'host' => (string) parse_url($ask['redirect'], PHP_URL_HOST),
             'organisation' => $org->organization()->name,
+            'rights' => AssistantAccess::rights($org->organization()),
             'person' => $org->membership()->user?->display_name,
             'fields' => [
                 'client_id' => $ask['client']->client_id,
@@ -130,7 +131,7 @@ final class OAuthController
             return view('assistant.oauth-problem', ['message' => $ask]);
         }
         $data = $request->validate([
-            'decision' => ['required', 'in:allow,deny'], 'scope' => ['required', 'in:'.implode(',', AccessKey::SCOPES)],
+            'decision' => ['required', 'in:allow,deny'],
             'code_challenge' => ['required', 'string', 'min:43', 'max:128'], 'state' => ['nullable', 'string', 'max:500'],
             'resource' => ['nullable', 'string', 'max:500'],
         ]);
@@ -142,9 +143,9 @@ final class OAuthController
         $code = Str::random(64);
         Cache::put(self::codeKey($code), encrypt([
             'client' => $ask['client']->client_id, 'redirect' => $ask['redirect'], 'challenge' => $data['code_challenge'],
-            'scope' => $data['scope'], 'resource' => $data['resource'] ?? '', 'org' => $org->id(), 'user' => $org->membership()->user_id,
+            'scope' => AccessKey::READ, 'resource' => $data['resource'] ?? '', 'org' => $org->id(), 'user' => $org->membership()->user_id,
         ]), now()->addMinutes(self::CODE_MINUTES));
-        $audit->record('assistant.allowed', orgId: $org->id(), userId: $org->membership()->user_id, meta: ['client' => $ask['client']->name, 'scope' => $data['scope']], ip: $request->ip());
+        $audit->record('assistant.allowed', orgId: $org->id(), userId: $org->membership()->user_id, meta: ['client' => $ask['client']->name, 'rights' => AssistantAccess::rights($org->organization())], ip: $request->ip());
 
         return $this->back($ask['client'], $ask['redirect'], ['code' => $code, 'state' => $state]);
     }

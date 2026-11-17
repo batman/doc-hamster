@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http;
 
+use App\Domain\Assistant\Proposal;
 use App\Domain\Backup\Backup;
 use App\Domain\Banking\Transaction;
 use App\Domain\Documents\Inbox;
@@ -30,6 +31,9 @@ final class Badges
 
     /** A274: open bookings without a document (main menu Bank → account row → the account's "offen" filter). */
     public const BANK = 'bank';
+
+    /** D-040: the assistant's open proposals (main menu Vorschläge), for the owner. */
+    public const PROPOSALS = 'proposals';
 
     /** Point 164.4: the counts stay this long in the person's session (the poll and every page read them). */
     public const int TTL = 10;
@@ -87,6 +91,10 @@ final class Badges
         // A274: open bookings without a document – a plain count, not "new since the last visit": they stay until handled.
         if (Gate::allows(Permission::ViewBanking->value)) {
             $counts[self::BANK] = Transaction::query()->status(Transaction::OPEN)->count();
+        }
+
+        if (Gate::allows('proposals.view')) {
+            $counts[self::PROPOSALS] = Proposal::query()->where('status', Proposal::OPEN)->count();
         }
 
         if (Gate::allows(Permission::ManageSettings->value)) {

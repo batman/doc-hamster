@@ -27,7 +27,7 @@ beforeEach(function (): void {
     $this->owner = Membership::factory()->owner()->create();
     app(CurrentOrg::class)->set($this->owner);
     // D-040: the owner opened "Zugang für Assistenten".
-    AssistantAccess::save($this->owner->organization, true);
+    AssistantAccess::save($this->owner->organization, true, ['read']);
     $this->account = BankAccount::query()->create(['name' => 'Giro', 'currency' => 'EUR']);
     $this->booking = Transaction::query()->create(['bank_account_id' => $this->account->id, 'booking_date' => '2026-11-02', 'amount_minor' => -5400,
         'currency' => 'EUR', 'counterparty' => 'Muster GmbH', 'fingerprint' => Str::random(24)]);
@@ -88,7 +88,7 @@ it('links and unlinks with "Lesen + Verknüpfen", in the audit log with the key'
 
 it('never reaches another organisation', function (): void {
     $stranger = Membership::factory()->owner()->create();
-    AssistantAccess::save($stranger->organization, true);
+    AssistantAccess::save($stranger->organization, true, ['read']);
     $key = accessKey($stranger, AccessKey::LINK);
 
     $this->withToken($key)->getJson('/api/v1/transactions')->assertOk()->assertJsonCount(0, 'data');

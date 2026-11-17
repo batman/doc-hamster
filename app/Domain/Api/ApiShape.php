@@ -8,6 +8,7 @@ use App\Domain\Banking\Matcher;
 use App\Domain\Banking\Transaction;
 use App\Domain\Banking\TransactionMatch;
 use App\Domain\Documents\Document;
+use App\Domain\Documents\DocumentFile;
 use Illuminate\Support\Collection;
 
 /**
@@ -61,8 +62,11 @@ final class ApiShape
         $facts = $this->matcher->facts($documents, false);
         $links = TransactionMatch::query()->whereIn('document_id', $documents->pluck('id')->all())->get(['document_id', 'transaction_id', 'state'])
             ->groupBy('document_id');
+        // D-040: the size, so an assistant can propose shrinking a too large scan.
+        $sizes = DocumentFile::query()->whereIn('document_id', $documents->pluck('id')->all())->groupBy('document_id')
+            ->selectRaw('document_id, sum(size) as bytes')->pluck('bytes', 'document_id');
 
-        return array_values($documents->map(fn (Document $document): array => $this->document($document, $facts[$document->id] ?? [], $links->get($document->id, collect())))->all());
+        return array_values($documents->map(fn (Document $document): array => [...$this->document($document, $facts[$document->id] ?? [], $links->get($document->id, collect())), 'size_bytes' => (int) ($sizes[$document->id] ?? 0)])->all());
     }
 
     /**

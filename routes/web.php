@@ -6,6 +6,7 @@ use App\Http\Controllers\AccessKeyController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Assistant\AssistantSettingsController;
 use App\Http\Controllers\Assistant\OAuthController;
+use App\Http\Controllers\Assistant\ProposalController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\BackupController;
@@ -228,6 +229,13 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::get('/', 'show')->name('show');
         Route::post('/', 'save')->name('save');
         Route::post('{id}/disconnect', 'disconnect')->name('disconnect');
+    });
+    // D-040: Vorschläge – the assistant's proposals, taken over or not by the owner.
+    Route::middleware('can:assistant.manage')->prefix('proposals')->name('proposals.')->controller(ProposalController::class)->group(function (): void {
+        Route::get('/', 'index')->name('index');
+        Route::post('all', 'acceptAll')->name('accept-all');
+        Route::post('{id}/accept', 'accept')->name('accept');
+        Route::post('{id}/reject', 'reject')->name('reject');
     });
     Route::get('oauth/authorize', [OAuthController::class, 'authorize'])->name('oauth.authorize');
     Route::post('oauth/authorize', [OAuthController::class, 'approve'])->name('oauth.approve');

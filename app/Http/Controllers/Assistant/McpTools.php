@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Assistant;
 
+use App\Domain\Assistant\AssistantAccess;
+use App\Domain\Assistant\Proposal;
+use App\Domain\Banking\Transaction;
+use App\Domain\Documents\Folder;
+use App\Domain\Org\CurrentOrg;
+use App\Domain\Properties\Property;
 use App\Http\Controllers\Api\BankApiController;
 use App\Http\Controllers\Api\DocumentApiController;
 use App\Http\Middleware\AuthenticateAccessKey;
@@ -13,98 +19,133 @@ use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 /**
- * The tools an assistant sees at the MCP address (D-040). Each one is a call of the interface (api/v1) – the same
- * controllers, the same rights, restriction and organisation, the same audit log. Text only; nothing deletes.
+ * The tools an assistant sees at the MCP address (D-040). It changes nothing itself: it reads (right "read") and files
+ * proposals (one right per kind) that the owner takes over or not under Vorschläge. Only the tools the owner's ticked
+ * rights allow are listed. Reading is a call of the interface (api/v1) – the same controllers, rights, restriction and
+ * organisation. Text only; nothing here deletes.
  */
 final class McpTools
 {
     /**
-     * name => [title, description, input schema, read only]
+     * name => [title, description, input schema, needed right]
      *
-     * @return array<string, array{string, string, array<string, mixed>, bool}>
+     * @return array<string, array{string, string, array<string, mixed>, string}>
      */
     public static function definitions(): array
     {
         $id = ['type' => 'string', 'description' => 'The id (ULID) as docHamster gives it.'];
         $date = static fn (string $what): array => ['type' => 'string', 'description' => $what.' (YYYY-MM-DD).'];
         $page = ['type' => 'integer', 'minimum' => 1, 'description' => 'Page of the list (see next_page in the answer).'];
+        $reason = ['type' => 'string', 'description' => 'Why – one or two sentences the person reads on the tile (e.g. "Amount 54.00 EUR, date and sender match").'];
         $none = ['type' => 'object', 'properties' => new \stdClass, 'additionalProperties' => false];
-        $pair = ['type' => 'object', 'properties' => ['transaction_id' => [...$id, 'description' => 'The booking.'], 'document_id' => [...$id, 'description' => 'The document.']],
-            'required' => ['transaction_id', 'document_id'], 'additionalProperties' => false];
         $one = static fn (string $what): array => ['type' => 'object', 'properties' => ['id' => [...$id, 'description' => $what]], 'required' => ['id'], 'additionalProperties' => false];
+        $propose = static fn (array $fields): array => ['type' => 'object', 'properties' => [...$fields, 'reason' => $reason], 'required' => [...array_keys($fields), 'reason'], 'additionalProperties' => false];
+        $read = AssistantAccess::READ;
 
         return [
-            'whoami' => ['Who am I in docHamster', 'Whose connection this is, the organisation, and whether it may link (scope "link") or only read.', $none, true],
-            'list_accounts' => ['Bank accounts', 'The bank accounts with their number of bookings per status (open = no document, suggested = docHamster suggests one, linked, none = no document needed).', $none, true],
+            'whoami' => ['Who am I in docHamster', 'Whose connection this is, the organisation, and which rights the owner ticked.', $none, $read],
+            'list_accounts' => ['Bank accounts', 'The bank accounts with their number of bookings per status (open = no document, suggested = docHamster suggests one, linked, none = no document needed).', $none, $read],
             'list_transactions' => ['Bookings', 'Bank bookings, newest first, 100 per page. Amounts: amount_minor in cents and amount as a decimal string; negative = money out.', ['type' => 'object', 'properties' => [
                 'account_id' => [...$id, 'description' => 'Only this account.'],
                 'status' => ['type' => 'string', 'enum' => ['open', 'suggested', 'linked', 'none'], 'description' => 'open = no document yet; suggested = docHamster suggests one; linked; none = no document needed.'],
                 'flow' => ['type' => 'string', 'enum' => ['in', 'out'], 'description' => 'Only money in or only money out.'],
                 'from' => $date('First booking day'), 'to' => $date('Last booking day'),
                 'search' => ['type' => 'string', 'description' => 'Text in counterparty, purpose, reference or note.'], 'page' => $page,
-            ], 'additionalProperties' => false], true],
-            'get_transaction' => ['One booking', 'One booking with its documents (state confirmed = linked, suggested = docHamster\'s suggestion) and up to 10 further candidate documents with a score (0–100) and the reasons.', $one('The booking.'), true],
-            'list_folders' => ['Folders', 'The document folders; bank_matching tells whether its documents may be linked to bookings.', $none, true],
-            'list_documents' => ['Documents', 'Documents the person may see, 50 per page, with what docHamster read from them (amount, date, sender, IBAN, invoice number) and the bookings they are linked to.', ['type' => 'object', 'properties' => [
+            ], 'additionalProperties' => false], $read],
+            'get_transaction' => ['One booking', 'One booking with its documents (state confirmed = linked, suggested = docHamster\'s own suggestion) and up to 10 candidate documents with a score (0–100) and the reasons.', $one('The booking.'), $read],
+            'list_folders' => ['Folders', 'The document folders; bank_matching tells whether its documents may be linked to bookings.', $none, $read],
+            'list_documents' => ['Documents', 'Documents the person may see, 50 per page, with what docHamster read from them (amount, date, sender, IBAN, invoice number), their size and the bookings they are linked to.', ['type' => 'object', 'properties' => [
                 'free_only' => ['type' => 'boolean', 'description' => 'Only documents that may be linked and are not linked to any booking yet.'],
                 'folder_id' => [...$id, 'description' => 'Only this folder.'],
                 'from' => $date('First document date'), 'to' => $date('Last document date'),
                 'search' => ['type' => 'string', 'description' => 'Text in the title, the recognised text or a property.'], 'page' => $page,
-            ], 'additionalProperties' => false], true],
-            'get_document' => ['One document', 'One document with all its properties and its recognised text (no scan images).', $one('The document.'), true],
-            'link_document' => ['Link a document to a booking', 'Links the document to the booking (confirmed). Needs the scope "link". Can be undone with unlink_document.', $pair, false],
-            'confirm_suggestion' => ['Confirm a suggestion', 'Turns docHamster\'s suggestion (state suggested) for this booking and document into a link. Needs the scope "link".', $pair, false],
-            'reject_suggestion' => ['Reject a suggestion', 'Removes docHamster\'s suggestion for this booking and document; it is not suggested again. Needs the scope "link".', $pair, false],
-            'unlink_document' => ['Unlink a document', 'Removes the link (or suggestion) between the booking and the document. Needs the scope "link".', $pair, false],
+            ], 'additionalProperties' => false], $read],
+            'get_document' => ['One document', 'One document with all its properties, its files (type, size) and its recognised text.', $one('The document.'), $read],
+            'list_proposals' => ['Your open proposals', 'The proposals still waiting for the person, so nothing is proposed twice.', $none, $read],
+            'propose_link' => ['Propose a link', 'Proposes that this document belongs to this booking. The person takes it over or not.', $propose(['transaction_id' => [...$id, 'description' => 'The booking.'], 'document_id' => [...$id, 'description' => 'The document.']]), AssistantAccess::PROPOSE_LINK],
+            'propose_move' => ['Propose a folder', 'Proposes moving the document into this folder (tidying up).', $propose(['document_id' => [...$id, 'description' => 'The document.'], 'folder_id' => [...$id, 'description' => 'The target folder.']]), AssistantAccess::PROPOSE_MOVE],
+            'propose_duplicate' => ['Propose a duplicate', 'Proposes that remove_id is a duplicate of keep_id: taken over, remove_id goes into the Papierkorb (the person may swap which one stays).', $propose(['keep_id' => [...$id, 'description' => 'The document that stays.'], 'remove_id' => [...$id, 'description' => 'The duplicate.']]), AssistantAccess::PROPOSE_CLEANUP],
+            'propose_delete' => ['Propose deleting', 'Proposes moving the document into the Papierkorb (never deleted for good).', $propose(['document_id' => [...$id, 'description' => 'The document.']]), AssistantAccess::PROPOSE_CLEANUP],
+            'propose_shrink' => ['Propose shrinking', 'Proposes shrinking this too large scan or photo (also when the automatic shrinking is off).', $propose(['document_id' => [...$id, 'description' => 'The document.']]), AssistantAccess::PROPOSE_SHRINK],
+            'propose_correction' => ['Propose a correction', 'Proposes a corrected value for a property the text recognition read wrong (e.g. invoice_amount "64,00 EUR", invoice_date "2026-11-03", sender "Muster GmbH").', $propose([
+                'document_id' => [...$id, 'description' => 'The document.'],
+                'property' => ['type' => 'string', 'description' => 'The property key (invoice_amount, invoice_date, due_date, sender, iban, invoice_number) or its name.'],
+                'value' => ['type' => 'string', 'description' => 'The correct value as written on the document.'],
+            ]), AssistantAccess::PROPOSE_CORRECT],
+            'propose_setting' => ['Propose a setting', 'Proposes switching a setting on: optimize_on = "Dokumentgröße optimieren" shrinks every too large scan automatically.', $propose(['setting' => ['type' => 'string', 'enum' => Proposal::SETTINGS]]), AssistantAccess::PROPOSE_SETTINGS],
         ];
     }
 
-    /** @return list<array<string, mixed>> the tools as MCP lists them */
-    public static function listed(): array
+    /** @return list<array<string, mixed>> the tools the ticked rights allow, as MCP lists them */
+    public static function listed(CurrentOrg $org): array
     {
+        $rights = AssistantAccess::rights($org->organization());
         $tools = [];
-        foreach (self::definitions() as $name => [$title, $description, $schema, $readOnly]) {
-            $tools[] = ['name' => $name, 'title' => $title, 'description' => $description, 'inputSchema' => $schema,
-                'annotations' => $readOnly ? ['readOnlyHint' => true, 'openWorldHint' => false]
-                    : ['readOnlyHint' => false, 'destructiveHint' => $name === 'unlink_document', 'idempotentHint' => true, 'openWorldHint' => false]];
+        foreach (self::definitions() as $name => [$title, $description, $schema, $right]) {
+            if (in_array($right, $rights, true) && ($right === AssistantAccess::READ || in_array(AssistantAccess::READ, $rights, true))) {
+                $tools[] = ['name' => $name, 'title' => $title, 'description' => $description, 'inputSchema' => $schema,
+                    'annotations' => ['readOnlyHint' => $right === AssistantAccess::READ, 'destructiveHint' => false, 'idempotentHint' => true, 'openWorldHint' => false]];
+            }
         }
 
         return $tools;
     }
 
     /**
-     * Runs a tool as an interface call of the same person.
+     * Runs a tool as the same person.
      *
      * @param  array<string, mixed>  $args
      * @return array{bool, string} failed?, the answer as text (JSON or the reason)
      */
-    public static function call(string $name, array $args, Request $outer): array
+    public static function call(string $name, array $args, Request $outer, CurrentOrg $org): array
     {
-        $text = static fn (string $key): string => is_string($args[$key] ?? null) ? $args[$key] : '';
-        [$class, $method, $params, $input, $verb] = match ($name) {
-            'whoami' => [BankApiController::class, 'me', [], [], 'GET'],
-            'list_accounts' => [BankApiController::class, 'accounts', [], [], 'GET'],
-            'list_transactions' => [BankApiController::class, 'transactions', [], ['account' => $args['account_id'] ?? null, 'status' => $args['status'] ?? null,
-                'flow' => $args['flow'] ?? null, 'from' => $args['from'] ?? null, 'to' => $args['to'] ?? null, 'q' => $args['search'] ?? null, 'page' => $args['page'] ?? null], 'GET'],
-            'get_transaction' => [BankApiController::class, 'transaction', ['id' => $text('id')], [], 'GET'],
-            'list_folders' => [DocumentApiController::class, 'folders', [], [], 'GET'],
-            'list_documents' => [DocumentApiController::class, 'documents', [], ['free' => ($args['free_only'] ?? false) === true ? '1' : null, 'folder' => $args['folder_id'] ?? null,
-                'from' => $args['from'] ?? null, 'to' => $args['to'] ?? null, 'q' => $args['search'] ?? null, 'page' => $args['page'] ?? null], 'GET'],
-            'get_document' => [DocumentApiController::class, 'document', ['id' => $text('id')], [], 'GET'],
-            'link_document' => [BankApiController::class, 'link', ['id' => $text('transaction_id')], ['document_id' => $text('document_id')], 'POST'],
-            'confirm_suggestion' => [BankApiController::class, 'confirm', ['id' => $text('transaction_id')], ['document_id' => $text('document_id')], 'POST'],
-            'reject_suggestion' => [BankApiController::class, 'reject', ['id' => $text('transaction_id')], ['document_id' => $text('document_id')], 'POST'],
-            'unlink_document' => [BankApiController::class, 'unlink', ['id' => $text('transaction_id')], ['document_id' => $text('document_id')], 'POST'],
-            default => [null, null, [], [], 'GET'],
-        };
-        if ($class === null || $method === null) {
+        $definition = self::definitions()[$name] ?? null;
+        if ($definition === null) {
             return [true, 'Unknown tool: '.$name];
         }
-        if (isset($params['id']) && $params['id'] === '') {
-            return [true, 'Missing: '.($method === 'transaction' || $method === 'document' ? 'id' : 'transaction_id')];
+        $rights = AssistantAccess::rights($org->organization());
+        if (! in_array($definition[3], $rights, true) || ! in_array(AssistantAccess::READ, $rights, true)) {
+            return [true, (string) __('assistant.not_allowed')];
+        }
+        $text = static fn (string $key): string => is_string($args[$key] ?? null) ? trim($args[$key]) : '';
+        foreach ($definition[2]['required'] ?? [] as $required) {
+            if ($text($required) === '') {
+                return [true, 'Missing: '.$required];
+            }
         }
 
-        $request = Request::create('/api/v1', $verb, array_filter($input, static fn (mixed $v): bool => $v !== null && $v !== ''), [], [], ['REMOTE_ADDR' => $outer->ip()]);
+        if (str_starts_with($name, 'propose_')) {
+            return self::propose($name, $text, $org);
+        }
+
+        return match ($name) {
+            'whoami' => [false, self::json(['person' => $org->membership()->user?->display_name, 'organisation' => $org->organization()->name,
+                'connection' => BankApiController::key($outer)->name, 'rights' => $rights,
+                'note' => 'You change nothing yourself: every change is a proposal the person takes over or not.'])],
+            'list_proposals' => [false, self::json(['data' => Proposal::query()->where('status', Proposal::OPEN)->latest()->limit(500)->get()
+                ->map(static fn (Proposal $p): array => ['id' => $p->id, 'kind' => $p->kind, 'payload' => $p->payload, 'reason' => $p->reason])->all()])],
+            default => self::read($name, $args, $text, $outer),
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $args
+     * @param  callable(string): string  $text
+     * @return array{bool, string}
+     */
+    private static function read(string $name, array $args, callable $text, Request $outer): array
+    {
+        [$class, $method, $params, $input] = match ($name) {
+            'list_accounts' => [BankApiController::class, 'accounts', [], []],
+            'list_transactions' => [BankApiController::class, 'transactions', [], ['account' => $args['account_id'] ?? null, 'status' => $args['status'] ?? null,
+                'flow' => $args['flow'] ?? null, 'from' => $args['from'] ?? null, 'to' => $args['to'] ?? null, 'q' => $args['search'] ?? null, 'page' => $args['page'] ?? null]],
+            'get_transaction' => [BankApiController::class, 'transaction', ['id' => $text('id')], []],
+            'list_folders' => [DocumentApiController::class, 'folders', [], []],
+            'list_documents' => [DocumentApiController::class, 'documents', [], ['free' => ($args['free_only'] ?? false) === true ? '1' : null, 'folder' => $args['folder_id'] ?? null,
+                'from' => $args['from'] ?? null, 'to' => $args['to'] ?? null, 'q' => $args['search'] ?? null, 'page' => $args['page'] ?? null]],
+            default => [DocumentApiController::class, 'document', ['id' => $text('id')], []],
+        };
+        $request = Request::create('/api/v1', 'GET', array_filter($input, static fn (mixed $v): bool => $v !== null && $v !== ''), [], [], ['REMOTE_ADDR' => $outer->ip()]);
         $request->attributes->set(AuthenticateAccessKey::ATTRIBUTE, $outer->attributes->get(AuthenticateAccessKey::ATTRIBUTE));
         $request->setUserResolver($outer->getUserResolver());
         $callable = [app($class), $method];
@@ -119,6 +160,45 @@ final class McpTools
             return [true, $e->getMessage() !== '' ? $e->getMessage() : 'docHamster answered '.$e->getStatusCode().'.'];
         }
 
-        return [false, $response instanceof JsonResponse ? (string) json_encode($response->getData(true), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : ''];
+        return [false, $response instanceof JsonResponse ? self::json($response->getData(true)) : ''];
+    }
+
+    /**
+     * Files a proposal after checking that what it names exists for this person.
+     *
+     * @param  callable(string): string  $text
+     * @return array{bool, string}
+     */
+    private static function propose(string $name, callable $text, CurrentOrg $org): array
+    {
+        $visible = BankApiController::visible($org);
+        $document = static fn (string $key): bool => (clone $visible)->whereKey($text($key))->exists();
+        [$kind, $payload, $problem] = match ($name) {
+            'propose_link' => [Proposal::LINK, ['transaction_id' => $text('transaction_id'), 'document_id' => $text('document_id')],
+                ! Transaction::query()->whereKey($text('transaction_id'))->exists() ? 'booking' : (! $document('document_id') ? 'document' : null)],
+            'propose_move' => [Proposal::MOVE, ['document_id' => $text('document_id'), 'folder_id' => $text('folder_id')],
+                ! $document('document_id') ? 'document' : (! in_array($text('folder_id'), Folder::targetIds(), true) ? 'folder' : null)],
+            'propose_duplicate' => [Proposal::DUPLICATE, ['keep_id' => $text('keep_id'), 'remove_id' => $text('remove_id')],
+                ! $document('keep_id') || ! $document('remove_id') || $text('keep_id') === $text('remove_id') ? 'document' : null],
+            'propose_delete' => [Proposal::DELETE, ['document_id' => $text('document_id')], ! $document('document_id') ? 'document' : null],
+            'propose_shrink' => [Proposal::SHRINK, ['document_id' => $text('document_id')], ! $document('document_id') ? 'document' : null],
+            'propose_correction' => [Proposal::CORRECT, ['document_id' => $text('document_id'), 'property' => $text('property'), 'value' => $text('value')],
+                ! $document('document_id') ? 'document' : (! Property::query()->where('key', $text('property'))->orWhere('name', $text('property'))->exists() ? 'property' : null)],
+            default => [Proposal::SETTING, ['setting' => $text('setting')], ! in_array($text('setting'), Proposal::SETTINGS, true) ? 'setting' : null],
+        };
+        if ($problem !== null) {
+            return [true, (string) __('assistant.propose_unknown.'.$problem)];
+        }
+        $key = request()->attributes->get(AuthenticateAccessKey::ATTRIBUTE);
+        [$proposal, $new] = Proposal::file($kind, $payload, $text('reason'), $key?->name);
+
+        return [false, self::json(['proposal_id' => $proposal->id, 'new' => $new,
+            'message' => $new ? 'Filed – the person decides under Vorschläge.' : 'The same proposal is already waiting.'])];
+    }
+
+    /** @param  array<mixed>  $data */
+    private static function json(array $data): string
+    {
+        return (string) json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 }

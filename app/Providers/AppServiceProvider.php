@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Domain\Assistant\AssistantAccess;
 use App\Domain\Auth\User;
 use App\Domain\Banking\MatchAfterRecognition;
 use App\Domain\Documents\ReceiptDate;
@@ -132,6 +133,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('assistant.manage', static fn (User $user): bool => app(CurrentOrg::class)->isSet()
             && app(CurrentOrg::class)->membership()->user_id === $user->id
             && app(CurrentOrg::class)->membership()->role === Role::Owner);
+
+        // D-040: the main menu's "Vorschläge" – the owner, while the door is open (no extra query on every page).
+        Gate::define('proposals.view', static fn (User $user): bool => Gate::forUser($user)->allows('assistant.manage')
+            && AssistantAccess::enabled(app(CurrentOrg::class)->organization()));
 
         // Replaces Laravel's `database` session driver: same table, no client IP.
         Session::extend('database', static function (Application $app): NoIpDatabaseSessionHandler {

@@ -1,5 +1,6 @@
-{{-- Einstellungen → Assistenten (D-040, owner only): "Zugang für Assistenten" Aus | An (saves at once; Aus asks first,
-     it disconnects every assistant), while open the address with the three clicks in Claude, and the connected assistants
+{{-- Einstellungen → Assistenten (D-040, owner only): what assistants may (checkboxes, nothing ticked at first) and
+     "Zugang für Assistenten" Aus | An (saves at once; An only with a right; Aus asks first, it disconnects every
+     assistant), while open the address with the three clicks in Claude, and the connected assistants
      of the organisation with Trennen as red row action. --}}
 @extends('layouts.settings')
 
@@ -15,6 +16,16 @@
         <h2 class="card-head"><x-icon name="plug" />{{ __('assistant.door') }}</h2>
         <form method="post" action="{{ route('assistant.save') }}" data-autosave>
             @csrf
+            {{-- PO 2026-11-17: the owner ticks each right on purpose – nothing is ticked at first; "An" only with at least one. --}}
+            <fieldset>
+                <legend>{{ __('assistant.rights_legend') }}</legend>
+                @foreach (\App\Domain\Assistant\AssistantAccess::RIGHTS as $right)
+                    <label><input type="checkbox" name="rights[]" value="{{ $right }}" @checked(in_array($right, $rights, true))> {{ __('assistant.rights.'.$right) }}</label>
+                @endforeach
+                @if ($rights !== [] && ! in_array('read', $rights, true))
+                    <p class="field-hint">{{ __('assistant.needs_read') }}</p>
+                @endif
+            </fieldset>
             <fieldset>
                 <legend>{{ __('assistant.state') }}</legend>
                 <span class="button-choice" data-choice>
@@ -22,11 +33,11 @@
                     <span class="switcher" role="group" aria-label="{{ __('assistant.state') }}">
                         <button type="button" data-value="0" aria-pressed="{{ $on ? 'false' : 'true' }}"
                             data-confirm-title="{{ __('assistant.close_title') }}" data-confirm-text="{{ __('assistant.close_text') }}" data-confirm-ok="{{ __('assistant.close_ok') }}"><x-icon name="lock" />{{ __('assistant.state_off') }}</button>
-                        <button type="button" data-value="1" aria-pressed="{{ $on ? 'true' : 'false' }}"><x-icon name="plug" />{{ __('assistant.state_on') }}</button>
+                        <button type="button" data-value="1" aria-pressed="{{ $on ? 'true' : 'false' }}" @disabled($rights === [])><x-icon name="plug" />{{ __('assistant.state_on') }}</button>
                     </span>
                 </span>
             </fieldset>
-            <p class="field-hint">{{ $on ? __('assistant.on_hint') : __('assistant.off_hint') }}</p>
+            <p class="field-hint">{{ $rights === [] ? __('assistant.rights_first') : ($on ? __('assistant.on_hint') : __('assistant.off_hint')) }}</p>
         </form>
     </section>
 
@@ -51,7 +62,6 @@
                             <strong>{{ $access->name }}</strong>
                             <small>{{ $access->user?->display_name }} · {{ __('assistant.connected_at', ['date' => $access->created_at->format('d.m.Y')]) }} · {{ __('account.keys.last_used', ['date' => $access->last_used_at?->format('d.m.Y H:i') ?? __('account.keys.never')]) }}</small>
                         </span>
-                        <span class="pill">{{ __('account.keys.scopes.'.$access->scope) }}</span>
                         <span class="row-actions">
                             <button type="button" class="control-button control-danger" data-dialog-open="disconnect-{{ $access->id }}" aria-label="{{ __('assistant.disconnect') }}: {{ $access->name }}" data-tooltip="{{ __('assistant.disconnect') }}"><x-icon name="unlink" /></button>
                         </span>
