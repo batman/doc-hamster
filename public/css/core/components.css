@@ -177,7 +177,8 @@ label.tag-choice { color: inherit; }
 .card-fold .card-head .card-action { margin-left: auto; }
 .card-fold .card-head .card-action + .card-fold-button { margin-left: 0; }
 .card-fold-button { margin-left: auto; flex: none; }
-.card-head .card-fold-button .icon { color: currentColor; width: 1.25rem; height: 1.25rem; transition: rotate .15s; }
+/* A72: the chevron turns along with the soft fold (core/card-fold.js), quick start, soft end. */
+.card-head .card-fold-button .icon { color: currentColor; width: 1.25rem; height: 1.25rem; transition: rotate .5s cubic-bezier(.2, .8, .2, 1); }
 /* Point 131: the chevron points down while folded (= Aufklappen) and up while open (= Zuklappen). */
 .card-fold:not(.is-folded) .card-fold-button .icon { rotate: 180deg; }
 .card-fold > .card-body { margin-top: .5rem; }
