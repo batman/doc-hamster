@@ -58,6 +58,7 @@ return [
         'folder' => ['deleted' => 'Ordner gelöscht', 'imported' => 'Ordner importiert', 'trash_changed' => 'Papierkorb geändert'],
         'bank' => ['imported' => 'Kontoauszug importiert', 'matched' => 'Buchung zugeordnet', 'confirmed' => 'Zuordnung bestätigt', 'unmatched' => 'Zuordnung gelöst', 'rejected' => 'Vorschlag verworfen', 'account_deleted' => 'Konto gelöscht'],
         'api' => ['key_created' => 'Zugangsschlüssel angelegt', 'key_revoked' => 'Zugangsschlüssel entfernt'],
+        'assistant' => ['allowed' => 'Assistent erlaubt', 'connected' => 'Assistent verbunden', 'disconnected' => 'Assistent getrennt'],
         'export' => ['created' => 'Export erstellt'],
         'backup' => ['started' => 'Backup gestartet', 'downloaded' => 'Backup heruntergeladen'],
         'printer' => ['paired' => 'Drucker verbunden', 'revoked' => 'Drucker getrennt', 'setup_started' => 'Drucker-Einrichtung gestartet'],

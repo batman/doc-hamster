@@ -31,6 +31,11 @@
             }
             toast(json.message);
             DocHamster.emit('properties:saved', { form, json });
+            // An answer with "reload" changes what the page shows (e.g. Assistenten: the door opened): its window reloads.
+            const win = json.reload ? form.closest('section[data-window]') : null;
+            if (win && DocHamster.reloadWindow) {
+                DocHamster.reloadWindow(win, new URL(win.dataset.windowUrl ?? location.href, location.href), '.win-body').catch(() => {});
+            }
         }).catch(error => {
             if (field) {
                 field.closest('.field-addon').classList.add('is-error');

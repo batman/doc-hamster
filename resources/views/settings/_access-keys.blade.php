@@ -19,6 +19,9 @@
 <section class="card">
     <h2 class="card-head"><x-icon name="plug" />{{ __('account.keys.title') }}</h2>
     <p class="card-note">{{ __('account.keys.note') }}</p>
+    @unless ($doorOpen)
+        <div class="notice">{{ __('api.closed') }}</div>
+    @else
     <form method="post" action="{{ route('access-keys.store') }}" class="expand-plus is-row @if ($adding) is-open is-filled @endif" data-expand-plus data-confirm-sudo>
         @csrf
         <button type="button" class="list-entry expand-plus-open"><x-icon name="plus" /><span>{{ __('account.keys.add') }}</span></button>
@@ -31,13 +34,15 @@
         </div>
         @error('name')<p class="error" role="alert">{{ $message }}</p>@enderror
     </form>
+    @endunless
     <ul class="pick-list">
         @forelse ($accessKeys as $access)
             <li class="pick-row is-static">
                 <span class="row-icon"><x-icon name="plug" /></span>
                 <span>
                     <strong>{{ $access->name }}</strong>
-                    <small>{{ __('account.keys.created_at', ['date' => $access->created_at->format('d.m.Y')]) }} · {{ __('account.keys.last_used', ['date' => $access->last_used_at?->format('d.m.Y H:i') ?? __('account.keys.never')]) }} · {{ __('account.keys.prefix', ['prefix' => $access->key_prefix]) }}</small>
+                    {{-- An assistant connected by clicks (D-040) has a changing token: no "beginnt mit". --}}
+                    <small>{{ $access->isConnection() ? __('assistant.connected_at', ['date' => $access->created_at->format('d.m.Y')]) : __('account.keys.created_at', ['date' => $access->created_at->format('d.m.Y')]) }} · {{ __('account.keys.last_used', ['date' => $access->last_used_at?->format('d.m.Y H:i') ?? __('account.keys.never')]) }}@unless ($access->isConnection()) · {{ __('account.keys.prefix', ['prefix' => $access->key_prefix]) }}@endunless</small>
                 </span>
                 <span class="pill">{{ __('account.keys.scopes.'.$access->scope) }}</span>
                 <span class="row-actions">

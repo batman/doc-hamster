@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Domain\Assistant\AssistantAccess;
 use App\Domain\Audit\AuditLog;
 use App\Domain\Auth\User;
 use App\Domain\Auth\UserSessions;
@@ -87,7 +88,7 @@ final class AccountController
             'user' => $user,
             'forced' => $forced,
             'sessions' => SessionSettingsController::rows($request, $org->membership()->user_id),
-            ...AccessKeyController::pageData($request, $org->membership()->user_id),
+            ...AccessKeyController::pageData($request, $org->membership()->user_id, AssistantAccess::enabled($org->organization())),
         ]);
     }
 

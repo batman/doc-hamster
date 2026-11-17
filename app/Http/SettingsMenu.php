@@ -45,6 +45,10 @@ final class SettingsMenu
         'optimize' => ['arrows-minimize', [
             ['optimize', 'optimize.show', 'arrows-minimize', 'settings.manage', ['optimize.*']],
         ], true],
+        // D-040: the door for AI assistants such as Claude – the owner only.
+        'assistant' => ['plug', [
+            ['assistant', 'assistant.show', 'plug', 'assistant.manage', ['assistant.*']],
+        ], true],
         // Point 173: everything optional – OCR languages, later translation packs and modules.
         'extensions' => ['puzzle', [
             ['extensions', 'extensions.index', 'puzzle', 'settings.manage', ['extensions.*']],

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domain\Api\AccessKey;
+use App\Domain\Assistant\AssistantAccess;
 use App\Domain\Audit\AuditLogEntry;
 use App\Domain\Banking\BankAccount;
 use App\Domain\Banking\Transaction;
@@ -25,6 +26,8 @@ beforeEach(function (): void {
     Storage::fake('local');
     $this->owner = Membership::factory()->owner()->create();
     app(CurrentOrg::class)->set($this->owner);
+    // D-040: the owner opened "Zugang für Assistenten".
+    AssistantAccess::save($this->owner->organization, true);
     $this->account = BankAccount::query()->create(['name' => 'Giro', 'currency' => 'EUR']);
     $this->booking = Transaction::query()->create(['bank_account_id' => $this->account->id, 'booking_date' => '2026-11-02', 'amount_minor' => -5400,
         'currency' => 'EUR', 'counterparty' => 'Muster GmbH', 'fingerprint' => Str::random(24)]);
@@ -85,6 +88,7 @@ it('links and unlinks with "Lesen + Verknüpfen", in the audit log with the key'
 
 it('never reaches another organisation', function (): void {
     $stranger = Membership::factory()->owner()->create();
+    AssistantAccess::save($stranger->organization, true);
     $key = accessKey($stranger, AccessKey::LINK);
 
     $this->withToken($key)->getJson('/api/v1/transactions')->assertOk()->assertJsonCount(0, 'data');

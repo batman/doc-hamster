@@ -55,6 +55,7 @@ return [
         'folder' => ['deleted' => 'Folder deleted', 'imported' => 'Folder imported', 'trash_changed' => 'Bin changed'],
         'bank' => ['imported' => 'Statement imported', 'matched' => 'Transaction matched', 'confirmed' => 'Match confirmed', 'unmatched' => 'Match removed', 'rejected' => 'Suggestion rejected', 'account_deleted' => 'Account deleted'],
         'api' => ['key_created' => 'Access key added', 'key_revoked' => 'Access key removed'],
+        'assistant' => ['allowed' => 'Assistant allowed', 'connected' => 'Assistant connected', 'disconnected' => 'Assistant disconnected'],
         'export' => ['created' => 'Export created'],
         'backup' => ['started' => 'Backup started', 'downloaded' => 'Backup downloaded'],
         'printer' => ['paired' => 'Printer paired', 'revoked' => 'Printer removed', 'setup_started' => 'Printer set-up started'],

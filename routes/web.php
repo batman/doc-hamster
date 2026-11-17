@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Http\Controllers\AccessKeyController;
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\Assistant\AssistantSettingsController;
+use App\Http\Controllers\Assistant\OAuthController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\BackupController;
@@ -221,6 +223,14 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('keys', [AccessKeyController::class, 'store'])->middleware('throttle:10,1')->name('access-keys.store');
         Route::post('keys/{id}/delete', [AccessKeyController::class, 'destroy'])->name('access-keys.destroy');
     });
+    // D-040: Einstellungen → Assistenten (owner only; before settings/{group}) and an assistant's consent page.
+    Route::middleware('can:assistant.manage')->prefix('settings/assistant')->name('assistant.')->controller(AssistantSettingsController::class)->group(function (): void {
+        Route::get('/', 'show')->name('show');
+        Route::post('/', 'save')->name('save');
+        Route::post('{id}/disconnect', 'disconnect')->name('disconnect');
+    });
+    Route::get('oauth/authorize', [OAuthController::class, 'authorize'])->name('oauth.authorize');
+    Route::post('oauth/authorize', [OAuthController::class, 'approve'])->name('oauth.approve');
 
     // "Teilen → DocHamster" (points 151, A328): the service worker keeps the share, this page sends it (also after login).
     Route::middleware('can:documents.upload')->prefix('share')->name('share.')->group(function (): void {

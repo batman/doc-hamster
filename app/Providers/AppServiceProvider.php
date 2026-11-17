@@ -11,6 +11,7 @@ use App\Domain\Log\LogEntry;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Membership;
 use App\Domain\Org\Permission;
+use App\Domain\Org\Role;
 use App\Domain\Payments\InvoiceSuggestions;
 use App\Domain\Payments\SuggestInvoiceProperties;
 use App\Domain\Properties\DocumentProperty;
@@ -126,6 +127,11 @@ class AppServiceProvider extends ServiceProvider
                 && app(CurrentOrg::class)->membership()->user_id === $user->id
                 && app(CurrentOrg::class)->allows($permission));
         }
+
+        // D-040: only the owner opens or closes the door for assistants.
+        Gate::define('assistant.manage', static fn (User $user): bool => app(CurrentOrg::class)->isSet()
+            && app(CurrentOrg::class)->membership()->user_id === $user->id
+            && app(CurrentOrg::class)->membership()->role === Role::Owner);
 
         // Replaces Laravel's `database` session driver: same table, no client IP.
         Session::extend('database', static function (Application $app): NoIpDatabaseSessionHandler {

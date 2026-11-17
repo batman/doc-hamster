@@ -31,6 +31,7 @@ final class RequireRecentConfirmation
         'devices.store', 'devices.rekey', 'devices.destroy',
         'sessions.end', 'sessions.others',
         'access-keys.store', 'access-keys.destroy',
+        'assistant.save', 'assistant.disconnect', 'oauth.approve',
         'updates.install', 'updates.install-main', 'updates.install-preview',
     ];
 

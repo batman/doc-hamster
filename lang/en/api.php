@@ -7,6 +7,7 @@ return [
     'unauthorized' => 'No valid access key.',
     'forbidden' => 'This person may not do that.',
     'read_only' => 'This key may only read.',
+    'closed' => 'Access for assistants is closed (Settings → Assistants).',
     'booking_missing' => 'This booking does not exist (or not for this person).',
     'document_missing' => 'This document does not exist (or not for this person).',
     'match_missing' => 'This booking and this document are neither linked nor suggested.',

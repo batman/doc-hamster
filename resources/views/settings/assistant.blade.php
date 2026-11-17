@@ -1,0 +1,80 @@
+{{-- Einstellungen → Assistenten (D-040, owner only): "Zugang für Assistenten" Aus | An (saves at once; Aus asks first,
+     it disconnects every assistant), while open the address with the three clicks in Claude, and the connected assistants
+     of the organisation with Trennen as red row action. --}}
+@extends('layouts.settings')
+
+@section('title', __('assistant.title'))
+
+@section('page')
+    @if (session('status'))
+        <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
+    @endif
+    <p class="muted">{{ __('assistant.intro') }}</p>
+
+    <section class="card">
+        <h2 class="card-head"><x-icon name="plug" />{{ __('assistant.door') }}</h2>
+        <form method="post" action="{{ route('assistant.save') }}" data-autosave>
+            @csrf
+            <fieldset>
+                <legend>{{ __('assistant.state') }}</legend>
+                <span class="button-choice" data-choice>
+                    <input type="hidden" name="on" value="{{ $on ? '1' : '0' }}">
+                    <span class="switcher" role="group" aria-label="{{ __('assistant.state') }}">
+                        <button type="button" data-value="0" aria-pressed="{{ $on ? 'false' : 'true' }}"
+                            data-confirm-title="{{ __('assistant.close_title') }}" data-confirm-text="{{ __('assistant.close_text') }}" data-confirm-ok="{{ __('assistant.close_ok') }}"><x-icon name="lock" />{{ __('assistant.state_off') }}</button>
+                        <button type="button" data-value="1" aria-pressed="{{ $on ? 'true' : 'false' }}"><x-icon name="plug" />{{ __('assistant.state_on') }}</button>
+                    </span>
+                </span>
+            </fieldset>
+            <p class="field-hint">{{ $on ? __('assistant.on_hint') : __('assistant.off_hint') }}</p>
+        </form>
+    </section>
+
+    @if ($on)
+        <section class="card">
+            <h2 class="card-head"><x-icon name="link" />{{ __('assistant.connect_title') }}</h2>
+            @include('settings._device-copy', ['id' => 'assistant-url', 'label' => __('assistant.url'), 'value' => $mcpUrl])
+            <ol class="card-text">
+                @foreach (__('assistant.steps') as $step)
+                    <li>{{ $step }}</li>
+                @endforeach
+            </ol>
+        </section>
+
+        <section class="card">
+            <h2 class="card-head"><x-icon name="users" />{{ __('assistant.connections') }}</h2>
+            <ul class="pick-list">
+                @forelse ($connections as $access)
+                    <li class="pick-row is-static">
+                        <span class="row-icon"><x-icon name="plug" /></span>
+                        <span>
+                            <strong>{{ $access->name }}</strong>
+                            <small>{{ $access->user?->display_name }} · {{ __('assistant.connected_at', ['date' => $access->created_at->format('d.m.Y')]) }} · {{ __('account.keys.last_used', ['date' => $access->last_used_at?->format('d.m.Y H:i') ?? __('account.keys.never')]) }}</small>
+                        </span>
+                        <span class="pill">{{ __('account.keys.scopes.'.$access->scope) }}</span>
+                        <span class="row-actions">
+                            <button type="button" class="control-button control-danger" data-dialog-open="disconnect-{{ $access->id }}" aria-label="{{ __('assistant.disconnect') }}: {{ $access->name }}" data-tooltip="{{ __('assistant.disconnect') }}"><x-icon name="unlink" /></button>
+                        </span>
+                    </li>
+                @empty
+                    <x-empty tag="li" icon="plug" :text="__('assistant.none')" />
+                @endforelse
+            </ul>
+        </section>
+
+        @foreach ($connections as $access)
+            <div class="dialog-backdrop" data-dialog="disconnect-{{ $access->id }}" hidden>
+                <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="disconnect-{{ $access->id }}-title">
+                    <h2 id="disconnect-{{ $access->id }}-title">{{ __('assistant.disconnect_title', ['name' => $access->name]) }}</h2>
+                    <p>{{ __('assistant.disconnect_text') }}</p>
+                    <div class="dialog-actions">
+                        <form method="post" action="{{ route('assistant.disconnect', $access->id) }}" data-confirm-sudo>
+                            @csrf
+                            <button type="submit" class="button-danger"><x-icon name="unlink" />{{ __('assistant.disconnect') }}</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        @endforeach
+    @endif
+@endsection

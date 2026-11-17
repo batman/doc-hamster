@@ -6,6 +6,8 @@ use App\Domain\Log\LogEntry;
 use App\Http\CardFolds;
 use App\Http\Controllers\Api\BankApiController;
 use App\Http\Controllers\Api\DocumentApiController;
+use App\Http\Controllers\Assistant\McpController;
+use App\Http\Controllers\Assistant\OAuthController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\PrinterApiController;
 use App\Http\Controllers\UploadApiController;
@@ -62,6 +64,15 @@ return Application::configure(basePath: dirname(__DIR__))
                 Route::get('documents', [DocumentApiController::class, 'documents'])->name('documents');
                 Route::get('documents/{id}', [DocumentApiController::class, 'document'])->name('document');
             });
+
+            // D-040: assistants connect by clicks – where to sign in (RFC 9728, RFC 8414), registering (RFC 7591), the
+            // tokens, and the MCP address itself. All of it "not here" while no organisation has the door open.
+            Route::get('.well-known/oauth-protected-resource/{path?}', [OAuthController::class, 'resource'])->where('path', '.*')->name('oauth.resource');
+            Route::get('.well-known/oauth-authorization-server/{path?}', [OAuthController::class, 'server'])->where('path', '.*')->name('oauth.server');
+            Route::post('oauth/register', [OAuthController::class, 'register'])->middleware('throttle:10,1')->name('oauth.register');
+            Route::post('oauth/token', [OAuthController::class, 'token'])->middleware('throttle:60,1')->name('oauth.token');
+            Route::post('mcp', [McpController::class, 'handle'])->middleware(['throttle:api-key', AuthenticateAccessKey::ALIAS.':mcp'])->name('mcp');
+            Route::match(['get', 'delete'], 'mcp', [McpController::class, 'other']);
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {

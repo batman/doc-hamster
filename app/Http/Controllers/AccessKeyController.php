@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Domain\Api\AccessKey;
+use App\Domain\Assistant\AssistantAccess;
 use App\Domain\Audit\AuditLog;
 use App\Domain\Org\CurrentOrg;
 use Illuminate\Http\RedirectResponse;
@@ -26,6 +27,7 @@ final class AccessKeyController
 
     public function store(Request $request, AuditLog $audit, CurrentOrg $org): RedirectResponse
     {
+        abort_unless(AssistantAccess::enabled($org->organization()), 403, __('api.closed'));
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'scope' => ['required', Rule::in(AccessKey::SCOPES)],
@@ -54,9 +56,9 @@ final class AccessKeyController
     /**
      * The page's part: the person's working keys and, right after "anlegen", the new key once.
      *
-     * @return array{accessKeys: Collection<int, AccessKey>, freshKey: array{name: string, key: string}|null, apiUrl: string}
+     * @return array{accessKeys: Collection<int, AccessKey>, freshKey: array{name: string, key: string}|null, apiUrl: string, doorOpen: bool}
      */
-    public static function pageData(Request $request, string $userId): array
+    public static function pageData(Request $request, string $userId, bool $doorOpen): array
     {
         $token = $request->query('key');
         $fresh = null;
@@ -72,6 +74,7 @@ final class AccessKeyController
             'accessKeys' => AccessKey::query()->where('user_id', $userId)->whereNull('revoked_at')->oldest()->get(),
             'freshKey' => $fresh,
             'apiUrl' => route('api.v1.me'),
+            'doorOpen' => $doorOpen,
         ];
     }
 
