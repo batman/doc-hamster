@@ -21,6 +21,7 @@ return [
         'eingang' => 'Incoming',
         'log' => 'Log',
         'speed' => 'Speed',
+        'modules' => 'Modules',
         'backup' => 'Backup',
     ],
     // Point 156: the short description of each group on its tile.
@@ -40,6 +41,7 @@ return [
         'eingang' => 'Printers, e-mail, devices and phone test',
         'log' => 'Events and errors',
         'speed' => 'Measurements, checks and prefetching',
+        'modules' => 'Settings of your modules',
         'backup' => 'Download all data as a ZIP',
     ],
     'links' => [

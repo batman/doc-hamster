@@ -1,0 +1,10 @@
+{
+    "key": "beispiel",
+    "name": "Beispiel-Modul",
+    "description": "Zeigt, wie ein docHamster-Modul gebaut ist: eine Einstellungsseite, ein Eintrag im ⋯-Menü eines Dokuments und eine eigene Tabelle.",
+    "version": "1.0.0",
+    "provider": "Max Mustermann",
+    "homepage": "https://github.com/example/dochamster-beispiel",
+    "api": 1,
+    "rights": ["documents_read"]
+}

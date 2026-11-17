@@ -55,3 +55,6 @@ Thumbs.db
 
 # Local mascot 3D work files (operator), never part of the app
 resources/hamster/3d/
+
+# D-041: public files of installed modules (copied at install)
+/public/modules/

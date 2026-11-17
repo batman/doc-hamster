@@ -39,6 +39,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InboxController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\MemberController;
+use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\NoteColumnController;
 use App\Http\Controllers\OcrBrowserController;
 use App\Http\Controllers\OcrController;
@@ -309,6 +310,16 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::middleware('can:system.update_preview')->group(function (): void {
             Route::post('update/install-preview', [UpdateController::class, 'installPreview'])->name('updates.install-preview');
         });
+    });
+
+    // D-041: modules on the Software page – owner only; install, update and remove ask for a fresh password.
+    Route::middleware('can:modules.manage')->prefix('settings/modules')->name('modules.')->controller(ModuleController::class)->group(function (): void {
+        Route::post('find', 'find')->middleware('throttle:20,1')->name('find');
+        Route::post('partners', 'partners')->middleware('throttle:10,1')->name('partners');
+        Route::post('install', 'install')->name('install');
+        Route::post('{key}/update', 'update')->where('key', '[a-z0-9-]+')->name('update');
+        Route::post('{key}/toggle', 'toggle')->where('key', '[a-z0-9-]+')->name('toggle');
+        Route::post('{key}/remove', 'remove')->where('key', '[a-z0-9-]+')->name('remove');
     });
 
     // Shared colour palette (points 14-15): org-wide, so only Admins (settings.manage).

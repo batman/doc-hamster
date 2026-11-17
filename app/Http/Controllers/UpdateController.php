@@ -8,7 +8,9 @@ use App\Domain\Audit\AuditLog;
 use App\Domain\Org\CurrentOrg;
 use App\Infrastructure\Environment\LocalOcr;
 use App\Infrastructure\Extensions\Extensions;
+use App\Jobs\Net\ModuleSource;
 use App\Jobs\Net\UpdateSource;
+use App\Modules\InstalledModules;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -76,6 +78,16 @@ final class UpdateController
         $request->session()->put('updates.preview_list', $branches);
 
         $rows = $this->rows(true, $latest, $branches);
+        // D-041, F16: the same click asks each installed module's project for its newest version (shown in the list).
+        $modules = app(InstalledModules::class);
+        foreach ($modules->all() as $key => $entry) {
+            try {
+                $found = app(ModuleSource::class)->find($entry['source']);
+                $modules->remember((string) $key, ['version' => $found->version, 'rights' => $found->rights]);
+            } catch (Throwable) {
+                continue;
+            }
+        }
         $installed = collect($rows)->firstWhere('installed', true);
         $newer = is_array($installed) && $installed['newer'] !== '';
 

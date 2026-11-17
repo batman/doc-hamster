@@ -33,6 +33,7 @@ final class RequireRecentConfirmation
         'access-keys.store', 'access-keys.destroy',
         'assistant.save', 'assistant.disconnect', 'oauth.approve',
         'updates.install', 'updates.install-main', 'updates.install-preview',
+        'modules.install', 'modules.update', 'modules.remove',
     ];
 
     public function handle(Request $request, Closure $next): Response

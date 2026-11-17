@@ -54,4 +54,5 @@ Git history is permanent: deleting a file later does not remove it from history,
 | `docs/PLAN.md` | What we build |
 | `docs/collaboration/DECISIONS.md` | Decisions (D-NNN) |
 | `docs/design/FRAMEWORK.md` | UI framework: building blocks, window system, how modules plug in |
+| `docs/modules/BUILDING.md` | How to build a module (D-041), with a template |
 | `SECURITY.md` | How to report vulnerabilities |

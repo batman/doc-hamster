@@ -21,6 +21,7 @@ return [
         'eingang' => 'Eingang',
         'log' => 'Log',
         'speed' => 'Geschwindigkeit',
+        'modules' => 'Module',
         'backup' => 'Backup',
     ],
     // Point 156: the short description of each group on its tile.
@@ -40,6 +41,7 @@ return [
         'eingang' => 'Drucker, E-Mail, Geräte und Handy-Test',
         'log' => 'Ereignisse und Fehler',
         'speed' => 'Messwerte, Prüfungen und Vorladen',
+        'modules' => 'Einstellungen Ihrer Module',
         'backup' => 'Alle Daten als ZIP herunterladen',
     ],
     'links' => [

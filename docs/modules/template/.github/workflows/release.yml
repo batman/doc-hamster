@@ -1,0 +1,34 @@
+# Publishing a docHamster module: create a release on GitHub (tag = the version in dochamster-module.json, e.g. v1.0.0).
+# This workflow packs module.zip, writes the Steckbrief with the zip's checksum and attaches both to the release –
+# exactly the two files docHamster looks for (releases/latest/download/…).
+name: Release module
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the version
+        run: |
+          version=$(jq -r .version dochamster-module.json)
+          test "v$version" = "${GITHUB_REF_NAME}" || test "$version" = "${GITHUB_REF_NAME}" || { echo "Tag ${GITHUB_REF_NAME} does not match version $version"; exit 1; }
+      - name: Pack module.zip
+        run: |
+          paths=""
+          for p in dochamster-module.json src resources lang database public; do [ -e "$p" ] && paths="$paths $p"; done
+          zip -r -X module.zip $paths
+      - name: Write the Steckbrief with the checksum
+        run: jq --arg sha "$(sha256sum module.zip | cut -d' ' -f1)" '. + {zip_sha256: $sha}' dochamster-module.json > release-manifest.json && mv release-manifest.json dochamster-module.release.json
+      - name: Attach both files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp dochamster-module.release.json /tmp/dochamster-module.json
+          gh release upload "${GITHUB_REF_NAME}" module.zip /tmp/dochamster-module.json --clobber

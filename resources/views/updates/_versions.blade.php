@@ -38,4 +38,6 @@
             @endif
         </li>
     @endforeach
+    @include('modules._update-rows')
 </ul>
+@include('modules._update-dialogs')

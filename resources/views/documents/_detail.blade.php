@@ -61,6 +61,10 @@
                 <button type="submit" class="menu-item"><x-icon name="server" /><span>{{ __('ocr.server.redo') }}</span></button>
             </form>
         @endif
+        {{-- D-041: entries of installed modules (they only add, F17 a); each opens its page as a window. --}}
+        @foreach (\App\Modules\ModuleConnections::routed(app(\App\Modules\ModuleConnections::class)->documentActions) as $action)
+            <a class="menu-item" href="{{ route($action['route'], ['id' => $document->id]) }}" data-window><x-icon :name="$action['icon']" /><span>{{ $action['label'] }}</span></a>
+        @endforeach
         @if ($canTrash)
             <hr class="menu-separator">
             <button type="button" class="menu-item menu-danger" data-dialog-open="delete-document-{{ $document->id }}"><x-icon name="trash" /><span>{{ __('documents.delete') }}</span></button>

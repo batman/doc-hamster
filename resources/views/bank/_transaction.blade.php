@@ -14,6 +14,15 @@
           min="28rem" optimal="38rem" max="56rem" priority="2"
           :url="route('bank.show', [$transaction->id, ...request()->only('proposal')])" :close="route('bank.account', $transaction->bank_account_id)">
     <x-slot:actions>@include('assistant._proposal-head')</x-slot:actions>
+    {{-- D-041: entries of installed modules in the booking's ⋯ menu. --}}
+    @php $moduleActions = \App\Modules\ModuleConnections::routed(app(\App\Modules\ModuleConnections::class)->bookingActions); @endphp
+    @if ($moduleActions !== [])
+        <x-slot:menu>
+            @foreach ($moduleActions as $action)
+                <a class="menu-item" href="{{ route($action['route'], ['id' => $transaction->id]) }}" data-window><x-icon :name="$action['icon']" /><span>{{ $action['label'] }}</span></a>
+            @endforeach
+        </x-slot:menu>
+    @endif
     @if (session('status'))
         <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
     @endif

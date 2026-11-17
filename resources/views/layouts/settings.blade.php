@@ -28,9 +28,9 @@
         $sections = \App\Http\SettingsMenu::sections($badge, $group);
         $itemEntries = [];
         foreach ($current['items'] ?? [] as $each) {
-            $itemEntries[] = ['href' => route($each['route']), 'icon' => $each['icon'], 'title' => __('settings.links.'.$each['key'].'.title'), 'text' => __('settings.links.'.$each['key'].'.text'), ...$badge($each['key'])];
+            $itemEntries[] = ['href' => route($each['route']), 'icon' => $each['icon'], 'title' => $each['title'], 'text' => $each['text'], ...$badge($each['key'])];
         }
-        $itemTitle = $entry !== null ? __('settings.links.'.$entry['key'].'.title') : __('settings.title');
+        $itemTitle = $entry !== null ? $entry['title'] : __('settings.title');
         $itemIcon = $entry['icon'] ?? ($current['icon'] ?? 'settings');
         $itemUrl = $entry !== null ? route($entry['route']) : $groupUrl;
         $pageTitle = html_entity_decode(trim($__env->yieldContent('page_title')), ENT_QUOTES | ENT_HTML5);

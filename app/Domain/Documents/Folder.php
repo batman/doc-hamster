@@ -108,9 +108,11 @@ final class Folder extends Model
      *
      * @return list<string>
      */
-    public static function privateBranch(): array
+    public static function privateBranch(?string $orgId = null): array
     {
-        $all = self::query()->withoutGlobalScope(RestrictedScope::class)->get(['id', 'parent_id', 'is_private']);
+        // With $orgId (e.g. a model event without an active organisation) past every scope, for that organisation only.
+        $query = $orgId === null ? self::query()->withoutGlobalScope(RestrictedScope::class) : self::query()->withoutGlobalScopes()->where('org_id', $orgId);
+        $all = $query->get(['id', 'parent_id', 'is_private']);
         $children = $all->groupBy('parent_id');
         $branch = [];
         $todo = $all->where('is_private', true)->pluck('id')->all();

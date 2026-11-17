@@ -11,24 +11,7 @@
     <p class="error" role="alert">{{ session('error') }}</p>
 @endif
 
-<section class="card">
-    <h2 class="card-head"><x-icon name="puzzle" />{{ __('extensions.kinds.module') }}</h2>
-    <p class="card-text">{{ __('extensions.kind_texts.module') }}</p>
-    <ul class="pick-list">
-        @forelse ($modules as $row)
-            <li class="pick-row is-static">
-                <span class="row-icon"><x-icon name="puzzle" /></span>
-                <span>
-                    <strong>{{ \App\Http\Controllers\ExtensionController::name($row['ext']) }}</strong>
-                    <small>{{ \App\Http\Controllers\ExtensionController::text($row['ext']) }} · {{ __('extensions.later') }}</small>
-                </span>
-                <span class="pill">{{ __('extensions.later_pill') }}</span>
-            </li>
-        @empty
-            <x-empty tag="li" icon="puzzle" :text="__('extensions.no_modules')" />
-        @endforelse
-    </ul>
-</section>
+@include('modules._card')
 
 {{-- PO 2026-11-17: the long lists fold and start folded; the head says which languages are on. --}}
 <x-fold-card fold="extensions.ocr" :title="__('extensions.kinds.data')" icon="language" folded

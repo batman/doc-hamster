@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http;
 
+use App\Modules\ModuleConnections;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
@@ -96,7 +97,7 @@ final class SettingsMenu
         'inbox' => ['inbox', ['eingang'], true],
         'bank' => ['building-bank', ['bank'], true],
         'share' => ['send', ['export', 'assistant'], false],
-        'system' => ['server', ['update', 'backup', 'speed', 'log'], false],
+        'system' => ['server', ['update', 'modules', 'backup', 'speed', 'log'], false],
     ];
 
     /**
@@ -118,8 +119,8 @@ final class SettingsMenu
                 }
                 if ($expand) {
                     foreach ($groups[$group]['items'] as $item) {
-                        $entries[] = ['href' => route($item['route']), 'icon' => $item['icon'], 'title' => __('settings.links.'.$item['key'].'.title'),
-                            'text' => __('settings.links.'.$item['key'].'.text'), ...$badge($item['key'])];
+                        $entries[] = ['href' => route($item['route']), 'icon' => $item['icon'], 'title' => $item['title'],
+                            'text' => $item['text'], ...$badge($item['key'])];
                     }
                 } else {
                     $entries[] = ['href' => route('settings.group', $group), 'icon' => $groups[$group]['icon'], 'title' => __('settings.groups.'.$group),
@@ -135,9 +136,10 @@ final class SettingsMenu
     }
 
     /**
-     * The groups this person may open, each with its allowed entries.
+     * The groups this person may open, each with its allowed entries (name and short text already in words). D-041:
+     * the settings pages of installed modules form the group "Module" (owner only).
      *
-     * @return array<string, array{icon: string, leaf: bool, items: list<array{key: string, route: string, icon: string}>}>
+     * @return array<string, array{icon: string, leaf: bool, items: list<array{key: string, route: string, icon: string, title: string, text: string}>}>
      */
     public static function groups(): array
     {
@@ -146,12 +148,17 @@ final class SettingsMenu
             $items = [];
             foreach ($entries as [$item, $route, $itemIcon, $ability]) {
                 if (Route::has($route) && ($ability === null || Gate::allows($ability))) {
-                    $items[] = ['key' => $item, 'route' => $route, 'icon' => $itemIcon];
+                    $items[] = ['key' => $item, 'route' => $route, 'icon' => $itemIcon, 'title' => __('settings.links.'.$item.'.title'), 'text' => __('settings.links.'.$item.'.text')];
                 }
             }
             if ($items !== []) {
                 $groups[$key] = ['icon' => $icon, 'leaf' => $leaf, 'items' => $items];
             }
+        }
+        $pages = Gate::allows('modules.manage') ? ModuleConnections::routed(app(ModuleConnections::class)->settings) : [];
+        if ($pages !== []) {
+            $groups['modules'] = ['icon' => 'puzzle', 'leaf' => false, 'items' => array_map(static fn (array $p): array => ['key' => 'module.'.$p['module'], 'route' => $p['route'],
+                'icon' => $p['icon'], 'title' => $p['title'], 'text' => $p['text']], $pages)];
         }
 
         return $groups;
@@ -171,10 +178,16 @@ final class SettingsMenu
                 }
             }
         }
+        // D-041: a module's settings page (or any page of that module below it) belongs to "Module".
+        foreach (app(ModuleConnections::class)->settings as $page) {
+            if ($request->routeIs($page['route'])) {
+                return ['modules', 'module.'.$page['module']];
+            }
+        }
 
         $group = $request->route('group');
 
-        return [is_string($group) && isset(self::GROUPS[$group]) ? $group : null, null];
+        return [is_string($group) && (isset(self::GROUPS[$group]) || $group === 'modules') ? $group : null, null];
     }
 
     /** Whether the current page is part of Einstellungen (the main menu keeps "Einstellungen" marked there). */

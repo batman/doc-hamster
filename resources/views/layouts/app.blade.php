@@ -109,6 +109,10 @@
                                 <li><a class="nav-item tooltip-right" href="{{ route($route) }}" data-tooltip="{{ __($label) }}" @if ($route === 'inbox.index') data-no-prefetch @endif @if (request()->routeIs(...$active) || ($route === 'settings.index' && \App\Http\SettingsMenu::owns(request()))) aria-current="page" @endif><x-icon :name="$icon" /><span class="nav-text">{{ __($label) }}</span> @if ($badge !== null) @php $count = $badges[$badge] ?? 0; @endphp <span class="badge badge-alert" data-badge="{{ $badge }}" @if ($count === 0) hidden @endif>{{ $count > 99 ? '99+' : $count }}</span> @endif</a></li>
                             @endif
                         @endforeach
+                        {{-- D-041: main menu entries of installed modules, below the core's. --}}
+                        @foreach (\App\Modules\ModuleConnections::routed(app(\App\Modules\ModuleConnections::class)->menu) as $entry)
+                            <li><a class="nav-item tooltip-right" href="{{ route($entry['route']) }}" data-tooltip="{{ $entry['label'] }}" @if (request()->routeIs('m.'.$entry['module'].'.*')) aria-current="page" @endif><x-icon :name="$entry['icon']" /><span class="nav-text">{{ $entry['label'] }}</span></a></li>
+                        @endforeach
                     </ul>
                     <form class="nav-logout" method="post" action="{{ route('logout') }}">
                         @csrf
