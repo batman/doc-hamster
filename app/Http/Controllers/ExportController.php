@@ -47,7 +47,7 @@ final class ExportController
 
         // A role may have "Exportieren" without "Alle Belege sehen": then only the own ones (#30).
         $documents = Document::query()
-            ->visibleTo($user->id, Gate::allows(Permission::ViewAllDocuments->value))
+            ->visibleTo($user->id, Gate::allows(Permission::ViewAllDocuments->value))->notPrivate() // A69: never in an export
             ->with(['files', 'tags', 'matches.transaction', 'properties'])
             // Point 214: the period goes by the Belegdatum (the upload day when it has none).
             ->whereRaw(Document::dateSql('doc').' between ? and ?', [$from->toDateString(), $to->toDateString()])

@@ -50,6 +50,8 @@ return [
     'imported' => 'Importiert',
     'bank_matching' => 'Dokumente aus diesem Ordner für den Bankabgleich verwenden',
     'bank_matching_hint' => 'Aus: Die Dokumente dieses Ordners tauchen beim Zuordnen zu Buchungen nicht auf. Gut für Dokumente, die Sie nur online haben wollen, zum Beispiel Verträge.',
+    'private' => 'Privat – nur ich sehe diesen Ordner',
+    'private_hint' => 'Für eigene Papiere wie die Kopie des Personalausweises. Nur der Inhaber sieht den Ordner samt Unterordnern; keine Rolle (auch nicht der Steuerberater) und kein Assistent. Bankabgleich, Belegpaket, Export und Vollständigkeit lassen ihn aus.',
     'folder' => 'Ordner',
     'name' => 'Name des Ordners',
     'parent' => 'Liegt in',

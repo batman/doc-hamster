@@ -57,7 +57,7 @@ it('refuses unknown views and moves the calendar by month', function (): void {
 });
 
 it('shows only the settings a person may open', function (): void {
-    $this->actingAs($this->admin->user)->get('/settings')->assertOk()->assertSee('Personen &amp; Rollen', false)->assertSee('Update');
+    $this->actingAs($this->admin->user)->get('/settings')->assertOk()->assertSee('Personen &amp; Rollen', false)->assertSee('Software');
     // A347: Update has one entry and opens directly; 174: the phone test sits under Eingang.
     $this->get('/settings/update')->assertRedirect(route('updates.show'));
     $this->get('/settings/eingang')->assertOk()->assertSee('Handy-Test');
@@ -65,7 +65,7 @@ it('shows only the settings a person may open', function (): void {
 
     $clerk = Membership::factory()->withRights(RoleRight::Upload)->create(['org_id' => $this->admin->org_id]);
     $this->actingAs($clerk->user)->get('/settings')->assertOk()
-        ->assertDontSee('Personen &amp; Rollen', false)->assertDontSee('Bank</span>', false)->assertSee('Eingang');
+        ->assertDontSee('Personen &amp; Rollen', false)->assertDontSee('Bank</span>', false)->assertSee('Posteingang');
     $this->get('/settings/people')->assertNotFound();
 });
 

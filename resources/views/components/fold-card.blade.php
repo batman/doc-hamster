@@ -8,11 +8,13 @@
     start state. `summary` (+ `summary-tone` ok|warning, `summary-icon`) shows in the head only while folded.
     `compact` = the small variant for sections inside a panel (point 135, e.g. the search panel): smaller head, no frame,
     the summary always shown (empty = hidden; a module may update `[data-card-summary] > span` live).
+    `open` = drawn open whatever was remembered (e.g. the menu group that holds the open page, A68); a click is still remembered.
     `:remember="false"` = the page's state every time (no cookie), e.g. "folded unless a filter in it is set".
 --}}
-@props(['fold', 'title', 'icon' => null, 'folded' => false, 'summary' => null, 'summaryTone' => null, 'summaryIcon' => null, 'compact' => false, 'remember' => true])
+@props(['fold', 'title', 'icon' => null, 'folded' => false, 'open' => false, 'summary' => null, 'summaryTone' => null, 'summaryIcon' => null, 'compact' => false, 'remember' => true])
 @php
-    $isFolded = $remember ? \App\Http\CardFolds::folded((string) $fold, (bool) $folded) : (bool) $folded;
+    // `open` (A68): drawn open whatever was remembered – e.g. the menu group that holds the open page; a click is still remembered.
+    $isFolded = ! $open && ($remember ? \App\Http\CardFolds::folded((string) $fold, (bool) $folded) : (bool) $folded);
     $summaryIcon ??= match ($summaryTone) { 'ok' => 'circle-check', 'warning' => 'alert-triangle', default => null };
     $label = __($isFolded ? 'app.card_unfold' : 'app.card_fold');
 @endphp

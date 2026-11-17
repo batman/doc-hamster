@@ -41,7 +41,7 @@ final class Completeness
         $incomplete = [];
         $required = Property::query()->whereIn('key', self::REQUIRED)->pluck('id')->all();
         if ($required !== []) {
-            $documents = Document::query()->visibleTo($this->userId, $this->seesAll)
+            $documents = Document::query()->visibleTo($this->userId, $this->seesAll)->notPrivate() // A69
                 ->whereIn('documents.id', TransactionMatch::query()->where('state', TransactionMatch::CONFIRMED)->select('document_id'))
                 ->where(static fn ($q) => $q->where('doc_date', '>=', $first->toDateString())->orWhere(static fn ($q) => $q->whereNull('doc_date')->where('created_at', '>=', $first)))
                 ->get(['documents.id', 'documents.doc_date', 'documents.created_at']);

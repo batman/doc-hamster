@@ -50,6 +50,8 @@ return [
     'imported' => 'Imported',
     'bank_matching' => 'Use documents from this folder for bank matching',
     'bank_matching_hint' => 'Off: documents in this folder do not show up when matching transactions. Good for documents you only want to keep online, such as contracts.',
+    'private' => 'Private – only I see this folder',
+    'private_hint' => 'For your own papers such as a copy of your ID. Only the owner sees the folder and its subfolders; no role (not even the tax advisor) and no assistant. Bank matching, receipt pack, export and completeness leave it out.',
     'folder' => 'Folder',
     'name' => 'Folder name',
     'parent' => 'Located in',

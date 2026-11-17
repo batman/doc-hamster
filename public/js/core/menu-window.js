@@ -27,11 +27,15 @@
     document.addEventListener('click', event => {
         const button = event.target.closest?.('[data-menu-display]');
         const win = button?.closest('section[data-window]');
-        const entries = win?.querySelector('[data-menu-entries]');
+        // A68: a menu window with foldable groups has one list per group; all switch together.
+        const lists = [...(win?.querySelectorAll('[data-menu-entries]') ?? [])];
+        const entries = lists[0];
         if (!entries) return;
         const display = button.dataset.menuDisplay;
-        entries.classList.remove('is-list', 'is-tiles');
-        entries.classList.add(`is-${display}`);
+        lists.forEach(list => {
+            list.classList.remove('is-list', 'is-tiles');
+            list.classList.add(`is-${display}`);
+        });
         button.parentElement.querySelectorAll('[data-menu-display]').forEach(other => {
             other.setAttribute('aria-pressed', String(other === button));
         });

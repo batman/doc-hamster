@@ -20,6 +20,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Gate;
 use Throwable;
 
 /**
@@ -30,7 +31,25 @@ use Throwable;
  */
 final class ExtensionController extends Controller
 {
-    public function show(Extensions $extensions, LocalOcr $ocr, CurrentOrg $org): View
+    /**
+     * Points 20, A67: Erweiterungen and Update are one page "Software" (updates/show.blade.php). With the update right
+     * this address shows that page; without it only the cards of Erweiterungen.
+     */
+    public function show(Request $request, Extensions $extensions, LocalOcr $ocr, CurrentOrg $org): View
+    {
+        if (Gate::allows('system.update')) {
+            return app(UpdateController::class)->show($request);
+        }
+
+        return view('updates.show', self::cards($extensions, $ocr, $org));
+    }
+
+    /**
+     * What the Erweiterungen cards of the Software page need.
+     *
+     * @return array{extRows: list<array{ext: Extension, installed: bool, version: ?string, enabled: bool, updatable: bool}>, languages: list<string>, broken: ?int}
+     */
+    public static function cards(Extensions $extensions, LocalOcr $ocr, CurrentOrg $org): array
     {
         $installed = $extensions->installed();
         $rows = [];
@@ -48,11 +67,11 @@ final class ExtensionController extends Controller
         }
         $extra = array_diff($ocr->installedLanguages(), LocalOcr::CORE_LANGUAGES) !== [];
 
-        return view('settings.extensions', [
-            'rows' => $rows,
+        return [
+            'extRows' => $rows,
             'languages' => $ocr->installedLanguages(),
             'broken' => $extra ? self::brokenCount($org->id()) : null,
-        ]);
+        ];
     }
 
     /** Install or update (173.2): the download runs right in this request in the net job (D-020). */

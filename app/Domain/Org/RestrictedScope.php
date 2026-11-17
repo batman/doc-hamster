@@ -24,7 +24,15 @@ final class RestrictedScope implements Scope
      */
     public function apply(Builder $builder, Model $model): void
     {
-        $restriction = app(CurrentOrg::class)->restriction();
+        $org = app(CurrentOrg::class);
+        // A69, A71: private folders (and their subfolders) exist only for the owner – for every role, whatever it ticked.
+        if ($model instanceof Folder && $org->isSet() && ! $org->seesPrivate()) {
+            $private = Folder::privateBranch();
+            if ($private !== []) {
+                $builder->whereNotIn($model->qualifyColumn('id'), $private);
+            }
+        }
+        $restriction = $org->restriction();
         if ($restriction->isEmpty()) {
             return;
         }

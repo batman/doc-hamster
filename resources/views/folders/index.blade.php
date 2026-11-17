@@ -22,7 +22,7 @@
             {{-- Properties save on change (A191-A194, FRAMEWORK.md "Properties module"); without JavaScript the button posts. --}}
             <form method="post" action="{{ route('folders.update', $folder->id) }}" data-autosave>
                 @csrf
-                @include('folders._fields', ['name' => $folder->name, 'parent' => $folder->parent_id, 'self' => $folder->id, 'matching' => $folder->bank_matching, 'locked' => $folder->is_default, 'color' => $folder->color, 'icon' => $folder->icon])
+                @include('folders._fields', ['name' => $folder->name, 'parent' => $folder->parent_id, 'self' => $folder->id, 'matching' => $folder->bank_matching, 'private' => $folder->is_private, 'locked' => $folder->is_default, 'color' => $folder->color, 'icon' => $folder->icon])
                 <div class="actions">
                     <noscript><button type="submit">{{ __('folders.save') }}</button></noscript>
                     @unless ($folder->is_default)

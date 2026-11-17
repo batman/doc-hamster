@@ -69,7 +69,7 @@ final class FolderController
     public function store(Request $request, CurrentOrg $org, AuditLog $audit): RedirectResponse
     {
         $data = $this->validated($request);
-        $folder = Folder::query()->create(['org_id' => $org->id(), 'name' => $data['name'], 'parent_id' => $data['parent_id'], 'color' => $data['color'], 'icon' => $data['icon'], 'bank_matching' => $data['bank_matching']]);
+        $folder = Folder::query()->create(['org_id' => $org->id(), 'name' => $data['name'], 'parent_id' => $data['parent_id'], 'color' => $data['color'], 'icon' => $data['icon'], 'bank_matching' => $data['bank_matching'], 'is_private' => $data['is_private']]);
         $this->log($audit, $request, $org, 'folder.created', $folder);
 
         // Back to where it was made: the window of its parent folder (or the top level).
@@ -93,6 +93,7 @@ final class FolderController
             'color' => $request->has('look') ? $data['color'] : $folder->color,
             'icon' => $request->has('look') ? $data['icon'] : $folder->icon,
             'bank_matching' => $data['bank_matching'],
+            'is_private' => $data['is_private'],
         ]);
         $this->log($audit, $request, $org, 'folder.changed', $folder);
 
@@ -327,7 +328,7 @@ final class FolderController
     }
 
     /**
-     * @return array{name: string, parent_id: string|null, color: string|null, icon: string|null, bank_matching: bool}
+     * @return array{name: string, parent_id: string|null, color: string|null, icon: string|null, bank_matching: bool, is_private: bool}
      */
     private function validated(Request $request, ?Folder $folder = null): array
     {
@@ -351,12 +352,18 @@ final class FolderController
             throw ValidationException::withMessages(['parent_id' => __('folders.parent_invalid')]);
         }
 
+        // A69: only the owner's full folder form sets "Privat" (private_set); a private folder never takes part in the matching.
+        $private = $request->has('private_set') && app(CurrentOrg::class)->seesPrivate()
+            ? $request->boolean('is_private')
+            : ($folder->is_private ?? false);
+
         return [
             'name' => $data['name'],
             'parent_id' => $data['parent_id'] ?? null,
             'color' => $data['color'] ?? null,
             'icon' => $data['icon'] ?? null,
-            'bank_matching' => $request->boolean('bank_matching'),
+            'bank_matching' => ! $private && $request->boolean('bank_matching'),
+            'is_private' => $private,
         ];
     }
 

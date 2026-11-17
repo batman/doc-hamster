@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'title' => 'Update',
+    'title' => 'Software',
     'versions' => 'Versions',
     'refresh' => 'Update',
     'privacy' => 'When you click “Update”, docHamster asks GitHub once for the latest state of all versions. None of your data is sent. This never happens by itself.',

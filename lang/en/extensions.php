@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 return [
     'title' => 'Extensions',
-    'intro' => 'Everything here is optional. Only entries from the app\'s fixed list are installed, every file is checked first.',
+    'intro' => 'Only entries from the fixed list of the app are installed, every file is checked first.',
     'kinds' => [
         'data' => 'Data packs',
         'module' => 'Modules',
     ],
     'kind_texts' => [
         'data' => 'Data only, no program code – for example more languages for text recognition.',
-        'module' => 'Additional features with their own program code.',
+        'module' => 'Program code that is not part of docHamster and is installed separately – like a trailer on a car.',
     ],
     'ocr_name' => 'Text recognition: :language',
     'ocr_text' => 'Language data for text recognition on the server and in the browser',
@@ -22,6 +22,7 @@ return [
     'installed_pill' => 'installed',
     'off_pill' => 'off',
     'later_pill' => 'coming later',
+    'no_modules' => 'No module installed yet.',
     'later' => 'Not available yet.',
     'install' => 'Install',
     'update' => 'Update',

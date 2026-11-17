@@ -16,6 +16,8 @@ final class CurrentOrg
 
     private ?RoleRestriction $restriction = null;
 
+    private bool $assistant = false;
+
     /** Setting a membership drops any restriction: jobs and the upload API see everything of the organisation. */
     public function set(Membership $membership): void
     {
@@ -59,6 +61,21 @@ final class CurrentOrg
     {
         // Null only if the organisation was deleted mid-request – then there is no context.
         return $this->membership()->organization ?? throw new MissingOrgContext;
+    }
+
+    /**
+     * A69–A71: only the owner sees private folders and their documents; every other role (also the tax advisor) never,
+     * and no assistant either – not even with the owner's rights (a request with an assistant's access token).
+     */
+    public function seesPrivate(): bool
+    {
+        return $this->isSet() && $this->role() === Role::Owner && ! $this->assistant;
+    }
+
+    /** A70: this request comes from an assistant (its access token) – it never sees private folders. */
+    public function asAssistant(): void
+    {
+        $this->assistant = true;
     }
 
     public function role(): Role

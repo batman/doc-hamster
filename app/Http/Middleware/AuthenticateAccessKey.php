@@ -65,6 +65,10 @@ final class AuthenticateAccessKey
         Auth::guard('web')->setUser($user);
         $key->touchUsed();
         $request->attributes->set(self::ATTRIBUTE, $key);
+        // A70: an assistant's token never sees private folders, even with the owner's rights.
+        if ($key->client_id !== null) {
+            $this->currentOrg->asAssistant();
+        }
 
         return $next($request);
     }

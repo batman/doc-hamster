@@ -24,10 +24,8 @@
 
             return ['badge' => $area, 'count' => $area !== null ? ($badges[$area] ?? 0) : null];
         };
-        $groupEntries = [];
-        foreach ($groups as $key => $each) {
-            $groupEntries[] = ['href' => route('settings.group', $key), 'icon' => $each['icon'], 'title' => __('settings.groups.'.$key), 'text' => __('settings.group_texts.'.$key), ...$badge($key)];
-        }
+        // Point 21, A68: the groups in six foldable sections; the one with the open page starts open.
+        $sections = \App\Http\SettingsMenu::sections($badge, $group);
         $itemEntries = [];
         foreach ($current['items'] ?? [] as $each) {
             $itemEntries[] = ['href' => route($each['route']), 'icon' => $each['icon'], 'title' => __('settings.links.'.$each['key'].'.title'), 'text' => __('settings.links.'.$each['key'].'.text'), ...$badge($each['key'])];
@@ -43,7 +41,7 @@
         $pageClose = $hasPane ? $itemUrl : $groupUrl;
     @endphp
     <div class="windows" data-windows>
-        <x-menu-window :title="__('settings.title')" icon="settings" :url="route('settings.index')" :close="route('home')" view="settings" display="tiles" :entries="$groupEntries">
+        <x-menu-window :title="__('settings.title')" icon="settings" :url="route('settings.index')" :close="route('home')" view="settings" display="tiles" :sections="$sections">
             @yield('nav_footer')
             @php $support = config('dochamster.support_url'); @endphp
             @if (is_string($support) && str_starts_with($support, 'https://'))

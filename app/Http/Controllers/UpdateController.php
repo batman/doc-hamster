@@ -6,6 +6,8 @@ namespace App\Http\Controllers;
 
 use App\Domain\Audit\AuditLog;
 use App\Domain\Org\CurrentOrg;
+use App\Infrastructure\Environment\LocalOcr;
+use App\Infrastructure\Extensions\Extensions;
 use App\Jobs\Net\UpdateSource;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -33,7 +35,13 @@ final class UpdateController
             @unlink($this->webRoot($request).'/'.self::STATUS_FILE);
         }
 
+        // Points 20, A67: one page "Software" – the versions, then the Erweiterungen cards (modules, data packs, translation).
+        $cards = Gate::allows('settings.manage')
+            ? ExtensionController::cards(app(Extensions::class), app(LocalOcr::class), app(CurrentOrg::class))
+            : [];
+
         return view('updates.show', [
+            ...$cards,
             'current' => (string) config('dochamster.version'),
             // Before the click only what is known here: the installed version (and Main as the way back).
             'rows' => session('updates.versions') ?? $this->rows(false, null, []),

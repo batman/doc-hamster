@@ -45,3 +45,14 @@
     .menu-entries .menu-entry > .badge { position: absolute; top: .2rem; right: calc(50% - 1.5rem); }
     .menu-entry[data-tooltip]::before, .menu-entry[data-tooltip]::after { display: block; }
 }
+
+/* Klappgruppe (point 21, A68): a menu window with sections – each an <x-fold-card compact> (head: symbol, name, the red
+   sum of its counts, chevron) whose body holds its entries. Folded at first; the group with the open page is open. */
+.menu-section > .card-head { min-height: 40px; }
+.menu-section > .card-head > span:not(.badge) { flex: 1; min-width: 0; }
+.menu-section > .card-head > .card-fold-button { margin-left: 0; }
+.menu-section:not(.is-folded) > .card-head > .badge { display: none; }
+.menu-section > .card-body { margin-top: .5rem; }
+@container win (width < 13rem) {
+    .menu-section > .card-head > span:not(.badge) { display: none; }
+}

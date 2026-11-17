@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'title' => 'Update',
+    'title' => 'Software',
     'versions' => 'Versionen',
     'refresh' => 'Update',
     'privacy' => 'Beim Klick auf „Update“ fragt docHamster einmalig bei GitHub nach dem neuesten Stand aller Versionen. Dabei werden keine Daten von Ihnen übertragen. Von selbst passiert das nie.',

@@ -11,6 +11,12 @@
                 badge.textContent = count > 99 ? '99+' : String(count);
                 badge.hidden = count === 0;
             });
+            // A68: a folded menu group shows the sum of its entries' counts (data-badge-sum="key key").
+            document.querySelectorAll('[data-badge-sum]').forEach(badge => {
+                const count = badge.dataset.badgeSum.split(' ').reduce((sum, key) => sum + (counts[key] ?? 0), 0);
+                badge.textContent = count > 99 ? '99+' : String(count);
+                badge.hidden = count === 0;
+            });
             side.querySelector('[data-badge-any]').hidden = Object.values(counts).every(count => !count);
         };
         const poll = () => {

@@ -1,12 +1,12 @@
-{{-- Update page (task 109, variant C): one card "Versionen" with one "Update" button in its head; the list of all
-     versions fills by Ajax into the card; updating and switching ask in a dialog, the password only there. --}}
+{{-- Software (points 20, A67; was Update, task 109 variant C, and Erweiterungen): the card "Versionen" with one Update button
+     in its head – the list of all versions fills by Ajax; updating and switching ask in a dialog, the password only there –
+     then the Erweiterungen cards (settings/_extensions): Module, Datenpakete, Übersetzung. --}}
 @extends('layouts.settings')
 
 @section('title', __('updates.title'))
 
 @section('page')
-    @php($status = $updated ? __('updates.done', ['version' => $current]) : session('status'))
-
+    @php($status = ($updated ?? false) ? __('updates.done', ['version' => $current]) : session('status'))
 
     @if ($status)
         <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ $status }}</span></div>
@@ -15,6 +15,7 @@
         <p class="error" role="alert">{{ $errors->first() }}</p>
     @endif
 
+    @isset($rows)
     <section class="card">
         <h2 class="card-head">
             <x-icon name="git-branch" />{{ __('updates.versions') }}
@@ -29,8 +30,13 @@
             <p class="card-note">{{ __('updates.manual') }}</p>
         @endunless
     </section>
+    @endisset
 
-    @if ($supported)
+    @isset($extRows)
+        @include('settings._extensions')
+    @endisset
+
+    @if ($supported ?? false)
         {{-- Main: "Aktualisieren" (newest release, only while Main runs) and "Wechseln" back from a preview. --}}
         @foreach (['update-main' => [route('updates.install'), 'updates.update_text'], 'switch-main' => [route('updates.install-main'), 'updates.switch_text']] as $key => [$action, $text])
             <div class="dialog-backdrop" data-dialog="{{ $key }}" hidden>

@@ -207,3 +207,23 @@ it('draws the Rollen and Personen pages and the restricted person\'s Belegpakete
 
     $this->actingAs($this->person->user)->get('/export/packs')->assertOk()->assertDontSee(__('receipt_pack.create_title'));
 });
+
+it('keeps a private folder for the owner only – no role, no bank matching, no pack (A69–A71)', function (): void {
+    app(CurrentOrg::class)->set($this->owner);
+    $this->other->forceFill(['is_private' => true, 'bank_matching' => true])->save();
+    $this->top->forceFill(['bank_matching' => true])->save();
+    $inner = Folder::query()->create(['name' => 'Ausweis', 'parent_id' => $this->other->id]);
+    restrictedDoc('Ausweis', $inner->id, '2026-03-01');
+    restrictedDoc('Rechnung', $this->top->id, '2026-03-01');
+    app(CurrentOrg::class)->clear();
+
+    // A role without any restriction (all folders ticked) still never sees it.
+    $titles = asRestricted(fn () => Document::query()->visibleTo($this->person->user_id, true)->orderBy('title')->pluck('title')->all());
+    $folders = asRestricted(fn () => Folder::query()->pluck('name')->all());
+    expect($titles)->toBe(['Rechnung'])->and($folders)->not->toContain('Privat')->not->toContain('Ausweis');
+
+    app(CurrentOrg::class)->set($this->owner);
+    expect(Document::query()->visibleTo($this->owner->user_id, true)->count())->toBe(2)
+        ->and(Document::query()->matchable()->pluck('title')->all())->toBe(['Rechnung'])
+        ->and(Document::query()->notPrivate()->pluck('title')->all())->toBe(['Rechnung']);
+});

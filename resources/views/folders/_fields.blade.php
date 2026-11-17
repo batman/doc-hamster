@@ -46,3 +46,9 @@
 
 <label class="check"><input type="checkbox" name="bank_matching" value="1" @checked(old('bank_matching', $matching))> {{ __('folders.bank_matching') }}</label>
 <p class="field-hint">{{ __('folders.bank_matching_hint') }}</p>
+@if (app(\App\Domain\Org\CurrentOrg::class)->seesPrivate())
+    {{-- A69: only the owner marks a folder private; private = no bank matching, not in pack, export or for any role. --}}
+    <input type="hidden" name="private_set" value="1">
+    <label class="check"><input type="checkbox" name="is_private" value="1" @checked(old('is_private', $private ?? false))> <x-icon name="lock" /> {{ __('folders.private') }}</label>
+    <p class="field-hint">{{ __('folders.private_hint') }}</p>
+@endif

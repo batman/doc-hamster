@@ -7,6 +7,7 @@ namespace App\Domain\Documents;
 use App\Domain\Org\BelongsToOrg;
 use App\Domain\Org\Organization;
 use App\Domain\Org\RestrictedByRole;
+use App\Domain\Org\RestrictedScope;
 use App\Domain\Org\RoleRestriction;
 use App\Domain\Palette\PaletteColor;
 use Illuminate\Database\Eloquent\Collection;
@@ -28,6 +29,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $position order among its siblings (drag and drop); null = after the ordered ones
  * @property bool $is_default the folder "Belege allgemein": cannot be deleted, renamed or moved
  * @property bool $bank_matching whether the bank matching may use receipts of this folder
+ * @property bool $is_private A69: the owner's own papers – only the owner sees it, with its subfolders; matching, pack, export,
+ *                            completeness and assistants leave it out
  */
 final class Folder extends Model
 {
@@ -53,14 +56,14 @@ final class Folder extends Model
 
     public const TRASH_COLOR = 'folders.trash_color';
 
-    protected $fillable = ['org_id', 'parent_id', 'name', 'color', 'icon', 'position', 'is_default', 'bank_matching'];
+    protected $fillable = ['org_id', 'parent_id', 'name', 'color', 'icon', 'position', 'is_default', 'bank_matching', 'is_private'];
 
     /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
-        return ['is_default' => 'boolean', 'bank_matching' => 'boolean', 'position' => 'integer'];
+        return ['is_default' => 'boolean', 'bank_matching' => 'boolean', 'is_private' => 'boolean', 'position' => 'integer'];
     }
 
     /** The symbol to draw: the chosen one, else a receipt for the default folder and a folder for the others. */
@@ -97,6 +100,29 @@ final class Folder extends Model
         $color = data_get($organization?->settings_json, self::TRASH_COLOR);
 
         return is_string($color) && preg_match(PaletteColor::HEX, $color) === 1 ? $color : null;
+    }
+
+    /**
+     * A69: the private folders with all their subfolders (ids) – one small query over the folder tree, past the role
+     * restriction (which itself asks for this list).
+     *
+     * @return list<string>
+     */
+    public static function privateBranch(): array
+    {
+        $all = self::query()->withoutGlobalScope(RestrictedScope::class)->get(['id', 'parent_id', 'is_private']);
+        $children = $all->groupBy('parent_id');
+        $branch = [];
+        $todo = $all->where('is_private', true)->pluck('id')->all();
+        while ($todo !== []) {
+            $id = (string) array_pop($todo);
+            if (! in_array($id, $branch, true)) {
+                $branch[] = $id;
+                array_push($todo, ...($children->get($id)?->pluck('id')->all() ?? []));
+            }
+        }
+
+        return $branch;
     }
 
     /**

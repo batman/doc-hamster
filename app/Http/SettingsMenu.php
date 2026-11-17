@@ -49,10 +49,6 @@ final class SettingsMenu
         'assistant' => ['plug', [
             ['assistant', 'assistant.show', 'plug', 'assistant.manage', ['assistant.*']],
         ], true],
-        // Point 173: everything optional – OCR languages, later translation packs and modules.
-        'extensions' => ['puzzle', [
-            ['extensions', 'extensions.index', 'puzzle', 'settings.manage', ['extensions.*']],
-        ], true],
         // Point 153.5: the sources of the Posteingang. Geräte comes with the Android share target (only once its route exists).
         'eingang' => ['inbox', [
             ['printer', 'printers.index', 'printer', 'documents.upload', ['printers.*']],
@@ -77,15 +73,66 @@ final class SettingsMenu
         'speed' => ['gauge', [
             ['speed', 'speed.index', 'gauge', 'settings.manage', ['speed.*']],
         ], true],
-        // A347: one entry only, so the tile opens the Update page directly.
+        // A347, points 20, A67: "Software" – versions and Erweiterungen (modules, data packs, translation) on one page;
+        // without the update right the same address shows only the Erweiterungen cards.
         'update' => ['cloud-download', [
-            ['update', 'updates.show', 'cloud-download', 'system.update', ['updates.*']],
+            ['update', 'updates.show', 'cloud-download', 'system.update', ['updates.*', 'extensions.*']],
+            ['extensions', 'extensions.index', 'puzzle', 'settings.manage', []],
         ], true],
         // Point 206 (F23): "Backup herunterladen", owners and admins.
         'backup' => ['archive', [
             ['backup', 'backup.index', 'archive', 'backup.create', ['backup.*']],
         ], true],
     ];
+
+    /**
+     * Point 21, A68: the Einstellungen window shows its groups in six foldable sections. A section lists group tiles; in
+     * "expand" sections (Posteingang, Bank) the entries of the group stand there directly.
+     * section => [icon, groups, expand]
+     */
+    private const SECTIONS = [
+        'team' => ['users', ['account', 'people'], false],
+        'receipts' => ['file-text', ['properties', 'tags', 'colors', 'ocr', 'optimize'], false],
+        'inbox' => ['inbox', ['eingang'], true],
+        'bank' => ['building-bank', ['bank'], true],
+        'share' => ['send', ['export', 'assistant'], false],
+        'system' => ['server', ['update', 'backup', 'speed', 'log'], false],
+    ];
+
+    /**
+     * The sections of the Einstellungen window this person sees, each with its entries (only allowed ones; empty
+     * sections drop out) and whether it holds the page that is open now.
+     *
+     * @param  callable(string): array{badge: ?string, count: ?int}  $badge  the red count of a group or entry key
+     * @return list<array{key: string, icon: string, current: bool, entries: list<array<string, mixed>>}>
+     */
+    public static function sections(callable $badge, ?string $currentGroup): array
+    {
+        $groups = self::groups();
+        $sections = [];
+        foreach (self::SECTIONS as $key => [$icon, $members, $expand]) {
+            $entries = [];
+            foreach ($members as $group) {
+                if (! isset($groups[$group])) {
+                    continue;
+                }
+                if ($expand) {
+                    foreach ($groups[$group]['items'] as $item) {
+                        $entries[] = ['href' => route($item['route']), 'icon' => $item['icon'], 'title' => __('settings.links.'.$item['key'].'.title'),
+                            'text' => __('settings.links.'.$item['key'].'.text'), ...$badge($item['key'])];
+                    }
+                } else {
+                    $entries[] = ['href' => route('settings.group', $group), 'icon' => $groups[$group]['icon'], 'title' => __('settings.groups.'.$group),
+                        'text' => __('settings.group_texts.'.$group), ...$badge($group)];
+                }
+            }
+            if ($entries !== []) {
+                $sections[] = ['key' => $key, 'icon' => $icon, 'current' => in_array($currentGroup, $members, true), 'entries' => $entries];
+            }
+        }
+
+        return $sections;
+    }
 
     /**
      * The groups this person may open, each with its allowed entries.

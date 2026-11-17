@@ -113,7 +113,24 @@ final class Document extends Model
     {
         return $query->where(static fn (Builder $inner): Builder => $inner
             ->whereNull($query->qualifyColumn('folder_id'))
-            ->orWhereIn($query->qualifyColumn('folder_id'), Folder::query()->where('bank_matching', true)->select('id')));
+            ->orWhereIn($query->qualifyColumn('folder_id'), Folder::query()->where('bank_matching', true)->select('id')))
+            ->notPrivate();
+    }
+
+    /**
+     * A69: everything outside the private folders and their subfolders – for the bank matching, the receipt pack, the
+     * export, the completeness view and every assistant (A70), also when the owner runs them.
+     *
+     * @param  Builder<Document>  $query
+     * @return Builder<Document>
+     */
+    public function scopeNotPrivate(Builder $query): Builder
+    {
+        $private = Folder::privateBranch();
+
+        return $private === [] ? $query : $query->where(static fn (Builder $inner): Builder => $inner
+            ->whereNull($query->qualifyColumn('folder_id'))
+            ->orWhereNotIn($query->qualifyColumn('folder_id'), $private));
     }
 
     /**
@@ -211,6 +228,10 @@ final class Document extends Model
     {
         $query = $seesAll ? $query : $query->where('uploaded_by', $userId);
         $org = app(CurrentOrg::class);
+        // A69, A71: private folders only for the owner.
+        if ($org->isSet() && ! $org->seesPrivate()) {
+            $query->notPrivate();
+        }
 
         return $org->isSet() && $org->membership()->user_id === $userId ? $org->restriction()->documents($query) : $query;
     }

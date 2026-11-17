@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 return [
     'title' => 'Erweiterungen',
-    'intro' => 'Alles hier ist optional. Installiert wird nur aus der festen Liste der App, jede Datei wird vor dem Einbau geprüft.',
+    'intro' => 'Installiert wird nur aus der festen Liste der App, jede Datei wird vor dem Einbau geprüft.',
     'kinds' => [
         'data' => 'Datenpakete',
         'module' => 'Module',
     ],
     'kind_texts' => [
         'data' => 'Nur Daten, kein Programmcode – zum Beispiel weitere Sprachen für die Texterkennung.',
-        'module' => 'Zusätzliche Funktionen mit eigenem Programmcode.',
+        'module' => 'Eigener Programmcode, der nicht zu docHamster gehört und getrennt installiert wird – wie ein Anhänger am Auto.',
     ],
     'ocr_name' => 'Texterkennung: :language',
     'ocr_text' => 'Sprachdaten für die Texterkennung auf dem Server und im Browser',
@@ -22,6 +22,7 @@ return [
     'installed_pill' => 'installiert',
     'off_pill' => 'aus',
     'later_pill' => 'kommt später',
+    'no_modules' => 'Noch kein Modul installiert.',
     'later' => 'Noch nicht verfügbar.',
     'install' => 'Installieren',
     'update' => 'Aktualisieren',

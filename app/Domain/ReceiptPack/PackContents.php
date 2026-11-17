@@ -9,6 +9,7 @@ use App\Domain\Banking\Transaction;
 use App\Domain\Banking\TransactionMatch;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
+use App\Domain\Documents\Folder;
 use App\Domain\Documents\PageTransform;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -70,16 +71,18 @@ final readonly class PackContents
     private static function bookings(BankAccount $account, PackPeriod $period): array
     {
         $bookings = [];
+        // A69: documents in private folders never go into the pack.
+        $private = Folder::privateBranch();
         Transaction::query()->where('bank_account_id', $account->id)
             ->whereDate('booking_date', '>=', $period->from->toDateString())->whereDate('booking_date', '<=', $period->to->toDateString())
             ->with(['matches' => static fn ($m) => $m->where('state', TransactionMatch::CONFIRMED)->with(['document.files', 'document.tags'])])
             ->orderBy('booking_date')->orderBy('id')
-            ->each(static function (Transaction $t) use (&$bookings): void {
+            ->each(static function (Transaction $t) use (&$bookings, $private): void {
                 $receipts = [];
                 $tags = [];
                 foreach ($t->matches as $match) {
                     $document = $match->getRelationValue('document');
-                    if (! $document instanceof Document) {
+                    if (! $document instanceof Document || in_array($document->folder_id, $private, true)) {
                         continue;
                     }
                     $receipts[] = self::receipt($document);
@@ -102,7 +105,7 @@ final readonly class PackContents
      */
     private static function loose(PackPeriod $period): array
     {
-        return array_values(Document::query()->where('in_receipt_pack', true)
+        return array_values(Document::query()->where('in_receipt_pack', true)->notPrivate()
             ->whereDoesntHave('matches', static fn (Builder $m) => $m->where('state', TransactionMatch::CONFIRMED))
             ->whereRaw(Document::dateSql('doc').' between ? and ?', [$period->from->toDateString(), $period->to->toDateString()])
             ->with('files')->orderByRaw(Document::dateSql('doc'))->orderBy('id')->get()
