@@ -20,6 +20,9 @@ final class AssistantAccess
     /** Read bookings, documents with their recognised text, folders and proposals. */
     public const READ = 'read';
 
+    /** Look at page pictures (photos, scan pages) – to check the text recognition and to measure straightening. */
+    public const IMAGES = 'images';
+
     public const PROPOSE_LINK = 'link';
 
     public const PROPOSE_MOVE = 'move';
@@ -29,6 +32,9 @@ final class AssistantAccess
 
     public const PROPOSE_SHRINK = 'shrink';
 
+    /** Straightening and cutting out a photographed receipt. */
+    public const PROPOSE_STRAIGHTEN = 'straighten';
+
     /** Corrections of recognised values (amount, date, sender …). */
     public const PROPOSE_CORRECT = 'correct';
 
@@ -36,7 +42,7 @@ final class AssistantAccess
     public const PROPOSE_SETTINGS = 'settings';
 
     /** In this order on the page. */
-    public const RIGHTS = [self::READ, self::PROPOSE_LINK, self::PROPOSE_MOVE, self::PROPOSE_CLEANUP, self::PROPOSE_SHRINK, self::PROPOSE_CORRECT, self::PROPOSE_SETTINGS];
+    public const RIGHTS = [self::READ, self::IMAGES, self::PROPOSE_LINK, self::PROPOSE_MOVE, self::PROPOSE_CLEANUP, self::PROPOSE_SHRINK, self::PROPOSE_STRAIGHTEN, self::PROPOSE_CORRECT, self::PROPOSE_SETTINGS];
 
     public static function enabled(?Organization $organization): bool
     {

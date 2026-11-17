@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Assistant;
 
 use App\Domain\Assistant\Proposal;
 use App\Domain\Assistant\ProposalRunner;
+use App\Domain\Assistant\Straightener;
 use App\Domain\Banking\Transaction;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\Folder;
@@ -16,6 +17,7 @@ use App\Http\Badges;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use RuntimeException;
 
 /**
@@ -27,7 +29,7 @@ final class ProposalController
 {
     private const ICONS = [
         Proposal::LINK => 'link', Proposal::MOVE => 'folder', Proposal::DUPLICATE => 'copy', Proposal::DELETE => 'trash',
-        Proposal::SHRINK => 'arrows-minimize', Proposal::CORRECT => 'pencil', Proposal::SETTING => 'settings',
+        Proposal::SHRINK => 'arrows-minimize', Proposal::STRAIGHTEN => 'crop', Proposal::CORRECT => 'pencil', Proposal::SETTING => 'settings',
     ];
 
     public function index(PropertyValues $values): View
@@ -50,6 +52,27 @@ final class ProposalController
         $message = $this->run($proposal, $runner, $request->boolean('swap'), $request->ip());
 
         return redirect()->route('proposals.index')->with($proposal->status === 'failed' ? 'status_error' : 'status', $message);
+    }
+
+    /** Vorher / Nachher of a straighten proposal: the photo as it is, and as it would become (small JPEGs). */
+    public function preview(string $id, string $side): Response
+    {
+        $proposal = Proposal::query()->where('kind', Proposal::STRAIGHTEN)->whereKey($id)->firstOrFail();
+        $file = Document::query()->find($proposal->payload['document_id'] ?? '')?->files()->whereIn('mime', Straightener::PHOTOS)->orderBy('page_no')->first();
+        abort_if($file === null, 404);
+        try {
+            if ($side === 'after') {
+                [$angle, $box] = $proposal->straightening();
+                $jpeg = Straightener::jpeg(Straightener::fit(Straightener::straighten($file, $angle, $box), 520))['jpeg'];
+            } else {
+                $jpeg = (string) (Straightener::look($file, 1)['jpeg'] ?? '');
+            }
+        } catch (RuntimeException) {
+            abort(404);
+        }
+        abort_if($jpeg === '', 404);
+
+        return response($jpeg, 200, ['Content-Type' => 'image/jpeg', 'Cache-Control' => 'private, max-age=600']);
     }
 
     public function reject(Request $request, string $id, CurrentOrg $org): RedirectResponse
@@ -117,6 +140,8 @@ final class ProposalController
                 ['label' => __('proposals.label.folder'), 'text' => (string) (Folder::query()->whereKey($d['folder_id'] ?? '')->value('name') ?? __('proposals.gone')), 'url' => null]],
             Proposal::DUPLICATE => [$doc(__('proposals.label.keep'), $d['keep_id'] ?? null), $doc(__('proposals.label.remove'), $d['remove_id'] ?? null)],
             Proposal::DELETE => [$doc(__('proposals.label.trash'), $d['document_id'] ?? null)],
+            Proposal::STRAIGHTEN => [$doc(__('proposals.label.document'), $d['document_id'] ?? null),
+                ['label' => __('proposals.label.angle'), 'text' => str_replace('.', ',', (string) round((float) ($d['angle'] ?? 0), 1)).'°'.(isset($d['w']) ? ' · '.__('proposals.label.cut') : ''), 'url' => null]],
             Proposal::SHRINK => [(static function () use ($doc, $d): array {
                 $line = $doc(__('proposals.label.document'), $d['document_id'] ?? null);
                 $bytes = (int) Document::query()->find($d['document_id'] ?? '')?->files()->sum('size');

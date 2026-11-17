@@ -35,6 +35,12 @@
                             @if ($proposal->reason)
                                 <p class="card-text">{{ $proposal->reason }}</p>
                             @endif
+                            @if ($kind === \App\Domain\Assistant\Proposal::STRAIGHTEN)
+                                <div class="proposal-preview">
+                                    <figure><img src="{{ route('proposals.preview', [$proposal->id, 'before']) }}" alt="{{ __('proposals.before') }}" loading="lazy"><figcaption>{{ __('proposals.before') }}</figcaption></figure>
+                                    <figure><img src="{{ route('proposals.preview', [$proposal->id, 'after']) }}" alt="{{ __('proposals.after') }}" loading="lazy"><figcaption>{{ __('proposals.after') }}</figcaption></figure>
+                                </div>
+                            @endif
                             <dl class="proposal-lines">
                                 @foreach ($lines as $line)
                                     <dt>{{ $line['label'] }}</dt>

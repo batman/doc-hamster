@@ -6,7 +6,9 @@ namespace App\Http\Controllers\Assistant;
 
 use App\Domain\Assistant\AssistantAccess;
 use App\Domain\Assistant\Proposal;
+use App\Domain\Assistant\Straightener;
 use App\Domain\Banking\Transaction;
+use App\Domain\Documents\DocumentFile;
 use App\Domain\Documents\Folder;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Properties\Property;
@@ -61,12 +63,22 @@ final class McpTools
                 'search' => ['type' => 'string', 'description' => 'Text in the title, the recognised text or a property.'], 'page' => $page,
             ], 'additionalProperties' => false], $read],
             'get_document' => ['One document', 'One document with all its properties, its files (type, size) and its recognised text.', $one('The document.'), $read],
+            'get_page_image' => ['Look at a page', 'One page of a document as a picture (JPEG, at most 1600 px): photos and scanned PDFs. Use it to check what the text recognition read and to measure a tilted receipt.', ['type' => 'object', 'properties' => [
+                'document_id' => [...$id, 'description' => 'The document.'], 'page' => ['type' => 'integer', 'minimum' => 1, 'description' => 'Page number, 1 = first (default).'],
+            ], 'required' => ['document_id'], 'additionalProperties' => false], AssistantAccess::IMAGES],
             'list_proposals' => ['Your open proposals', 'The proposals still waiting for the person, so nothing is proposed twice.', $none, $read],
             'propose_link' => ['Propose a link', 'Proposes that this document belongs to this booking. The person takes it over or not.', $propose(['transaction_id' => [...$id, 'description' => 'The booking.'], 'document_id' => [...$id, 'description' => 'The document.']]), AssistantAccess::PROPOSE_LINK],
             'propose_move' => ['Propose a folder', 'Proposes moving the document into this folder (tidying up).', $propose(['document_id' => [...$id, 'description' => 'The document.'], 'folder_id' => [...$id, 'description' => 'The target folder.']]), AssistantAccess::PROPOSE_MOVE],
             'propose_duplicate' => ['Propose a duplicate', 'Proposes that remove_id is a duplicate of keep_id: taken over, remove_id goes into the Papierkorb (the person may swap which one stays).', $propose(['keep_id' => [...$id, 'description' => 'The document that stays.'], 'remove_id' => [...$id, 'description' => 'The duplicate.']]), AssistantAccess::PROPOSE_CLEANUP],
             'propose_delete' => ['Propose deleting', 'Proposes moving the document into the Papierkorb (never deleted for good).', $propose(['document_id' => [...$id, 'description' => 'The document.']]), AssistantAccess::PROPOSE_CLEANUP],
             'propose_shrink' => ['Propose shrinking', 'Proposes shrinking this too large scan or photo (also when the automatic shrinking is off).', $propose(['document_id' => [...$id, 'description' => 'The document.']]), AssistantAccess::PROPOSE_SHRINK],
+            'propose_straighten' => ['Propose straightening', 'Proposes straightening and cutting out a photographed receipt (photos only). Measure on the page picture: angle = how many degrees the receipt is turned clockwise (negative = counter-clockwise), -45 to 45; cx, cy = the receipt\'s centre and w, h = its width and height along the receipt itself, all as parts (0–1) of the picture\'s width and height. Leave cx, cy, w, h out to only straighten. The person sees before and after and decides; the original is kept.', ['type' => 'object', 'properties' => [
+                'document_id' => [...$id, 'description' => 'The document.'],
+                'angle' => ['type' => 'number', 'minimum' => -45, 'maximum' => 45, 'description' => 'Clockwise tilt of the receipt in degrees.'],
+                'cx' => ['type' => 'number', 'minimum' => 0, 'maximum' => 1], 'cy' => ['type' => 'number', 'minimum' => 0, 'maximum' => 1],
+                'w' => ['type' => 'number', 'minimum' => 0.05, 'maximum' => 1.5], 'h' => ['type' => 'number', 'minimum' => 0.05, 'maximum' => 1.5],
+                'reason' => $reason,
+            ], 'required' => ['document_id', 'angle', 'reason'], 'additionalProperties' => false], AssistantAccess::PROPOSE_STRAIGHTEN],
             'propose_correction' => ['Propose a correction', 'Proposes a corrected value for a property the text recognition read wrong (e.g. invoice_amount "64,00 EUR", invoice_date "2026-11-03", sender "Muster GmbH").', $propose([
                 'document_id' => [...$id, 'description' => 'The document.'],
                 'property' => ['type' => 'string', 'description' => 'The property key (invoice_amount, invoice_date, due_date, sender, iban, invoice_number) or its name.'],
@@ -95,7 +107,7 @@ final class McpTools
      * Runs a tool as the same person.
      *
      * @param  array<string, mixed>  $args
-     * @return array{bool, string} failed?, the answer as text (JSON or the reason)
+     * @return array{bool, string|list<array<string, string>>} failed?, the answer as text (JSON or the reason) or MCP content
      */
     public static function call(string $name, array $args, Request $outer, CurrentOrg $org): array
     {
@@ -107,7 +119,7 @@ final class McpTools
         if (! in_array($definition[3], $rights, true) || ! in_array(AssistantAccess::READ, $rights, true)) {
             return [true, (string) __('assistant.not_allowed')];
         }
-        $text = static fn (string $key): string => is_string($args[$key] ?? null) ? trim($args[$key]) : '';
+        $text = static fn (string $key): string => is_string($args[$key] ?? null) ? trim($args[$key]) : (is_int($args[$key] ?? null) || is_float($args[$key] ?? null) ? (string) $args[$key] : '');
         foreach ($definition[2]['required'] ?? [] as $required) {
             if ($text($required) === '') {
                 return [true, 'Missing: '.$required];
@@ -122,6 +134,7 @@ final class McpTools
             'whoami' => [false, self::json(['person' => $org->membership()->user?->display_name, 'organisation' => $org->organization()->name,
                 'connection' => BankApiController::key($outer)->name, 'rights' => $rights,
                 'note' => 'You change nothing yourself: every change is a proposal the person takes over or not.'])],
+            'get_page_image' => self::look($text('document_id'), max(1, (int) ($args['page'] ?? 1)), $org),
             'list_proposals' => [false, self::json(['data' => Proposal::query()->where('status', Proposal::OPEN)->latest()->limit(500)->get()
                 ->map(static fn (Proposal $p): array => ['id' => $p->id, 'kind' => $p->kind, 'payload' => $p->payload, 'reason' => $p->reason])->all()])],
             default => self::read($name, $args, $text, $outer),
@@ -182,6 +195,9 @@ final class McpTools
                 ! $document('keep_id') || ! $document('remove_id') || $text('keep_id') === $text('remove_id') ? 'document' : null],
             'propose_delete' => [Proposal::DELETE, ['document_id' => $text('document_id')], ! $document('document_id') ? 'document' : null],
             'propose_shrink' => [Proposal::SHRINK, ['document_id' => $text('document_id')], ! $document('document_id') ? 'document' : null],
+            'propose_straighten' => [Proposal::STRAIGHTEN, array_filter(['document_id' => $text('document_id'), 'angle' => self::number($text('angle'), -45, 45),
+                'cx' => self::number($text('cx'), 0, 1), 'cy' => self::number($text('cy'), 0, 1), 'w' => self::number($text('w'), 0.05, 1.5), 'h' => self::number($text('h'), 0.05, 1.5)], static fn (string $v): bool => $v !== ''),
+                ! $document('document_id') ? 'document' : (! self::hasPhoto($text('document_id')) ? 'photo' : null)],
             'propose_correction' => [Proposal::CORRECT, ['document_id' => $text('document_id'), 'property' => $text('property'), 'value' => $text('value')],
                 ! $document('document_id') ? 'document' : (! Property::query()->where('key', $text('property'))->orWhere('name', $text('property'))->exists() ? 'property' : null)],
             default => [Proposal::SETTING, ['setting' => $text('setting')], ! in_array($text('setting'), Proposal::SETTINGS, true) ? 'setting' : null],
@@ -200,5 +216,42 @@ final class McpTools
     private static function json(array $data): string
     {
         return (string) json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    /**
+     * A page as a picture (right "Seitenbilder ansehen").
+     *
+     * @return array{bool, string|list<array<string, string>>}
+     */
+    private static function look(string $id, int $page, CurrentOrg $org): array
+    {
+        $document = BankApiController::visible($org)->whereKey($id)->first();
+        if ($document === null) {
+            return [true, (string) __('assistant.propose_unknown.document')];
+        }
+        $files = $document->files()->orderBy('page_no')->get();
+        // A document of several photos has one file per page; a PDF has its pages inside.
+        $file = $files->count() > 1 ? $files->get($page - 1) : $files->first();
+        $seen = $file === null ? null : Straightener::look($file, $files->count() > 1 ? 1 : $page);
+        if ($seen === null) {
+            return [true, (string) __('assistant.no_picture')];
+        }
+        $pages = $files->count() > 1 ? $files->count() : $seen['pages'];
+
+        return [false, [
+            ['type' => 'image', 'data' => base64_encode($seen['jpeg']), 'mimeType' => 'image/jpeg'],
+            ['type' => 'text', 'text' => 'Page '.$page.' of '.$pages.', '.$seen['width'].' x '.$seen['height'].' px.'],
+        ]];
+    }
+
+    private static function hasPhoto(string $id): bool
+    {
+        return DocumentFile::query()->where('document_id', $id)->whereIn('mime', Straightener::PHOTOS)->exists();
+    }
+
+    /** A number kept inside its range, as text for the payload; '' when none was given. */
+    private static function number(string $raw, float $min, float $max): string
+    {
+        return is_numeric($raw) ? (string) round(max($min, min($max, (float) $raw)), 4) : '';
     }
 }

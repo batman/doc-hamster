@@ -353,3 +353,9 @@ button.color-swatch:focus-visible { outline: 2px solid var(--text); outline-offs
 .proposal-lines { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .25rem .75rem; margin: 0 0 .5rem; }
 .proposal-lines dt { color: var(--muted); }
 .proposal-lines dd { margin: 0; overflow-wrap: anywhere; }
+/* Stage 2: a straighten proposal shows Vorher / Nachher side by side, each fitted into the same height. */
+.proposal-preview { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin: 0 0 .5rem; }
+.proposal-preview figure { display: grid; gap: .25rem; margin: 0; justify-items: center; }
+.proposal-preview img { display: block; max-width: 100%; height: 10rem; object-fit: contain; border-radius: var(--row-radius); background: var(--surface); }
+.proposal-preview figcaption { color: var(--muted); font-size: .85rem; }
+

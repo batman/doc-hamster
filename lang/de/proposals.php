@@ -9,15 +9,15 @@ return [
     'none' => 'Keine offenen Vorschläge.',
     'kinds' => [
         'link' => 'Verknüpfen', 'move' => 'Aufräumen', 'duplicate' => 'Duplikate', 'delete' => 'Löschen',
-        'shrink' => 'Verkleinern', 'correct' => 'Korrekturen', 'setting' => 'Einstellungen',
+        'straighten' => 'Geraderücken', 'shrink' => 'Verkleinern', 'correct' => 'Korrekturen', 'setting' => 'Einstellungen',
     ],
     'tile' => [
         'link' => 'Dokument zur Buchung', 'move' => 'In Ordner verschieben', 'duplicate' => 'Doppeltes Dokument', 'delete' => 'In den Papierkorb',
-        'shrink' => 'Zu groß – verkleinern', 'correct' => 'Wert korrigieren', 'setting' => 'Einstellung einschalten',
+        'straighten' => 'Gerade rücken und zuschneiden', 'shrink' => 'Zu groß – verkleinern', 'correct' => 'Wert korrigieren', 'setting' => 'Einstellung einschalten',
     ],
     'label' => [
         'booking' => 'Buchung', 'document' => 'Dokument', 'folder' => 'Nach', 'keep' => 'Bleibt', 'remove' => 'Papierkorb',
-        'trash' => 'Dokument', 'setting' => 'Einschalten',
+        'trash' => 'Dokument', 'setting' => 'Einschalten', 'angle' => 'Drehen', 'cut' => 'zuschneiden',
     ],
     'settings' => ['optimize_on' => 'Dokumentgröße optimieren – große Scans und Fotos automatisch verkleinern'],
     'from' => 'Von :name, :date',
@@ -26,6 +26,8 @@ return [
     'accept' => 'Übernehmen',
     'reject' => 'Ablehnen',
     'swap' => 'Das andere behalten',
+    'before' => 'Vorher',
+    'after' => 'Nachher',
     'accept_all' => 'Alle übernehmen',
     'rejected' => 'Vorschlag abgelehnt.',
     'all_done' => '{0} Nichts übernommen.|{1} :count Vorschlag übernommen.|[2,*] :count Vorschläge übernommen.',
@@ -35,6 +37,7 @@ return [
         'move' => 'Nach „:name“ verschoben.',
         'trash' => '„:name“ liegt im :trash.',
         'shrink' => 'Wird verkleinert – das dauert einen Moment.',
+        'straighten' => 'Gerade gerückt. Das Original ist aufgehoben, der Text wird neu gelesen.',
         'correct' => ':name ist jetzt :value.',
         'setting_optimize' => 'Dokumentgröße optimieren ist eingeschaltet.',
     ],
@@ -47,4 +50,6 @@ return [
     'nothing_to_shrink' => 'Daran ist nichts zu verkleinern.',
     'bad_value' => 'Der vorgeschlagene Wert passt nicht zu dieser Eigenschaft.',
     'unknown' => 'Unbekannter Vorschlag.',
+    'photo_only' => 'Geraderücken geht nur bei fotografierten Belegen.',
+    'unreadable' => 'Das Bild ließ sich nicht verarbeiten.',
 ];

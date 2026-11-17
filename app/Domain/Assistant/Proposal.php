@@ -12,7 +12,8 @@ use Illuminate\Support\Carbon;
 /**
  * An assistant's proposal (D-040, "Empfehlungskachel"): it changes nothing until a person takes it over. Kinds and
  * their payload: link {transaction_id, document_id}, move {document_id, folder_id}, duplicate {keep_id, remove_id},
- * delete {document_id} (Papierkorb only), shrink {document_id}, correct {document_id, property, value},
+ * delete {document_id} (Papierkorb only), shrink {document_id}, straighten {document_id, angle, cx, cy, w, h}
+ * (Straightener), correct {document_id, property, value},
  * setting {setting}. The same open proposal exists once (fingerprint).
  *
  * @property string $id
@@ -43,18 +44,20 @@ final class Proposal extends Model
 
     public const SHRINK = 'shrink';
 
+    public const STRAIGHTEN = 'straighten';
+
     public const CORRECT = 'correct';
 
     public const SETTING = 'setting';
 
     /** In this order on the page. */
-    public const KINDS = [self::LINK, self::MOVE, self::DUPLICATE, self::DELETE, self::SHRINK, self::CORRECT, self::SETTING];
+    public const KINDS = [self::LINK, self::MOVE, self::DUPLICATE, self::DELETE, self::STRAIGHTEN, self::SHRINK, self::CORRECT, self::SETTING];
 
     /** Which right of the door each kind needs. */
     public const RIGHT = [
         self::LINK => AssistantAccess::PROPOSE_LINK, self::MOVE => AssistantAccess::PROPOSE_MOVE,
         self::DUPLICATE => AssistantAccess::PROPOSE_CLEANUP, self::DELETE => AssistantAccess::PROPOSE_CLEANUP,
-        self::SHRINK => AssistantAccess::PROPOSE_SHRINK, self::CORRECT => AssistantAccess::PROPOSE_CORRECT,
+        self::SHRINK => AssistantAccess::PROPOSE_SHRINK, self::STRAIGHTEN => AssistantAccess::PROPOSE_STRAIGHTEN, self::CORRECT => AssistantAccess::PROPOSE_CORRECT,
         self::SETTING => AssistantAccess::PROPOSE_SETTINGS,
     ];
 
@@ -94,5 +97,20 @@ final class Proposal extends Model
             'kind' => $kind, 'payload' => $payload, 'fingerprint' => $fingerprint, 'status' => self::OPEN,
             'reason' => $reason === null ? null : mb_substr(trim($reason), 0, 2000), 'assistant' => $assistant,
         ]), true];
+    }
+
+    /**
+     * A straighten proposal's numbers.
+     *
+     * @return array{float, array{cx: float, cy: float, w: float, h: float}|null}
+     */
+    public function straightening(): array
+    {
+        $p = $this->payload;
+        $num = static fn (string $key): ?float => is_numeric($p[$key] ?? null) ? (float) $p[$key] : null;
+        $box = $num('cx') !== null && $num('cy') !== null && $num('w') !== null && $num('h') !== null
+            ? ['cx' => (float) $num('cx'), 'cy' => (float) $num('cy'), 'w' => (float) $num('w'), 'h' => (float) $num('h')] : null;
+
+        return [(float) ($num('angle') ?? 0.0), $box];
     }
 }

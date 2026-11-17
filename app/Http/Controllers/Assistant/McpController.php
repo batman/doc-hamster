@@ -89,7 +89,7 @@ final class McpController
                 }
                 [$failed, $text] = McpTools::call($name, is_array($params['arguments'] ?? null) ? $params['arguments'] : [], $request, $org);
 
-                return self::result($id, ['content' => [['type' => 'text', 'text' => $text]], 'isError' => $failed]);
+                return self::result($id, ['content' => is_array($text) ? $text : [['type' => 'text', 'text' => $text]], 'isError' => $failed]);
             default:
                 return ['jsonrpc' => '2.0', 'id' => $id, 'error' => ['code' => -32601, 'message' => 'Method not found: '.$method]];
         }

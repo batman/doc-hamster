@@ -11,10 +11,13 @@ use App\Domain\Documents\Document;
 use App\Domain\Documents\Folder;
 use App\Domain\Optimize\OptimizeQueue;
 use App\Domain\Optimize\OptimizeSettings;
+use App\Domain\Optimize\OriginalKeeper;
+use App\Domain\Optimize\ShrinkResult;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Properties\Property;
 use App\Domain\Properties\PropertyValues;
 use App\Jobs\Local\OptimizeDocument;
+use App\Jobs\Local\RecognizeText;
 use RuntimeException;
 
 /**
@@ -81,6 +84,25 @@ final class ProposalRunner
                 }
 
                 return __('proposals.done.shrink');
+            })(),
+            Proposal::STRAIGHTEN => (function () use ($proposal, $p, $user, $meta, $ip): string {
+                $document = $this->document($p['document_id'] ?? '');
+                $file = $document->files()->whereIn('mime', Straightener::PHOTOS)->orderBy('page_no')->first()
+                    ?? throw new RuntimeException(__('proposals.photo_only'));
+                [$angle, $box] = $proposal->straightening();
+                $made = Straightener::jpeg(Straightener::straighten($file, $angle, $box));
+                $target = tempnam(sys_get_temp_dir(), 'dh-str');
+                if ($target === false || file_put_contents($target, $made['jpeg']) === false) {
+                    throw new RuntimeException(__('proposals.unreadable'));
+                }
+                OriginalKeeper::swap($document, $file, $target, ShrinkResult::done('image/jpeg', 'jpg', 1, (int) $file->size, strlen($made['jpeg'])), $this->org->organization());
+                // The new picture is the page as it is: no old turn or cut on it; its text is read again.
+                $file->forceFill(['transform' => null])->save();
+                $document->forceFill(['ocr_status' => 'pending'])->save();
+                RecognizeText::dispatch($document->id);
+                $this->audit->record('document.changed', orgId: $this->org->id(), userId: $user, subject: $document, meta: $meta(['straightened' => $angle]), ip: $ip);
+
+                return __('proposals.done.straighten');
             })(),
             Proposal::CORRECT => (function () use ($p, $user, $meta, $ip): string {
                 $document = $this->document($p['document_id'] ?? '');

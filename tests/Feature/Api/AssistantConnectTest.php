@@ -7,6 +7,7 @@ use App\Domain\Banking\BankAccount;
 use App\Domain\Banking\Transaction;
 use App\Domain\Banking\TransactionMatch;
 use App\Domain\Documents\Document;
+use App\Domain\Documents\DocumentFile;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Membership;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -132,4 +133,41 @@ it('offers only what the owner ticked', function (): void {
     expect(array_column(mcp($token, 'tools/list')['result']['tools'], 'name'))->not->toContain('propose_link');
     $refused = mcp($token, 'tools/call', ['name' => 'propose_link', 'arguments' => ['transaction_id' => $this->booking->id, 'document_id' => $this->document->id, 'reason' => 'x']]);
     expect($refused['result']['isError'])->toBeTrue()->and($refused['result']['content'][0]['text'])->toContain('nicht angehakt');
+});
+
+it('shows a page picture with its right and straightens a photo by proposal, keeping the original (stage 2)', function (): void {
+    // A synthetic photo: grey, 400 x 300.
+    $image = imagecreatetruecolor(400, 300);
+    imagefill($image, 0, 0, (int) imagecolorallocate($image, 200, 200, 200));
+    ob_start();
+    imagejpeg($image);
+    $jpeg = (string) ob_get_clean();
+    Storage::disk('local')->put('photo.jpg', $jpeg);
+    $file = DocumentFile::query()->create(['org_id' => $this->owner->org_id, 'document_id' => $this->document->id, 'path' => 'photo.jpg', 'mime' => 'image/jpeg',
+        'size' => strlen($jpeg), 'sha256' => hash('sha256', $jpeg), 'page_no' => 1, 'kind' => 'original']);
+
+    $this->actingAs($this->owner->user)->postJson('/settings/assistant', ['on' => '1', 'rights' => ['read', 'images', 'straighten']])->assertOk();
+    $verifier = Str::random(64);
+    [$clientId, $code] = allowAssistant($this->owner, $verifier);
+    $token = $this->post('/oauth/token', ['grant_type' => 'authorization_code', 'code' => $code, 'redirect_uri' => CALLBACK,
+        'client_id' => $clientId, 'code_verifier' => $verifier])->assertOk()->json('access_token');
+
+    $look = mcp($token, 'tools/call', ['name' => 'get_page_image', 'arguments' => ['document_id' => $this->document->id]]);
+    expect($look['result']['content'][0])->toMatchArray(['type' => 'image', 'mimeType' => 'image/jpeg'])
+        ->and(bin2hex(substr((string) base64_decode($look['result']['content'][0]['data'], true), 0, 2)))->toBe('ffd8');
+    $filed = mcp($token, 'tools/call', ['name' => 'propose_straighten', 'arguments' => ['document_id' => $this->document->id,
+        'angle' => 4, 'cx' => 0.5, 'cy' => 0.5, 'w' => 0.6, 'h' => 0.8, 'reason' => 'Um 4° schief, breiter Rand.']]);
+    expect($filed['result']['isError'])->toBeFalse();
+
+    app(CurrentOrg::class)->set($this->owner);
+    $proposal = Proposal::query()->where('kind', Proposal::STRAIGHTEN)->firstOrFail();
+    $this->actingAs($this->owner->user)->get("/proposals/{$proposal->id}/preview/after")->assertOk()->assertHeader('Content-Type', 'image/jpeg');
+    $this->post("/proposals/{$proposal->id}/accept")->assertRedirect('/proposals');
+
+    $file->refresh();
+    expect($proposal->fresh()->status)->toBe('accepted')->and($file->path)->not->toBe('photo.jpg')
+        ->and(Document::query()->withTrashed()->where('original_of', $this->document->id)->exists())->toBeTrue();
+    $size = getimagesizefromstring((string) Storage::disk('local')->get($file->path));
+    // 0.6 x 400 wide and 0.8 x 300 high, cut out of the turned picture.
+    expect($size[0])->toBe(240)->and($size[1])->toBe(240);
 });

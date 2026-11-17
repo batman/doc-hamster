@@ -236,6 +236,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::post('all', 'acceptAll')->name('accept-all');
         Route::post('{id}/accept', 'accept')->name('accept');
         Route::post('{id}/reject', 'reject')->name('reject');
+        Route::get('{id}/preview/{side}', 'preview')->whereIn('side', ['before', 'after'])->name('preview');
     });
     Route::get('oauth/authorize', [OAuthController::class, 'authorize'])->name('oauth.authorize');
     Route::post('oauth/authorize', [OAuthController::class, 'approve'])->name('oauth.approve');

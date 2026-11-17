@@ -9,15 +9,15 @@ return [
     'none' => 'No open proposals.',
     'kinds' => [
         'link' => 'Linking', 'move' => 'Tidying up', 'duplicate' => 'Duplicates', 'delete' => 'Deleting',
-        'shrink' => 'Shrinking', 'correct' => 'Corrections', 'setting' => 'Settings',
+        'straighten' => 'Straightening', 'shrink' => 'Shrinking', 'correct' => 'Corrections', 'setting' => 'Settings',
     ],
     'tile' => [
         'link' => 'Document for a booking', 'move' => 'Move into a folder', 'duplicate' => 'Duplicate document', 'delete' => 'Into the bin',
-        'shrink' => 'Too large – shrink', 'correct' => 'Correct a value', 'setting' => 'Switch a setting on',
+        'straighten' => 'Straighten and cut out', 'shrink' => 'Too large – shrink', 'correct' => 'Correct a value', 'setting' => 'Switch a setting on',
     ],
     'label' => [
         'booking' => 'Booking', 'document' => 'Document', 'folder' => 'To', 'keep' => 'Stays', 'remove' => 'Bin',
-        'trash' => 'Document', 'setting' => 'Switch on',
+        'trash' => 'Document', 'setting' => 'Switch on', 'angle' => 'Turn', 'cut' => 'cut out',
     ],
     'settings' => ['optimize_on' => 'Optimise document size – shrink large scans and photos automatically'],
     'from' => 'From :name, :date',
@@ -26,6 +26,8 @@ return [
     'accept' => 'Take over',
     'reject' => 'Reject',
     'swap' => 'Keep the other one',
+    'before' => 'Before',
+    'after' => 'After',
     'accept_all' => 'Take over all',
     'rejected' => 'Proposal rejected.',
     'all_done' => '{0} Nothing taken over.|{1} :count proposal taken over.|[2,*] :count proposals taken over.',
@@ -35,6 +37,7 @@ return [
         'move' => 'Moved to “:name”.',
         'trash' => '“:name” is in the :trash.',
         'shrink' => 'Being shrunk – this takes a moment.',
+        'straighten' => 'Straightened. The original is kept, the text is read again.',
         'correct' => ':name is now :value.',
         'setting_optimize' => 'Optimise document size is switched on.',
     ],
@@ -47,4 +50,6 @@ return [
     'nothing_to_shrink' => 'There is nothing to shrink.',
     'bad_value' => 'The proposed value does not fit this property.',
     'unknown' => 'Unknown proposal.',
+    'photo_only' => 'Straightening works only for photographed receipts.',
+    'unreadable' => 'The picture could not be processed.',
 ];
