@@ -46,14 +46,51 @@ final class Straightener
                 $scan = ScanPdf::read((string) file_get_contents($path));
                 $one = $scan->pages[$page - 1] ?? null;
                 $image = $one === null ? false : @imagecreatefromstring($one->jpeg);
+                if ($image === false) {
+                    // A54: a PDF with a text layer has no scan inside – drawn by Imagick where the server has it.
+                    return self::rendered($path, $page);
+                }
 
-                return $image === false ? null : [...self::jpeg(self::fit($image, self::LOOK_SIDE)), 'pages' => count($scan->pages)];
+                return [...self::jpeg(self::fit($image, self::LOOK_SIDE)), 'pages' => count($scan->pages)];
             }
         } catch (Throwable) {
             return null;
         }
 
         return null;
+    }
+
+    /**
+     * A54: one page of a PDF drawn by Imagick (Ghostscript behind it), null without Imagick or when it fails.
+     *
+     * @return array{jpeg: string, width: int, height: int, pages: int}|null
+     */
+    private static function rendered(string $path, int $page): ?array
+    {
+        if (! class_exists(\Imagick::class)) {
+            return null;
+        }
+        try {
+            $pages = new \Imagick;
+            $pages->pingImage($path);
+            $count = $pages->getNumberImages();
+            $pages->clear();
+            if ($page > $count) {
+                return null;
+            }
+            $im = new \Imagick;
+            $im->setResolution(150, 150);
+            $im->readImage($path.'['.($page - 1).']');
+            $im->setImageBackgroundColor('white');
+            $im = $im->mergeImageLayers(\Imagick::LAYERMETHOD_FLATTEN);
+            $im->setImageFormat('png');
+            $image = @imagecreatefromstring($im->getImageBlob());
+            $im->clear();
+
+            return $image === false ? null : [...self::jpeg(self::fit($image, self::LOOK_SIDE)), 'pages' => $count];
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     /**

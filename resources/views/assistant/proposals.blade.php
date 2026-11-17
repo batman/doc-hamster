@@ -1,6 +1,7 @@
 {{-- Vorschläge (D-040): the assistant's proposals as Empfehlungskacheln, grouped by kind. Each tile: symbol and kind,
      the assistant's reason, what it names (links open the document or booking as a window), Übernehmen / Ablehnen; a
-     duplicate also "Das andere behalten". "Alle übernehmen" per kind. Nothing changes before a click. --}}
+     duplicate also "Das andere behalten". "Alle übernehmen" per kind; A51 a sure/unsure pill and "Alle sicheren
+     übernehmen" when the assistant said how sure it is. Nothing changes before a click. --}}
 @extends('layouts.app')
 
 @section('title', __('proposals.title'))
@@ -20,6 +21,15 @@
         @forelse ($groups as $kind => $group)
             <section class="proposal-group">
                 <h2 class="card-head"><x-icon :name="$group['icon']" />{{ __('proposals.kinds.'.$kind) }} <span class="pill">{{ count($group['tiles']) }}</span>
+                    @php($sure = collect($group['tiles'])->filter(fn ($t) => $t['proposal']->sure === true)->count())
+                    @if ($sure > 0 && $sure < count($group['tiles']))
+                        <form method="post" action="{{ route('proposals.accept-all') }}" class="card-action">
+                            @csrf
+                            <input type="hidden" name="kind" value="{{ $kind }}">
+                            <input type="hidden" name="sure" value="1">
+                            <button type="submit" class="button-small button-quiet"><x-icon name="circle-check" />{{ __('proposals.accept_sure') }} <span class="pill">{{ $sure }}</span></button>
+                        </form>
+                    @endif
                     @if (count($group['tiles']) > 1)
                         <form method="post" action="{{ route('proposals.accept-all') }}" class="card-action">
                             @csrf
@@ -31,7 +41,9 @@
                 <div class="proposal-tiles">
                     @foreach ($group['tiles'] as ['proposal' => $proposal, 'lines' => $lines])
                         <article class="card">
-                            <h3 class="card-head"><x-icon :name="$group['icon']" />{{ __('proposals.tile.'.$kind) }}</h3>
+                            <h3 class="card-head"><x-icon :name="$group['icon']" />{{ __('proposals.tile.'.$kind) }}
+                                @if ($proposal->sure === true)<span class="pill pill-ok">{{ __('proposals.sure') }}</span>@elseif ($proposal->sure === false)<span class="pill pill-warning">{{ __('proposals.unsure') }}</span>@endif
+                            </h3>
                             @if ($proposal->reason)
                                 <p class="card-text">{{ $proposal->reason }}</p>
                             @endif

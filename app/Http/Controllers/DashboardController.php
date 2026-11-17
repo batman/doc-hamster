@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Domain\Backup\Backup;
+use App\Domain\Dashboard\Completeness;
 use App\Domain\Dashboard\DashboardLayout;
 use App\Domain\Dashboard\DashboardWidgets;
 use App\Domain\Dashboard\FirstSteps;
@@ -242,6 +243,7 @@ final class DashboardController
             'inbox' => ['documents' => $widgets->inbox()],
             'due' => ['rows' => $widgets->due()],
             'bookings' => ['rows' => $widgets->bookings()],
+            'complete' => ['rows' => (new Completeness($this->userId($org), Gate::allows(Permission::ViewAllDocuments->value), Gate::allows(Permission::ViewBanking->value)))->months()],
             'activity' => ['rows' => $widgets->activity($org->id())],
             'notes' => ['notes' => $widgets->notes()],
             'ocr' => OcrProgress::open($org->id()),

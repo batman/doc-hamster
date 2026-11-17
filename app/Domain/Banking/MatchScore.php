@@ -16,8 +16,11 @@ use DateTimeImmutable;
  *   (rounding, tip, exchange rate); an amount the reader only saw on the document (no property) gives 30 when equal.
  * - Date (15): booking on the due date, a few days after the invoice date, or near the upload day.
  * - IBAN (25): the document's IBAN is the counterparty's, or stands in the purpose.
- * - Invoice number (25): stands in the purpose.
- * - Sender (20): the sender's name words stand in counterparty or purpose.
+ * - Invoice number (25): stands in the purpose – A45 also misread (S↔5, O↔0, I↔1, B↔8) or with other leading zeros
+ *   after "Inv"/"Invoice"/"Rechnung"/"Nr" ("Invoice 00005" pays INV-000005).
+ * - Sender (20): the sender's name words stand in counterparty or purpose; A46 a counterparty a person already linked
+ *   to this sender counts too ("Musterputz Ltd" is paid as "Max Mustermann"); A48 else the name words of the document's
+ *   title ("INV-000005 Muster Sports …" – an own invoice names the customer there).
  * - Time (10, point 219): booking and receipt both have a time – within 15 minutes 10, an hour 6, two hours 3.
  *
  * At most 100. AUTO and above, with no close second, links as "vorgeschlagen"; SUGGEST and above is offered; SHOW and
@@ -37,7 +40,7 @@ final class MatchScore
 
     /**
      * @param  array{date: string, time?: ?string, amount: int, orig_amount?: ?int, counterparty?: ?string, purpose?: ?string, iban?: ?string}  $tx
-     * @param  array{amount?: ?int, amounts?: list<int>, invoice_date?: ?string, time?: ?string, due_date?: ?string, uploaded?: ?string, iban?: ?string, sender?: ?string, invoice_number?: ?string}  $doc
+     * @param  array{amount?: ?int, amounts?: list<int>, invoice_date?: ?string, time?: ?string, due_date?: ?string, uploaded?: ?string, iban?: ?string, sender?: ?string, invoice_number?: ?string, title?: ?string, aliases?: list<string>}  $doc
      * @return array{score: int, reasons: array<string, int>}
      */
     public static function score(array $tx, array $doc): array
@@ -48,7 +51,11 @@ final class MatchScore
             'date' => self::date($tx['date'], $doc),
             'iban' => self::iban($tx, $doc['iban'] ?? null),
             'invoice_number' => self::invoiceNumber($tx['purpose'] ?? null, $doc['invoice_number'] ?? null),
-            'sender' => self::sender(trim(($tx['counterparty'] ?? '').' '.($tx['purpose'] ?? '')), $doc['sender'] ?? null),
+            'sender' => max(
+                self::sender(trim(($tx['counterparty'] ?? '').' '.($tx['purpose'] ?? '')), $doc['sender'] ?? null),
+                self::alias($tx['counterparty'] ?? null, $doc['aliases'] ?? []),
+                self::sender(trim(($tx['counterparty'] ?? '').' '.($tx['purpose'] ?? '')), self::titleName($doc['title'] ?? null)),
+            ),
             'time' => self::time($tx['date'], $tx['time'] ?? null, $doc['invoice_date'] ?? null, $doc['time'] ?? null),
         ]);
 
@@ -209,12 +216,46 @@ final class MatchScore
 
     private static function invoiceNumber(?string $purpose, ?string $number): int
     {
-        $number = self::compact($number);
-        if ($purpose === null || strlen($number) < 4 || preg_match('/\d/', $number) !== 1) {
+        $compact = self::compact($number);
+        if ($purpose === null || strlen($compact) < 4 || preg_match('/\d/', $compact) !== 1) {
+            return 0;
+        }
+        if (str_contains(self::compact($purpose), $compact) || str_contains(self::ocr(self::compact($purpose)), self::ocr($compact))) {
+            return 25;
+        }
+        // "Invoice 00005" for INV-000005: the number's digits without leading zeros after an invoice word.
+        $digits = ltrim((string) preg_replace('/\D+/', '', (string) $number), '0');
+        if ($digits === '' || preg_match_all('/(?<!\p{L})(?:inv(?:oice)?|rechnung|re|rg|bill|nr|no)\.?\s*[#:]?\s*0*(\d+)/iu', $purpose, $m) < 1) {
             return 0;
         }
 
-        return str_contains(self::compact($purpose), $number) ? 25 : 0;
+        return in_array($digits, $m[1], true) ? 25 : 0;
+    }
+
+    /** A45: the letters OCR confuses with digits, as digits. */
+    private static function ocr(string $compact): string
+    {
+        return strtr($compact, ['s' => '5', 'o' => '0', 'i' => '1', 'l' => '1', 'b' => '8', 'z' => '2']);
+    }
+
+    /**
+     * A46: counterparties a person linked to this sender before.
+     *
+     * @param  list<string>  $aliases  sender keys of those counterparties
+     */
+    private static function alias(?string $counterparty, array $aliases): int
+    {
+        $key = InvoiceSuggestions::senderKey((string) $counterparty);
+
+        return $key !== '' && in_array($key, $aliases, true) ? 20 : 0;
+    }
+
+    /** A48: the name words of a title, without dates, numbers and the file type. */
+    private static function titleName(?string $title): ?string
+    {
+        $name = trim((string) preg_replace(['/\.[A-Za-z][A-Za-z0-9]{1,4}$/', '/\S*\d\S*/u', '/\s+/u'], ['', ' ', ' '], (string) $title));
+
+        return mb_strlen($name) >= 3 ? $name : null;
     }
 
     private static function sender(string $text, ?string $sender): int

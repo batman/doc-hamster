@@ -59,6 +59,7 @@ return [
         'sender' => 'Absender',
         'standing' => 'Dauerdokument',
         'time' => 'Uhrzeit',
+        'split' => 'Teilzahlung',
     ],
     'why' => 'Passt: :reasons',
     'confirm' => 'Bestätigen',

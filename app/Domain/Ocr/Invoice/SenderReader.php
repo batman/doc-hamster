@@ -10,7 +10,9 @@ use App\Domain\Ocr\InvoiceProposal;
  * The sender and payee (A248, point 133): next to Kontoinhaber / Empfänger in the bank block, else the sender line
  * above the address ("Muster GmbH · Hauptstr. 1 · 12345 Musterstadt"), else the company name of the letterhead – a
  * legal form (GmbH, Ltd, LLC …) and large print near the top win – else the first name-like line at the top. Label and
- * term lines ("Terms : Due on Receipt", "Rechnungsdatum: …", "Bill to", "Tel", "IBAN" …) are never a sender.
+ * term lines ("Terms : Due on Receipt", "Rechnungsdatum: …", "Bill to", "Tel", "IBAN" …) are never a sender. A40: the
+ * organisation itself is the recipient – a line with its own name (also misread: "MUSTER 10 LIMITED" for "Muster Two Ltd")
+ * and the address lines below it are never the sender.
  *
  * @phpstan-import-type Line from InvoiceLines
  */
@@ -22,12 +24,51 @@ final class SenderReader
     /** Words that make a line a label or term, not a name (German and English). */
     private const LABEL = '/(?<!\p{L})(?:terms?|due|payment|zahlungs\p{L}*|zahlbar|f[äa]llig\p{L}*|invoice\p{L}*|rechnung\p{L}*|date|datum|bill(?:ed)?\s+to|ship(?:ped)?\s+to|sold\s+to|deliver\p{L}*|liefer\p{L}*|rechnungsadresse|kunde\p{L}*|customer|client|page|seite|tel\.?|telefon|phone|fax|mobil\p{L}*|e-?mail|www|https?|ust\p{L}*|vat|tax|steuer\p{L}*|iban|bic|swift|bank\p{L}*|konto\p{L}*|account|amount|betrag|total|summe|order|bestell\p{L}*|auftrag\p{L}*|nr\.?|no\.|number|nummer|reference|referenz|betreff|subject|description|beschreibung|qty|menge|preis|price|balance|receipt|quittung|beleg)(?!\p{L})/iu';
 
+    /** @var list<string> A40: first words of the organisation's own names, lower case */
+    private static array $own = [];
+
     /**
      * @param  list<Line>  $lines
+     * @param  list<string>  $ownNames  the organisation's own names – the recipient, never the sender
      */
-    public static function read(array $lines): ?InvoiceProposal
+    public static function read(array $lines, array $ownNames = []): ?InvoiceProposal
     {
-        return self::bankBlock($lines) ?? self::senderLine($lines) ?? self::letterhead($lines);
+        self::$own = array_values(array_filter(array_map(static fn (string $n): string => self::firstWord($n), $ownNames), static fn (string $w): bool => mb_strlen($w) >= 3));
+        try {
+            return self::bankBlock($lines) ?? self::senderLine($lines) ?? self::letterhead($lines);
+        } finally {
+            self::$own = [];
+        }
+    }
+
+    /**
+     * A40: the line names the organisation itself – its first word is the own name's first word (OCR keeps that one).
+     *
+     * @param  list<string>  $ownNames
+     */
+    public static function isOwn(string $text, array $ownNames): bool
+    {
+        $first = self::firstWord($text);
+        foreach ($ownNames as $name) {
+            if ($first !== '' && $first === self::firstWord($name)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static function firstWord(string $text): string
+    {
+        $words = preg_split('/[^\p{L}\p{N}&]+/u', mb_strtolower(trim($text)), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $words = array_values(array_filter($words, static fn (string $w): bool => ! in_array($w, ['the', 'die', 'der', 'firma'], true) && preg_match('/\p{L}/u', $w) === 1));
+
+        return $words[0] ?? '';
+    }
+
+    private static function own(string $text): bool
+    {
+        return self::$own !== [] && in_array(self::firstWord($text), self::$own, true);
     }
 
     /** Point 133: a line that labels or states terms, or carries contact details – never a sender. */
@@ -51,15 +92,15 @@ final class SenderReader
             }
         }
         foreach ($lines as $line) {
-            if (preg_match('/(?<!\p{L})(kontoinhaber(?:in)?|zahlungsempfänger|empfänger|account holder|inhaber|beneficiary)\s*(:)?\s*(.+)$/iu', $line['text'], $m, PREG_OFFSET_CAPTURE) !== 1) {
+            if (preg_match('/(?<!\p{L})(kontoinhaber(?:in)?|zahlungsempfänger|empfänger|account holder|account name|inhaber|beneficiary)\s*(:)?\s*(.+)$/iu', $line['text'], $m, PREG_OFFSET_CAPTURE) !== 1) {
                 continue;
             }
             $near = array_filter($ibanLines, static fn (int $i): bool => abs($i - $line['i']) <= 3) !== [];
             if ($m[2][0] === '' && ! $near) {
                 continue;
             }
-            $value = trim((string) preg_replace('/\s+(?:IBAN|BIC|Bank|Kreditinstitut)\b.*$/iu', '', $m[3][0]), " \t:,;");
-            if (mb_strlen($value) >= 2 && mb_strlen($value) <= 70 && preg_match('/\p{L}{2}/u', $value) === 1 && preg_match('/\d{4}/', $value) !== 1 && ! self::isLabel($value)) {
+            $value = trim((string) preg_replace('/\s+(?:IBAN|BIC|Bank|Kreditinstitut)\b.*$/iu', '', $m[3][0]), " \t:,;-–");
+            if (mb_strlen($value) >= 2 && mb_strlen($value) <= 70 && preg_match('/\p{L}{2}/u', $value) === 1 && preg_match('/\d{4}/', $value) !== 1 && ! self::isLabel($value) && ! self::own($value)) {
                 return InvoiceLines::proposal($value, 0.85, $line, InvoiceLines::box($line, $m[3][1], $m[3][1] + strlen($value)));
             }
         }
@@ -152,6 +193,12 @@ final class SenderReader
             }
             if ($skip > 0) {
                 $skip--;
+
+                continue;
+            }
+            // A40: the organisation's own name opens the recipient's address block.
+            if (self::own($line['text'])) {
+                $skip = 3;
 
                 continue;
             }

@@ -6,14 +6,17 @@ namespace App\Domain\Payments;
 
 use App\Domain\Banking\BankAccount;
 use App\Domain\Documents\Document;
+use App\Domain\Ocr\Invoice\FileNameHints;
 use App\Domain\Ocr\InvoiceProposal;
 use App\Domain\Ocr\InvoiceReader;
 use App\Domain\Ocr\InvoiceReading;
 use App\Domain\Ocr\OcrWords;
+use App\Domain\Org\Organization;
 use App\Domain\Org\OrgScope;
 use App\Domain\Properties\DocumentProperty;
 use App\Domain\Properties\Property;
 use App\Domain\Properties\PropertyValues;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -57,8 +60,12 @@ final class InvoiceSuggestions
         $own = BankAccount::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $orgId)->whereNotNull('iban')->pluck('iban')
             ->map(static fn ($iban): string => (string) $iban)->values()->all();
         $own = array_values($own);
+        // A40: the organisation is the recipient; A42: its accounts' currency is the default.
+        $names = array_filter([(string) Organization::query()->whereKey($orgId)->value('name')]);
+        $currency = (string) (BankAccount::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $orgId)
+            ->selectRaw('currency, count(*) as n')->groupBy('currency')->orderByDesc('n')->value('currency') ?? 'EUR');
 
-        return new InvoiceReader($own, function (string $sender) use ($orgId): ?array {
+        return new InvoiceReader($own, ownNames: $names, currency: $currency, hints: function (string $sender) use ($orgId): ?array {
             $hint = SenderHint::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $orgId)->where('sender_key', self::senderKey($sender))->first();
 
             return $hint === null ? null : [
@@ -76,7 +83,9 @@ final class InvoiceSuggestions
         }
         $reading = $this->read($document);
         $allowed = Property::forDocument($document)->filter(static fn (Property $p): bool => $p->key !== null)->keyBy('key');
-        foreach ($reading->suggestions() as $key => $proposal) {
+        $uploaded = CarbonImmutable::parse($document->created_at ?? 'now');
+        $found = FileNameHints::apply($reading->suggestions(), (string) $document->title, $uploaded, $reading->currency ?? 'EUR');
+        foreach ($found as $key => $proposal) {
             $property = $allowed->get($key);
             if (! $property instanceof Property || $proposal->confidence < self::MIN_CONFIDENCE) {
                 continue;

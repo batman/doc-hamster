@@ -22,11 +22,11 @@ return [
     ],
     'needs_read' => 'To propose anything the assistant also needs “Read bookings and documents”.',
     'rights_first' => 'Please tick at least one right first – only then can the access be opened.',
-    'no_picture' => 'There is no picture of this page – a PDF with real text, or a page that does not exist.',
+    'no_picture' => 'There is no picture of this page – a PDF with real text (get_document has its text) or a page that does not exist.',
     'not_allowed' => 'The assistant may not do this – the owner did not tick it under Settings → Assistants.',
     'propose_unknown' => [
         'booking' => 'This booking does not exist.', 'document' => 'This document does not exist (or not for this person).',
-        'folder' => 'This folder does not exist.', 'photo' => 'Straightening works only for photographed receipts (JPEG, PNG, WebP).', 'property' => 'This property does not exist.', 'setting' => 'This setting does not exist.',
+        'folder' => 'This folder does not exist.', 'photo' => 'Straightening works only for photographed receipts (JPEG, PNG, WebP).', 'property' => 'This property does not exist.', 'setting' => 'This setting does not exist.', 'link' => 'This document is not linked to this booking.', 'proposal' => 'There is no open proposal of yours with this id.',
     ],
     'state_off' => 'Off',
     'state_on' => 'On',

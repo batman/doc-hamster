@@ -23,6 +23,7 @@ final class DashboardLayout
         'inbox' => ['icon' => 'inbox', 'size' => 'm'],
         'due' => ['icon' => 'file-invoice', 'size' => 'm'],
         'bookings' => ['icon' => 'receipt-off', 'size' => 'm'],
+        'complete' => ['icon' => 'circle-check', 'size' => 'm'],
         'activity' => ['icon' => 'clock', 'size' => 'm'],
         'notes' => ['icon' => 'note', 'size' => 'm'],
         'ocr' => ['icon' => 'text-scan-2', 'size' => 's'],

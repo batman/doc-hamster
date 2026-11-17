@@ -8,15 +8,15 @@ return [
     'intro' => 'Ihr Assistent ändert nichts selbst. Hier stehen seine Vorschläge – erst Ihr Klick auf „Übernehmen“ führt sie aus.',
     'none' => 'Keine offenen Vorschläge.',
     'kinds' => [
-        'link' => 'Verknüpfen', 'move' => 'Aufräumen', 'duplicate' => 'Duplikate', 'delete' => 'Löschen',
+        'unlink' => 'Verknüpfung lösen', 'title' => 'Titel', 'link' => 'Verknüpfen', 'move' => 'Aufräumen', 'duplicate' => 'Duplikate', 'delete' => 'Löschen',
         'straighten' => 'Geraderücken', 'shrink' => 'Verkleinern', 'correct' => 'Korrekturen', 'setting' => 'Einstellungen',
     ],
     'tile' => [
-        'link' => 'Dokument zur Buchung', 'move' => 'In Ordner verschieben', 'duplicate' => 'Doppeltes Dokument', 'delete' => 'In den Papierkorb',
+        'unlink' => 'Verknüpfung passt nicht', 'title' => 'Titel ändern', 'link' => 'Dokument zur Buchung', 'move' => 'In Ordner verschieben', 'duplicate' => 'Doppeltes Dokument', 'delete' => 'In den Papierkorb',
         'straighten' => 'Gerade rücken und zuschneiden', 'shrink' => 'Zu groß – verkleinern', 'correct' => 'Wert korrigieren', 'setting' => 'Einstellung einschalten',
     ],
     'label' => [
-        'booking' => 'Buchung', 'document' => 'Dokument', 'folder' => 'Nach', 'keep' => 'Bleibt', 'remove' => 'Papierkorb',
+        'title' => 'Neuer Titel', 'link' => 'Verknüpft mit', 'booking' => 'Buchung', 'document' => 'Dokument', 'folder' => 'Nach', 'keep' => 'Bleibt', 'remove' => 'Papierkorb',
         'trash' => 'Dokument', 'setting' => 'Einschalten', 'angle' => 'Drehen', 'cut' => 'zuschneiden',
     ],
     'settings' => ['optimize_on' => 'Dokumentgröße optimieren – große Scans und Fotos automatisch verkleinern'],
@@ -33,6 +33,9 @@ return [
     'all_done' => '{0} Nichts übernommen.|{1} :count Vorschlag übernommen.|[2,*] :count Vorschläge übernommen.',
     'all_failed' => '{1} :count ging nicht mehr.|[2,*] :count gingen nicht mehr.',
     'done' => [
+        'unlink' => 'Verknüpfung gelöst.',
+        'title' => 'Heißt jetzt „:title“.',
+        'clear' => ':name ist geleert.',
         'link' => 'Verknüpft.',
         'move' => 'Nach „:name“ verschoben.',
         'trash' => '„:name“ liegt im :trash.',
@@ -52,4 +55,14 @@ return [
     'unknown' => 'Unbekannter Vorschlag.',
     'photo_only' => 'Geraderücken geht nur bei fotografierten Belegen.',
     'unreadable' => 'Das Bild ließ sich nicht verarbeiten.',
+    'gone_link' => 'Diese Verknüpfung gibt es nicht mehr.',
+    'clear' => 'leeren',
+    'sure' => 'Sicher',
+    'unsure' => 'Unsicher',
+    'accept_sure' => 'Alle sicheren übernehmen',
+    'own' => 'docHamster',
+    'found' => [
+        'same_file' => 'docHamster: dieselbe Datei wurde zweimal hochgeladen.',
+        'same_invoice' => 'docHamster: gleiche Rechnungsnummer und gleicher Betrag – wohl dasselbe Papier zweimal gescannt. Bleiben soll das bessere Bild; Verknüpfungen und Werte gehen mit.',
+    ],
 ];

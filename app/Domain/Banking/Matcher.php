@@ -98,7 +98,7 @@ final class Matcher
 
         $facts = $this->facts($documents, false);
         $tx = self::transactionFacts($transaction);
-        $scored = $documents->map(static fn (Document $d): array => ['document' => $d, ...MatchScore::score($tx, $facts[$d->id])])->all();
+        $scored = $this->withParts($transaction, array_values($documents->map(static fn (Document $d): array => ['document' => $d, ...MatchScore::score($tx, $facts[$d->id])])->all()), $facts);
         $day = $transaction->booking_date;
         usort($scored, static fn (array $a, array $b): int => [$b['score'], abs($a['document']->dateBy('doc')->diffInSeconds($day))]
             <=> [$a['score'], abs($b['document']->dateBy('doc')->diffInSeconds($day))]);
@@ -149,7 +149,7 @@ final class Matcher
      * the InvoiceReader sees in its text.
      *
      * @param  Collection<int, Document>  $documents
-     * @return array<string, array{amount: ?int, amounts: list<int>, invoice_date: ?string, time: ?string, due_date: ?string, uploaded: ?string, iban: ?string, sender: ?string, invoice_number: ?string}>
+     * @return array<string, array{amount: ?int, amounts: list<int>, invoice_date: ?string, time: ?string, due_date: ?string, uploaded: ?string, iban: ?string, sender: ?string, invoice_number: ?string, title: ?string, aliases: list<string>}>
      */
     public function facts(Collection $documents, bool $read): array
     {
@@ -162,6 +162,7 @@ final class Matcher
             ->whereIn('document_id', $ids->values())->whereIn('property_id', $keys->keys())->get())
             ->groupBy('document_id');
 
+        $aliases = $this->aliases($orgId, (string) $keys->search('sender'));
         $facts = [];
         foreach ($documents as $document) {
             $own = [];
@@ -185,6 +186,8 @@ final class Matcher
                 'iban' => isset($own['iban']) ? $own['iban']->value_text : null,
                 'sender' => isset($own['sender']) ? $own['sender']->value_text : null,
                 'invoice_number' => isset($own['invoice_number']) ? $own['invoice_number']->value_text : null,
+                'title' => $document->title,
+                'aliases' => isset($own['sender']) ? ($aliases[InvoiceSuggestions::senderKey((string) $own['sender']->value_text)] ?? []) : [],
             ];
             if ($read && $fact['amount'] === null) {
                 $fact['amounts'] = $this->readAmounts($document);
@@ -193,6 +196,64 @@ final class Matcher
         }
 
         return $facts;
+    }
+
+    /**
+     * A47: a document worth more than this booking may be paid in parts – when other bookings of the same direction
+     * within 60 days add up with this one to its amount exactly, it scores as a part.
+     *
+     * @param  list<array{document: Document, score: int, reasons: array<string, int>}>  $scored
+     * @param  array<string, array{amount: ?int}>  $facts
+     * @return list<array{document: Document, score: int, reasons: array<string, int>}>
+     */
+    private function withParts(Transaction $transaction, array $scored, array $facts): array
+    {
+        $part = abs($transaction->amount_minor);
+        $bigger = array_filter($scored, static fn (array $s): bool => ! isset($s['reasons']['amount']) && abs((int) ($facts[$s['document']->id]['amount'] ?? 0)) > $part);
+        if ($part === 0 || $bigger === []) {
+            return $scored;
+        }
+        $day = $transaction->booking_date;
+        $others = Transaction::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $transaction->org_id)->whereKeyNot($transaction->id)
+            ->where('amount_minor', $transaction->amount_minor < 0 ? '<' : '>', 0)
+            ->whereBetween('booking_date', [$day->copy()->subDays(60)->toDateString(), $day->copy()->addDays(60)->toDateString()])
+            ->limit(300)->pluck('amount_minor', 'id')->map(static fn ($a): int => abs((int) $a))->all();
+        $out = [];
+        foreach ($scored as $i => $s) {
+            if (isset($bigger[$i]) && SplitPayments::find(abs((int) $facts[$s['document']->id]['amount']), $part, $others) !== null) {
+                $s = ['document' => $s['document'], 'score' => min(100, $s['score'] + SplitPayments::POINTS), 'reasons' => [...$s['reasons'], 'split' => SplitPayments::POINTS]];
+            }
+            $out[] = $s;
+        }
+
+        return $out;
+    }
+
+    /**
+     * A46: per sender, the counterparties a person linked to its documents (sender key => counterparty keys).
+     *
+     * @return array<string, list<string>>
+     */
+    private function aliases(string $orgId, string $senderPropertyId): array
+    {
+        if ($senderPropertyId === '') {
+            return [];
+        }
+        $rows = TransactionMatch::query()->withoutGlobalScope(OrgScope::class)->where('matches.org_id', $orgId)->where('matches.state', TransactionMatch::CONFIRMED)
+            ->join('transactions', 'transactions.id', '=', 'matches.transaction_id')
+            ->join('document_properties', static fn ($join) => $join->on('document_properties.document_id', '=', 'matches.document_id')->where('document_properties.property_id', $senderPropertyId))
+            ->whereNotNull('transactions.counterparty')
+            ->limit(5000)->get(['transactions.counterparty as counterparty', 'document_properties.value_text as sender']);
+        $map = [];
+        foreach ($rows as $row) {
+            $sender = InvoiceSuggestions::senderKey((string) $row->getAttribute('sender'));
+            $counterparty = InvoiceSuggestions::senderKey((string) $row->getAttribute('counterparty'));
+            if ($sender !== '' && $counterparty !== '' && $sender !== $counterparty) {
+                $map[$sender][$counterparty] = true;
+            }
+        }
+
+        return array_map(static fn (array $c): array => array_keys($c), $map);
     }
 
     /**

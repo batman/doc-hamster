@@ -23,12 +23,13 @@ use RuntimeException;
 /**
  * Vorschläge (D-040): the assistant's proposals as Empfehlungskacheln, grouped by kind – each with its reason, what it
  * names (links open the document or booking), Übernehmen / Ablehnen, a duplicate also "Das andere behalten", and
- * "Alle übernehmen" per kind. Taking over runs as the owner (ProposalRunner); nothing happens before.
+ * "Alle übernehmen" per kind – A51 "Alle sicheren übernehmen" takes only those the assistant marked sure. Taking over
+ * runs as the owner (ProposalRunner); nothing happens before.
  */
 final class ProposalController
 {
     private const ICONS = [
-        Proposal::LINK => 'link', Proposal::MOVE => 'folder', Proposal::DUPLICATE => 'copy', Proposal::DELETE => 'trash',
+        Proposal::LINK => 'link', Proposal::UNLINK => 'unlink', Proposal::TITLE => 'pencil', Proposal::MOVE => 'folder', Proposal::DUPLICATE => 'copy', Proposal::DELETE => 'trash',
         Proposal::SHRINK => 'arrows-minimize', Proposal::STRAIGHTEN => 'crop', Proposal::CORRECT => 'pencil', Proposal::SETTING => 'settings',
     ];
 
@@ -87,9 +88,10 @@ final class ProposalController
     /** "Alle übernehmen" for one kind: each like a single click; what fails stays visible with its reason in the toast. */
     public function acceptAll(Request $request, ProposalRunner $runner): RedirectResponse
     {
-        $kind = (string) $request->validate(['kind' => ['required', 'in:'.implode(',', Proposal::KINDS)]])['kind'];
+        $data = $request->validate(['kind' => ['required', 'in:'.implode(',', Proposal::KINDS)], 'sure' => ['nullable', 'boolean']]);
         $done = $failed = 0;
-        foreach (Proposal::query()->where('status', Proposal::OPEN)->where('kind', $kind)->oldest()->get() as $proposal) {
+        $open = Proposal::query()->where('status', Proposal::OPEN)->where('kind', $data['kind'])->when($request->boolean('sure'), static fn ($q) => $q->where('sure', true));
+        foreach ($open->oldest()->get() as $proposal) {
             $this->run($proposal, $runner, false, $request->ip());
             $proposal->status === 'accepted' ? $done++ : $failed++;
         }
@@ -136,6 +138,17 @@ final class ProposalController
                 })(),
                 $doc(__('proposals.label.document'), $d['document_id'] ?? null),
             ],
+            Proposal::UNLINK => [
+                (static function () use ($d): array {
+                    $t = Transaction::query()->find($d['transaction_id'] ?? '');
+
+                    return ['label' => __('proposals.label.booking'), 'text' => $t === null ? __('proposals.gone')
+                        : $t->booking_date->format('d.m.Y').' · '.$t->formattedAmount().' · '.($t->counterparty ?? $t->purpose ?? '–'), 'url' => $t === null ? null : route('bank.show', $t->id)];
+                })(),
+                $doc(__('proposals.label.link'), $d['document_id'] ?? null),
+            ],
+            Proposal::TITLE => [$doc(__('proposals.label.document'), $d['document_id'] ?? null),
+                ['label' => __('proposals.label.title'), 'text' => (string) ($d['title'] ?? ''), 'url' => null]],
             Proposal::MOVE => [$doc(__('proposals.label.document'), $d['document_id'] ?? null),
                 ['label' => __('proposals.label.folder'), 'text' => (string) (Folder::query()->whereKey($d['folder_id'] ?? '')->value('name') ?? __('proposals.gone')), 'url' => null]],
             Proposal::DUPLICATE => [$doc(__('proposals.label.keep'), $d['keep_id'] ?? null), $doc(__('proposals.label.remove'), $d['remove_id'] ?? null)],
@@ -153,7 +166,7 @@ final class ProposalController
                 $document = Document::query()->find($d['document_id'] ?? '');
                 $now = $property === null || $document === null ? null : $document->properties()->where('property_id', $property->id)->first();
 
-                return ['label' => $property->name ?? (string) ($d['property'] ?? ''), 'text' => ($now === null ? '–' : $values->display($now)).' → '.($d['value'] ?? ''), 'url' => null];
+                return ['label' => $property->name ?? (string) ($d['property'] ?? ''), 'text' => ($now === null ? '–' : $values->display($now)).' → '.(($d['value'] ?? '') === '' ? '('.__('proposals.clear').')' : $d['value']), 'url' => null];
             })()],
             default => [['label' => __('proposals.label.setting'), 'text' => __('proposals.settings.'.($d['setting'] ?? '')), 'url' => null]],
         };

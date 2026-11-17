@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Domain\Assistant\AssistantAccess;
+use App\Domain\Assistant\DuplicateFinder;
 use App\Domain\Auth\User;
 use App\Domain\Banking\MatchAfterRecognition;
 use App\Domain\Documents\ReceiptDate;
@@ -156,6 +157,8 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(TextRecognized::class, SuggestInvoiceProperties::class);
         // A268: then the document is matched against the open bookings (after the suggestions, which it reads).
         Event::listen(TextRecognized::class, MatchAfterRecognition::class);
+        // A49, A50: a document that is there twice becomes a duplicate proposal under Vorschläge.
+        Event::listen(TextRecognized::class, DuplicateFinder::class);
         DocumentProperty::saved(static function (DocumentProperty $value): void {
             try {
                 app(InvoiceSuggestions::class)->learn($value);

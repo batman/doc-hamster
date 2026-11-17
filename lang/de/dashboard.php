@@ -12,6 +12,7 @@ return [
         'inbox' => 'Posteingang',
         'due' => 'Fällige Rechnungen',
         'bookings' => 'Offene Buchungen',
+        'complete' => 'Vollständigkeit',
         'activity' => 'Letzte Aktivitäten',
         'notes' => 'Notizen',
         'ocr' => 'Texterkennung',
@@ -77,4 +78,8 @@ return [
     'drop' => 'Dateien hier ablegen',
     'drop_hint' => 'Sie landen im Posteingang.',
     'drop_pick' => 'Dateien wählen',
+    'complete_ok' => 'vollständig',
+    'complete_warning' => '{1} 1 Beleg ohne Betrag, Datum oder Absender|[2,*] :count Belege ohne Betrag, Datum oder Absender',
+    'complete_error' => '{1} 1 Buchung ohne Beleg|[2,*] :count Buchungen ohne Beleg',
+    'complete_pill' => ['ok' => 'Vollständig', 'warning' => 'Angaben fehlen', 'error' => 'Belege fehlen'],
 ];

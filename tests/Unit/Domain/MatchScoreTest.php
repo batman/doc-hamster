@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domain\Banking\MatchScore;
+use App\Domain\Banking\SplitPayments;
 
 /*
 | A268: the score of a booking against a document (pure).
@@ -55,4 +56,28 @@ it('scores only pairs worth it', function (): void {
         ->and(MatchScore::worthScoring(PAYMENT, ['amount' => 10000, 'iban' => 'DE02120300000000202051']))->toBeTrue()
         ->and(MatchScore::worthScoring(PAYMENT, ['uploaded' => '2026-11-18']))->toBeTrue()
         ->and(MatchScore::worthScoring(PAYMENT, ['uploaded' => '2026-01-18']))->toBeFalse();
+});
+
+it('finds a misread or zero-padded invoice number in the purpose (A45)', function (): void {
+    $tx = ['date' => '2025-12-01', 'amount' => -12000, 'purpose' => 'An Muster Audit Inv MXS31736'];
+    expect(MatchScore::score($tx, ['invoice_number' => 'MX531736'])['reasons']['invoice_number'] ?? 0)->toBe(25);
+
+    $in = ['date' => '2025-08-11', 'amount' => 25000, 'purpose' => 'Geld eingezahlt von Muster Sports Invoice 00005/ Muster Sports'];
+    expect(MatchScore::score($in, ['invoice_number' => 'INV-000005'])['reasons']['invoice_number'] ?? 0)->toBe(25)
+        ->and(MatchScore::score($in, ['invoice_number' => 'INV-000006'])['reasons']['invoice_number'] ?? 0)->toBe(0);
+});
+
+it('knows a counterparty linked to the sender before and the customer in the title (A46, A48)', function (): void {
+    $tx = ['date' => '2025-09-03', 'amount' => -10000, 'counterparty' => 'Max Mustermann', 'purpose' => 'An Max Mustermann inv 0042026'];
+    expect(MatchScore::score($tx, ['sender' => 'Musterputz LTD', 'aliases' => ['max mustermann']])['reasons']['sender'] ?? 0)->toBe(20);
+
+    $in = ['date' => '2025-07-18', 'amount' => 15000, 'purpose' => 'Von Beispiel Kunde GmbH'];
+    expect(MatchScore::score($in, ['title' => 'INV-000006 Beispiel Kunde GmbH 2025-07-15.pdf'])['reasons']['sender'] ?? 0)->toBe(20);
+});
+
+it('finds the other parts of a document paid in parts (A47)', function (): void {
+    $others = ['a' => 250000, 'b' => 100000, 'c' => 50000, 'd' => 70000];
+    expect(SplitPayments::find(1000000, 600000, $others))->toEqualCanonicalizing(['a', 'b', 'c'])
+        ->and(SplitPayments::find(1000000, 600000, ['a' => 250000]))->toBeNull()
+        ->and(SplitPayments::find(10000, 10000, $others))->toBeNull();
 });

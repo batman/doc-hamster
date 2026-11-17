@@ -12,6 +12,7 @@ return [
         'inbox' => 'Inbox',
         'due' => 'Invoices due',
         'bookings' => 'Open transactions',
+        'complete' => 'Completeness',
         'activity' => 'Recent activity',
         'notes' => 'Notes',
         'ocr' => 'Text recognition',
@@ -77,4 +78,8 @@ return [
     'drop' => 'Drop files here',
     'drop_hint' => 'They go into the inbox.',
     'drop_pick' => 'Choose files',
+    'complete_ok' => 'complete',
+    'complete_warning' => '{1} 1 receipt without amount, date or sender|[2,*] :count receipts without amount, date or sender',
+    'complete_error' => '{1} 1 booking without a receipt|[2,*] :count bookings without a receipt',
+    'complete_pill' => ['ok' => 'Complete', 'warning' => 'Details missing', 'error' => 'Receipts missing'],
 ];

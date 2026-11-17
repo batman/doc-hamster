@@ -35,8 +35,10 @@ final class InvoiceReader
     /**
      * @param  list<string>  $ownIbans  the organisation's own accounts – never the payee
      * @param  (Closure(string): ?array<string, mixed>)|null  $hints  A236: what a sender taught before
+     * @param  list<string>  $ownNames  A40: the organisation's own names – the recipient, never the sender
+     * @param  string  $currency  A42: the currency of the organisation's accounts, when the document names none for sure
      */
-    public function __construct(array $ownIbans = [], private readonly ?Closure $hints = null)
+    public function __construct(array $ownIbans = [], private readonly ?Closure $hints = null, private readonly array $ownNames = [], private readonly string $currency = 'EUR')
     {
         $this->ibans = new IbanReader($ownIbans);
     }
@@ -52,10 +54,10 @@ final class InvoiceReader
         if ($lines === []) {
             return new InvoiceReading;
         }
-        $currency = AmountReader::documentCurrency($lines);
+        $currency = AmountReader::documentCurrency($lines, $this->currency);
         $order = DateReader::slashOrder($lines);
         $invoiceDate = DateReader::invoiceDate($lines, $order);
-        $payee = SenderReader::read($lines);
+        $payee = SenderReader::read($lines, $this->ownNames);
         $name = $sender ?? $payee?->value;
         $hint = ($name !== null && $this->hints !== null) ? ($this->hints)($name) : null;
         $hint = is_array($hint) ? $hint : [];

@@ -7,6 +7,7 @@ namespace App\Domain\Assistant;
 use App\Domain\Audit\AuditLog;
 use App\Domain\Banking\Links;
 use App\Domain\Banking\Transaction;
+use App\Domain\Banking\TransactionMatch;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\Folder;
 use App\Domain\Optimize\OptimizeQueue;
@@ -64,9 +65,33 @@ final class ProposalRunner
 
                 return __('proposals.done.move', ['name' => (string) Folder::query()->whereKey($folder)->value('name')]);
             })(),
+            Proposal::UNLINK => (function () use ($p, $user, $meta, $ip): string {
+                $match = TransactionMatch::query()->where('transaction_id', $p['transaction_id'] ?? '')->where('document_id', $p['document_id'] ?? '')->first()
+                    ?? throw new RuntimeException(__('proposals.gone_link'));
+                $transaction = $match->transaction;
+                $this->links->unlink($match);
+                $this->audit->record('bank.unmatched', orgId: $this->org->id(), userId: $user, subject: $transaction, meta: $meta(['document' => $p['document_id'] ?? '']), ip: $ip);
+
+                return __('proposals.done.unlink');
+            })(),
+            Proposal::TITLE => (function () use ($p, $user, $meta, $ip): string {
+                $document = $this->document($p['document_id'] ?? '');
+                $title = mb_substr(trim((string) ($p['title'] ?? '')), 0, 255);
+                if ($title === '') {
+                    throw new RuntimeException(__('proposals.bad_value'));
+                }
+                $document->update(['title' => $title]);
+                $this->audit->record('document.changed', orgId: $this->org->id(), userId: $user, subject: $document, meta: $meta(['title' => $title]), ip: $ip);
+
+                return __('proposals.done.title', ['title' => $title]);
+            })(),
             Proposal::DUPLICATE, Proposal::DELETE => (function () use ($proposal, $p, $swap, $user, $meta, $ip): string {
                 $id = $proposal->kind === Proposal::DELETE ? ($p['document_id'] ?? '') : ($swap ? ($p['keep_id'] ?? '') : ($p['remove_id'] ?? ''));
                 $document = $this->document($id);
+                if ($proposal->kind === Proposal::DUPLICATE) {
+                    // A56: links, confirmed values, tags, note and folder go to the copy that stays.
+                    DuplicateMerge::into($this->document($swap ? ($p['remove_id'] ?? '') : ($p['keep_id'] ?? '')), $document);
+                }
                 $document->delete();
                 $this->audit->record('document.trashed', orgId: $this->org->id(), userId: $user, subject: $document, meta: $meta(), ip: $ip);
 
@@ -108,6 +133,13 @@ final class ProposalRunner
                 $document = $this->document($p['document_id'] ?? '');
                 $property = Property::query()->where('key', $p['property'] ?? '')->orWhere('name', $p['property'] ?? '')->first()
                     ?? throw new RuntimeException(__('proposals.gone_property'));
+                if (trim((string) ($p['value'] ?? '')) === '') {
+                    // A52: a value that does not belong there is taken away.
+                    $document->properties()->where('property_id', $property->id)->delete();
+                    $this->audit->record('document.changed', orgId: $this->org->id(), userId: $user, subject: $document, meta: $meta(['property' => $property->name, 'cleared' => true]), ip: $ip);
+
+                    return __('proposals.done.clear', ['name' => $property->name]);
+                }
                 try {
                     $value = $this->values->set($document, $property, (string) ($p['value'] ?? ''));
                 } catch (\Throwable) {

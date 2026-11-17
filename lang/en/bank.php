@@ -56,6 +56,7 @@ return [
         'sender' => 'sender',
         'standing' => 'standing document',
         'time' => 'time',
+        'split' => 'part payment',
     ],
     'why' => 'Matches: :reasons',
     'confirm' => 'Confirm',

@@ -47,6 +47,7 @@ final class AmountReader
             return [null, []];
         }
         $checked = self::check($positive);
+        $positive = self::repeated($positive);
         $pool = array_values(array_filter($positive, static fn (array $c): bool => in_array($c['kind'], ['total', 'gross', 'plain'], true)));
         if ($pool === []) {
             $pool = array_values(array_filter($positive, static fn (array $c): bool => $c['kind'] === 'net')) ?: $positive;
@@ -130,6 +131,14 @@ final class AmountReader
                     // Line items carry several amounts (quantity price, total); one amount low on the last page is likelier.
                     $w = count($found) > 1 ? 5 : 15 + ($line['y'] >= 0.5 && $line['page'] === $lastPage ? 10 : 0);
                     $keyword = self::label($line['text']);
+                    // A41: "100,00 19,00 119,00" – net, tax and the gross that adds up on one unlabelled line.
+                    if ($k === $last && $last >= 2 && abs($found[$last - 2]['minor'] + $found[$last - 1]['minor'] - $a['minor']) <= 1 && $found[$last - 1]['minor'] < $a['minor']) {
+                        [$kind, $w] = ['gross', 95];
+                    }
+                    // A41: a whole number without cents (an article number, a quantity) is rarely the total.
+                    if ($kind === 'plain' && $decimal !== null && preg_match('/[.,]\d{1,2}\s*$/', rtrim($a['raw'], ' €$£')) !== 1) {
+                        $w -= 20;
+                    }
                 }
                 if ($big && in_array($kind, ['plain', 'gross'], true)) {
                     $w += 25;
@@ -157,6 +166,30 @@ final class AmountReader
         }
 
         return $candidates;
+    }
+
+    /**
+     * A41: on a till receipt the total stands several times (Summe, paid by card, VAT analysis) – an amount on three or
+     * more lines gains over a lone larger one (an article number read as an amount).
+     *
+     * @param  list<Candidate>  $positive
+     * @return list<Candidate>
+     */
+    private static function repeated(array $positive): array
+    {
+        $lines = [];
+        foreach ($positive as $c) {
+            if (! in_array($c['kind'], ['net', 'tax', 'exclude'], true)) {
+                $lines[$c['minor']][$c['n']] = true;
+            }
+        }
+        foreach ($positive as $i => $c) {
+            if (count($lines[$c['minor']] ?? []) >= 3 && in_array($c['kind'], ['plain', 'gross', 'paid'], true)) {
+                $positive[$i]['weight'] += 40;
+            }
+        }
+
+        return $positive;
     }
 
     /**
@@ -269,17 +302,20 @@ final class AmountReader
     /**
      * @param  list<Line>  $lines
      */
-    public static function documentCurrency(array $lines): string
+    public static function documentCurrency(array $lines, string $default = 'EUR'): string
     {
         $count = [];
         foreach ($lines as $line) {
             $c = self::lineCurrency($line['text']);
             if ($c !== null) {
-                $count[$c] = ($count[$c] ?? 0) + 1;
+                // A written code ("USD") is meant; a lone sign may be a misread €.
+                $count[$c] = ($count[$c] ?? 0) + (preg_match('/(?<!\p{L})(?:eur|chf|gbp|usd)(?!\p{L})/iu', $line['text']) === 1 ? 2 : 1);
             }
         }
         arsort($count);
+        $first = $count === [] ? null : (string) array_key_first($count);
 
-        return $count === [] ? 'EUR' : (string) array_key_first($count);
+        // A42: one stray "$" or "£" (an OCR misread of €) does not make the document foreign – the account's currency does.
+        return $first !== null && ($count[$first] >= 2 || $first === $default) ? $first : $default;
     }
 }

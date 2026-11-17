@@ -8,15 +8,15 @@ return [
     'intro' => 'Your assistant changes nothing itself. Here are its proposals – only your click on “Take over” carries them out.',
     'none' => 'No open proposals.',
     'kinds' => [
-        'link' => 'Linking', 'move' => 'Tidying up', 'duplicate' => 'Duplicates', 'delete' => 'Deleting',
+        'unlink' => 'Unlinking', 'title' => 'Titles', 'link' => 'Linking', 'move' => 'Tidying up', 'duplicate' => 'Duplicates', 'delete' => 'Deleting',
         'straighten' => 'Straightening', 'shrink' => 'Shrinking', 'correct' => 'Corrections', 'setting' => 'Settings',
     ],
     'tile' => [
-        'link' => 'Document for a booking', 'move' => 'Move into a folder', 'duplicate' => 'Duplicate document', 'delete' => 'Into the bin',
+        'unlink' => 'Link does not fit', 'title' => 'Change the title', 'link' => 'Document for a booking', 'move' => 'Move into a folder', 'duplicate' => 'Duplicate document', 'delete' => 'Into the bin',
         'straighten' => 'Straighten and cut out', 'shrink' => 'Too large – shrink', 'correct' => 'Correct a value', 'setting' => 'Switch a setting on',
     ],
     'label' => [
-        'booking' => 'Booking', 'document' => 'Document', 'folder' => 'To', 'keep' => 'Stays', 'remove' => 'Bin',
+        'title' => 'New title', 'link' => 'Linked to', 'booking' => 'Booking', 'document' => 'Document', 'folder' => 'To', 'keep' => 'Stays', 'remove' => 'Bin',
         'trash' => 'Document', 'setting' => 'Switch on', 'angle' => 'Turn', 'cut' => 'cut out',
     ],
     'settings' => ['optimize_on' => 'Optimise document size – shrink large scans and photos automatically'],
@@ -33,6 +33,9 @@ return [
     'all_done' => '{0} Nothing taken over.|{1} :count proposal taken over.|[2,*] :count proposals taken over.',
     'all_failed' => '{1} :count no longer worked.|[2,*] :count no longer worked.',
     'done' => [
+        'unlink' => 'Link removed.',
+        'title' => 'Now called “:title”.',
+        'clear' => ':name is cleared.',
         'link' => 'Linked.',
         'move' => 'Moved to “:name”.',
         'trash' => '“:name” is in the :trash.',
@@ -52,4 +55,14 @@ return [
     'unknown' => 'Unknown proposal.',
     'photo_only' => 'Straightening works only for photographed receipts.',
     'unreadable' => 'The picture could not be processed.',
+    'gone_link' => 'This link no longer exists.',
+    'clear' => 'clear',
+    'sure' => 'Sure',
+    'unsure' => 'Unsure',
+    'accept_sure' => 'Take over all sure ones',
+    'own' => 'docHamster',
+    'found' => [
+        'same_file' => 'docHamster: the same file was uploaded twice.',
+        'same_invoice' => 'docHamster: same invoice number and amount – probably the same paper scanned twice. The better picture stays; links and values go with it.',
+    ],
 ];

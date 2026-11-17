@@ -22,11 +22,11 @@ return [
     ],
     'needs_read' => 'Zum Vorschlagen braucht der Assistent auch „Buchungen und Dokumente lesen“.',
     'rights_first' => 'Bitte zuerst mindestens ein Recht anhaken – erst dann lässt sich der Zugang öffnen.',
-    'no_picture' => 'Von dieser Seite gibt es kein Bild – ein PDF mit echtem Text oder eine Seite, die es nicht gibt.',
+    'no_picture' => 'Von dieser Seite gibt es kein Bild – ein PDF mit echtem Text (get_document liefert seinen Text) oder eine Seite, die es nicht gibt.',
     'not_allowed' => 'Das darf der Assistent nicht – der Inhaber hat es unter Einstellungen → Assistenten nicht angehakt.',
     'propose_unknown' => [
         'booking' => 'Diese Buchung gibt es nicht.', 'document' => 'Dieses Dokument gibt es nicht (oder nicht für diese Person).',
-        'folder' => 'Diesen Ordner gibt es nicht.', 'photo' => 'Geraderücken geht nur bei fotografierten Belegen (JPEG, PNG, WebP).', 'property' => 'Diese Eigenschaft gibt es nicht.', 'setting' => 'Diese Einstellung gibt es nicht.',
+        'folder' => 'Diesen Ordner gibt es nicht.', 'photo' => 'Geraderücken geht nur bei fotografierten Belegen (JPEG, PNG, WebP).', 'property' => 'Diese Eigenschaft gibt es nicht.', 'setting' => 'Diese Einstellung gibt es nicht.', 'link' => 'Dieses Dokument hängt nicht an dieser Buchung.', 'proposal' => 'Diesen offenen Vorschlag von Ihnen gibt es nicht.',
     ],
     'state_off' => 'Aus',
     'state_on' => 'An',

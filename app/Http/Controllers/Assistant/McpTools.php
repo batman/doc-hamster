@@ -8,10 +8,12 @@ use App\Domain\Assistant\AssistantAccess;
 use App\Domain\Assistant\Proposal;
 use App\Domain\Assistant\Straightener;
 use App\Domain\Banking\Transaction;
+use App\Domain\Banking\TransactionMatch;
 use App\Domain\Documents\DocumentFile;
 use App\Domain\Documents\Folder;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Properties\Property;
+use App\Http\Badges;
 use App\Http\Controllers\Api\BankApiController;
 use App\Http\Controllers\Api\DocumentApiController;
 use App\Http\Middleware\AuthenticateAccessKey;
@@ -41,7 +43,9 @@ final class McpTools
         $reason = ['type' => 'string', 'description' => 'Why – one or two sentences the person reads on the tile (e.g. "Amount 54.00 EUR, date and sender match").'];
         $none = ['type' => 'object', 'properties' => new \stdClass, 'additionalProperties' => false];
         $one = static fn (string $what): array => ['type' => 'object', 'properties' => ['id' => [...$id, 'description' => $what]], 'required' => ['id'], 'additionalProperties' => false];
-        $propose = static fn (array $fields): array => ['type' => 'object', 'properties' => [...$fields, 'reason' => $reason], 'required' => [...array_keys($fields), 'reason'], 'additionalProperties' => false];
+        // A51: how sure the assistant is – the person takes over all sure ones in one go and looks at the others.
+        $sure = ['type' => 'boolean', 'description' => 'true = you are sure (amount, date and counterparty fit clearly); false = a guess the person should look at.'];
+        $propose = static fn (array $fields): array => ['type' => 'object', 'properties' => [...$fields, 'reason' => $reason, 'sure' => $sure], 'required' => [...array_keys($fields), 'reason'], 'additionalProperties' => false];
         $read = AssistantAccess::READ;
 
         return [
@@ -67,9 +71,11 @@ final class McpTools
                 'document_id' => [...$id, 'description' => 'The document.'], 'page' => ['type' => 'integer', 'minimum' => 1, 'description' => 'Page number, 1 = first (default).'],
             ], 'required' => ['document_id'], 'additionalProperties' => false], AssistantAccess::IMAGES],
             'list_proposals' => ['Your open proposals', 'The proposals still waiting for the person, so nothing is proposed twice.', $none, $read],
+            'withdraw_proposal' => ['Withdraw a proposal', 'Takes back one of your own proposals that is still waiting (a mistake, or a better one replaces it).', $one('The proposal.'), $read],
             'propose_link' => ['Propose a link', 'Proposes that this document belongs to this booking. The person takes it over or not.', $propose(['transaction_id' => [...$id, 'description' => 'The booking.'], 'document_id' => [...$id, 'description' => 'The document.']]), AssistantAccess::PROPOSE_LINK],
+            'propose_unlink' => ['Propose unlinking', 'Proposes removing the link between this document and this booking because it does not fit (the document stays).', $propose(['transaction_id' => [...$id, 'description' => 'The booking.'], 'document_id' => [...$id, 'description' => 'The document.']]), AssistantAccess::PROPOSE_LINK],
             'propose_move' => ['Propose a folder', 'Proposes moving the document into this folder (tidying up).', $propose(['document_id' => [...$id, 'description' => 'The document.'], 'folder_id' => [...$id, 'description' => 'The target folder.']]), AssistantAccess::PROPOSE_MOVE],
-            'propose_duplicate' => ['Propose a duplicate', 'Proposes that remove_id is a duplicate of keep_id: taken over, remove_id goes into the Papierkorb (the person may swap which one stays).', $propose(['keep_id' => [...$id, 'description' => 'The document that stays.'], 'remove_id' => [...$id, 'description' => 'The duplicate.']]), AssistantAccess::PROPOSE_CLEANUP],
+            'propose_duplicate' => ['Propose a duplicate', 'Proposes that remove_id is a duplicate of keep_id (the same paper, also scanned or photographed twice): taken over, the links, confirmed values, tags, note and folder of remove_id go to keep_id, then remove_id goes into the Papierkorb. Keep the better picture (sharper, straight, complete). The person may swap which one stays.', $propose(['keep_id' => [...$id, 'description' => 'The document that stays.'], 'remove_id' => [...$id, 'description' => 'The duplicate.']]), AssistantAccess::PROPOSE_CLEANUP],
             'propose_delete' => ['Propose deleting', 'Proposes moving the document into the Papierkorb (never deleted for good).', $propose(['document_id' => [...$id, 'description' => 'The document.']]), AssistantAccess::PROPOSE_CLEANUP],
             'propose_shrink' => ['Propose shrinking', 'Proposes shrinking this too large scan or photo (also when the automatic shrinking is off).', $propose(['document_id' => [...$id, 'description' => 'The document.']]), AssistantAccess::PROPOSE_SHRINK],
             'propose_straighten' => ['Propose straightening', 'Proposes straightening and cutting out a photographed receipt (photos only). Measure on the page picture: angle = how many degrees the receipt is turned clockwise (negative = counter-clockwise), -45 to 45; cx, cy = the receipt\'s centre and w, h = its width and height along the receipt itself, all as parts (0–1) of the picture\'s width and height. Leave cx, cy, w, h out to only straighten. The person sees before and after and decides; the original is kept.', ['type' => 'object', 'properties' => [
@@ -84,6 +90,14 @@ final class McpTools
                 'property' => ['type' => 'string', 'description' => 'The property key (invoice_amount, invoice_date, due_date, sender, iban, invoice_number) or its name.'],
                 'value' => ['type' => 'string', 'description' => 'The correct value as written on the document.'],
             ]), AssistantAccess::PROPOSE_CORRECT],
+            'propose_clear' => ['Propose clearing a value', 'Proposes removing a property value that does not belong there (e.g. a VAT number in the IBAN field, an amount that is not on the document).', $propose([
+                'document_id' => [...$id, 'description' => 'The document.'],
+                'property' => ['type' => 'string', 'description' => 'The property key (invoice_amount, invoice_date, due_date, sender, iban, invoice_number) or its name.'],
+            ]), AssistantAccess::PROPOSE_CORRECT],
+            'propose_title' => ['Propose a title', 'Proposes a clearer title for the document (sender, what it is, the date) – also when the title names a wrong category.', $propose([
+                'document_id' => [...$id, 'description' => 'The document.'],
+                'title' => ['type' => 'string', 'description' => 'The new title (at most 255 characters).'],
+            ]), AssistantAccess::PROPOSE_CORRECT],
             'propose_setting' => ['Propose a setting', 'Proposes switching a setting on: optimize_on = "Dokumentgröße optimieren" shrinks every too large scan automatically.', $propose(['setting' => ['type' => 'string', 'enum' => Proposal::SETTINGS]]), AssistantAccess::PROPOSE_SETTINGS],
         ];
     }
@@ -96,7 +110,7 @@ final class McpTools
         foreach (self::definitions() as $name => [$title, $description, $schema, $right]) {
             if (in_array($right, $rights, true) && ($right === AssistantAccess::READ || in_array(AssistantAccess::READ, $rights, true))) {
                 $tools[] = ['name' => $name, 'title' => $title, 'description' => $description, 'inputSchema' => $schema,
-                    'annotations' => ['readOnlyHint' => $right === AssistantAccess::READ, 'destructiveHint' => false, 'idempotentHint' => true, 'openWorldHint' => false]];
+                    'annotations' => ['readOnlyHint' => $right === AssistantAccess::READ && $name !== 'withdraw_proposal', 'destructiveHint' => false, 'idempotentHint' => true, 'openWorldHint' => false]];
             }
         }
 
@@ -119,7 +133,12 @@ final class McpTools
         if (! in_array($definition[3], $rights, true) || ! in_array(AssistantAccess::READ, $rights, true)) {
             return [true, (string) __('assistant.not_allowed')];
         }
-        $text = static fn (string $key): string => is_string($args[$key] ?? null) ? trim($args[$key]) : (is_int($args[$key] ?? null) || is_float($args[$key] ?? null) ? (string) $args[$key] : '');
+        $text = static fn (string $key): string => match (true) {
+            is_string($args[$key] ?? null) => trim($args[$key]),
+            is_int($args[$key] ?? null), is_float($args[$key] ?? null) => (string) $args[$key],
+            is_bool($args[$key] ?? null) => $args[$key] ? 'true' : 'false',
+            default => '',
+        };
         foreach ($definition[2]['required'] ?? [] as $required) {
             if ($text($required) === '') {
                 return [true, 'Missing: '.$required];
@@ -136,7 +155,8 @@ final class McpTools
                 'note' => 'You change nothing yourself: every change is a proposal the person takes over or not.'])],
             'get_page_image' => self::look($text('document_id'), max(1, (int) ($args['page'] ?? 1)), $org),
             'list_proposals' => [false, self::json(['data' => Proposal::query()->where('status', Proposal::OPEN)->latest()->limit(500)->get()
-                ->map(static fn (Proposal $p): array => ['id' => $p->id, 'kind' => $p->kind, 'payload' => $p->payload, 'reason' => $p->reason])->all()])],
+                ->map(static fn (Proposal $p): array => ['id' => $p->id, 'kind' => $p->kind, 'payload' => $p->payload, 'reason' => $p->reason, 'sure' => $p->sure, 'from' => $p->assistant])->all()])],
+            'withdraw_proposal' => self::withdraw($text('id'), $outer),
             default => self::read($name, $args, $text, $outer),
         };
     }
@@ -198,6 +218,11 @@ final class McpTools
             'propose_straighten' => [Proposal::STRAIGHTEN, array_filter(['document_id' => $text('document_id'), 'angle' => self::number($text('angle'), -45, 45),
                 'cx' => self::number($text('cx'), 0, 1), 'cy' => self::number($text('cy'), 0, 1), 'w' => self::number($text('w'), 0.05, 1.5), 'h' => self::number($text('h'), 0.05, 1.5)], static fn (string $v): bool => $v !== ''),
                 ! $document('document_id') ? 'document' : (! self::hasPhoto($text('document_id')) ? 'photo' : null)],
+            'propose_unlink' => [Proposal::UNLINK, ['transaction_id' => $text('transaction_id'), 'document_id' => $text('document_id')],
+                ! $document('document_id') ? 'document' : (! TransactionMatch::query()->where('transaction_id', $text('transaction_id'))->where('document_id', $text('document_id'))->exists() ? 'link' : null)],
+            'propose_clear' => [Proposal::CORRECT, ['document_id' => $text('document_id'), 'property' => $text('property'), 'value' => ''],
+                ! $document('document_id') ? 'document' : (! Property::query()->where('key', $text('property'))->orWhere('name', $text('property'))->exists() ? 'property' : null)],
+            'propose_title' => [Proposal::TITLE, ['document_id' => $text('document_id'), 'title' => mb_substr($text('title'), 0, 255)], ! $document('document_id') ? 'document' : null],
             'propose_correction' => [Proposal::CORRECT, ['document_id' => $text('document_id'), 'property' => $text('property'), 'value' => $text('value')],
                 ! $document('document_id') ? 'document' : (! Property::query()->where('key', $text('property'))->orWhere('name', $text('property'))->exists() ? 'property' : null)],
             default => [Proposal::SETTING, ['setting' => $text('setting')], ! in_array($text('setting'), Proposal::SETTINGS, true) ? 'setting' : null],
@@ -206,10 +231,34 @@ final class McpTools
             return [true, (string) __('assistant.propose_unknown.'.$problem)];
         }
         $key = request()->attributes->get(AuthenticateAccessKey::ATTRIBUTE);
-        [$proposal, $new] = Proposal::file($kind, $payload, $text('reason'), $key?->name);
+        $sure = match ($text('sure')) {
+            '1', 'true' => true,
+            '0', 'false' => false,
+            default => null,
+        };
+        [$proposal, $new] = Proposal::file($kind, $payload, $text('reason'), $key?->name, $sure);
 
+        // A53: a repeated call (after a timeout) is no error – the proposal is there.
         return [false, self::json(['proposal_id' => $proposal->id, 'new' => $new,
-            'message' => $new ? 'Filed – the person decides under Vorschläge.' : 'The same proposal is already waiting.'])];
+            'message' => $new ? 'Filed – the person decides under Vorschläge.' : 'Already filed – it is waiting under Vorschläge, nothing more to do.'])];
+    }
+
+    /**
+     * A52: an assistant takes back one of its own open proposals.
+     *
+     * @return array{bool, string}
+     */
+    private static function withdraw(string $id, Request $outer): array
+    {
+        $key = $outer->attributes->get(AuthenticateAccessKey::ATTRIBUTE);
+        $proposal = Proposal::query()->where('status', Proposal::OPEN)->whereKey($id)->first();
+        if ($proposal === null || $proposal->assistant === null || $proposal->assistant !== $key?->name) {
+            return [true, (string) __('assistant.propose_unknown.proposal')];
+        }
+        $proposal->update(['status' => Proposal::WITHDRAWN, 'decided_at' => now()]);
+        Badges::forget();
+
+        return [false, self::json(['proposal_id' => $proposal->id, 'message' => 'Withdrawn.'])];
     }
 
     /** @param  array<mixed>  $data */

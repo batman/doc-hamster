@@ -23,10 +23,13 @@ final class McpController
     private const INSTRUCTIONS = 'docHamster collects receipts and links them to bank bookings. You change nothing yourself: '
         .'every change is a proposal (propose_*) that the person takes over or not under "Vorschläge" – give each a short, '
         .'concrete reason. Linking: list_transactions with status "open", get_transaction for its candidates, get_document when '
-        .'unsure, then propose_link only when amount, date and counterparty clearly fit. Also tidy up where your rights allow: '
-        .'propose_move, propose_duplicate, propose_delete (Papierkorb only), propose_shrink for too large scans, '
-        .'propose_correction for values the text recognition read wrong, propose_setting. Check list_proposals first so '
-        .'nothing is proposed twice. whoami shows which rights the owner ticked.';
+        .'unsure, then propose_link. Never ask the person in the chat about documents: file also unsure findings as '
+        .'proposals with sure = false and the doubt in the reason; sure = true only when amount, date and counterparty '
+        .'clearly fit. Also tidy up where your rights allow: propose_unlink for a link that does not fit, propose_move, '
+        .'propose_duplicate (keep the better picture – links and values move to it), propose_delete (Papierkorb only), '
+        .'propose_shrink, propose_correction / propose_clear for values the text recognition read wrong, propose_title, '
+        .'propose_setting. Check list_proposals first; a repeated call files nothing twice; withdraw_proposal takes back '
+        .'your own mistake. whoami shows which rights the owner ticked.';
 
     public function handle(Request $request, CurrentOrg $org): JsonResponse|Response
     {
