@@ -38,11 +38,13 @@ final class ModuleController
             return $this->back(error: __('modules.not_found', ['address' => $repo]).' '.$e->getMessage());
         }
 
-        return $this->back(found: $found);
+        $request->session()->put('modules.found', $found);
+
+        return $this->back();
     }
 
     /** "Partner-Module anzeigen" (F20): the modules of the public partner list. */
-    public function partners(ModuleSource $source): RedirectResponse
+    public function partners(Request $request, ModuleSource $source): RedirectResponse
     {
         try {
             $found = array_map(static fn (array $f): array => ['source' => $f['source'], 'manifest' => $f['manifest']->toArray()], $source->partners());
@@ -50,7 +52,12 @@ final class ModuleController
             return $this->back(error: $e->getMessage());
         }
 
-        return $found === [] ? $this->back(status: __('modules.no_partners')) : $this->back(found: $found);
+        if ($found === []) {
+            return $this->back(status: __('modules.no_partners'));
+        }
+        $request->session()->put('modules.found', $found);
+
+        return $this->back();
     }
 
     public function install(Request $request, AuditLog $audit, CurrentOrg $org): RedirectResponse
@@ -109,13 +116,9 @@ final class ModuleController
         return $this->back(status: __('modules.installed', ['name' => $manifest->name, 'version' => $manifest->version]));
     }
 
-    /** @param list<array{source: string, manifest: array<string, mixed>}>|null $found */
-    private function back(?string $status = null, ?string $error = null, ?array $found = null): RedirectResponse
+    private function back(?string $status = null, ?string $error = null): RedirectResponse
     {
         $to = redirect()->to(route('updates.show').'#modules');
-        if ($found !== null) {
-            session()->put('modules.found', $found);
-        }
 
         return $status !== null ? $to->with('status', $status) : ($error !== null ? $to->with('error', $error) : $to);
     }
