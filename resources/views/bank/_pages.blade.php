@@ -1,10 +1,2 @@
-@if ($pages->hasPages())
-    <nav class="pager" aria-label="{{ __('bank.pages') }}">
-        @if (! $pages->onFirstPage())
-            <a href="{{ $pages->previousPageUrl() }}">{{ __('bank.previous') }}</a>
-        @endif
-        @if ($pages->hasMorePages())
-            <a href="{{ $pages->nextPageUrl() }}">{{ __('bank.next') }}</a>
-        @endif
-    </nav>
-@endif
+{{-- Kept for its users: the framework pager (components/pager.blade.php). --}}
+<x-pager :pages="$pages" />

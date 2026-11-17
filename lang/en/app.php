@@ -12,6 +12,7 @@ return [
         'expand' => 'Widen menu',
     ],
     'more' => 'More',
+    'pager' => ['label' => 'Pages', 'previous' => 'Previous page', 'next' => 'Next page', 'page_of' => 'Page :page of :last', 'page' => 'Page :page'],
     // Foldable card (point 125): the chevron in the card head.
     'card_fold' => 'Collapse',
     'card_unfold' => 'Expand',

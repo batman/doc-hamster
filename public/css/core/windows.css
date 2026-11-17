@@ -306,3 +306,4 @@ input.win-title-field {
 }
 @keyframes win-loading { 0% { transform: translateX(0) scaleX(0); } 50% { transform: translateX(20%) scaleX(.5); } 100% { transform: translateX(100%) scaleX(.1); } }
 @media (prefers-reduced-motion: reduce) { .windows.is-loading::before { animation: none; opacity: .6; } }
+.win-tools .win-actions > form { display: contents; } /* A62: a toolbar button that posts (✓ / bin of a proposal) takes no room of its own. */

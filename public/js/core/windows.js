@@ -743,6 +743,7 @@
                 DocHamster.emit('window:open', win);
                 reveal(win);
                 refreshed(win);
+                return win;
             });
         }).catch(error => console.error('DocHamster window:', error));
 
@@ -900,7 +901,9 @@
                 const link = event.target.closest('a[data-window]');
                 if (link && !event.ctrlKey && !event.metaKey && !event.shiftKey && event.button === 0) {
                     event.preventDefault();
-                    open(link.href, win, link);
+                    // A62 "Nebeneinander": data-window-also opens a second window right of the first, in one click.
+                    const also = link.dataset.windowAlso;
+                    open(link.href, win, link).then(first => (first && also ? open(new URL(also, location.href).href, first) : null));
                 }
             }
         });

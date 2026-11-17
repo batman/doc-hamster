@@ -5,6 +5,7 @@ declare(strict_types=1);
 // D-040: Einstellungen → Assistenten, the consent page and the way back to the assistant.
 return [
     'title' => 'Assistenten',
+    'proposals_open' => '{0} Keine offenen Vorschläge.|{1} 1 offener Vorschlag wartet auf Ihre Entscheidung.|[2,*] :count offene Vorschläge warten auf Ihre Entscheidung.',
     'intro' => 'Ein KI-Assistent wie Claude kann beim Einrichten helfen, zum Beispiel Dokumente mit Buchungen verknüpfen. docHamster selbst nutzt keine KI; hier öffnen Sie nur die Tür dafür.',
     'door' => 'Zugang für Assistenten',
     'state' => 'Zugang',

@@ -5,6 +5,7 @@ declare(strict_types=1);
 // D-040: Settings → Assistants, the consent page and the way back to the assistant.
 return [
     'title' => 'Assistants',
+    'proposals_open' => '{0} No open proposals.|{1} 1 open proposal waits for your decision.|[2,*] :count open proposals wait for your decision.',
     'intro' => 'An AI assistant such as Claude can help with the setup, e.g. link documents to bookings. docHamster itself uses no AI; here you only open the door for it.',
     'door' => 'Access for assistants',
     'state' => 'Access',

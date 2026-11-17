@@ -5,8 +5,18 @@ declare(strict_types=1);
 // D-040: Vorschläge – the assistant's proposals (Empfehlungskacheln).
 return [
     'title' => 'Vorschläge',
-    'intro' => 'Ihr Assistent ändert nichts selbst. Hier stehen seine Vorschläge – erst Ihr Klick auf „Übernehmen“ führt sie aus.',
+    'intro' => 'Ihr Assistent ändert nichts selbst. Hier stehen seine Vorschläge – erst Ihr Klick auf den Haken führt sie aus.',
     'none' => 'Keine offenen Vorschläge.',
+    'none_found' => 'Kein offener Vorschlag passt zu diesem Filter.',
+    'open' => 'Vorschläge ansehen',
+    'search' => 'Vorschläge durchsuchen',
+    'filter_kind' => 'Art',
+    'filter_sure' => 'Sicherheit',
+    'all' => 'Alle',
+    'side_by_side' => 'Nebeneinander ansehen',
+    'accept_n' => '{1} 1 übernehmen|[2,*] Alle :count übernehmen',
+    'accept_sure_n' => '{1} 1 sicheren übernehmen|[2,*] :count sichere übernehmen',
+    'in_window' => 'Vorschlag des Assistenten',
     'kinds' => [
         'unlink' => 'Verknüpfung lösen', 'title' => 'Titel', 'link' => 'Verknüpfen', 'move' => 'Aufräumen', 'duplicate' => 'Duplikate', 'delete' => 'Löschen',
         'straighten' => 'Geraderücken', 'shrink' => 'Verkleinern', 'correct' => 'Korrekturen', 'setting' => 'Einstellungen',
@@ -17,7 +27,7 @@ return [
     ],
     'label' => [
         'title' => 'Neuer Titel', 'link' => 'Verknüpft mit', 'booking' => 'Buchung', 'document' => 'Dokument', 'folder' => 'Nach', 'keep' => 'Bleibt', 'remove' => 'Papierkorb',
-        'trash' => 'Dokument', 'setting' => 'Einschalten', 'angle' => 'Drehen', 'cut' => 'zuschneiden',
+        'trash' => 'Dokument', 'setting' => 'Einschalten', 'size' => 'Größe', 'angle' => 'Drehen', 'cut' => 'zuschneiden',
     ],
     'settings' => ['optimize_on' => 'Dokumentgröße optimieren – große Scans und Fotos automatisch verkleinern'],
     'from' => 'Von :name, :date',

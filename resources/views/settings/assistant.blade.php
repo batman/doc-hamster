@@ -12,6 +12,16 @@
     @endif
     <p class="muted">{{ __('assistant.intro') }}</p>
 
+    {{-- Points 1, 2, A60: the assistants' proposals open from here as a window on the right; the red count leads here. --}}
+    @php $proposalCount = \App\Http\Badges::counts(app(\App\Domain\Org\CurrentOrg::class))[\App\Http\Badges::PROPOSALS] ?? 0; @endphp
+    <section class="card">
+        <h2 class="card-head"><x-icon name="checks" />{{ __('proposals.title') }}</h2>
+        <p class="card-text">{{ trans_choice('assistant.proposals_open', $proposalCount, ['count' => $proposalCount]) }}</p>
+        <div class="actions">
+            <a class="button" href="{{ route('proposals.index') }}" data-window><x-icon name="checks" />{{ __('proposals.open') }} <span class="badge badge-alert" data-badge="{{ \App\Http\Badges::PROPOSALS }}" @if ($proposalCount === 0) hidden @endif>{{ $proposalCount > 99 ? '99+' : $proposalCount }}</span></a>
+        </div>
+    </section>
+
     <section class="card">
         <h2 class="card-head"><x-icon name="plug" />{{ __('assistant.door') }}</h2>
         <form method="post" action="{{ route('assistant.save') }}" data-autosave>

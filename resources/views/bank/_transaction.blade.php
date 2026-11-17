@@ -12,7 +12,8 @@
 @endphp
 <x-window :title="$transaction->formattedAmount().' · '.($transaction->counterparty ?? __('bank.transaction'))" icon="receipt" kind="bank-transaction" fit="medium" content="booking"
           min="28rem" optimal="38rem" max="56rem" priority="2"
-          :url="route('bank.show', $transaction->id)" :close="route('bank.account', $transaction->bank_account_id)">
+          :url="route('bank.show', [$transaction->id, ...request()->only('proposal')])" :close="route('bank.account', $transaction->bank_account_id)">
+    <x-slot:actions>@include('assistant._proposal-head')</x-slot:actions>
     @if (session('status'))
         <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>
     @endif

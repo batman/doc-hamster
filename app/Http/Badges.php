@@ -112,7 +112,8 @@ final class Badges
         if (Gate::allows(Permission::Export->value)) {
             $counts[self::PACKS] = ReceiptPack::waiting($org->id(), $org->membership()->user_id);
         }
-        $counts[self::SETTINGS_ALL] = ($counts[self::LOG] ?? 0) + ($counts[self::BACKUP] ?? 0) + ($counts[self::PACKS] ?? 0);
+        // Points 1, A60: the open proposals count under Einstellungen → Assistenten → "Vorschläge ansehen".
+        $counts[self::SETTINGS_ALL] = ($counts[self::LOG] ?? 0) + ($counts[self::BACKUP] ?? 0) + ($counts[self::PACKS] ?? 0) + ($counts[self::PROPOSALS] ?? 0);
 
         return $counts;
     }
@@ -127,7 +128,7 @@ final class Badges
     public const SETTINGS_ALL = 'settings';
 
     /** Point 3: the badge of a settings group or entry, so the count leads down to its place (key => area). */
-    public const array SETTINGS = ['log' => self::LOG, 'backup' => self::BACKUP, 'export' => self::PACKS, 'packs' => self::PACKS];
+    public const array SETTINGS = ['log' => self::LOG, 'backup' => self::BACKUP, 'export' => self::PACKS, 'packs' => self::PACKS, 'assistant' => self::PROPOSALS];
 
     /** The badge key (and seen area) of one Posteingang source, e.g. "inbox-printer". */
     public static function inbox(string $source): string

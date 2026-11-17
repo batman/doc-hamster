@@ -30,6 +30,31 @@
             return next;
         });
 
+    // Filter and page links in a window (points 3, 4: Vorschläge, the pager): <a href data-window-reload="kind"> takes the
+    // named query fields (space-separated) from its href onto the window's current address – so a search or another
+    // filter stays – and reloads only that window (.win-frame: toolbar and body). A filter link starts on page 1.
+    // Without JavaScript, or outside a window, it is a plain link.
+    document.addEventListener('click', event => {
+        const link = event.target.closest?.('a[data-window-reload]');
+        const win = link?.closest('section[data-window]');
+        if (!link || !win || event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) {
+            return;
+        }
+        event.preventDefault();
+        const url = new URL(win.dataset.windowUrl ?? location.href, location.href);
+        const from = new URL(link.href, location.href);
+        const names = link.dataset.windowReload.split(' ').filter(Boolean);
+        if (!names.includes('page')) {
+            url.searchParams.delete('page');
+        }
+        names.forEach(name => {
+            url.searchParams.delete(name);
+            from.searchParams.getAll(name).forEach(value => url.searchParams.append(name, value));
+        });
+        DocHamster.reloadWindow(win, url, '.win-frame').then(() => win.querySelector('.win-body')?.scrollTo?.({ top: 0 }))
+            .catch(() => { location.href = link.href; });
+    });
+
     // Points 102-106: Enter, the magnifier or the panel's "Suchen" search (typing only with data-search-live); the
     // fields of the search panel (data-search-params names them) go along with q; X closes the search (drops them all).
     const setupWindowSearch = () => {

@@ -26,11 +26,12 @@
 <x-window :title="$document->title" icon="file-text" kind="detail" :url="route('documents.show', [$document->id, ...request()->query()])" fit="medium" content="detail" :close="$close" class="win-detail" :drag-doc="$document->id" :drag-file="$document->dragFile()"
     :rename-url="$canEdit ? route('documents.field', $document->id) : null" rename-field="value" :rename-data="['field' => 'title']">
     {{-- Only "Herunterladen" stays a button of its own; everything else is in the ⋯ menu (point 26). --}}
-    @if ($file)
-        <x-slot:actions>
+    <x-slot:actions>
+        @include('assistant._proposal-head')
+        @if ($file)
             <a class="icon-button" href="{{ route('documents.download', $file->id) }}" aria-label="{{ __('documents.download') }}" data-tooltip="{{ __('documents.download') }}"><x-icon name="download" /></a>
-        </x-slot:actions>
-    @endif
+        @endif
+    </x-slot:actions>
     {{-- Everything else is in the module's ⋯ menu (point 26). --}}
     <x-slot:menu>
         @if ($isText)

@@ -7,52 +7,63 @@ namespace App\Http\Controllers\Assistant;
 use App\Domain\Assistant\Proposal;
 use App\Domain\Assistant\ProposalRunner;
 use App\Domain\Assistant\Straightener;
-use App\Domain\Banking\Transaction;
 use App\Domain\Documents\Document;
-use App\Domain\Documents\Folder;
 use App\Domain\Org\CurrentOrg;
-use App\Domain\Properties\Property;
 use App\Domain\Properties\PropertyValues;
 use App\Http\Badges;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use RuntimeException;
 
 /**
- * Vorschläge (D-040): the assistant's proposals as Empfehlungskacheln, grouped by kind – each with its reason, what it
- * names (links open the document or booking), Übernehmen / Ablehnen, a duplicate also "Das andere behalten", and
- * "Alle übernehmen" per kind – A51 "Alle sicheren übernehmen" takes only those the assistant marked sure. Taking over
- * runs as the owner (ProposalRunner); nothing happens before.
+ * Vorschläge (D-040): the assistant's proposals as Empfehlungskacheln – since points 1–7 a window opened from
+ * Einstellungen → Assistenten ("Vorschläge ansehen"), one list filtered by kind, sure/unsure and a search (A57, A58),
+ * ten per page. Each tile names its documents and bookings as Objektkacheln, ✓ takes over, the bin rejects; a duplicate
+ * also "Das andere behalten". "N übernehmen" / "N sichere übernehmen" take everything the filter shows (A59). Taking
+ * over runs as the owner (ProposalRunner); nothing happens before. With JavaScript every action answers JSON and only
+ * this window reloads, page and filter stay (A61).
  */
 final class ProposalController
 {
-    private const ICONS = [
+    public const PER_PAGE = 10;
+
+    public const ICONS = [
         Proposal::LINK => 'link', Proposal::UNLINK => 'unlink', Proposal::TITLE => 'pencil', Proposal::MOVE => 'folder', Proposal::DUPLICATE => 'copy', Proposal::DELETE => 'trash',
         Proposal::SHRINK => 'arrows-minimize', Proposal::STRAIGHTEN => 'crop', Proposal::CORRECT => 'pencil', Proposal::SETTING => 'settings',
     ];
 
-    public function index(PropertyValues $values): View
+    public function index(Request $request, PropertyValues $values): View
     {
-        $open = Proposal::query()->where('status', Proposal::OPEN)->oldest()->get();
-        $groups = [];
+        $filter = $this->filter($request);
+        $all = Proposal::query()->where('status', Proposal::OPEN)->oldest()->get();
+        $kinds = [];
         foreach (Proposal::KINDS as $kind) {
-            $mine = $open->where('kind', $kind)->values();
-            if ($mine->isNotEmpty()) {
-                $groups[$kind] = ['icon' => self::ICONS[$kind], 'tiles' => $mine->map(fn (Proposal $p): array => ['proposal' => $p, 'lines' => $this->lines($p, $values)])->all()];
+            $count = $all->where('kind', $kind)->count();
+            if ($count > 0) {
+                $kinds[$kind] = $count;
             }
         }
+        [$matching, $tiles] = $this->matching($filter, $values, $all);
+        $last = max(1, (int) ceil($matching->count() / self::PER_PAGE));
+        $page = max(1, min((int) $request->query('page', '1'), $last));
+        $pages = new LengthAwarePaginator($matching->forPage($page, self::PER_PAGE)->values(), $matching->count(), self::PER_PAGE, $page,
+            ['path' => route('proposals.index'), 'query' => array_filter($filter, static fn (string $v): bool => $v !== '')]);
 
-        return view('assistant.proposals', ['groups' => $groups, 'count' => $open->count()]);
+        return view('assistant.proposals', ['pages' => $pages, 'tiles' => $tiles, 'kinds' => $kinds, 'filter' => $filter, 'total' => $all->count(),
+            'sure' => $matching->filter(static fn (Proposal $p): bool => $p->sure === true)->count()]);
     }
 
-    public function accept(Request $request, string $id, ProposalRunner $runner): RedirectResponse
+    public function accept(Request $request, string $id, ProposalRunner $runner): RedirectResponse|JsonResponse
     {
         $proposal = Proposal::query()->where('status', Proposal::OPEN)->whereKey($id)->firstOrFail();
         $message = $this->run($proposal, $runner, $request->boolean('swap'), $request->ip());
 
-        return redirect()->route('proposals.index')->with($proposal->status === 'failed' ? 'status_error' : 'status', $message);
+        return $this->answer($request, $message, $proposal->status === 'failed');
     }
 
     /** Vorher / Nachher of a straighten proposal: the photo as it is, and as it would become (small JPEGs). */
@@ -76,28 +87,33 @@ final class ProposalController
         return response($jpeg, 200, ['Content-Type' => 'image/jpeg', 'Cache-Control' => 'private, max-age=600']);
     }
 
-    public function reject(Request $request, string $id, CurrentOrg $org): RedirectResponse
+    public function reject(Request $request, string $id, CurrentOrg $org): RedirectResponse|JsonResponse
     {
         $proposal = Proposal::query()->where('status', Proposal::OPEN)->whereKey($id)->firstOrFail();
         $proposal->update(['status' => 'rejected', 'decided_by' => $org->membership()->user_id, 'decided_at' => now()]);
         Badges::forget();
 
-        return redirect()->route('proposals.index')->with('status', __('proposals.rejected'));
+        return $this->answer($request, __('proposals.rejected'));
     }
 
-    /** "Alle übernehmen" for one kind: each like a single click; what fails stays visible with its reason in the toast. */
-    public function acceptAll(Request $request, ProposalRunner $runner): RedirectResponse
+    /**
+     * A59: "N übernehmen" takes everything the current filter shows (all pages), "N sichere übernehmen" only those the
+     * assistant marked sure – each like a single click; what fails stays visible with its reason in the toast.
+     */
+    public function acceptAll(Request $request, ProposalRunner $runner, PropertyValues $values): RedirectResponse|JsonResponse
     {
-        $data = $request->validate(['kind' => ['required', 'in:'.implode(',', Proposal::KINDS)], 'sure' => ['nullable', 'boolean']]);
+        $filter = $this->filter($request);
+        if ($request->boolean('only_sure')) {
+            $filter['sure'] = 'sure';
+        }
         $done = $failed = 0;
-        $open = Proposal::query()->where('status', Proposal::OPEN)->where('kind', $data['kind'])->when($request->boolean('sure'), static fn ($q) => $q->where('sure', true));
-        foreach ($open->oldest()->get() as $proposal) {
+        foreach ($this->matching($filter, $values)[0] as $proposal) {
             $this->run($proposal, $runner, false, $request->ip());
             $proposal->status === 'accepted' ? $done++ : $failed++;
         }
 
-        return redirect()->route('proposals.index')->with('status', trans_choice('proposals.all_done', $done, ['count' => $done])
-            .($failed > 0 ? ' '.trans_choice('proposals.all_failed', $failed, ['count' => $failed]) : ''));
+        return $this->answer($request, trans_choice('proposals.all_done', $done, ['count' => $done])
+            .($failed > 0 ? ' '.trans_choice('proposals.all_failed', $failed, ['count' => $failed]) : ''), $done === 0 && $failed > 0);
     }
 
     private function run(Proposal $proposal, ProposalRunner $runner, bool $swap, ?string $ip): string
@@ -115,60 +131,62 @@ final class ProposalController
     }
 
     /**
-     * What the tile shows: one line per thing it names, with a link where there is one.
+     * The filter of the list (A57): kind, sure|unsure and the search text; unknown values count as "Alle".
      *
-     * @return list<array{label: string, text: string, url: ?string}>
+     * @return array{kind: string, sure: string, q: string}
      */
-    private function lines(Proposal $p, PropertyValues $values): array
+    private function filter(Request $request): array
     {
-        $d = $p->payload;
-        $doc = static function (string $label, ?string $id): array {
-            $document = $id === null ? null : Document::query()->find($id);
+        $kind = (string) $request->input('kind', '');
+        $sure = (string) $request->input('sure', '');
 
-            return ['label' => $label, 'text' => $document === null ? __('proposals.gone') : $document->title, 'url' => $document === null ? null : route('documents.show', $document->id)];
-        };
+        return ['kind' => in_array($kind, Proposal::KINDS, true) ? $kind : '', 'sure' => in_array($sure, ['sure', 'unsure'], true) ? $sure : '',
+            'q' => mb_substr(trim((string) $request->input('q', '')), 0, 200)];
+    }
 
-        return match ($p->kind) {
-            Proposal::LINK => [
-                (static function () use ($d): array {
-                    $t = Transaction::query()->find($d['transaction_id'] ?? '');
+    /**
+     * The open proposals the filter lets through, oldest first, and the tiles helper that knows their documents and bookings.
+     *
+     * @param  array{kind: string, sure: string, q: string}  $filter
+     * @param  Collection<int, Proposal>|null  $all
+     * @return array{Collection<int, Proposal>, ProposalTiles}
+     */
+    private function matching(array $filter, PropertyValues $values, ?Collection $all = null): array
+    {
+        $list = ($all ?? Proposal::query()->where('status', Proposal::OPEN)->oldest()->get())
+            ->filter(static fn (Proposal $p): bool => ($filter['kind'] === '' || $p->kind === $filter['kind'])
+                && ($filter['sure'] === '' || ($filter['sure'] === 'sure') === ($p->sure === true)))
+            ->values();
+        $tiles = new ProposalTiles($list, $values);
+        $words = $filter['q'] === '' ? [] : (preg_split('/\s+/', mb_strtolower($filter['q'])) ?: []);
+        if ($words !== []) {
+            $list = $list->filter(static function (Proposal $p) use ($tiles, $words): bool {
+                $hay = $tiles->haystack($p);
+                foreach ($words as $word) {
+                    if (! str_contains($hay, $word)) {
+                        return false;
+                    }
+                }
 
-                    return ['label' => __('proposals.label.booking'), 'text' => $t === null ? __('proposals.gone')
-                        : $t->booking_date->format('d.m.Y').' · '.$t->formattedAmount().' · '.($t->counterparty ?? $t->purpose ?? '–'), 'url' => $t === null ? null : route('bank.show', $t->id)];
-                })(),
-                $doc(__('proposals.label.document'), $d['document_id'] ?? null),
-            ],
-            Proposal::UNLINK => [
-                (static function () use ($d): array {
-                    $t = Transaction::query()->find($d['transaction_id'] ?? '');
+                return true;
+            })->values();
+        }
 
-                    return ['label' => __('proposals.label.booking'), 'text' => $t === null ? __('proposals.gone')
-                        : $t->booking_date->format('d.m.Y').' · '.$t->formattedAmount().' · '.($t->counterparty ?? $t->purpose ?? '–'), 'url' => $t === null ? null : route('bank.show', $t->id)];
-                })(),
-                $doc(__('proposals.label.link'), $d['document_id'] ?? null),
-            ],
-            Proposal::TITLE => [$doc(__('proposals.label.document'), $d['document_id'] ?? null),
-                ['label' => __('proposals.label.title'), 'text' => (string) ($d['title'] ?? ''), 'url' => null]],
-            Proposal::MOVE => [$doc(__('proposals.label.document'), $d['document_id'] ?? null),
-                ['label' => __('proposals.label.folder'), 'text' => (string) (Folder::query()->whereKey($d['folder_id'] ?? '')->value('name') ?? __('proposals.gone')), 'url' => null]],
-            Proposal::DUPLICATE => [$doc(__('proposals.label.keep'), $d['keep_id'] ?? null), $doc(__('proposals.label.remove'), $d['remove_id'] ?? null)],
-            Proposal::DELETE => [$doc(__('proposals.label.trash'), $d['document_id'] ?? null)],
-            Proposal::STRAIGHTEN => [$doc(__('proposals.label.document'), $d['document_id'] ?? null),
-                ['label' => __('proposals.label.angle'), 'text' => str_replace('.', ',', (string) round((float) ($d['angle'] ?? 0), 1)).'°'.(isset($d['w']) ? ' · '.__('proposals.label.cut') : ''), 'url' => null]],
-            Proposal::SHRINK => [(static function () use ($doc, $d): array {
-                $line = $doc(__('proposals.label.document'), $d['document_id'] ?? null);
-                $bytes = (int) Document::query()->find($d['document_id'] ?? '')?->files()->sum('size');
+        return [$list, $tiles];
+    }
 
-                return [...$line, 'text' => $line['text'].($bytes > 0 ? ' · '.number_format($bytes / 1048576, 1, ',', '.').' MB' : '')];
-            })()],
-            Proposal::CORRECT => [$doc(__('proposals.label.document'), $d['document_id'] ?? null), (static function () use ($d, $values): array {
-                $property = Property::query()->where('key', $d['property'] ?? '')->orWhere('name', $d['property'] ?? '')->first();
-                $document = Document::query()->find($d['document_id'] ?? '');
-                $now = $property === null || $document === null ? null : $document->properties()->where('property_id', $property->id)->first();
+    /** JSON for the window (message + error) or, without JavaScript, back to the list as it was (A61). */
+    private function answer(Request $request, string $message, bool $error = false): RedirectResponse|JsonResponse
+    {
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'error' => $error], $error ? 422 : 200);
+        }
 
-                return ['label' => $property->name ?? (string) ($d['property'] ?? ''), 'text' => ($now === null ? '–' : $values->display($now)).' → '.(($d['value'] ?? '') === '' ? '('.__('proposals.clear').')' : $d['value']), 'url' => null];
-            })()],
-            default => [['label' => __('proposals.label.setting'), 'text' => __('proposals.settings.'.($d['setting'] ?? '')), 'url' => null]],
-        };
+        // Back to the list as it was (filter, page) – but only to the list itself, never to a picture or another page.
+        $previous = url()->previous();
+        $list = route('proposals.index');
+        $to = $previous === $list || str_starts_with($previous, $list.'?') ? $previous : $list;
+
+        return redirect()->to($to)->with($error ? 'status_error' : 'status', $message);
     }
 }

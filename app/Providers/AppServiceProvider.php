@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Domain\Assistant\AssistantAccess;
 use App\Domain\Assistant\DuplicateFinder;
 use App\Domain\Auth\User;
 use App\Domain\Banking\MatchAfterRecognition;
@@ -135,9 +134,9 @@ class AppServiceProvider extends ServiceProvider
             && app(CurrentOrg::class)->membership()->user_id === $user->id
             && app(CurrentOrg::class)->membership()->role === Role::Owner);
 
-        // D-040: the main menu's "Vorschläge" – the owner, while the door is open (no extra query on every page).
-        Gate::define('proposals.view', static fn (User $user): bool => Gate::forUser($user)->allows('assistant.manage')
-            && AssistantAccess::enabled(app(CurrentOrg::class)->organization()));
+        // D-040, points 1, A60: the red count of "Vorschläge ansehen" (Einstellungen → Assistenten) – the owner, also while
+        // the door is closed: docHamster files duplicates itself (A49), and open proposals stay until decided.
+        Gate::define('proposals.view', static fn (User $user): bool => Gate::forUser($user)->allows('assistant.manage'));
 
         // Replaces Laravel's `database` session driver: same table, no client IP.
         Session::extend('database', static function (Application $app): NoIpDatabaseSessionHandler {

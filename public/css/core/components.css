@@ -229,7 +229,9 @@ label.tag-choice { color: inherit; }
 .tab-mark { position: absolute; left: .5rem; right: .5rem; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0; background: var(--primary); view-transition-name: tab-mark; }
 .tab:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
 ::view-transition-group(tab-mark) { animation-duration: .25s; animation-timing-function: ease-in-out; }
-.pager { display: flex; gap: .5rem; margin-top: 1rem; }
+/* Blättern (point 4): ‹ Seite 2 von 12 › – icon buttons, the page in between. */
+.pager { display: flex; align-items: center; justify-content: center; gap: .5rem; margin-top: 1rem; }
+.pager-page { color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* Framework round 11 (Go 2026-11-11, points 46, 47) */
 
@@ -342,14 +344,13 @@ progress::-moz-progress-bar { background: var(--primary); }
 button.color-swatch, button.color-swatch:hover { display: block; width: 2.25rem; min-width: 0; height: 2.25rem; min-height: 0; margin: 0; padding: 0; border: 2px solid var(--bg); border-radius: 50%; background: var(--tag, var(--surface)); box-shadow: 0 0 0 2px var(--border); }
 button.color-swatch:focus-visible { outline: 2px solid var(--text); outline-offset: 4px; }
 
-/* Empfehlungskachel (D-040, PO 2026-11-17): an assistant's proposal as a card in a grid – symbol and kind, the reason,
-   what it names (label + value, links open a window), the actions at the bottom (Übernehmen / Ablehnen). Grouped by
-   kind under a card head with its count and "Alle übernehmen". */
-.proposal-group { margin: 0 0 1.5rem; }
-.proposal-group > .card-head { margin-bottom: .75rem; }
-.proposal-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); gap: .75rem; }
+/* Empfehlungskachel (D-040, points 1–7): an assistant's proposal as a card in a grid – symbol and what it proposes, the
+   reason, the things it names as Objektkacheln, other values as label + value, the actions at the bottom (✓, bin,
+   Nebeneinander as icon buttons). One list, ten per page (A58). */
+.proposal-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr)); gap: .75rem; }
 .proposal-tiles > .card { display: flex; flex-direction: column; margin: 0; }
 .proposal-tiles > .card > .actions { margin-top: auto; padding-top: .5rem; }
+.proposal-tiles > .empty-state { grid-column: 1 / -1; }
 .proposal-lines { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .25rem .75rem; margin: 0 0 .5rem; }
 .proposal-lines dt { color: var(--muted); }
 .proposal-lines dd { margin: 0; overflow-wrap: anywhere; }
@@ -358,4 +359,22 @@ button.color-swatch:focus-visible { outline: 2px solid var(--text); outline-offs
 .proposal-preview figure { display: grid; gap: .25rem; margin: 0; justify-items: center; }
 .proposal-preview img { display: block; max-width: 100%; height: 10rem; object-fit: contain; border-radius: var(--row-radius); background: var(--surface); }
 .proposal-preview figcaption { color: var(--muted); font-size: .85rem; }
+
+/* Objektkachel (point 6, PO 2026-11-17 "keine Textlinks"): a document or booking as a small tile – picture or symbol,
+   label, name, date and amount; the whole tile is the link (opens a window). Two side by side with a sign between
+   them (.object-pair: Verknüpfen, Duplikat); one below the other when narrow. A thing that is gone: .is-gone. */
+.object-pair { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: .5rem; margin: 0 0 .5rem; }
+.object-pair:has(> .object-tile:only-child) { grid-template-columns: minmax(0, 1fr); }
+.object-pair-sign { display: grid; place-items: center; color: var(--muted); }
+@container win (width < 30rem) { .object-pair { grid-template-columns: minmax(0, 1fr); } .object-pair-sign { rotate: 90deg; } }
+.object-tile { display: flex; align-items: center; gap: .6rem; min-width: 0; padding: .5rem; border-radius: var(--radius); border: 1px solid transparent; background: var(--surface); color: var(--text); text-decoration: none; }
+a.object-tile:hover { background: color-mix(in srgb, var(--text) 8%, var(--surface)); }
+a.object-tile:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+a.object-tile.is-opener { border-color: var(--primary); background: var(--mark-surface); }
+.object-tile.is-gone { border: 1px dashed var(--border); background: none; color: var(--muted); }
+.object-tile > .thumb-frame { flex: none; width: 3rem; height: 3.5rem; padding: .2rem; background: var(--bg); }
+.object-tile > .thumb-frame .icon { width: 1.4rem; height: 1.4rem; }
+.object-tile-body { display: grid; min-width: 0; line-height: 1.3; }
+.object-tile-body > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.object-tile-body > small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 

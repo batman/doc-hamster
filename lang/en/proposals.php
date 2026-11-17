@@ -5,8 +5,18 @@ declare(strict_types=1);
 // D-040: Proposals – the assistant's proposals (recommendation tiles).
 return [
     'title' => 'Proposals',
-    'intro' => 'Your assistant changes nothing itself. Here are its proposals – only your click on “Take over” carries them out.',
+    'intro' => 'Your assistant changes nothing itself. Here are its proposals – only your click on the tick carries them out.',
     'none' => 'No open proposals.',
+    'none_found' => 'No open proposal fits this filter.',
+    'open' => 'View proposals',
+    'search' => 'Search proposals',
+    'filter_kind' => 'Kind',
+    'filter_sure' => 'Certainty',
+    'all' => 'All',
+    'side_by_side' => 'View side by side',
+    'accept_n' => '{1} Take over 1|[2,*] Take over all :count',
+    'accept_sure_n' => '{1} Take over 1 sure one|[2,*] Take over :count sure ones',
+    'in_window' => 'Assistant proposal',
     'kinds' => [
         'unlink' => 'Unlinking', 'title' => 'Titles', 'link' => 'Linking', 'move' => 'Tidying up', 'duplicate' => 'Duplicates', 'delete' => 'Deleting',
         'straighten' => 'Straightening', 'shrink' => 'Shrinking', 'correct' => 'Corrections', 'setting' => 'Settings',
@@ -17,7 +27,7 @@ return [
     ],
     'label' => [
         'title' => 'New title', 'link' => 'Linked to', 'booking' => 'Booking', 'document' => 'Document', 'folder' => 'To', 'keep' => 'Stays', 'remove' => 'Bin',
-        'trash' => 'Document', 'setting' => 'Switch on', 'angle' => 'Turn', 'cut' => 'cut out',
+        'trash' => 'Document', 'setting' => 'Switch on', 'size' => 'Size', 'angle' => 'Turn', 'cut' => 'cut out',
     ],
     'settings' => ['optimize_on' => 'Optimise document size – shrink large scans and photos automatically'],
     'from' => 'From :name, :date',
