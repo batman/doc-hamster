@@ -488,6 +488,27 @@ function swapApp(string $appDir, string $new): void
     if (function_exists('opcache_reset')) {
         @opcache_reset();
     }
+    forgetCompiledPhp($appDir);
+}
+
+/**
+ * The update boots the new version in this same request (migrate, optimize). opcache_reset() only takes effect after
+ * the request, so a file the server's OPcache already holds – bootstrap/app.php runs on every request – would still
+ * come from the old version, and the cached list of addresses would miss the new ones (D-040: the MCP address was
+ * missing after v0.1.49). Every PHP file of the app is therefore dropped from the cache at once.
+ */
+function forgetCompiledPhp(string $appDir): void
+{
+    if (! function_exists('opcache_invalidate')) {
+        return;
+    }
+    $storage = DIRECTORY_SEPARATOR.'storage'.DIRECTORY_SEPARATOR;
+    $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($appDir, FilesystemIterator::SKIP_DOTS));
+    foreach ($files as $file) {
+        if ($file instanceof SplFileInfo && $file->isFile() && str_ends_with($file->getFilename(), '.php') && ! str_contains($file->getPathname(), $storage)) {
+            @opcache_invalidate($file->getPathname(), true);
+        }
+    }
 }
 
 /** Runs the database migrations of the new version in this PHP process (no shell on simple hosting). */
