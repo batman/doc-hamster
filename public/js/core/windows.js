@@ -460,7 +460,16 @@
             }
             paint(info);
             // Windows that became wide and were only a stored strip get their content.
-            all.filter(win => win.dataset.lazy !== undefined && !win.classList.contains('is-min')).forEach(win => fill(win).then(() => layout()).catch(() => { /* stays a strip until clicked */ }));
+            all.filter(win => win.dataset.lazy !== undefined && !win.classList.contains('is-min')).forEach(win => fill(win).then(() => layout()).catch(error => {
+                // A75: a stored window whose record is gone (deleted, no right any more) leaves the row and the history;
+                // any other failure (offline) leaves it a strip – never an empty wide window.
+                if (gone(error)) {
+                    close(win);
+                } else {
+                    win.dataset.folded = '';
+                    layout();
+                }
+            }));
         };
 
         // Dragging a window's edge (Package L, A91, A92, A94). Every step is computed from the state at drag start
@@ -600,6 +609,8 @@
                 }
                 return win;
             });
+        // A75: the answer says the record is gone or no longer allowed (load rejects with the Response).
+        const gone = error => [403, 404, 410].includes(error?.status);
         const refreshed = win => {
             const kept = win.dataset.windowCached;
             if (kept !== undefined) {
@@ -694,7 +705,7 @@
             keep = full;
             focus(full, push);
             layout(false, true);
-        }).then(() => reveal(full))).catch(() => { location.href = win.dataset.windowUrl; });
+        }).then(() => reveal(full))).catch(error => (gone(error) ? close(win) : (location.href = win.dataset.windowUrl)));
 
         // A link in a window: everything right of that window closes, the new one opens on the right (points 40.2,
         // 40.3); which windows become strips decides the layout (point 54). Always a new window – also when the
@@ -837,6 +848,8 @@
                 }
             });
         };
+        // A74: modules close a window like its X (e.g. after deleting its record).
+        DocHamster.closeWindow = close;
 
         // Start: the windows from the server, plus the rest of this tab's history (A62). Which ones are wide
         // decides the layout (point 54); a window minimised by hand stays a strip.

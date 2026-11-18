@@ -46,9 +46,15 @@
                 const rows = [...list.querySelectorAll(':scope > [data-folder-row]')];
                 const hit = row && rows.includes(row) ? row : null;
                 const box = hit?.getBoundingClientRect();
-                const into = hit && box && y > box.top + box.height / 4 && y < box.bottom - box.height / 4;
+                // Point 30: folders as tiles (Kleine Symbole, Vorschau) – the middle of a tile goes into it, its left or
+                // right part is a new place before or after it, in reading order.
+                const grid = list.matches('.is-small, .is-large');
+                const into = hit && box && y > box.top + box.height / 4 && y < box.bottom - box.height / 4
+                    && (!grid || (x > box.left + box.width / 4 && x < box.right - box.width / 4));
                 if (!into) {
-                    const before = rows.find(r => y < r.getBoundingClientRect().top + r.offsetHeight / 2) ?? null;
+                    const before = (grid
+                        ? rows.find(r => { const b = r.getBoundingClientRect(); return y < b.top || (y < b.bottom && x < b.left + b.width / 2); })
+                        : rows.find(r => y < r.getBoundingClientRect().top + r.offsetHeight / 2)) ?? null;
                     const next = source.nextElementSibling?.matches('[data-folder-row]') ? source.nextElementSibling : null;
                     if (before === source || before === next) {
                         return null; // stays where it is
@@ -56,7 +62,8 @@
                     return { type: 'order', list, before };
                 }
             }
-            if (!row || row === source) {
+            // Point 26: the Papierkorb only changes its place among the top-level folders – never into a folder.
+            if (!row || row === source || source.hasAttribute('data-drop-trash')) {
                 return null;
             }
             if (row.hasAttribute('data-drop-trash')) {
@@ -263,10 +270,20 @@
                     target.list.append(bar);
                 }
                 const rows = [...target.list.querySelectorAll(':scope > [data-folder-row]')];
-                const top = target.list.getBoundingClientRect().top;
-                const gap = parseFloat(getComputedStyle(target.list).rowGap) || 0;
-                const y = target.before ? target.before.getBoundingClientRect().top - gap / 2 : rows.at(-1).getBoundingClientRect().bottom + gap / 2;
-                bar.style.top = `${y - top}px`;
+                const area = target.list.getBoundingClientRect();
+                if (target.list.matches('.is-small, .is-large')) {
+                    // Tiles: a standing line in the gap before the tile (or after the last one).
+                    const gap = parseFloat(getComputedStyle(target.list).columnGap) || 0;
+                    const tile = (target.before ?? rows.at(-1)).getBoundingClientRect();
+                    bar.classList.add('is-vertical');
+                    bar.style.left = `${(target.before ? tile.left - gap / 2 : tile.right + gap / 2) - area.left}px`;
+                    bar.style.top = `${tile.top - area.top}px`;
+                    bar.style.height = `${tile.height}px`;
+                } else {
+                    const gap = parseFloat(getComputedStyle(target.list).rowGap) || 0;
+                    const y = target.before ? target.before.getBoundingClientRect().top - gap / 2 : rows.at(-1).getBoundingClientRect().bottom + gap / 2;
+                    bar.style.top = `${y - area.top}px`;
+                }
             } else {
                 bar?.remove();
                 bar = null;

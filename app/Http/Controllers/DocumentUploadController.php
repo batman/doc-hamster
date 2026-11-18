@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Domain\Audit\AuditLog;
+use App\Domain\Documents\DocumentFile;
 use App\Domain\Documents\DocumentIntake;
 use App\Domain\Documents\Folder;
 use App\Domain\Org\CurrentOrg;
@@ -48,7 +49,12 @@ final class DocumentUploadController
         $data['folder'] ??= RoleRestriction::current()->homeFolder();
         /** @var list<string> $tagIds */
         $tagIds = array_values($data['tags'] ?? []);
+        $known = [];
         foreach ($checked as [$upload, $mime, $extension]) {
+            // A80: the same file is here already – still stored (the duplicate becomes a proposal, A49), but named in the upload's protocol.
+            if (DocumentFile::query()->where('sha256', (string) hash_file('sha256', $upload->getRealPath()))->exists()) {
+                $known[] = $upload->getClientOriginalName();
+            }
             $document = DocumentIntake::store($upload, $mime, $extension, $org->id(), $userId, $upload->getClientOriginalName(), $tagIds, folderId: $data['folder'] ?? null);
 
             $audit->record('document.uploaded', orgId: $org->id(), userId: $userId, subject: $document, ip: $request->ip());
@@ -59,7 +65,7 @@ final class DocumentUploadController
         $folderId = $data['folder'] ?? null;
         $name = $folderId !== null ? (string) Folder::query()->whereKey($folderId)->value('name') : __('inbox.title');
         if ($request->wantsJson()) {
-            return response()->json(['message' => trans_choice('documents.bulk.uploaded', count($checked), ['count' => count($checked), 'name' => $name]), 'folder' => $folderId]);
+            return response()->json(['message' => trans_choice('documents.bulk.uploaded', count($checked), ['count' => count($checked), 'name' => $name]), 'folder' => $folderId, 'known' => $known]);
         }
 
         return redirect()->route($folderId !== null ? 'documents.index' : 'inbox.index')->with('status', trans_choice('documents.saved', count($checked)));

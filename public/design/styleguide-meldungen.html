@@ -87,6 +87,29 @@
             <p>Diese Seite gibt es nicht.</p>
         </section>
 
+        <section id="sg-hochladen" class="sg-section">
+            <h2>Hochlade-Dialog</h2>
+            <p class="sg-note">Jeder Weg zum Hochladen (Knopf im Posteingang, Dateien auf Ordner, Fenster, Menü oder Home ziehen) zeigt diesen Dialog (<code>DocHamster.uploadFiles</code>, <code>core/upload.js</code>). Balken nach Datenmenge, darunter übertragene Menge, Tempo und Restzeit, bei mehreren Dateien „2 von 3“ und eine Zeile je Datei. „Im Hintergrund weiter“ macht daraus den kleinen Chip unten rechts. Am Ende das Protokoll mit „Protokoll kopieren“ und „Erledigt“; eine einzelne Datei ohne Problem schließt sich nach 1,5 s selbst. Eine fehlerhafte Datei hält den Rest nicht auf.</p>
+            <div class="dialog upload-dialog sg-pad" role="dialog" aria-labelledby="sg-upload-title">
+                <h2 id="sg-upload-title">3 Dokumente werden hochgeladen</h2>
+                <p class="field-hint">Nach: Rechnungen</p>
+                <progress class="upload-bar" max="1000" value="430"></progress>
+                <p class="upload-stats"><span>1,8 MB von 4,2 MB · 850 KB/s · noch etwa 3 Sekunden</span><span>1 von 3 Dateien</span></p>
+                <ul class="upload-files">
+                    <li class="upload-file" data-state="done"><span class="upload-file-name"><strong>Rechnung Muster GmbH.pdf</strong><small>1,2 MB</small></span><span class="pill pill-ok">fertig</span></li>
+                    <li class="upload-file" data-state="sending"><span class="upload-file-name"><strong>Tankquittung.jpg</strong><small>2,4 MB</small></span><span class="pill">wird hochgeladen</span><progress max="1000" value="250"></progress></li>
+                    <li class="upload-file" data-state="failed"><span class="upload-file-name"><strong>Scan sehr groß.pdf</strong><small>Die Datei ist zu groß (höchstens 25 MB).</small></span><span class="pill pill-warning">Fehler</span></li>
+                </ul>
+                <div class="dialog-actions">
+                    <button type="button" class="button-quiet"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 9l4 0l0 -4" /><path d="M3 3l6 6" /><path d="M5 15l4 0l0 4" /><path d="M3 21l6 -6" /><path d="M19 9l-4 0l0 -4" /><path d="M15 9l6 -6" /><path d="M19 15l-4 0l0 4" /><path d="M15 15l6 6" /></svg>Im Hintergrund weiter</button>
+                    <button type="button" class="button-quiet"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 9.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667l0 -8.666"/><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1"/></svg>Protokoll kopieren</button>
+                    <button type="button"><svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-check">  <path stroke="none" d="M0 0h24v24H0z" fill="none" />  <path d="M5 12l5 5l10 -10" /></svg>Erledigt</button>
+                </div>
+            </div>
+            <p class="sg-note">Im Hintergrund: der Chip (<code>upload-chip</code>, hier nicht festgeheftet).</p>
+            <button type="button" class="upload-chip sg-static" aria-label="Hochladen anzeigen"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 9l5 -5l5 5"/><path d="M12 4l0 12"/></svg><span>37/120</span><progress max="1000" value="310"></progress></button>
+        </section>
+
 </main>
 <footer class="site-footer"><hr><small class="muted">docHamster Version 0.1.0</small></footer>
 </div>

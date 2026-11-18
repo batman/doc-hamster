@@ -367,7 +367,7 @@
             <h2 id="delete-document-{{ $document->id }}-title">{{ __('documents.delete_title') }}</h2>
             <p>{{ __('documents.delete_text', ['title' => $document->title]) }}</p>
             <div class="dialog-actions">
-                <form method="post" action="{{ route('documents.destroy', $document->id) }}">
+                <form method="post" action="{{ route('documents.destroy', $document->id) }}" data-doc-delete>
                     @csrf
                     <button type="submit" class="button-danger">{{ __('documents.delete') }}</button>
                 </form>

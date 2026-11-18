@@ -64,6 +64,9 @@ return [
     'cancel' => 'Cancel',
     'empty' => 'No folders yet. Create the first one on the right.',
     'used' => '{0} No documents|{1} :count document|[2,*] :count documents',
+    'col_documents' => 'Documents',
+    'col_folders' => 'Subfolders',
+    'col_changed' => 'Changed',
     // Point 161: what a folder row holds.
     'stat_folders' => '{1} :count folder|[0,*] :count folders',
     'stat_documents' => '{1} :count document|[0,*] :count documents',

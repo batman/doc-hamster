@@ -14,6 +14,33 @@
         });
     };
 
+    // --- A74: "Löschen" in a document window: in the background; the window closes like its X (the others share the
+    // room again), the toast offers "Rückgängig", the folder windows and the badges follow.
+    document.addEventListener('submit', event => {
+        const form = event.target.closest('form[data-doc-delete]');
+        const win = form?.closest('section[data-window]');
+        if (!form || !win || !DocHamster.closeWindow) {
+            return;
+        }
+        event.preventDefault();
+        form.querySelector('button[type="submit"]')?.setAttribute('disabled', '');
+        post(form.action, new FormData(form)).then(json => {
+            form.closest('[data-dialog]')?.querySelector('[data-dialog-close]')?.click();
+            DocHamster.closeWindow(win);
+            const undo = json.undo ? () => post(json.undo, {}).then(back => {
+                toast(back.message);
+                refresh();
+                DocHamster.refreshBadges?.();
+            }).catch(fail) : null;
+            toast(json.message, { undo });
+            refresh();
+            DocHamster.refreshBadges?.();
+        }).catch(error => {
+            form.querySelector('button[type="submit"]')?.removeAttribute('disabled');
+            fail(error);
+        });
+    });
+
     // --- Forms of the Papierkorb (restore, delete for good, "Papierkorb leeren" and its undo): asked first, sent in the background
     document.addEventListener('submit', event => {
         const form = event.target.closest('form[data-bulk-form]');

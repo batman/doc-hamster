@@ -152,7 +152,7 @@ final class DocumentListing
             'folders' => $folders,
             'recent' => $recent,
             'folder' => $folder,
-            'folderRows' => $wide || $searching ? [] : $this->folderRows($user, $seesAll, $folders, $folder),
+            'folderRows' => $wide || $searching ? [] : $this->folderRows($user, $seesAll, $folders, $folder, $view),
             'columns' => $columns,
             'chosenColumns' => $chosen,
             'sort' => $sort,
@@ -196,18 +196,22 @@ final class DocumentListing
      * The folder rows on top of a Belege window (window system, PO 2026-11-07): without a folder the
      * top folders with the Papierkorb in its place, inside a folder its subfolders. Each row counts its subfolders, its
      * own documents and all documents below it (point 161) – one grouped query for all folders, only documents this
-     * person may see (the trash is never counted, it shows its own count).
+     * person may see (the trash is never counted, it shows its own count). Point 30: the folders follow the view – the
+     * view "Details" shows when a folder's own documents last changed, "Vorschau" the small pictures of its newest four.
      *
      * @param  list<array{folder: Folder, depth: int}>  $folders
-     * @return list<array{folder: Folder|null, folders: int, documents: int, total: int}>
+     * @return list<array{folder: Folder|null, folders: int, documents: int, total: int, changed: ?string, previews: list<string>}>
      */
-    private function folderRows(User $user, bool $seesAll, array $folders, ?string $folder): array
+    private function folderRows(User $user, bool $seesAll, array $folders, ?string $folder, string $view): array
     {
-        $own = Document::query()->visibleTo($user->id, $seesAll)
-            ->whereNotNull('folder_id')->selectRaw('folder_id, count(*) as total')->groupBy('folder_id')->pluck('total', 'folder_id')
+        $visible = static fn () => Document::query()->visibleTo($user->id, $seesAll)->whereNotNull('folder_id');
+        $own = $visible()->selectRaw('folder_id, count(*) as total')->groupBy('folder_id')->pluck('total', 'folder_id')
             ->map(static fn (mixed $n): int => is_numeric($n) ? (int) $n : 0)->all();
+        $changed = $view === 'details' ? $visible()->selectRaw('folder_id, max(updated_at) as changed')->groupBy('folder_id')->pluck('changed', 'folder_id')->all() : [];
+        $previews = $view === 'large' ? $this->previews($visible()) : [];
         $counts = Folder::counts($folders, $own);
-        $row = static fn (Folder $f): array => ['folder' => $f, ...($counts[$f->id] ?? ['folders' => 0, 'documents' => 0, 'total' => 0])];
+        $row = static fn (Folder $f): array => ['folder' => $f, ...($counts[$f->id] ?? ['folders' => 0, 'documents' => 0, 'total' => 0]),
+            'changed' => is_string($changed[$f->id] ?? null) ? $changed[$f->id] : null, 'previews' => $previews[$f->id] ?? []];
 
         $out = [];
         if ($folder !== null) {
@@ -227,13 +231,35 @@ final class DocumentListing
             if ($entry['folder'] === null) {
                 // The Papierkorb, in its place among the top folders, for people who may open it.
                 if (Gate::allows(Permission::TrashDocuments->value)) {
-                    $out[] = ['folder' => null, 'folders' => 0, 'documents' => 0, 'total' => 0];
+                    $out[] = ['folder' => null, 'folders' => 0, 'documents' => 0, 'total' => 0, 'changed' => null, 'previews' => []];
                 }
 
                 continue;
             }
             $out[] = $row($entry['folder']);
         }
+
+        return $out;
+    }
+
+    /**
+     * Point 30 "Vorschau": the small pictures of the newest four documents of each folder – one query over the newest
+     * documents with a stored small picture, sorted out per folder.
+     *
+     * @param  Builder<Document>  $visible
+     * @return array<string, list<string>>
+     */
+    private function previews(Builder $visible): array
+    {
+        $out = [];
+        $visible->whereHas('files', static fn (Builder $q) => $q->whereNotNull('thumb_path'))->with('files')->latest()->limit(400)->get()
+            ->each(static function (Document $document) use (&$out): void {
+                $folderId = (string) $document->folder_id;
+                $file = $document->files->firstWhere(static fn ($f): bool => $f->thumb_path !== null);
+                if ($file !== null && count($out[$folderId] ?? []) < 4) {
+                    $out[$folderId][] = $file->thumbUrl();
+                }
+            });
 
         return $out;
     }

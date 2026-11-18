@@ -29,7 +29,7 @@
 
         <div class="dash" data-dash data-layout="{{ route('dashboard.layout') }}" data-add="{{ route('dashboard.widgets.store') }}"
              data-unpin="{{ route('dashboard.pins.destroy') }}" data-photo="{{ route('dashboard.photo.store') }}" data-photo-delete="{{ route('dashboard.photo.destroy') }}"
-             @can('documents.upload') data-upload="{{ route('documents.store') }}" @endcan
+             @can('documents.upload') data-upload="{{ route('documents.store') }}" data-inbox-name="{{ __('inbox.title') }}" @endcan
              data-failed="{{ __('dashboard.failed') }}">
             @if (session('status'))
                 <div class="toast" role="status" data-toast><x-icon name="circle-check" /><span>{{ session('status') }}</span></div>

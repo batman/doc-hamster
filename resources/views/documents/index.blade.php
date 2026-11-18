@@ -296,12 +296,17 @@
                  new order (A153); documents dropped on a row move into it, on the Papierkorb into the trash. app.js does the dragging;
                  data-path/-depth/-height let it refuse a drop into itself or too deep (A138, A139). Row actions instead of ⋯ (A161-A166). --}}
             @php $canEdit = Gate::allows('documents.edit'); @endphp
-            <ul class="pick-list folder-rows" @if ($canEdit) data-folder-order="{{ route('folders.order') }}" data-parent="{{ $openFolder?->id }}" @endif>
+            <ul class="pick-list folder-rows is-{{ $view }}" @if ($canEdit) data-folder-order="{{ route('folders.order') }}" data-parent="{{ $openFolder?->id }}" @endif>
+                @if ($view === 'details')
+                    {{-- Point 30: the column heads of the folder rows in the view "Details". --}}
+                    <li class="folder-cols-head" aria-hidden="true"><span>{{ __('documents.name') }}</span><span class="folder-cols"><span>{{ __('folders.col_documents') }}</span><span>{{ __('folders.col_folders') }}</span><span>{{ __('folders.col_changed') }}</span></span></li>
+                @endif
                 @foreach ($folderRows as $row)
                     @if ($row['folder'] === null)
-                        <li class="pick-row is-static folder-row {{ \App\Domain\Documents\Folder::rowClassFor($trashColor) }}" data-id="trash" data-folder-row data-drop-trash data-name="{{ $trashName }}">
+                        <li class="pick-row is-static folder-row {{ \App\Domain\Documents\Folder::rowClassFor($trashColor) }}" data-id="trash" data-folder-row data-drop-trash data-name="{{ $trashName }}" @if ($canEdit && $openFolder === null) data-drag-folder data-path="trash" data-depth="0" data-height="0" @endif>
                             <span class="row-icon"><x-icon name="trash" /></span>
                             <span data-folder-name><strong><a href="{{ route('documents.trash') }}" data-window>{{ $trashName }}</a></strong><small>{{ trans_choice('folders.used', $trashed, ['count' => $trashed]) }}</small></span>
+                            @include('documents._folder-extra', ['documents' => $trashed, 'folders' => 0, 'changed' => null, 'previews' => []])
                             @if ($canEdit)
                                 <form class="folder-rename edit-field" method="post" action="{{ route('folders.trash') }}" data-folder-rename-form hidden>
                                     @csrf
@@ -322,6 +327,7 @@
                             @if ($canEdit && ! $f->is_default) data-drag-folder @endif>
                             <span class="row-icon"><x-icon :name="$f->iconName()" /></span>
                             <span data-folder-name><strong><a href="{{ route('documents.index', ['folder' => $f->id]) }}" data-window>{{ $f->name }}</a></strong><x-row-stats :folders="$row['folders']" :documents="$row['documents']" :total="$row['total']" /></span>
+                            @include('documents._folder-extra', ['documents' => $row['total'], 'folders' => $row['folders'], 'changed' => $row['changed'], 'previews' => $row['previews']])
                             @if ($canEdit)
                                 {{-- Rename in place (pencil or a long press on the name, A161, A188-A190); also "Dokumente allgemein" (A18). --}}
                                 <form class="folder-rename edit-field" method="post" action="{{ route('folders.update', $f->id) }}" data-folder-rename-form hidden>

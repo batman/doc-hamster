@@ -215,23 +215,13 @@
         }
         const field = dash.querySelector('[data-dash-drop]');
         field?.classList.add('is-busy');
-        // The server takes 20 files per request (like the menu's drop).
-        const chunks = [];
-        for (let i = 0; i < files.length; i += 20) {
-            chunks.push(files.slice(i, i + 20));
-        }
-        let last = null;
-        chunks.reduce((chain, chunk) => chain.then(() => {
-            const body = new FormData();
-            chunk.forEach(file => body.append('files[]', file));
-            return send(dash.dataset.upload, body).then(json => { last = json; });
-        }), Promise.resolve())
+        // Points 27–29: through the Hochlade-Dialog (core/upload.js); the files wait in the Posteingang.
+        DocHamster.uploadFiles(files, { url: dash.dataset.upload, folder: '', name: dash.dataset.inboxName ?? '' })
             .then(() => {
-                toast(last?.message);
                 DocHamster.docs?.refresh?.();
+                DocHamster.refreshBadges?.();
                 return redraw(dash, 'inbox').catch(() => {});
             })
-            .catch(error => fail(dash, error))
             .finally(() => field?.classList.remove('is-busy'));
     };
     document.addEventListener('change', event => {

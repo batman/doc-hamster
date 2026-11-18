@@ -64,6 +64,9 @@ return [
     'cancel' => 'Abbrechen',
     'empty' => 'Noch kein Ordner. Legen Sie rechts den ersten an.',
     'used' => '{0} Kein Dokument|{1} :count Dokument|[2,*] :count Dokumente',
+    'col_documents' => 'Dokumente',
+    'col_folders' => 'Unterordner',
+    'col_changed' => 'Geändert',
     // Point 161: what a folder row holds.
     'stat_folders' => '{1} :count Ordner|[0,*] :count Ordner',
     'stat_documents' => '{1} :count Dokument|[0,*] :count Dokumente',

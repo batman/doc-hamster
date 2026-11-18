@@ -47,6 +47,7 @@ return [
     'delete_text' => '„:title“ kommt in den Papierkorb.',
     'cancel' => 'Abbrechen',
     'deleted' => 'Dokument gelöscht.',
+    'trashed_one' => 'In den Papierkorb gelegt.',
     'changed' => 'Gespeichert.',
     'save' => 'Speichern',
     'note' => 'Notiz',

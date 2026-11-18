@@ -56,3 +56,6 @@
 .sg-open .dropdown-panel[hidden] { display: block; }
 /* A sample with a dropdown lets its panel hang out of the frame (as in the app). */
 .sg-frame:has(.switcher-select, .sg-open), .sg-frame .win-frame:has(.switcher-select) { overflow: visible; }
+
+/* The upload chip shown in place, not pinned to the corner (Hochlade-Dialog sample). */
+.upload-chip.sg-static { position: static; margin: 0 1.5rem 1rem; }

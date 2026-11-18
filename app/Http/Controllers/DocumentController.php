@@ -130,11 +130,15 @@ final class DocumentController
     }
 
     /** Into the trash: the receipt leaves every list, the file stays (#30, "Belege löschen"). */
-    public function destroy(Request $request, string $id, AuditLog $audit, CurrentOrg $org): RedirectResponse
+    public function destroy(Request $request, string $id, AuditLog $audit, CurrentOrg $org): RedirectResponse|JsonResponse
     {
         $document = $this->visible($request)->whereKey($id)->firstOrFail();
         $document->delete();
         $audit->record('document.trashed', orgId: $org->id(), userId: $this->userId($request), subject: $document, ip: $request->ip());
+        // A74: from the detail window in the background – the window closes, the toast offers "Rückgängig".
+        if ($request->wantsJson()) {
+            return response()->json(['message' => __('documents.trashed_one'), 'undo' => route('documents.restore', $document->id)]);
+        }
 
         return redirect()->route('documents.index')->with('status', __('documents.deleted'));
     }

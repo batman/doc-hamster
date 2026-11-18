@@ -71,17 +71,10 @@
         if (!win || input.files.length === 0 || !DocHamster.reloadWindow) {
             return;
         }
-        const label = input.closest('label');
-        label?.classList.add('is-busy');
-        send(form, new FormData(form))
-            .then(data => {
-                DocHamster.toast?.(data.message);
-                reload(win);
-            })
-            .catch(data => {
-                label?.classList.remove('is-busy');
-                input.value = '';
-                DocHamster.toast?.(data?.message ?? form.dataset.failed, { error: true });
-            });
+        // Points 27–29: through the Hochlade-Dialog (core/upload.js); the window shows the new files as they arrive.
+        const files = [...input.files];
+        input.value = '';
+        DocHamster.uploadFiles(files, { url: form.action, folder: form.querySelector('[name="folder"]')?.value ?? '', name: win.dataset.windowTitle ?? '', after: () => reload(win) })
+            .finally(() => reload(win));
     });
 })();

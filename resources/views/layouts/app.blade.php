@@ -161,6 +161,10 @@
                      data-too-deep="{{ __('folders.too_deep', ['max' => \App\Domain\Documents\Folder::MAX_DEPTH + 1]) }}" data-cancel="{{ __('documents.bulk.cancel') }}"
                      data-folder-trash-title="{{ __('folders.drop_trash_title') }}" data-folder-trash-text="{{ __('folders.drop_trash_text', ['name' => ':name']) }}" data-folder-trash-ok="{{ __('folders.drop_trash') }}"></div>
             @endif
+            @if ($currentOrg->isSet() && Gate::allows('documents.upload'))
+                {{-- Points 27–29: the Hochlade-Dialog every way of uploading uses (core/upload.js). --}}
+                @include('components._upload-dialog')
+            @endif
             @if ($currentOrg->isSet() && Gate::allows('documents.edit'))
                 {{-- The popup "Markieren als" (DocHamster.markAs, point 122.4): addresses and texts for properties.js. --}}
                 <div hidden data-properties-api

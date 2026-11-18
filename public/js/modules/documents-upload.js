@@ -8,7 +8,7 @@
     if (!docs) {
         return;
     }
-    const { html, config, fill, toast, post, fail, refresh, winOf, folderOfWindow, setTarget } = docs;
+    const { html, config, fill, refresh, winOf, folderOfWindow, setTarget } = docs;
 
     // --- Files from the computer (point 85, A169-A175) -------------------------------------------------------------
     const carriesFiles = event => event.dataTransfer !== null && [...(event.dataTransfer?.types ?? [])].includes('Files');
@@ -96,26 +96,10 @@
         }
         upload(files, target);
     });
+    // Points 27–29: through the Hochlade-Dialog (core/upload.js) – progress, rest time, protocol; the windows follow.
     const upload = (files, target) => {
         const cfg = config();
-        const chunks = [];
-        for (let i = 0; i < files.length; i += 20) {
-            chunks.push(files.slice(i, i + 20));
-        }
-        if (cfg.uploading) {
-            toast(cfg.uploading);
-        }
-        let saved = 0;
-        chunks.reduce((chain, chunk) => chain.then(() => {
-            const body = new FormData();
-            chunk.forEach(file => body.append('files[]', file));
-            body.append('folder', target.folder);
-            return post(cfg.upload, body).then(() => { saved += chunk.length; });
-        }), Promise.resolve())
-            .then(() => {
-                toast(fill(saved === 1 ? cfg.uploadedOne : cfg.uploadedMany, { count: saved, name: target.name }));
-            })
-            .catch(fail)
+        DocHamster.uploadFiles(files, { url: cfg.upload, folder: target.folder, name: target.name, after: refresh })
             .finally(() => {
                 refresh();
                 DocHamster.refreshBadges?.();

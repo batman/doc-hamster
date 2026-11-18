@@ -125,7 +125,8 @@ input.win-title-field {
 
 /* A101: head buttons small and quiet, on the title line, a fixed gap to the content */
 .win-head { padding-bottom: 1rem; }
-:is(.win-head, .win-tools) :is(.icon-button, .dropdown > .icon-button) { width: 40px; min-width: 40px; height: 40px; min-height: 40px; padding: 0; border-width: 1px; border-color: transparent; border-radius: 8px; }
+:is(.win-head, .win-tools) { --tool-size: 40px; } /* A76: one measure for the toolbar buttons; the search tab's curve follows it */
+:is(.win-head, .win-tools) :is(.icon-button, .dropdown > .icon-button) { width: var(--tool-size); min-width: var(--tool-size); height: var(--tool-size); min-height: var(--tool-size); padding: 0; border-width: 1px; border-color: transparent; border-radius: 8px; }
 :is(.win-head, .win-tools) :is(.icon-button, .dropdown > .icon-button) .icon { width: 1.1rem; height: 1.1rem; }
 .win-tools .win-actions, .win-tools .win-actions .toolbar { gap: .4rem; }
 /* Knopfgruppe (point 200): toolbar actions sit like the Umschalter – grey rail, no frame, hover a darker grey, never
@@ -208,9 +209,9 @@ input.win-title-field {
 /* The concave curve is drawn by the search form (the toggle's own ::before/::after belong to its tooltip): a 9 px box
    whose right edge lies on the tab's left border and whose bottom lies on the card's top edge; its rounded border
    carries the line from the tab into the card, its shadow covers the square corner behind the curve. The toggle is
-   always the form's last child and 36 px wide (A101). */
+   always the form's last child, var(--tool-size) wide (A101, A76). */
 .win-search:has(> .win-search-toggle[aria-expanded="true"])::after {
-    content: ""; position: absolute; z-index: 4; right: 35px; bottom: calc(-.5rem - 1px); width: 9px; height: 9px; box-sizing: border-box;
+    content: ""; position: absolute; z-index: 4; right: calc(var(--tool-size) - 1px); bottom: calc(-.5rem - 1px); width: 9px; height: 9px; box-sizing: border-box;
     border: solid var(--border); border-width: 0 1px 1px 0; border-bottom-right-radius: 8px; box-shadow: 3px 3px 0 0 var(--bg); pointer-events: none;
 }
 .win-tools .win-search-toggle.icon-button[aria-expanded="true"]:hover { background: var(--bg); }

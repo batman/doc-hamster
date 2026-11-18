@@ -47,6 +47,7 @@ return [
     'delete_text' => '":title" goes to the trash.',
     'cancel' => 'Cancel',
     'deleted' => 'Document deleted.',
+    'trashed_one' => 'Moved to the trash.',
     'changed' => 'Saved.',
     'save' => 'Save',
     'note' => 'Note',

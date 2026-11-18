@@ -12,14 +12,14 @@ declare(strict_types=1);
 return [
     'css' => [
         'core/base', 'core/layout', 'core/forms', 'core/components', 'core/buttons', 'core/menus', 'core/lists',
-        'core/windows', 'core/menu-window', 'core/pane-edge',
+        'core/windows', 'core/menu-window', 'core/pane-edge', 'core/upload',
         'modules/bank', 'modules/documents', 'modules/notes', 'modules/text-editor', 'modules/ocr', 'modules/log', 'modules/updates',
         'modules/palette', 'modules/pages', 'modules/properties', 'modules/ocr-text', 'modules/girocode', 'modules/dnd', 'modules/doc-fullscreen', 'modules/dashboard', 'core/layout-debug',
     ],
     'js' => [
         'core/bus', 'core/error-report', 'core/menu', 'core/dropdowns', 'core/folder-menu', 'core/card-fold', 'core/button-choice', 'core/expand-plus', 'modules/documents-filter', 'core/sortable', 'core/tabs',
         'core/tooltips', 'core/dialogs', 'core/window-cache', 'core/windows', 'core/window-rename', 'core/window-search', 'core/menu-window', 'core/scroll-hint',
-        'core/badges', 'modules/notes', 'modules/tags-search', 'core/toasts', 'core/selection-bar', 'core/ajax-forms',
+        'core/badges', 'core/upload', 'modules/notes', 'modules/tags-search', 'core/toasts', 'core/selection-bar', 'core/ajax-forms',
         'modules/updates-preview-pick', 'core/color-field', 'modules/folder-import', 'core/start',
         'core/pane-edge', 'modules/document-viewer', 'modules/doc-fullscreen', 'modules/doc-transform', 'modules/ocr-text', 'modules/translate', 'modules/palette', 'modules/ocr-ink', 'modules/ocr-browser', 'modules/documents', 'modules/documents-rows', 'modules/documents-forms',
         'modules/documents-rename', 'modules/documents-trash', 'modules/documents-select', 'modules/documents-pick', 'modules/documents-columns', 'modules/documents-dnd', 'modules/documents-dnd-native', 'modules/documents-upload', 'modules/documents-search',

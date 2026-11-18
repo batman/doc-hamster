@@ -146,3 +146,34 @@
 /* Preview overlay: the box drawn on the page and its buttons (modules/document-viewer.js). */
 .doc-box { position: absolute; z-index: 2; border: 2px dashed var(--primary); background: color-mix(in srgb, var(--primary) 12%, transparent); pointer-events: none; }
 .doc-box-actions { position: absolute; top: .35rem; left: .35rem; display: flex; gap: .35rem; pointer-events: auto; cursor: default; }
+
+/* Point 30: the folder rows follow the view like the documents below them.
+   Liste – rows as ever. Details – rows with the columns Dokumente, Unterordner, Geändert under a head row (the row actions
+   keep one width, so the columns line up). Kleine Symbole – tiles in the grid of the small document tiles: the symbol
+   large, name and counts below, the row actions in the corner. Vorschau – the large tiles with the small pictures of
+   the folder's newest documents (or its symbol when it has none). Dragging, dropping, colours and renaming stay. */
+.folder-cols, .folder-cols-head, .folder-previews { display: none; }
+.folder-rows.is-details > .folder-cols-head { display: flex; align-items: center; gap: .75rem; padding: 0 calc(.85rem + 7rem + .75rem) 0 calc(.85rem + 38px + .75rem); color: var(--muted); font-size: .8rem; }
+.folder-rows.is-details > .folder-cols-head > :first-child { flex: 1; }
+.folder-rows.is-details .folder-cols { display: grid; grid-template-columns: 6rem 6rem 6.5rem; gap: .75rem; flex: none; font-variant-numeric: tabular-nums; }
+.folder-rows.is-details > .folder-row .folder-cols { color: var(--muted); font-size: .875rem; }
+.folder-rows.is-details > .folder-row .row-actions { min-width: 7rem; justify-content: flex-end; margin-left: 0; }
+.folder-rows.is-details > .folder-row .row-stats { display: none; }
+@container win (width < 40rem) {
+    .folder-rows.is-details .folder-cols { grid-template-columns: 5rem; }
+    .folder-rows.is-details .folder-cols > :not(:first-child) { display: none; }
+}
+
+.folder-rows:is(.is-small, .is-large) { grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: 1rem; }
+.folder-rows.is-large { grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); }
+.folder-rows:is(.is-small, .is-large) > .folder-row { flex-direction: column; align-items: center; justify-content: flex-start; gap: .4rem; padding: 1rem .75rem .75rem; text-align: center; }
+.folder-rows:is(.is-small, .is-large) > .folder-row > .row-icon { width: 4rem; height: 4rem; }
+.folder-rows:is(.is-small, .is-large) > .folder-row > .row-icon > .icon { width: 3rem; height: 3rem; }
+.folder-rows:is(.is-small, .is-large) > .folder-row > [data-folder-name] { flex: none; width: 100%; }
+.folder-rows:is(.is-small, .is-large) > .folder-row > [data-folder-name] strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.folder-rows:is(.is-small, .is-large) > .folder-row .row-stats { justify-content: center; }
+.folder-rows:is(.is-small, .is-large) > .folder-row > .row-actions { position: absolute; top: .25rem; right: .25rem; margin: 0; }
+.folder-rows:is(.is-small, .is-large) > .folder-row > .folder-rename { width: 100%; }
+.folder-rows.is-large > .folder-row:has(> .folder-previews) > .row-icon { display: none; }
+.folder-rows.is-large .folder-previews { order: -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .3rem; width: 100%; }
+.folder-rows.is-large .folder-previews > .thumb-frame { aspect-ratio: 4 / 5; padding: .2rem; }
