@@ -38,6 +38,7 @@ return [
     'document_filter' => 'Only document: :title',
     'only_document' => 'Only this document',
     'deleted' => 'deleted document',
+    'body' => 'Details',
     'browser' => 'Browser: :message',
     'columns' => ['time' => 'Time', 'book' => 'Logbook', 'level' => 'Kind', 'message' => 'Message', 'person' => 'Person', 'document' => 'Document'],
     'actions' => [

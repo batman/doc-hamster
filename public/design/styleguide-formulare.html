@@ -194,6 +194,26 @@
  <div class="sg-row sg-top"><div><label class="button button-small file-button"><input class="visually-hidden" type="file" multiple><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 9l5 -5l5 5"/><path d="M12 4l0 12"/></svg>Hochladen</label><p class="sg-note">Normal</p></div><div><label class="button button-small file-button is-busy"><input class="visually-hidden" type="file" multiple><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 9l5 -5l5 5"/><path d="M12 4l0 12"/></svg>Hochladen</label><p class="sg-note">Beschäftigt (Upload läuft)</p></div></div>
 <p class="sg-note">Oben das Ablegefeld über dem Menü, wenn Dateien über die Seite gezogen werden (kein Overlay mehr; Ziel Posteingang). Das Menü hat keinen Upload-Knopf mehr (Punkt 180); Ziel ist der Posteingang, auf einer Ordnerzeile oder in einem Ordnerfenster dieser Ordner (181). Unten der Datei-Knopf „Hochladen“ (Posteingang, 182), normal und beschäftigt.</p>
         </section>
+        <section id="sg-kopiertext" class="sg-section">
+            <h2>Kopiertext</h2>
+            <p class="sg-note">Ein längerer Text zum Lesen, Markieren oder Kopieren (<code>&lt;x-copy-text&gt;</code>, A82, A83): ein schreibgeschütztes Feld, das in sich scrollt und Zeilenumbrüche behält, der Kopier-Knopf oben rechts im Feld. Nichts landet ungefragt in der Zwischenablage. Benutzt im Logbuch (Einzelheiten eines Eintrags) und im Hochlade-Dialog (Protokoll).</p>
+            <div class="field sg-pad">
+                <label for="sg-copy-text">Protokoll</label>
+                <div class="field-addon is-copy is-text">
+                    <textarea id="sg-copy-text" rows="6" readonly spellcheck="false">Hochgeladen nach „Rechnungen“ am 18.11.2026, 10:12:04
+2 hochgeladen · 1 nicht hochgeladen · 0 schon vorhanden
+
+Hochgeladen:
+- Rechnung Muster GmbH.pdf
+- Tankquittung.jpg
+
+Nicht hochgeladen:
+- notiz.txt – Bitte ein Foto (JPG, PNG, WebP, HEIC) oder ein PDF hochladen.</textarea>
+                    <span class="addon-end"><button type="button" class="control-button addon-button" data-copy="sg-copy-text" aria-label="Kopieren" data-tooltip="Kopieren"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 9.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667l0 -8.666"/><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1"/></svg></button></span>
+                </div>
+            </div>
+        </section>
+
 </main>
 <footer class="site-footer"><hr><small class="muted">docHamster Version 0.1.0</small></footer>
 </div>

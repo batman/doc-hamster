@@ -108,6 +108,8 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     Route::post('documents/{id}/restore', [DocumentController::class, 'restore'])->middleware('can:documents.trash')->name('documents.restore');
     Route::post('documents/{id}/share-link', [ShareController::class, 'store'])->middleware('can:exports.create')->name('documents.share');
     Route::post('documents', [DocumentUploadController::class, 'store'])->middleware('can:documents.upload')->name('documents.store');
+    // Points 31, A84: the Hochlade-Dialog's protocol into the Logbuch.
+    Route::post('documents/upload-protocol', [DocumentUploadController::class, 'protocol'])->middleware(['can:documents.upload', 'throttle:30,1'])->name('documents.upload-protocol');
     // Text documents written in the app (point 21), before documents/{id} so "text" is no id.
     Route::post('documents/text', [TextDocumentController::class, 'store'])->middleware('can:documents.upload')->name('documents.text.store');
     Route::get('documents/{id}/text', [TextDocumentController::class, 'edit'])->name('documents.text');

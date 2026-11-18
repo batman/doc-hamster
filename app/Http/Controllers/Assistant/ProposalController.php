@@ -35,6 +35,7 @@ final class ProposalController
     public const ICONS = [
         Proposal::LINK => 'link', Proposal::UNLINK => 'unlink', Proposal::TITLE => 'pencil', Proposal::MOVE => 'folder', Proposal::DUPLICATE => 'copy', Proposal::DELETE => 'trash',
         Proposal::SHRINK => 'arrows-minimize', Proposal::STRAIGHTEN => 'crop', Proposal::CORRECT => 'pencil', Proposal::SETTING => 'settings',
+        Proposal::FOLDER_CREATE => 'folder-plus', Proposal::FOLDER_RENAME => 'pencil', Proposal::FOLDER_MOVE => 'folder-up', Proposal::FOLDER_DELETE => 'trash',
     ];
 
     public function index(Request $request, PropertyValues $values): View

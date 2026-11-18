@@ -134,6 +134,12 @@
                                 <small class="log-help">{{ $row['help'] }}</small>
                             @endif
                             <small>{{ implode(' · ', $details) }}</small>
+                            @if (($row['body'] ?? null) !== null)
+                                {{-- A82: the long part (e.g. an upload protocol), folded; read, mark or copy it. --}}
+                                <x-fold-card class="log-body" :fold="'log.body.'.$row['id']" :title="__('log.body')" icon="list-details" compact folded :remember="false">
+                                    <x-copy-text :id="'log-body-'.$row['id']" :label="__('log.body')" :text="$row['body']" rows="10" hide-label />
+                                </x-fold-card>
+                            @endif
                         </span>
                         <span class="log-pills">
                             @if ($new)

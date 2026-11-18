@@ -20,15 +20,20 @@ return [
     'kinds' => [
         'unlink' => 'Verknüpfung lösen', 'title' => 'Titel', 'link' => 'Verknüpfen', 'move' => 'Aufräumen', 'duplicate' => 'Duplikate', 'delete' => 'Löschen',
         'straighten' => 'Geraderücken', 'shrink' => 'Verkleinern', 'correct' => 'Korrekturen', 'setting' => 'Einstellungen',
+        'folder_create' => 'Neuer Ordner', 'folder_rename' => 'Ordner umbenennen', 'folder_move' => 'Ordner verschieben', 'folder_delete' => 'Ordner löschen',
     ],
     'tile' => [
         'unlink' => 'Verknüpfung passt nicht', 'title' => 'Titel ändern', 'link' => 'Dokument zur Buchung', 'move' => 'In Ordner verschieben', 'duplicate' => 'Doppeltes Dokument', 'delete' => 'In den Papierkorb',
         'straighten' => 'Gerade rücken und zuschneiden', 'shrink' => 'Zu groß – verkleinern', 'correct' => 'Wert korrigieren', 'setting' => 'Einstellung einschalten',
+        'folder_create' => 'Neuen Ordner anlegen', 'folder_rename' => 'Ordner umbenennen', 'folder_move' => 'Ordner verschieben', 'folder_delete' => 'Ordner löschen',
     ],
     'label' => [
         'title' => 'Neuer Titel', 'link' => 'Verknüpft mit', 'booking' => 'Buchung', 'document' => 'Dokument', 'folder' => 'Nach', 'keep' => 'Bleibt', 'remove' => 'Papierkorb',
         'trash' => 'Dokument', 'setting' => 'Einschalten', 'size' => 'Größe', 'angle' => 'Drehen', 'cut' => 'zuschneiden',
+        'new_folder' => 'Name', 'where' => 'In', 'new_name' => 'Neuer Name', 'target' => 'Nach', 'content' => 'Inhalt', 'brings' => 'Mit',
     ],
+    'folder_content' => ':documents Dokumente, :folders Unterordner → Papierkorb',
+    'folder_brings' => '{1} 1 Dokument|[2,*] :count Dokumenten',
     'settings' => ['optimize_on' => 'Dokumentgröße optimieren – große Scans und Fotos automatisch verkleinern'],
     'from' => 'Von :name, :date',
     'assistant' => 'Assistent',
@@ -43,6 +48,8 @@ return [
     'all_done' => '{0} Nichts übernommen.|{1} :count Vorschlag übernommen.|[2,*] :count Vorschläge übernommen.',
     'all_failed' => '{1} :count ging nicht mehr.|[2,*] :count gingen nicht mehr.',
     'done' => [
+        'folder_create' => '{0} Ordner „:name“ angelegt.|{1} Ordner „:name“ angelegt, 1 Dokument liegt darin.|[2,*] Ordner „:name“ angelegt, :count Dokumente liegen darin.',
+        'folder_rename' => '„:old“ heißt jetzt „:name“.',
         'unlink' => 'Verknüpfung gelöst.',
         'title' => 'Heißt jetzt „:title“.',
         'clear' => ':name ist geleert.',

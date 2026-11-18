@@ -41,6 +41,7 @@ return [
     'document_filter' => 'Nur Dokument: :title',
     'only_document' => 'Nur dieses Dokument',
     'deleted' => 'gelöschtes Dokument',
+    'body' => 'Einzelheiten',
     'browser' => 'Browser: :message',
     'columns' => ['time' => 'Zeit', 'book' => 'Logbuch', 'level' => 'Art', 'message' => 'Meldung', 'person' => 'Person', 'document' => 'Dokument'],
     'actions' => [

@@ -45,7 +45,7 @@ final class McpTools
         $one = static fn (string $what): array => ['type' => 'object', 'properties' => ['id' => [...$id, 'description' => $what]], 'required' => ['id'], 'additionalProperties' => false];
         // A51: how sure the assistant is – the person takes over all sure ones in one go and looks at the others.
         $sure = ['type' => 'boolean', 'description' => 'true = you are sure (amount, date and counterparty fit clearly); false = a guess the person should look at.'];
-        $propose = static fn (array $fields): array => ['type' => 'object', 'properties' => [...$fields, 'reason' => $reason, 'sure' => $sure], 'required' => [...array_keys($fields), 'reason'], 'additionalProperties' => false];
+        $propose = static fn (array $fields, ?array $required = null): array => ['type' => 'object', 'properties' => [...$fields, 'reason' => $reason, 'sure' => $sure], 'required' => [...($required ?? array_keys($fields)), 'reason'], 'additionalProperties' => false];
         $read = AssistantAccess::READ;
 
         return [
@@ -99,6 +99,8 @@ final class McpTools
                 'title' => ['type' => 'string', 'description' => 'The new title (at most 255 characters).'],
             ]), AssistantAccess::PROPOSE_CORRECT],
             'propose_setting' => ['Propose a setting', 'Proposes switching a setting on: optimize_on = "Dokumentgröße optimieren" shrinks every too large scan automatically.', $propose(['setting' => ['type' => 'string', 'enum' => Proposal::SETTINGS]]), AssistantAccess::PROPOSE_SETTINGS],
+            // Points 32, 33: the Logbuch and the folder proposals (McpMore).
+            ...McpMore::definitions($id, $page, $propose),
         ];
     }
 
@@ -110,7 +112,7 @@ final class McpTools
         foreach (self::definitions() as $name => [$title, $description, $schema, $right]) {
             if (in_array($right, $rights, true) && ($right === AssistantAccess::READ || in_array(AssistantAccess::READ, $rights, true))) {
                 $tools[] = ['name' => $name, 'title' => $title, 'description' => $description, 'inputSchema' => $schema,
-                    'annotations' => ['readOnlyHint' => $right === AssistantAccess::READ && $name !== 'withdraw_proposal', 'destructiveHint' => false, 'idempotentHint' => true, 'openWorldHint' => false]];
+                    'annotations' => ['readOnlyHint' => in_array($right, [AssistantAccess::READ, AssistantAccess::IMAGES, AssistantAccess::LOG], true) && $name !== 'withdraw_proposal', 'destructiveHint' => false, 'idempotentHint' => true, 'openWorldHint' => false]];
             }
         }
 
@@ -145,8 +147,14 @@ final class McpTools
             }
         }
 
+        if (str_starts_with($name, 'propose_folder_')) {
+            return McpMore::proposeFolder($name, $args, $text);
+        }
         if (str_starts_with($name, 'propose_')) {
             return self::propose($name, $text, $org);
+        }
+        if ($name === 'read_log') {
+            return McpMore::log($args, $text, $org);
         }
 
         return match ($name) {

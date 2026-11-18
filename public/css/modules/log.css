@@ -11,3 +11,6 @@
 .log-error strong { color: color-mix(in srgb, var(--error) 75%, var(--text)); }
 /* Batch 16 (2.5): the "was heißt das / was tun" line of a critical entry. */
 .log-row .log-help { color: var(--text); }
+
+/* A82: the Einzelheiten of a log entry (e.g. an upload protocol), folded below its line. */
+.log-body { margin-top: .5rem; }

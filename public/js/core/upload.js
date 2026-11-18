@@ -39,7 +39,9 @@
             list: box.querySelector('[data-upload-files]'),
             background: box.querySelector('[data-upload-background]'),
             retry: box.querySelector('[data-upload-retry]'),
-            copy: box.querySelector('[data-upload-copy]'),
+            protocol: box.querySelector('[data-upload-protocol]'),
+            protocolText: box.querySelector('[data-upload-protocol] textarea'),
+            logged: box.querySelector('[data-upload-logged]'),
             done: box.querySelector('[data-upload-done]'),
             chip: document.querySelector('[data-upload-chip]'),
             chipText: document.querySelector('[data-upload-chip-text]'),
@@ -122,7 +124,13 @@
 
         p.background.hidden = !busy;
         p.retry.hidden = busy || failed === 0;
-        p.copy.hidden = busy || items.length < 2 && failed === 0;
+        // A83: the protocol as text at the end – for several files or any problem.
+        const showProtocol = !busy && (items.length > 1 || failed > 0);
+        if (showProtocol && p.protocol.hidden) {
+            p.protocolText.value = protocol();
+        }
+        p.protocol.hidden = !showProtocol;
+        p.list.hidden = p.list.hidden || showProtocol;
         p.done.hidden = busy;
     };
 
@@ -189,6 +197,20 @@
         removeEventListener('beforeunload', leave);
         render();
         const failed = run.items.filter(item => item.state === 'failed').length;
+        // A84: from two files on, or with a problem, the protocol also goes into the Logbuch.
+        if (run.items.length > 1 || failed > 0) {
+            const body = new FormData();
+            body.append('name', run.options.name ?? '');
+            run.items.forEach(item => {
+                const key = item.state === 'failed' ? 'failed' : item.state === 'known' ? 'known' : 'done';
+                body.append(`${key}[]`, item.state === 'failed' ? `${item.file.name} – ${item.reason}` : item.file.name);
+            });
+            const p = parts();
+            const mine = run;
+            fetch(p.t.protocolUrl, { method: 'POST', body, credentials: 'same-origin', headers: { 'X-CSRF-TOKEN': token(), Accept: 'application/json' } })
+                .then(response => { if (response.ok && run === mine) p.logged.hidden = false; })
+                .catch(() => { /* the protocol stays in the dialog */ });
+        }
         const result = { done: run.items.filter(item => item.state === 'done').length, failed, known: run.items.filter(item => item.state === 'known').length };
         run.resolve?.(result);
         if (run.items.length === 1 && failed === 0) {
@@ -212,6 +234,8 @@
         const p = parts();
         if (p) {
             p.list.replaceChildren();
+            p.protocol.hidden = true;
+            p.logged.hidden = true;
             show(false);
             p.chip.hidden = true;
         }
@@ -270,9 +294,6 @@
             const before = run.resolve;
             run.resolve = result => before?.(result);
             process();
-        } else if (event.target.closest('[data-upload-copy]')) {
-            const text = protocol();
-            navigator.clipboard?.writeText(text).then(() => DocHamster.toast?.(p.t.copied)).catch(() => DocHamster.copyText?.(text));
         }
     });
     document.addEventListener('keydown', event => {

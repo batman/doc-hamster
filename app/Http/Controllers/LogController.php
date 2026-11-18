@@ -205,7 +205,7 @@ final class LogController
      * The page's rows with their text, person and document, one shape for both stores (view and export).
      *
      * @param  Collection<int, stdClass>  $items
-     * @return list<array{id: string, kind: string, book: string, level: string, time: Carbon, text: string, details: list<string>, person: ?string, document: ?string, document_id: ?string, ocr: ?OcrLog, help: ?string}>
+     * @return list<array{id: string, kind: string, book: string, level: string, time: Carbon, text: string, body: ?string, details: list<string>, person: ?string, document: ?string, document_id: ?string, ocr: ?OcrLog, help: ?string}>
      */
     private function hydrate(Collection $items): array
     {
@@ -218,14 +218,14 @@ final class LogController
         foreach ($items as $item) {
             if ($item->kind === 'log' && ($entry = $own->get($item->id)) instanceof LogEntry) {
                 $rows[] = ['id' => $entry->id, 'kind' => 'log', 'book' => $entry->book, 'level' => $entry->level, 'time' => $entry->created_at,
-                    'text' => $entry->message, 'details' => [], 'person' => $entry->user?->display_name,
+                    'text' => $entry->message, 'body' => $entry->body, 'details' => [], 'person' => $entry->user?->display_name,
                     'document' => $entry->document?->title, 'document_id' => $entry->document_id, 'ocr' => null,
                     'help' => self::help($entry->level, (string) $entry->event)];
             } elseif ($item->kind === 'ocr' && ($entry = $ocr->get($item->id)) instanceof OcrLog) {
                 $key = 'ocr.log.event.'.$entry->event;
                 $text = Lang::has($key) ? rtrim((string) __($key, ['chars' => (int) $entry->chars, 'message' => $entry->message ?? '']), ' ·:') : $entry->event;
                 $rows[] = ['id' => $entry->id, 'kind' => 'ocr', 'book' => 'ocr', 'level' => (string) $item->level, 'time' => $entry->created_at,
-                    'text' => $text, 'details' => array_values(array_filter([
+                    'text' => $text, 'body' => null, 'details' => array_values(array_filter([
                         (string) __('ocr.log.source.'.$entry->source),
                         $entry->duration_ms !== null ? (string) __('ocr.log.seconds', ['seconds' => number_format($entry->duration_ms / 1000, 1, ',', '.')]) : null,
                         $entry->file_type,

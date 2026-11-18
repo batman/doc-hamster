@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Domain\Audit\AuditLog;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\Folder;
+use App\Domain\Documents\FolderRemoval;
 use App\Domain\Documents\TrashSettings;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
@@ -300,18 +301,7 @@ final class FolderController
 
         $branch = Folder::branchIds($folder->id);
         $userId = $org->membership()->user_id;
-        $trashed = Document::query()->visibleTo($userId, Gate::allows(Permission::ViewAllDocuments->value))->whereIn('folder_id', $branch)->get();
-
-        DB::transaction(static function () use ($branch, $target, $trashed): void {
-            foreach ($trashed as $document) {
-                $document->delete();
-            }
-            Document::query()->withPrintTray()->withTrashed()->whereIn('folder_id', $branch)->update(['folder_id' => $target]);
-            // Deepest first, so no folder points at one that is already gone.
-            foreach (array_reverse($branch) as $id) {
-                Folder::query()->whereKey($id)->delete();
-            }
-        });
+        $trashed = FolderRemoval::withContent($folder, $target, $userId, Gate::allows(Permission::ViewAllDocuments->value));
 
         foreach ($trashed as $document) {
             $audit->record('document.trashed', orgId: $org->id(), userId: $userId, subject: $document, ip: $request->ip());

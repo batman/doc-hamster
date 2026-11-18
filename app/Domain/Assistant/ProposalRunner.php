@@ -50,6 +50,10 @@ final class ProposalRunner
 
     public function accept(Proposal $proposal, bool $swap = false, ?string $ip = null): string
     {
+        // Point 33: the folder tree has its own rules and rights (FolderProposals).
+        if (str_starts_with($proposal->kind, 'folder_')) {
+            return app(FolderProposals::class)->accept($proposal, $ip);
+        }
         $p = $proposal->payload;
         $user = $this->org->membership()->user_id;
         $meta = static fn (array $more = []): array => ['via' => 'assistant', 'proposal' => $proposal->id, ...$more];

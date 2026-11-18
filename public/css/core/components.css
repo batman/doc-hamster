@@ -366,6 +366,7 @@ button.color-swatch:focus-visible { outline: 2px solid var(--text); outline-offs
    them (.object-pair: Verknüpfen, Duplikat); one below the other when narrow. A thing that is gone: .is-gone. */
 .object-pair { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: .5rem; margin: 0 0 .5rem; }
 .object-pair:has(> .object-tile:only-child) { grid-template-columns: minmax(0, 1fr); }
+.object-pair.is-list { grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr)); }
 .object-pair-sign { display: grid; place-items: center; color: var(--muted); }
 @container win (width < 30rem) { .object-pair { grid-template-columns: minmax(0, 1fr); } .object-pair-sign { rotate: 90deg; } }
 .object-tile { display: flex; align-items: center; gap: .6rem; min-width: 0; padding: .5rem; border-radius: var(--radius); border: 1px solid transparent; background: var(--surface); color: var(--text); text-decoration: none; }

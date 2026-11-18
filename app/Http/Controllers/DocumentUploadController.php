@@ -8,6 +8,7 @@ use App\Domain\Audit\AuditLog;
 use App\Domain\Documents\DocumentFile;
 use App\Domain\Documents\DocumentIntake;
 use App\Domain\Documents\Folder;
+use App\Domain\Log\LogEntry;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\RoleRestriction;
 use App\Http\Controllers\Concerns\ScopesDocuments;
@@ -69,5 +70,27 @@ final class DocumentUploadController
         }
 
         return redirect()->route($folderId !== null ? 'documents.index' : 'inbox.index')->with('status', trans_choice('documents.saved', count($checked)));
+    }
+
+    /**
+     * Points 31, A84: the Hochlade-Dialog files its protocol in the Logbuch – uploads of two or more files, or any with a
+     * problem. The short line counts, the long part (A82) lists every file; written here from the names the browser
+     * sends, so the texts are the server's own.
+     */
+    public function protocol(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'name' => ['nullable', 'string', 'max:200'],
+            'done' => ['nullable', 'array', 'max:5000'], 'done.*' => ['string', 'max:300'],
+            'known' => ['nullable', 'array', 'max:5000'], 'known.*' => ['string', 'max:300'],
+            'failed' => ['nullable', 'array', 'max:5000'], 'failed.*' => ['string', 'max:600'],
+        ]);
+        [$done, $known, $failed] = [array_values($data['done'] ?? []), array_values($data['known'] ?? []), array_values($data['failed'] ?? [])];
+        $line = __('upload.log.line', ['done' => count($done), 'failed' => count($failed), 'known' => count($known), 'name' => $data['name'] ?? '']);
+        $block = static fn (string $head, array $names): array => $names === [] ? [] : ['', $head.':', ...array_map(static fn (string $n): string => '- '.$n, $names)];
+        $body = implode("\n", [...$block(__('upload.log.done'), $done), ...$block(__('upload.log.failed'), $failed), ...$block(__('upload.log.known'), $known)]);
+        LogEntry::write('general', $failed === [] ? 'event' : 'warning', $line, 'document.upload_batch', body: ltrim($body));
+
+        return response()->json(['message' => __('upload.logged'), 'log' => route('log.index')]);
     }
 }

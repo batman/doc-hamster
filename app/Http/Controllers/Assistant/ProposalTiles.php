@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Assistant;
 
+use App\Domain\Assistant\FolderProposals;
 use App\Domain\Assistant\Proposal;
 use App\Domain\Banking\Matcher;
 use App\Domain\Banking\Transaction;
@@ -39,6 +40,7 @@ final class ProposalTiles
                     $docIds[] = $p->payload[$key];
                 }
             }
+            array_push($docIds, ...array_slice(FolderProposals::ids($p->payload), 0, 4));
             if (is_string($p->payload['transaction_id'] ?? null)) {
                 $bookingIds[] = $p->payload['transaction_id'];
             }
@@ -64,6 +66,12 @@ final class ProposalTiles
             Proposal::DUPLICATE => [$this->document(__('proposals.label.keep'), $d['keep_id'] ?? null), $this->document(__('proposals.label.remove'), $d['remove_id'] ?? null)],
             Proposal::DELETE => [$this->document(__('proposals.label.trash'), $d['document_id'] ?? null)],
             Proposal::SETTING => [],
+            // A91: folders as Objektkacheln; a new folder shows up to four of the documents it brings along.
+            Proposal::FOLDER_CREATE => array_map(fn (string $id): array => $this->document(__('proposals.label.document'), $id),
+                array_slice(FolderProposals::ids($d), 0, 4)),
+            Proposal::FOLDER_RENAME, Proposal::FOLDER_DELETE => [$this->folder(__('proposals.kinds.'.$p->kind), $d['folder_id'] ?? null)],
+            Proposal::FOLDER_MOVE => [$this->folder(__('proposals.kinds.folder_move'), $d['folder_id'] ?? null),
+                ($d['parent_id'] ?? null) ? $this->folder(__('proposals.label.target'), $d['parent_id']) : ['label' => __('proposals.label.target'), 'title' => __('folders.top'), 'meta' => '', 'icon' => 'folder', 'thumb' => null, 'url' => null]],
             default => [$this->document(__('proposals.label.document'), $d['document_id'] ?? null)],
         };
     }
@@ -84,6 +92,13 @@ final class ProposalTiles
             Proposal::SHRINK => [['label' => __('proposals.label.size'), 'text' => number_format((int) (($this->documents[$d['document_id'] ?? ''] ?? null)?->files->sum('size') ?? 0) / 1048576, 1, ',', '.').' MB']],
             Proposal::CORRECT => [$this->correction($d)],
             Proposal::SETTING => [['label' => __('proposals.label.setting'), 'text' => __('proposals.settings.'.($d['setting'] ?? ''))]],
+            Proposal::FOLDER_CREATE => array_filter([
+                ['label' => __('proposals.label.new_folder'), 'text' => (string) ($d['name'] ?? '')],
+                ['label' => __('proposals.label.where'), 'text' => (string) (($d['parent_id'] ?? null) ? (Folder::query()->whereKey($d['parent_id'])->value('name') ?? __('proposals.gone')) : __('folders.top'))],
+                ($n = count(FolderProposals::ids($d))) > 0 ? ['label' => __('proposals.label.brings'), 'text' => trans_choice('proposals.folder_brings', $n, ['count' => $n])] : null,
+            ]),
+            Proposal::FOLDER_RENAME => [['label' => __('proposals.label.new_name'), 'text' => (string) ($d['name'] ?? '')]],
+            Proposal::FOLDER_DELETE => [$this->content((string) ($d['folder_id'] ?? ''))],
             default => [],
         };
     }
@@ -91,7 +106,7 @@ final class ProposalTiles
     /** Everything a search (A57) looks through: kind, reason, assistant, the names, dates and amounts of the tiles. */
     public function haystack(Proposal $p): string
     {
-        $parts = [__('proposals.kinds.'.$p->kind), __('proposals.tile.'.$p->kind), (string) $p->reason, (string) $p->assistant, (string) ($p->payload['title'] ?? ''), (string) ($p->payload['value'] ?? '')];
+        $parts = [__('proposals.kinds.'.$p->kind), __('proposals.tile.'.$p->kind), (string) $p->reason, (string) $p->assistant, (string) ($p->payload['title'] ?? ''), (string) ($p->payload['value'] ?? ''), (string) ($p->payload['name'] ?? '')];
         foreach ($this->objects($p) as $object) {
             $parts[] = $object['title'].' '.$object['meta'];
         }
@@ -112,6 +127,32 @@ final class ProposalTiles
 
         return ['label' => $label, 'title' => $document->title, 'meta' => implode(' · ', $meta), 'icon' => $file?->typeIcon() ?? 'file-text',
             'thumb' => $file?->thumb_path ? $file->thumbUrl() : null, 'url' => route('documents.show', $document->id)];
+    }
+
+    /**
+     * A91: a folder as Objektkachel – its name, how many documents are in it; a click opens it.
+     *
+     * @return array{label: string, title: string, meta: string, icon: string, thumb: ?string, url: ?string}
+     */
+    private function folder(string $label, mixed $id): array
+    {
+        $folder = is_string($id) ? Folder::query()->find($id) : null;
+        if ($folder === null) {
+            return ['label' => $label, 'title' => __('proposals.gone'), 'meta' => '', 'icon' => 'folder', 'thumb' => null, 'url' => null];
+        }
+        $count = Document::query()->where('folder_id', $folder->id)->count();
+
+        return ['label' => $label, 'title' => $folder->name, 'meta' => trans_choice('folders.used', $count, ['count' => $count]), 'icon' => $folder->iconName(),
+            'thumb' => null, 'url' => route('documents.index', ['folder' => $folder->id])];
+    }
+
+    /** @return array{label: string, text: string} what deleting a folder takes along (into the Papierkorb) */
+    private function content(string $id): array
+    {
+        $branch = Folder::query()->whereKey($id)->exists() ? Folder::branchIds($id) : [];
+        $documents = $branch === [] ? 0 : Document::query()->whereIn('folder_id', $branch)->count();
+
+        return ['label' => __('proposals.label.content'), 'text' => __('proposals.folder_content', ['documents' => $documents, 'folders' => max(0, count($branch) - 1)])];
     }
 
     /** @return array{label: string, title: string, meta: string, icon: string, thumb: ?string, url: ?string} */

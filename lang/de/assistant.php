@@ -13,8 +13,10 @@ return [
     'rights' => [
         'read' => 'Buchungen und Dokumente lesen',
         'images' => 'Seitenbilder ansehen (Texterkennung prüfen, Schiefes messen)',
+        'log' => 'Logbuch lesen (was geklappt hat, was nicht, wo es Fehler gibt)',
         'link' => 'Verknüpfungen vorschlagen',
         'move' => 'Verschieben in Ordner vorschlagen',
+        'folders' => 'Ordner vorschlagen (anlegen, umbenennen, verschieben, löschen)',
         'cleanup' => 'Duplikate und Löschen vorschlagen (nur Papierkorb)',
         'shrink' => 'Verkleinern vorschlagen',
         'straighten' => 'Geraderücken und Zuschneiden vorschlagen (Fotos)',
@@ -28,6 +30,8 @@ return [
     'propose_unknown' => [
         'booking' => 'Diese Buchung gibt es nicht.', 'document' => 'Dieses Dokument gibt es nicht (oder nicht für diese Person).',
         'folder' => 'Diesen Ordner gibt es nicht.', 'photo' => 'Geraderücken geht nur bei fotografierten Belegen (JPEG, PNG, WebP).', 'property' => 'Diese Eigenschaft gibt es nicht.', 'setting' => 'Diese Einstellung gibt es nicht.', 'link' => 'Dieses Dokument hängt nicht an dieser Buchung.', 'proposal' => 'Diesen offenen Vorschlag von Ihnen gibt es nicht.',
+        'folder_name' => 'Ein Ordnername braucht 1 bis 100 Zeichen und keinen Schrägstrich.', 'folder_taken' => 'Auf dieser Ebene gibt es schon einen Ordner mit diesem Namen.',
+        'folder_deep' => 'So tief dürfen Ordner nicht verschachtelt werden.', 'folder_fixed' => '„Dokumente allgemein“ lässt sich weder verschieben noch löschen.',
     ],
     'state_off' => 'Aus',
     'state_on' => 'An',

@@ -12,6 +12,8 @@ return [
         'expand' => 'Menü vergrößern',
     ],
     'more' => 'Mehr',
+    'copy' => 'Kopieren',
+    'copied' => 'Kopiert.',
     // Blättern (point 4): ‹ Seite 2 von 12 ›
     'pager' => ['label' => 'Seiten', 'previous' => 'Vorige Seite', 'next' => 'Nächste Seite', 'page_of' => 'Seite :page von :last', 'page' => 'Seite :page'],
     // Foldable card (point 125): the chevron in the card head.

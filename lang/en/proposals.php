@@ -20,15 +20,20 @@ return [
     'kinds' => [
         'unlink' => 'Unlinking', 'title' => 'Titles', 'link' => 'Linking', 'move' => 'Tidying up', 'duplicate' => 'Duplicates', 'delete' => 'Deleting',
         'straighten' => 'Straightening', 'shrink' => 'Shrinking', 'correct' => 'Corrections', 'setting' => 'Settings',
+        'folder_create' => 'New folder', 'folder_rename' => 'Rename folder', 'folder_move' => 'Move folder', 'folder_delete' => 'Delete folder',
     ],
     'tile' => [
         'unlink' => 'Link does not fit', 'title' => 'Change the title', 'link' => 'Document for a booking', 'move' => 'Move into a folder', 'duplicate' => 'Duplicate document', 'delete' => 'Into the bin',
         'straighten' => 'Straighten and cut out', 'shrink' => 'Too large – shrink', 'correct' => 'Correct a value', 'setting' => 'Switch a setting on',
+        'folder_create' => 'Create a new folder', 'folder_rename' => 'Rename a folder', 'folder_move' => 'Move a folder', 'folder_delete' => 'Delete a folder',
     ],
     'label' => [
         'title' => 'New title', 'link' => 'Linked to', 'booking' => 'Booking', 'document' => 'Document', 'folder' => 'To', 'keep' => 'Stays', 'remove' => 'Bin',
         'trash' => 'Document', 'setting' => 'Switch on', 'size' => 'Size', 'angle' => 'Turn', 'cut' => 'cut out',
+        'new_folder' => 'Name', 'where' => 'In', 'new_name' => 'New name', 'target' => 'To', 'content' => 'Content', 'brings' => 'With',
     ],
+    'folder_content' => ':documents documents, :folders subfolders → bin',
+    'folder_brings' => '{1} 1 document|[2,*] :count documents',
     'settings' => ['optimize_on' => 'Optimise document size – shrink large scans and photos automatically'],
     'from' => 'From :name, :date',
     'assistant' => 'Assistant',
@@ -43,6 +48,8 @@ return [
     'all_done' => '{0} Nothing taken over.|{1} :count proposal taken over.|[2,*] :count proposals taken over.',
     'all_failed' => '{1} :count no longer worked.|[2,*] :count no longer worked.',
     'done' => [
+        'folder_create' => '{0} Folder “:name” created.|{1} Folder “:name” created, 1 document is in it.|[2,*] Folder “:name” created, :count documents are in it.',
+        'folder_rename' => '“:old” is now called “:name”.',
         'unlink' => 'Link removed.',
         'title' => 'Now called “:title”.',
         'clear' => ':name is cleared.',

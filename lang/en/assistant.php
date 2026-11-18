@@ -13,8 +13,10 @@ return [
     'rights' => [
         'read' => 'Read bookings and documents',
         'images' => 'Look at page pictures (check the text recognition, measure tilts)',
+        'log' => 'Read the log (what worked, what did not, where errors are)',
         'link' => 'Propose links',
         'move' => 'Propose moving into folders',
+        'folders' => 'Propose folders (create, rename, move, delete)',
         'cleanup' => 'Propose duplicates and deleting (bin only)',
         'shrink' => 'Propose shrinking',
         'straighten' => 'Propose straightening and cutting out (photos)',
@@ -28,6 +30,8 @@ return [
     'propose_unknown' => [
         'booking' => 'This booking does not exist.', 'document' => 'This document does not exist (or not for this person).',
         'folder' => 'This folder does not exist.', 'photo' => 'Straightening works only for photographed receipts (JPEG, PNG, WebP).', 'property' => 'This property does not exist.', 'setting' => 'This setting does not exist.', 'link' => 'This document is not linked to this booking.', 'proposal' => 'There is no open proposal of yours with this id.',
+        'folder_name' => 'A folder name needs 1 to 100 characters and no slash.', 'folder_taken' => 'There is a folder with this name on this level already.',
+        'folder_deep' => 'Folders may not be nested this deep.', 'folder_fixed' => '“Documents in general” can be neither moved nor deleted.',
     ],
     'state_off' => 'Off',
     'state_on' => 'On',

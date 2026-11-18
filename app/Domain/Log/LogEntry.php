@@ -19,7 +19,8 @@ use Throwable;
 /**
  * Einstellungen → Log (point 115, A229): one entry of the logbooks "Allgemein" (events like signing in or uploading, and
  * every error of the server or the browser) and "Updates". The logbook "Texterkennung" lives in ocr_log (OcrLog) and is
- * shown in the same list. Every entry has a level: event, warning or error. Short texts only, never secrets.
+ * shown in the same list. Every entry has a level: event, warning or error. A short line, never secrets; a longer text
+ * (A82, e.g. an upload protocol) goes into body.
  *
  * @property string $id
  * @property ?string $org_id
@@ -28,6 +29,7 @@ use Throwable;
  * @property string $level
  * @property ?string $event
  * @property string $message
+ * @property ?string $body A82: the long part below the line (e.g. an upload protocol), null = none
  * @property ?string $user_id
  * @property ?string $document_id
  */
@@ -43,6 +45,9 @@ final class LogEntry extends Model
     public const int KEEP_MONTHS = 12;
 
     public const int PER_PAGE = 50;
+
+    /** A82: at most this many characters of a long part (about 2000 file names). */
+    public const int MAX_BODY = 200000;
 
     public $timestamps = false;
 
@@ -72,7 +77,7 @@ final class LogEntry extends Model
      * Writes one entry. Never throws – a log must not break what it logs. Organisation and person default to the
      * current ones. Now and then (1 %) old entries go (A228), so retention works without cron too.
      */
-    public static function write(string $book, string $level, string $message, ?string $event = null, ?string $orgId = null, ?string $userId = null, ?string $documentId = null): void
+    public static function write(string $book, string $level, string $message, ?string $event = null, ?string $orgId = null, ?string $userId = null, ?string $documentId = null, ?string $body = null): void
     {
         try {
             if ($orgId === null) {
@@ -90,6 +95,7 @@ final class LogEntry extends Model
                 'message' => Str::limit(trim($message) !== '' ? trim($message) : '?', 990),
                 'user_id' => is_string($userId) ? $userId : null,
                 'document_id' => $documentId,
+                'body' => $body !== null && trim($body) !== '' ? mb_substr($body, 0, self::MAX_BODY) : null,
             ]);
             if (random_int(1, 100) === 1) {
                 self::prune();

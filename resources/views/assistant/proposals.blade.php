@@ -67,6 +67,10 @@
                     $kind = $proposal->kind;
                     $objects = $tiles->objects($proposal);
                     $pair = count($objects) === 2 && $objects[0]['url'] && $objects[1]['url'];
+                    $withProposal = static fn (string $url): string => $url.(str_contains($url, '?') ? '&' : '?').'proposal='.$proposal->id;
+                    $sign = match ($kind) { \App\Domain\Assistant\Proposal::DUPLICATE => 'copy', \App\Domain\Assistant\Proposal::UNLINK => 'unlink', \App\Domain\Assistant\Proposal::FOLDER_MOVE => 'arrow-up-right', default => 'link' };
+                    // A88: a new folder lists the documents it brings along (no sign between them).
+                    $listed = $kind === \App\Domain\Assistant\Proposal::FOLDER_CREATE;
                 @endphp
                 <article class="card" data-window-row>
                     <h3 class="card-head"><x-icon :name="\App\Http\Controllers\Assistant\ProposalController::ICONS[$kind]" />{{ __('proposals.tile.'.$kind) }}
@@ -82,9 +86,9 @@
                         </div>
                     @endif
                     @if ($objects !== [])
-                        <div class="object-pair">
+                        <div @class(['object-pair', 'is-list' => $listed])>
                             @foreach ($objects as $i => $object)
-                                @if ($i > 0)<span class="object-pair-sign"><x-icon :name="$kind === \App\Domain\Assistant\Proposal::DUPLICATE ? 'copy' : ($kind === \App\Domain\Assistant\Proposal::UNLINK ? 'unlink' : 'link')" /></span>@endif
+                                @if ($i > 0 && ! $listed)<span class="object-pair-sign"><x-icon :name="$sign" /></span>@endif
                                 @include('assistant._object-tile', ['object' => $object, 'proposal' => $proposal])
                             @endforeach
                         </div>
@@ -101,7 +105,7 @@
                     <div class="actions">
                         @include('assistant._proposal-buttons', ['proposal' => $proposal])
                         @if ($pair)
-                            <a class="icon-button" href="{{ $objects[0]['url'] }}?proposal={{ $proposal->id }}" data-window data-window-also="{{ $objects[1]['url'] }}?proposal={{ $proposal->id }}"
+                            <a class="icon-button" href="{{ $withProposal($objects[0]['url']) }}" data-window data-window-also="{{ $withProposal($objects[1]['url']) }}"
                                 aria-label="{{ __('proposals.side_by_side') }}" data-tooltip="{{ __('proposals.side_by_side') }}"><x-icon name="layout-columns" /></a>
                         @endif
                     </div>

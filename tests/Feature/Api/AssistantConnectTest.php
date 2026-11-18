@@ -8,6 +8,8 @@ use App\Domain\Banking\Transaction;
 use App\Domain\Banking\TransactionMatch;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
+use App\Domain\Documents\Folder;
+use App\Domain\Log\LogEntry;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Membership;
 use App\Domain\Org\RoleRight;
@@ -188,4 +190,37 @@ it('lets a role with "Vorschläge bearbeiten" handle proposals with its own righ
     // Linking needs "Bank": the click fails with the reason, nothing is linked.
     $this->post("/proposals/{$proposal->id}/accept")->assertRedirect('/proposals');
     expect($proposal->fresh()->status)->toBe('failed')->and(TransactionMatch::query()->count())->toBe(0);
+});
+
+it('reads the Logbuch without private folders and proposes a new folder with its documents (points 32, 33)', function (): void {
+    $private = Folder::query()->create(['name' => 'Privat', 'is_private' => true]);
+    $hidden = Document::query()->create(['uploaded_by' => $this->owner->user_id, 'title' => 'ausweis.jpg', 'folder_id' => $private->id]);
+    LogEntry::write('general', 'warning', 'Hochgeladen nach „Posteingang“: 2 fertig', 'document.upload_batch', body: "Hochgeladen:\n- a.pdf");
+    LogEntry::write('general', 'event', 'Privat hochgeladen', 'document.uploaded', documentId: $hidden->id);
+
+    $this->actingAs($this->owner->user)->postJson('/settings/assistant', ['on' => '1', 'rights' => ['read', 'log', 'folders']])->assertOk();
+    $verifier = Str::random(64);
+    [$clientId, $code] = allowAssistant($this->owner, $verifier);
+    $token = $this->post('/oauth/token', ['grant_type' => 'authorization_code', 'code' => $code, 'redirect_uri' => CALLBACK,
+        'client_id' => $clientId, 'code_verifier' => $verifier])->assertOk()->json('access_token');
+
+    $log = json_decode(mcp($token, 'tools/call', ['name' => 'read_log', 'arguments' => ['book' => 'general']])['result']['content'][0]['text'], true);
+    expect(array_column($log['data'], 'text'))->toContain('Hochgeladen nach „Posteingang“: 2 fertig')->not->toContain('Privat hochgeladen')
+        ->and(collect($log['data'])->firstWhere('event', 'document.upload_batch')['body'])->toContain('a.pdf');
+
+    $taken = mcp($token, 'tools/call', ['name' => 'propose_folder_create', 'arguments' => ['name' => 'Versicherungen', 'document_ids' => [$this->document->id], 'reason' => 'Zwei Policen.']]);
+    expect($taken['result']['isError'])->toBeFalse();
+    $refused = mcp($token, 'tools/call', ['name' => 'propose_folder_create', 'arguments' => ['name' => 'X', 'document_ids' => [$hidden->id], 'reason' => 'x']]);
+    expect($refused['result']['isError'])->toBeTrue();
+
+    $proposal = Proposal::query()->where('kind', Proposal::FOLDER_CREATE)->firstOrFail();
+    app('auth')->forgetGuards();
+    $this->actingAs($this->owner->user)->post("/proposals/{$proposal->id}/accept")->assertRedirect();
+    $folder = Folder::query()->where('name', 'Versicherungen')->firstOrFail();
+    expect($this->document->refresh()->folder_id)->toBe($folder->id);
+
+    // A name that is taken on the same level is refused (any case).
+    Folder::query()->create(['name' => 'Verträge']);
+    $again = mcp($token, 'tools/call', ['name' => 'propose_folder_rename', 'arguments' => ['folder_id' => $folder->id, 'name' => 'VERTRÄGE', 'reason' => 'x']]);
+    expect($again['result']['isError'])->toBeTrue();
 });
