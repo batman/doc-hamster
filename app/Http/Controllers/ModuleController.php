@@ -106,7 +106,8 @@ final class ModuleController
         set_time_limit(900);
         try {
             /** @var Manifest $manifest */
-            $manifest = InstallModule::dispatchSync($repo, $key, $rights);
+            // The net job runs right here in the request (like InstallExtension); its result comes back.
+            $manifest = app()->call([new InstallModule($repo, $key, $rights), 'handle']);
         } catch (Throwable $e) {
             return $this->back(error: __('modules.failed', ['reason' => mb_substr($e->getMessage(), 0, 300)]));
         }

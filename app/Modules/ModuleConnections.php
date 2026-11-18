@@ -21,11 +21,17 @@ final class ModuleConnections
     /** @var list<array{module: string, title: string, text: string, icon: string, route: string}> */
     public array $settings = [];
 
-    /** @var list<array{module: string, label: string, icon: string, route: string}> */
+    /** @var list<array{module: string, label: string, icon: string, route: string, when: callable|null}> */
     public array $documentActions = [];
 
     /** @var list<array{module: string, label: string, icon: string, route: string}> */
     public array $bookingActions = [];
+
+    /** @var list<array{module: string, minutes: int, task: callable}> */
+    public array $tasks = [];
+
+    /** @var array<string, ModuleContext> the context of each started module, for its queued jobs (ModuleRuntime) */
+    public array $contexts = [];
 
     /** @var array<string, list<array{module: string, listener: callable}>> */
     private array $listeners = [];
@@ -57,11 +63,13 @@ final class ModuleConnections
     /**
      * The entries whose route exists – for a layout.
      *
-     * @param  list<array<string, string>>  $entries
-     * @return list<array<string, string>>
+     * @template T of array<string, mixed>
+     *
+     * @param  list<T>  $entries
+     * @return list<T>
      */
     public static function routed(array $entries): array
     {
-        return array_values(array_filter($entries, static fn (array $e): bool => Route::has($e['route'])));
+        return array_values(array_filter($entries, static fn (array $e): bool => Route::has($e['route']) && (! is_callable($e['when'] ?? null) || (bool) ($e['when'])())));
     }
 }

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Domain\Assistant\Proposal;
+use App\Domain\Assistant\ProposalVisibility;
 use App\Domain\Auth\User;
 use App\Domain\Banking\BankAccount;
 use App\Domain\Banking\Transaction;
@@ -226,4 +228,19 @@ it('keeps a private folder for the owner only – no role, no bank matching, no 
     expect(Document::query()->visibleTo($this->owner->user_id, true)->count())->toBe(2)
         ->and(Document::query()->matchable()->pluck('title')->all())->toBe(['Rechnung'])
         ->and(Document::query()->notPrivate()->pluck('title')->all())->toBe(['Rechnung']);
+});
+
+it('keeps proposals about private documents for the owner alone (A94, A95)', function (): void {
+    app(CurrentOrg::class)->set($this->owner);
+    $this->other->forceFill(['is_private' => true])->save();
+    $private = restrictedDoc('Ausweis', $this->other->id, '2026-03-01');
+    $open = restrictedDoc('Rechnung', $this->top->id, '2026-03-01');
+    Proposal::file(Proposal::DELETE, ['document_id' => $private->id], 'privat', 'Claude', null, $this->orgId);
+    Proposal::file(Proposal::DELETE, ['document_id' => $open->id], 'offen', 'Claude', null, $this->orgId);
+    $all = fn () => ProposalVisibility::filter(Proposal::query()->get())->pluck('reason')->sort()->values()->all();
+
+    expect($all())->toBe(['offen', 'privat']);
+    app(CurrentOrg::class)->clear();
+    $this->actingAs($this->person->user);
+    expect(asRestricted($all))->toBe(['offen']);
 });

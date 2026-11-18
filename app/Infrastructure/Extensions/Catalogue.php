@@ -109,8 +109,7 @@ final class Catalogue
             }
             $all['translate-'.$pair] = new Extension('translate-'.$pair, Extension::DATA, 'translate', $version, $files, 'translate/'.$pair, $meta, ['translate-engine']);
         }
-        // 173.1(b): code modules – listed, not installable yet (no release to pin; BankConnector Q-11 still open).
-        $all['revolut'] = new Extension('revolut', Extension::MODULE, 'bank', null, [], 'modules/revolut');
+        // D-041: code modules come from GitHub (Software → Module, the partner list) – Revolut too; none in this catalogue.
 
         return self::$all = $all;
     }

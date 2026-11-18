@@ -63,17 +63,28 @@ off and shows the reason on the Software page; docHamster itself keeps running.
 | `routes(fn () => Route::get(...)->name('x'))` | Pages under `/m/<key>/…`, names `m.<key>.x`, for signed-in people | – |
 | `settingsPage($title, $text, $icon, 'x')` | An entry under Einstellungen → System → Module (owner only) | – |
 | `menuEntry($label, $icon, 'x')` | An entry in the main menu | – |
-| `documentAction($label, $icon, 'x')` | An entry in a document's ⋯ menu; the route gets `{id}` | – |
+| `documentAction($label, $icon, 'x', fn () => bool)` | An entry in a document's ⋯ menu; the route gets `{id}`; the optional check decides per request whether it shows | – |
 | `bookingAction($label, $icon, 'x')` | An entry in a booking's ⋯ menu; the route gets `{id}` | – |
 | `documents()` | Query of the documents (never those in private folders) | `documents_read` |
 | `bookings()` | Query of the bookings | `bookings_read` |
 | `write('documents' \| 'bookings', fn () => …)` | Change them, in one transaction | `…_write` |
 | `on('document.created' \| 'document.recognised' \| 'booking.created' \| 'link.confirmed', fn ($model) => …)` | React to events | `documents_read` / `bookings_read` |
+| `bankAccount($sourceId, $name, $currency, $iban)` | An own bank account for an outside account (`source_key` = `<key>:<sourceId>`), made once | `bookings_write` |
+| `adoptBankAccount($account, $sourceId)` / `findBankAccount($sourceId)` | Take over an existing account (e.g. one filled by CSV before) / find the own one | `bookings_write` / `bookings_read` |
+| `planBookings($account, $lines)` | A dry run: per line `new`, `known` or `update` – nothing stored (for a Probelauf) | `bookings_read` |
+| `importBookings($account, $lines)` | Import booking lines like a CSV import – no doubles by `booking_id`/`fingerprint`, then matching and suggestions | `bookings_write` |
+| `attachReceipt($booking, $content, $filename, $title)` | Store a file as a document and link it to the booking (same file twice → once) | `documents_write` + `bookings_write` |
+| `every($minutes, fn () => …)` | A recurring task (at least every 5 minutes); a task that throws switches the module off | – |
 | `netJob($job)` | Anything that talks to the internet runs as a queued job on the `net` queue | `network` |
 | `allows($right)` | Ask whether a right was granted | – |
 
 Icons: names of the [Tabler icons](https://tabler.io/icons) that docHamster ships (`resources/icons/tabler`); others
-become a puzzle piece. Route names may be given short (`'x'`) – the context adds `m.<key>.`.
+become a puzzle piece.
+
+A booking line for `importBookings` is an array with `booking_date` (Y-m-d), `amount_minor`, `currency`,
+`counterparty`, `purpose`, `booking_id` (the bank's own id – this keeps it from being doubled, also against a CSV import
+of the same bank) and `fingerprint`; optional `kind`, `bank_state`, `card_last4`, `mcc`, `orig_amount_minor`,
+`orig_currency`, `fee_minor`, `balance_minor`, `related_id`. The Revolut module (`modules/revolut`) is a full example. Route names may be given short (`'x'`) – the context adds `m.<key>.`.
 
 The rights make plain what a module wants and keep it in its lane through these methods. A module is still PHP code on
 the owner's server; write it honestly, and use only the context for docHamster's data.
@@ -104,6 +115,9 @@ the owner's server; write it honestly, and use only the context for docHamster's
 4. In docHamster: Einstellungen → System → Software → Module → "Modul hinzufügen", enter the project address,
    "Suchen", "Installieren".
 5. Updates: a new release; owners see it after "Update" on their Software page.
+
+A project may hold several modules: the address `owner/repo#tag` takes the release with that tag (docHamster's own
+modules live in `modules/<key>` of the docHamster project and are published as releases `module-<key>`).
 
 To be suggested to every docHamster owner, ask for your project to be added to the public partner list
 [`modules/partners.json`](../../modules/partners.json) of the docHamster project (a pull request with `"owner/repo"`).

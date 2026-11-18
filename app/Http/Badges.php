@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http;
 
 use App\Domain\Assistant\Proposal;
+use App\Domain\Assistant\ProposalVisibility;
 use App\Domain\Backup\Backup;
 use App\Domain\Banking\Transaction;
 use App\Domain\Documents\Inbox;
@@ -94,7 +95,8 @@ final class Badges
         }
 
         if (Gate::allows('proposals.view')) {
-            $counts[self::PROPOSALS] = Proposal::query()->where('status', Proposal::OPEN)->count();
+            // A95: only proposals this person may see (none about documents or folders hidden from them).
+            $counts[self::PROPOSALS] = ProposalVisibility::filter(Proposal::query()->where('status', Proposal::OPEN)->get())->count();
         }
 
         if (Gate::allows(Permission::ManageSettings->value)) {

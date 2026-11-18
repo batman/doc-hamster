@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Assistant;
 
 use App\Domain\Assistant\AssistantAccess;
 use App\Domain\Assistant\Proposal;
+use App\Domain\Assistant\ProposalVisibility;
 use App\Domain\Assistant\Straightener;
 use App\Domain\Banking\Transaction;
 use App\Domain\Banking\TransactionMatch;
@@ -162,7 +163,8 @@ final class McpTools
                 'connection' => BankApiController::key($outer)->name, 'rights' => $rights,
                 'note' => 'You change nothing yourself: every change is a proposal the person takes over or not.'])],
             'get_page_image' => self::look($text('document_id'), max(1, (int) ($args['page'] ?? 1)), $org),
-            'list_proposals' => [false, self::json(['data' => Proposal::query()->where('status', Proposal::OPEN)->latest()->limit(500)->get()
+            // A95: only proposals about what this person (and so the assistant) may see – never private folders.
+            'list_proposals' => [false, self::json(['data' => ProposalVisibility::filter(Proposal::query()->where('status', Proposal::OPEN)->latest()->limit(500)->get())
                 ->map(static fn (Proposal $p): array => ['id' => $p->id, 'kind' => $p->kind, 'payload' => $p->payload, 'reason' => $p->reason, 'sure' => $p->sure, 'from' => $p->assistant])->all()])],
             'withdraw_proposal' => self::withdraw($text('id'), $outer),
             default => self::read($name, $args, $text, $outer),

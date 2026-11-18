@@ -1,0 +1,49 @@
+# D-041: docHamster's own modules (modules/<key>, e.g. Revolut) are published like any module – a release carrying
+# module.zip and dochamster-module.json (with zip_sha256) – under the tag "module-<key>". It is a pre-release, so the
+# app's own "newest release" stays the docHamster version. Address for "Modul hinzufügen" and the partner list:
+# batman/doc-hamster#module-<key>. Runs when main gets a change below modules/ (or by hand).
+name: Modules
+
+on:
+  push:
+    branches: [main]
+    paths: ['modules/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pack and publish every module
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for dir in modules/*/; do
+            [ -f "$dir/dochamster-module.json" ] || continue
+            key=$(jq -r .key "$dir/dochamster-module.json")
+            version=$(jq -r .version "$dir/dochamster-module.json")
+            tag="module-$key"
+            work=$(mktemp -d)
+            paths=""
+            for p in dochamster-module.json src resources lang database public; do [ -e "$dir/$p" ] && paths="$paths $p"; done
+            (cd "$dir" && zip -r -X "$work/module.zip" $paths)
+            jq --arg sha "$(sha256sum "$work/module.zip" | cut -d' ' -f1)" '. + {zip_sha256: $sha}' "$dir/dochamster-module.json" > "$work/dochamster-module.json"
+            if gh release view "$tag" > /dev/null 2>&1; then
+              published=$(gh release download "$tag" -p dochamster-module.json -O - | jq -r .version || echo "")
+              if [ "$published" = "$version" ]; then
+                echo "$key $version is published already"
+                continue
+              fi
+              gh release upload "$tag" "$work/module.zip" "$work/dochamster-module.json" --clobber
+              gh release edit "$tag" --title "Modul $key $version" --prerelease
+            else
+              gh release create "$tag" "$work/module.zip" "$work/dochamster-module.json" --title "Modul $key $version" \
+                --notes "docHamster module $key – install with the address batman/doc-hamster#$tag" --prerelease
+            fi
+            echo "published $key $version"
+          done

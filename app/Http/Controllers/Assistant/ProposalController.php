@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Assistant;
 
 use App\Domain\Assistant\Proposal;
 use App\Domain\Assistant\ProposalRunner;
+use App\Domain\Assistant\ProposalVisibility;
 use App\Domain\Assistant\Straightener;
 use App\Domain\Documents\Document;
 use App\Domain\Org\CurrentOrg;
@@ -41,7 +42,7 @@ final class ProposalController
     public function index(Request $request, PropertyValues $values): View
     {
         $filter = $this->filter($request);
-        $all = Proposal::query()->where('status', Proposal::OPEN)->oldest()->get();
+        $all = ProposalVisibility::filter(Proposal::query()->where('status', Proposal::OPEN)->oldest()->get()); // A95
         $kinds = [];
         foreach (Proposal::KINDS as $kind) {
             $count = $all->where('kind', $kind)->count();
@@ -62,6 +63,7 @@ final class ProposalController
     public function accept(Request $request, string $id, ProposalRunner $runner): RedirectResponse|JsonResponse
     {
         $proposal = Proposal::query()->where('status', Proposal::OPEN)->whereKey($id)->firstOrFail();
+        abort_unless(ProposalVisibility::allows($proposal), 404); // A95
         $message = $this->run($proposal, $runner, $request->boolean('swap'), $request->ip());
 
         return $this->answer($request, $message, $proposal->status === 'failed');
@@ -71,6 +73,7 @@ final class ProposalController
     public function preview(string $id, string $side): Response
     {
         $proposal = Proposal::query()->where('kind', Proposal::STRAIGHTEN)->whereKey($id)->firstOrFail();
+        abort_unless(ProposalVisibility::allows($proposal), 404); // A95
         $file = Document::query()->find($proposal->payload['document_id'] ?? '')?->files()->whereIn('mime', Straightener::PHOTOS)->orderBy('page_no')->first();
         abort_if($file === null, 404);
         try {
@@ -91,6 +94,7 @@ final class ProposalController
     public function reject(Request $request, string $id, CurrentOrg $org): RedirectResponse|JsonResponse
     {
         $proposal = Proposal::query()->where('status', Proposal::OPEN)->whereKey($id)->firstOrFail();
+        abort_unless(ProposalVisibility::allows($proposal), 404); // A95
         $proposal->update(['status' => 'rejected', 'decided_by' => $org->membership()->user_id, 'decided_at' => now()]);
         Badges::forget();
 
@@ -154,7 +158,7 @@ final class ProposalController
      */
     private function matching(array $filter, PropertyValues $values, ?Collection $all = null): array
     {
-        $list = ($all ?? Proposal::query()->where('status', Proposal::OPEN)->oldest()->get())
+        $list = ($all ?? ProposalVisibility::filter(Proposal::query()->where('status', Proposal::OPEN)->oldest()->get()))
             ->filter(static fn (Proposal $p): bool => ($filter['kind'] === '' || $p->kind === $filter['kind'])
                 && ($filter['sure'] === '' || ($filter['sure'] === 'sure') === ($p->sure === true)))
             ->values();

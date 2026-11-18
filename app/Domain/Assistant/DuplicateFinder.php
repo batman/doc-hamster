@@ -6,6 +6,7 @@ namespace App\Domain\Assistant;
 
 use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
+use App\Domain\Documents\Folder;
 use App\Domain\Optimize\OriginalKeeper;
 use App\Domain\Org\OrgScope;
 use App\Domain\Properties\DocumentProperty;
@@ -43,11 +44,18 @@ final class DuplicateFinder
             return;
         }
         $org = $document->org_id;
+        // A94: private folders (A69) take no part – neither the new document nor its twin.
+        $private = Folder::privateBranch($org);
+        if ($document->folder_id !== null && in_array($document->folder_id, $private, true)) {
+            return;
+        }
+        $open = static fn () => Document::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $org)
+            ->where(static fn ($q) => $q->whereNull('folder_id')->orWhereNotIn('folder_id', $private))->select('id');
         $hashes = DocumentFile::query()->withoutGlobalScope(OrgScope::class)->where('document_id', $document->id)->pluck('sha256')->filter()->all();
         if ($hashes !== []) {
             $same = DocumentFile::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $org)->whereIn('sha256', $hashes)
                 ->where('document_id', '!=', $document->id)
-                ->whereIn('document_id', Document::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $org)->select('id'))
+                ->whereIn('document_id', $open())
                 ->value('document_id');
             if (is_string($same)) {
                 // The same file: the one that was there first stays.
@@ -57,7 +65,7 @@ final class DuplicateFinder
             }
         }
         $twin = $this->sameInvoice($document);
-        if ($twin !== null) {
+        if ($twin !== null && ($twin->folder_id === null || ! in_array($twin->folder_id, $private, true))) {
             [$keep, $remove] = self::quality($twin) >= self::quality($document) ? [$twin, $document] : [$document, $twin];
             Proposal::file(Proposal::DUPLICATE, ['keep_id' => $keep->id, 'remove_id' => $remove->id], (string) __('proposals.found.same_invoice'), self::NAME, false, $org);
         }

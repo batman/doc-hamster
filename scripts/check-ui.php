@@ -90,7 +90,12 @@ foreach (files($root.'/tests', '.php') as $file) {
 $hook = static fn (string $class): bool => preg_match('/[\'"`.\s]'.preg_quote($class, '/').'[\'"`\s,:)\]\[]/', $scripts) === 1;
 
 $errors = [];
-foreach (files($root.'/resources/views', '.blade.php') as $file) {
+// The modules kept in this repo (modules/<key>) use the same framework.
+$views = files($root.'/resources/views', '.blade.php');
+foreach (glob($root.'/modules/*/resources/views', GLOB_ONLYDIR) ?: [] as $dir) {
+    $views = [...$views, ...files($dir, '.blade.php')];
+}
+foreach ($views as $file) {
     $name = substr(str_replace('\\', '/', $file), strlen(str_replace('\\', '/', $root)) + 1);
     $blade = (string) file_get_contents($file);
     // Comments out, their line breaks kept so the line numbers stay right.

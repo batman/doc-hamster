@@ -24,14 +24,30 @@ final class ModuleSource
 
     public const MAX_ZIP = 50 * 1024 * 1024;
 
-    /** "https://github.com/owner/repo", "github.com/owner/repo" or "owner/repo" → "owner/repo"; null if it is none of them. */
+    /**
+     * "https://github.com/owner/repo", "github.com/owner/repo" or "owner/repo" → "owner/repo"; null if it is none of them.
+     * "owner/repo#tag" names one release of a project that publishes several packages (e.g. docHamster's own modules).
+     */
     public static function repo(string $address): ?string
     {
         $address = trim($address);
+        $tag = null;
+        if (preg_match('~#([A-Za-z0-9._-]{1,100})$~', $address, $m) === 1) {
+            $tag = $m[1];
+            $address = substr($address, 0, -strlen($m[0]));
+        }
         $address = (string) preg_replace('~^(https?://)?(www\.)?github\.com/~i', '', $address);
         $address = rtrim((string) preg_replace('~(\.git)?/?$~', '', $address), '/');
 
-        return preg_match('~^[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9._-]{1,100}$~', $address) === 1 ? $address : null;
+        return preg_match('~^[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9._-]{1,100}$~', $address) === 1 ? $address.($tag !== null ? '#'.$tag : '') : null;
+    }
+
+    /** Where the two files of a module lie: the newest release, or the named one ("owner/repo#tag"). */
+    private static function release(string $repo): string
+    {
+        [$project, $tag] = array_pad(explode('#', $repo, 2), 2, null);
+
+        return 'https://github.com/'.$project.'/releases/'.($tag !== null ? 'download/'.$tag : 'latest/download');
     }
 
     /**
@@ -41,7 +57,7 @@ final class ModuleSource
      */
     public function find(string $repo): Manifest
     {
-        $response = $this->get('https://github.com/'.$repo.'/releases/latest/download/dochamster-module.json');
+        $response = $this->get(self::release($repo).'/dochamster-module.json');
         $data = $response->json();
         try {
             $manifest = Manifest::from(is_array($data) ? $data : []);
@@ -85,7 +101,7 @@ final class ModuleSource
         $tmp = $target.'.part';
         try {
             Http::withUserAgent('DocHamster')->timeout(300)->withOptions(['sink' => $tmp])
-                ->get('https://github.com/'.$repo.'/releases/latest/download/module.zip')->throw();
+                ->get(self::release($repo).'/module.zip')->throw();
             if (filesize($tmp) > self::MAX_ZIP || ! hash_equals((string) $manifest->zipSha256, (string) hash_file('sha256', $tmp))) {
                 throw new RuntimeException(__('modules.checksum'));
             }

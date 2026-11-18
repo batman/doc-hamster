@@ -8,6 +8,7 @@ use App\Domain\Log\LogEntry;
 use App\Domain\Ocr\OcrLog;
 use App\Domain\Optimize\OptimizeQueue;
 use App\Infrastructure\Environment\NativeSystemProbe;
+use App\Modules\ModuleRuntime;
 use App\Queue\QueueName;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schedule;
@@ -54,3 +55,8 @@ Schedule::call(static fn () => Backup::prune())
 Schedule::call(static fn () => OptimizeQueue::sweep())
     ->name('optimize-sweep')
     ->everyFiveMinutes();
+
+// A97: the modules' own tasks (e.g. Revolut fetching its bookings), each at its own interval.
+Schedule::call(static fn () => ModuleRuntime::tick())
+    ->name('module-tasks')
+    ->everyMinute();

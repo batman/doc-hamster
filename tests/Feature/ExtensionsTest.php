@@ -42,7 +42,7 @@ it('does not install unknown keys or modules', function (): void {
     $fetch = static fn (string $u, string $s, string $t): null => null;
 
     expect(fn () => $extensions->install('nope', $fetch))->toThrow(RuntimeException::class)
-        ->and(fn () => $extensions->install('revolut', $fetch))->toThrow(RuntimeException::class, 'Noch nicht verfügbar');
+        ->and(fn () => $extensions->install('revolut', $fetch))->toThrow(RuntimeException::class);
 });
 
 it('switches off, removes and only deletes listed files inside the root', function (): void {
@@ -79,7 +79,7 @@ it('shows the page to admins, re-reads broken texts (A346) and keeps a valid lan
     $document->forceFill(['ocr_status' => 'done', 'ocr_text' => 'AoyaplaoytoU TlpoovtwV EkboonG TImoAoyiou ApiBuoG MeplypaonV TloooTnTa EmrtpoonG KaBapnG AEiaG ZuvoAikoV'])->save();
 
     $this->actingAs($admin->user)->get('/settings/extensions')->assertOk()
-        ->assertSee('Texterkennung: Griechisch')->assertSee('kommt später')->assertSee('1 Dokumente neu erkennen');
+        ->assertSee('Texterkennung: Griechisch')->assertSee('1 Dokumente neu erkennen');
     $this->post('/settings/extensions/ocr-rerun')->assertRedirect();
     Queue::assertPushed(RecognizeText::class, 1);
     expect($document->refresh()->ocr_status)->toBe('pending');

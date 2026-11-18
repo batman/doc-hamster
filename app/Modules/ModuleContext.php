@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules;
 
+use App\Domain\Banking\BankAccount;
 use App\Domain\Banking\Transaction;
 use App\Domain\Documents\Document;
 use App\Queue\QueueName;
@@ -46,6 +47,9 @@ final class ModuleContext
     public function routes(Closure $define): void
     {
         Route::middleware(['web', 'auth', 'org'])->prefix('m/'.$this->key())->name('m.'.$this->key().'.')->group($define);
+        // Modules start after Laravel indexed the route names – index again, so route('m.<key>.…') works.
+        Route::getRoutes()->refreshNameLookups();
+        Route::getRoutes()->refreshActionLookups();
     }
 
     /** A main menu entry (opens the route as a window). */
@@ -60,10 +64,13 @@ final class ModuleContext
         $this->connections->settings[] = ['module' => $this->key(), 'title' => $title, 'text' => $text, 'icon' => self::icon($icon), 'route' => $this->route($route)];
     }
 
-    /** An entry in a document's ⋯ menu; the route gets the document id as {id} and opens as a window. */
-    public function documentAction(string $label, string $icon, string $route): void
+    /**
+     * An entry in a document's ⋯ menu; the route gets the document id as {id} and opens as a window. $when (optional) is
+     * asked when the menu is drawn – e.g. only while a setting of the module is on.
+     */
+    public function documentAction(string $label, string $icon, string $route, ?callable $when = null): void
     {
-        $this->connections->documentActions[] = ['module' => $this->key(), 'label' => $label, 'icon' => self::icon($icon), 'route' => $this->route($route)];
+        $this->connections->documentActions[] = ['module' => $this->key(), 'label' => $label, 'icon' => self::icon($icon), 'route' => $this->route($route), 'when' => $when];
     }
 
     /** An entry in a booking's ⋯ menu; the route gets the booking id as {id}. */
@@ -115,6 +122,76 @@ final class ModuleContext
         $this->need($what === 'bookings' ? 'bookings_write' : 'documents_write');
 
         return DB::transaction($change);
+    }
+
+    /**
+     * A97: the bank account this module keeps its bookings in ("<key>:<id>" is the module's own key for it), found or made.
+     */
+    public function bankAccount(string $id, string $name, string $currency, ?string $iban = null): BankAccount
+    {
+        $this->need('bookings_write');
+
+        return ModuleBanking::account($this->key().':'.$id, $name, $currency, $iban);
+    }
+
+    /** A97: ties an account the person chose (e.g. filled by CSV before) to this module's account id. */
+    public function adoptBankAccount(BankAccount $account, string $id): BankAccount
+    {
+        $this->need('bookings_write');
+
+        return ModuleBanking::adopt($account, $this->key().':'.$id);
+    }
+
+    /** The account this module already keeps under its id, or null. */
+    public function findBankAccount(string $id): ?BankAccount
+    {
+        $this->need('bookings_read');
+
+        return BankAccount::query()->where('source_key', $this->key().':'.$id)->first();
+    }
+
+    /**
+     * A98: what importing these lines would do – nothing is stored.
+     *
+     * @param  list<array<string, mixed>>  $lines
+     * @return list<array{line: array<string, mixed>, action: string}>
+     */
+    public function planBookings(?BankAccount $account, array $lines): array
+    {
+        $this->need('bookings_read');
+
+        return ModuleBanking::plan($account, $lines);
+    }
+
+    /**
+     * A97: stores bookings like a statement import (recognised by bank ID, pending ones completed) and runs the matching.
+     *
+     * @param  list<array<string, mixed>>  $lines
+     * @return array{new: int, updated: int, suggested: int}
+     */
+    public function importBookings(BankAccount $account, array $lines): array
+    {
+        $this->need('bookings_write');
+
+        return ModuleBanking::import($account, $lines, $this->key());
+    }
+
+    /** F23: a receipt the bank keeps becomes a document linked to the booking (once; a known file is only linked). */
+    public function attachReceipt(Transaction $booking, string $content, string $filename, string $title): Document
+    {
+        $this->need('documents_write');
+        $this->need('bookings_write');
+
+        return ModuleBanking::receipt($booking, $content, $filename, $title);
+    }
+
+    /**
+     * Runs $task every $minutes (at least 5) as the owner, from the cron of docHamster (D-010); work with the internet
+     * belongs into netJob() inside the task.
+     */
+    public function every(int $minutes, callable $task): void
+    {
+        $this->connections->tasks[] = ['module' => $this->key(), 'minutes' => max(5, $minutes), 'task' => $task];
     }
 
     /** Work that talks to the internet runs only as a job on the net queue (D-020) and only with the right "network". */

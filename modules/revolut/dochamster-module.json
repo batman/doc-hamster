@@ -1,0 +1,10 @@
+{
+    "key": "revolut",
+    "name": "Revolut Business",
+    "description": "Holt die Buchungen Ihrer Revolut-Business-Konten und die Belege aus der Revolut-App automatisch nach docHamster – nur lesend. Auf Wunsch legt es aus einer Rechnung einen Zahlungs-Entwurf an, den Sie in Revolut prüfen und senden.",
+    "version": "1.0.0",
+    "provider": "docHamster",
+    "homepage": "https://github.com/batman/doc-hamster/tree/main/modules/revolut",
+    "api": 1,
+    "rights": ["bookings_read", "bookings_write", "documents_read", "documents_write", "network"]
+}

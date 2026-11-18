@@ -63,7 +63,9 @@ final class ModuleLoader
         if (! $module instanceof Module) {
             throw new ModuleRightMissing(__('modules.no_entry', ['class' => $class]));
         }
-        $module->register(new ModuleContext($manifest, $rights, $this->connections));
+        $context = new ModuleContext($manifest, $rights, $this->connections);
+        $this->connections->contexts[$manifest->key] = $context;
+        $module->register($context);
     }
 
     /** PSR-4 for one module: only classes of its own namespace, only files below its src folder. */
