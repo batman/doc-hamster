@@ -97,7 +97,8 @@ final class SettingsMenu
         'receipts' => ['file-text', ['properties', 'tags', 'colors', 'ocr', 'optimize'], false],
         'inbox' => ['inbox', ['eingang'], true],
         'bank' => ['building-bank', ['bank'], true],
-        'share' => ['send', ['export', 'assistant'], false],
+        // Point 35, A93: "Extras" – what fits no other group (Export, Assistenten, later more).
+        'extras' => ['dots', ['export', 'assistant'], false],
         'system' => ['server', ['update', 'modules', 'backup', 'speed', 'log'], false],
     ];
 

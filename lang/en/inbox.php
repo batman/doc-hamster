@@ -21,6 +21,7 @@ return [
     'upload' => 'Upload',
     'upload_hint' => 'Upload photos or PDFs into the inbox',
     'open_folders' => 'Open folders beside',
+    'setup' => ['printer' => 'Set up the printer', 'mail' => 'Set up e-mail', 'phone' => 'Set up devices'],
     'file_into' => 'File into …',
     'recent' => 'Recently used',
     'all_folders' => 'All folders',

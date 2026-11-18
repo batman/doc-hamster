@@ -22,6 +22,7 @@ return [
     'upload' => 'Hochladen',
     'upload_hint' => 'Fotos oder PDFs in den Posteingang hochladen',
     'open_folders' => 'Ordner daneben öffnen',
+    'setup' => ['printer' => 'Drucker einrichten', 'mail' => 'E-Mail einrichten', 'phone' => 'Geräte einrichten'],
     'file_into' => 'Ablegen in …',
     'recent' => 'Zuletzt benutzt',
     'all_folders' => 'Alle Ordner',

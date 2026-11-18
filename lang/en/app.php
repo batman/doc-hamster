@@ -30,7 +30,7 @@ return [
         'tiles' => 'Tiles',
     ],
     'menu_sections' => [
-        'team' => 'Me and team', 'receipts' => 'Receipts', 'inbox' => 'Inbox', 'bank' => 'Bank', 'share' => 'Sharing', 'system' => 'System',
+        'team' => 'Me and team', 'receipts' => 'Receipts', 'inbox' => 'Inbox', 'bank' => 'Bank', 'extras' => 'Extras', 'system' => 'System',
     ],
     'texts' => ['undo' => 'Undo', 'cancel' => 'Cancel', 'close' => 'Close'],
     'window' => [

@@ -32,7 +32,7 @@ return [
     ],
     // Point 21, A68: the foldable groups of the Einstellungen window.
     'menu_sections' => [
-        'team' => 'Ich und Team', 'receipts' => 'Belege', 'inbox' => 'Posteingang', 'bank' => 'Bank', 'share' => 'Weitergeben', 'system' => 'System',
+        'team' => 'Ich und Team', 'receipts' => 'Belege', 'inbox' => 'Posteingang', 'bank' => 'Bank', 'extras' => 'Extras', 'system' => 'System',
     ],
     // PO 2026-11-16: the framework's own words (core/toasts.js, core/dialogs.js).
     'texts' => ['undo' => 'Rückgängig', 'cancel' => 'Abbrechen', 'close' => 'Schließen'],
