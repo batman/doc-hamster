@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules;
 
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use InvalidArgumentException;
+use Throwable;
 
 /**
  * The installed modules of this installation (D-041, D-042: one organisation, so a module counts for the whole
@@ -17,6 +19,8 @@ use InvalidArgumentException;
  */
 final class InstalledModules
 {
+    private static bool $refreshing = false;
+
     public function __construct(private readonly ?string $root = null) {}
 
     public function root(): string
@@ -104,9 +108,57 @@ final class InstalledModules
     /** @param  array<string, mixed>  $all */
     private function write(array $all): void
     {
+        $before = self::running($this->all());
         File::ensureDirectoryExists($this->root());
         $file = $this->root().'/installed.json';
         file_put_contents($file.'.tmp', json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
         rename($file.'.tmp', $file);
+        if (self::running($all) !== $before) {
+            self::refreshRoutes();
+        }
+    }
+
+    /**
+     * The switched-on modules with their versions – what decides which pages exist.
+     *
+     * @param  array<string, array<string, mixed>>  $all
+     */
+    private static function running(array $all): string
+    {
+        $on = [];
+        foreach ($all as $key => $entry) {
+            if (($entry['enabled'] ?? false) === true) {
+                $on[] = $key.'@'.(is_array($entry['manifest'] ?? null) ? (string) ($entry['manifest']['version'] ?? '') : '');
+            }
+        }
+        sort($on);
+
+        return implode(',', $on);
+    }
+
+    /**
+     * An update prepares the addresses (`php artisan optimize`, point 164.5); a module installed, updated, switched on or
+     * off afterwards would miss its pages (404) or keep dead ones. Prepare them again – the fresh list starts the modules
+     * as they are now – or, should that fail, go without the prepared list.
+     */
+    private static function refreshRoutes(): void
+    {
+        // Preparing starts the modules again; a module switched off while it starts must not prepare once more.
+        if (self::$refreshing || ! app()->routesAreCached()) {
+            return;
+        }
+        self::$refreshing = true;
+        try {
+            Artisan::call('route:cache');
+        } catch (Throwable $e) {
+            report($e);
+            try {
+                Artisan::call('route:clear');
+            } catch (Throwable) {
+                // Nothing more to do: the next update prepares the addresses again.
+            }
+        } finally {
+            self::$refreshing = false;
+        }
     }
 }
