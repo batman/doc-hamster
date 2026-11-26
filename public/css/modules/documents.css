@@ -47,7 +47,7 @@
 .view-small .thumb-frame { aspect-ratio: 1; }
 .view-small .thumb-frame .icon { width: 3rem; height: 3rem; }
 .timeline .thumb-frame { width: 3.5rem; height: 4.25rem; flex: none; padding: .35rem; border-radius: 12px; }
-.type-icon { flex: none; width: 1.75rem; height: 1.75rem; color: var(--muted); }
+.type-icon { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; color: var(--muted); }
 .view-details .type-icon { margin-right: .75rem; vertical-align: middle; }
 .view-details .tags { gap: .35rem; }
 /* The open document: the framework's marked look in every view (white, lifted). */
