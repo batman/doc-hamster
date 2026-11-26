@@ -46,7 +46,10 @@ final class ProposalTiles
             }
         }
         $docIds = array_values(array_unique($docIds));
-        $this->documents = Document::query()->with('files')->whereIn('id', $docIds)->get()->keyBy('id')->all();
+        // Point 45: a document to bring back lies in the Papierkorb.
+        $restore = $proposals->filter(static fn (Proposal $p): bool => $p->kind === Proposal::RESTORE)->map(static fn (Proposal $p): mixed => $p->payload['document_id'] ?? null)->filter(static fn (mixed $id): bool => is_string($id))->values()->all();
+        $this->documents = Document::query()->with('files')->whereIn('id', $docIds)->get()->keyBy('id')->all()
+            + Document::query()->onlyTrashed()->with('files')->whereIn('id', $restore)->get()->keyBy('id')->all();
         $this->bookings = Transaction::query()->whereIn('id', array_values(array_unique($bookingIds)))->get()->keyBy('id')->all();
         $this->amounts = Matcher::invoiceAmounts(array_keys($this->documents));
     }
@@ -65,6 +68,7 @@ final class ProposalTiles
             Proposal::UNLINK => [$this->document(__('proposals.label.link'), $d['document_id'] ?? null), $this->booking($d['transaction_id'] ?? null)],
             Proposal::DUPLICATE => [$this->document(__('proposals.label.keep'), $d['keep_id'] ?? null), $this->document(__('proposals.label.remove'), $d['remove_id'] ?? null)],
             Proposal::DELETE => [$this->document(__('proposals.label.trash'), $d['document_id'] ?? null)],
+            Proposal::RESTORE => [$this->document(__('proposals.label.restore'), $d['document_id'] ?? null)],
             Proposal::SETTING => [],
             // A91: folders as Objektkacheln; a new folder shows up to four of the documents it brings along.
             Proposal::FOLDER_CREATE => array_map(fn (string $id): array => $this->document(__('proposals.label.document'), $id),

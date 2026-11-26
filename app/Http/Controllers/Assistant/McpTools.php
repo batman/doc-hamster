@@ -102,6 +102,8 @@ final class McpTools
             'propose_setting' => ['Propose a setting', 'Proposes switching a setting on: optimize_on = "Dokumentgröße optimieren" shrinks every too large scan automatically.', $propose(['setting' => ['type' => 'string', 'enum' => Proposal::SETTINGS]]), AssistantAccess::PROPOSE_SETTINGS],
             // Points 32, 33: the Logbuch and the folder proposals (McpMore).
             ...McpMore::definitions($id, $page, $propose),
+            // Point 45: upload into the Posteingang.
+            ...McpUpload::definitions($reason, $sure),
         ];
     }
 
@@ -148,6 +150,9 @@ final class McpTools
             }
         }
 
+        if ($name === 'upload_document') {
+            return McpUpload::upload($args, $text, $outer, $org);
+        }
         if (str_starts_with($name, 'propose_folder_')) {
             return McpMore::proposeFolder($name, $args, $text);
         }

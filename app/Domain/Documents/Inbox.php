@@ -16,19 +16,19 @@ use Illuminate\Support\Facades\Schema;
  * It leaves when someone drops it on a folder, picks one with "Ablegen in …" (A360), or marks it (row ✓ and
  * "Alle erledigt" file it into "Dokumente allgemein"). Opening it changes nothing. Unfiled documents show nowhere else
  * in Dokumente: only here and in searches, timeline and calendar (the Dokumente top level lists folders only).
- * The source is the column documents.source (upload|printer|mail|phone|api, null = upload); before that column
+ * The source is the column documents.source (upload|printer|mail|phone|assistant|api, null = upload; point 45: assistant = uploaded by an assistant); before that column
  * exists, printed documents are known by in_print_tray and everything else counts as upload.
  */
 final class Inbox
 {
     /** Every source, in the order of the rows' icons; "api" = sent by another program. */
-    public const array SOURCES = ['upload', 'printer', 'mail', 'phone', 'api'];
+    public const array SOURCES = ['upload', 'printer', 'mail', 'phone', 'assistant', 'api'];
 
     /** The tabs besides "Alle" (A327: Handy = shared from a phone). */
-    public const array TABS = ['upload', 'printer', 'mail', 'phone'];
+    public const array TABS = ['upload', 'printer', 'mail', 'phone', 'assistant'];
 
     /** @var array<string, string> Tabler icon per source */
-    public const array ICONS = ['upload' => 'upload', 'printer' => 'printer', 'mail' => 'mail', 'phone' => 'device-mobile', 'api' => 'plug'];
+    public const array ICONS = ['upload' => 'upload', 'printer' => 'printer', 'mail' => 'mail', 'phone' => 'device-mobile', 'assistant' => 'plug', 'api' => 'plug'];
 
     private static ?bool $sourceColumn = null;
 

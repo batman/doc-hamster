@@ -34,7 +34,7 @@ final class ProposalController
     public const PER_PAGE = 10;
 
     public const ICONS = [
-        Proposal::LINK => 'link', Proposal::UNLINK => 'unlink', Proposal::TITLE => 'pencil', Proposal::MOVE => 'folder', Proposal::DUPLICATE => 'copy', Proposal::DELETE => 'trash',
+        Proposal::LINK => 'link', Proposal::UNLINK => 'unlink', Proposal::TITLE => 'pencil', Proposal::MOVE => 'folder', Proposal::DUPLICATE => 'copy', Proposal::DELETE => 'trash', Proposal::RESTORE => 'restore',
         Proposal::SHRINK => 'arrows-minimize', Proposal::STRAIGHTEN => 'crop', Proposal::CORRECT => 'pencil', Proposal::SETTING => 'settings',
         Proposal::FOLDER_CREATE => 'folder-plus', Proposal::FOLDER_RENAME => 'pencil', Proposal::FOLDER_MOVE => 'folder-up', Proposal::FOLDER_DELETE => 'trash',
     ];

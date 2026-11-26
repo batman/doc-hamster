@@ -26,6 +26,9 @@ final class AssistantAccess
     /** Point 32, A85: read the Logbuch (never entries about documents in private folders). */
     public const LOG = 'log';
 
+    /** Point 45: upload documents into the Posteingang (source "Assistent") – the one right that adds something itself. */
+    public const UPLOAD = 'upload';
+
     public const PROPOSE_LINK = 'link';
 
     public const PROPOSE_MOVE = 'move';
@@ -48,7 +51,7 @@ final class AssistantAccess
     public const PROPOSE_SETTINGS = 'settings';
 
     /** In this order on the page. */
-    public const RIGHTS = [self::READ, self::IMAGES, self::LOG, self::PROPOSE_LINK, self::PROPOSE_MOVE, self::PROPOSE_FOLDERS, self::PROPOSE_CLEANUP, self::PROPOSE_SHRINK, self::PROPOSE_STRAIGHTEN, self::PROPOSE_CORRECT, self::PROPOSE_SETTINGS];
+    public const RIGHTS = [self::READ, self::IMAGES, self::LOG, self::UPLOAD, self::PROPOSE_LINK, self::PROPOSE_MOVE, self::PROPOSE_FOLDERS, self::PROPOSE_CLEANUP, self::PROPOSE_SHRINK, self::PROPOSE_STRAIGHTEN, self::PROPOSE_CORRECT, self::PROPOSE_SETTINGS];
 
     public static function enabled(?Organization $organization): bool
     {

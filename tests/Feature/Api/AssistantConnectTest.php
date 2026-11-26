@@ -224,3 +224,61 @@ it('reads the Logbuch without private folders and proposes a new folder with its
     $again = mcp($token, 'tools/call', ['name' => 'propose_folder_rename', 'arguments' => ['folder_id' => $folder->id, 'name' => 'VERTRÄGE', 'reason' => 'x']]);
     expect($again['result']['isError'])->toBeTrue();
 });
+
+/** Connects an assistant with these rights and returns its token. */
+function assistantToken(Membership $owner, array $rights): string
+{
+    test()->actingAs($owner->user)->postJson('/settings/assistant', ['on' => '1', 'rights' => $rights])->assertOk();
+    $verifier = Str::random(64);
+    [$clientId, $code] = allowAssistant($owner, $verifier);
+
+    return test()->post('/oauth/token', ['grant_type' => 'authorization_code', 'code' => $code, 'redirect_uri' => CALLBACK,
+        'client_id' => $clientId, 'code_verifier' => $verifier])->assertOk()->json('access_token');
+}
+
+it('uploads into the Posteingang only with the right, never twice, and asks before bringing a file back from the Papierkorb (point 45)', function (): void {
+    $folder = Folder::query()->create(['name' => 'Belege Café']);
+    $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==');
+    $upload = static fn (string $token, string $content, string $mime = 'image/png'): array => mcp($token, 'tools/call', ['name' => 'upload_document', 'arguments' => [
+        'filename' => 'beleg.png', 'content' => $content, 'mime_type' => $mime, 'title' => 'Muster Café', 'folder' => 'belege café', 'date' => '2026-11-03',
+        'reason' => 'E-Mail von Muster Café, Betreff Beleg, 03.11.2026', 'sure' => true]])['result'];
+
+    // Without the right: not offered, refused.
+    $reader = assistantToken($this->owner, ['read']);
+    expect(array_column(mcp($reader, 'tools/list')['result']['tools'], 'name'))->not->toContain('upload_document');
+    expect($upload($reader, base64_encode($png))['content'][0]['text'])->toContain('nicht angehakt');
+
+    $token = assistantToken($this->owner, ['read', 'upload']);
+    expect(json_decode(mcp($token, 'tools/call', ['name' => 'whoami', 'arguments' => []])['result']['content'][0]['text'], true)['rights'])->toContain('upload');
+
+    // Too large, not Base64, wrong type: a clear answer, nothing stored.
+    expect($upload($token, str_repeat('A', 28_000_000))['content'][0]['text'])->toContain('zu groß')
+        ->and($upload($token, base64_encode('Nur ein Text.'), 'application/pdf')['content'][0]['text'])->toContain('Dateityp')
+        ->and($upload($token, '%%%')['content'][0]['text'])->toContain('Base64');
+    expect(Document::query()->count())->toBe(1);
+
+    // Stored in the Posteingang, source "Assistent"; folder and date wait as proposals.
+    $first = $upload($token, base64_encode($png));
+    $answer = json_decode($first['content'][0]['text'], true);
+    $document = Document::query()->findOrFail($answer['document_id']);
+    expect($first['isError'])->toBeFalse()->and($answer['new'])->toBeTrue()
+        ->and($document->folder_id)->toBeNull()->and($document->source)->toBe('assistant')->and($document->title)->toBe('Muster Café')
+        ->and($document->note)->toContain('E-Mail von Muster Café')
+        ->and(Proposal::query()->where('kind', Proposal::MOVE)->value('payload'))->toMatchArray(['document_id' => $document->id, 'folder_id' => $folder->id])
+        ->and(Proposal::query()->where('kind', Proposal::CORRECT)->value('payload'))->toMatchArray(['property' => 'invoice_date', 'value' => '2026-11-03']);
+    $this->actingAs($this->owner->user)->get('/inbox?source=assistant')->assertOk()->assertSee('Muster Café');
+
+    // The same file again: nothing new, the answer names the document.
+    $again = json_decode($upload($token, base64_encode($png))['content'][0]['text'], true);
+    expect($again['new'])->toBeFalse()->and($again['document_id'])->toBe($document->id)->and(Document::query()->count())->toBe(2);
+
+    // In the Papierkorb: the person decides – a proposal brings it back into the Posteingang.
+    $document->update(['folder_id' => $folder->id]);
+    $document->delete();
+    $back = json_decode($upload($token, base64_encode($png))['content'][0]['text'], true);
+    $proposal = Proposal::query()->findOrFail($back['proposal_id']);
+    expect($proposal->kind)->toBe(Proposal::RESTORE)->and(Document::query()->count())->toBe(1);
+    $this->actingAs($this->owner->user)->get('/proposals')->assertOk()->assertSee('Aus dem Papierkorb zurückholen?');
+    $this->post("/proposals/{$proposal->id}/accept")->assertRedirect('/proposals');
+    expect($document->fresh()->trashed())->toBeFalse()->and($document->fresh()->folder_id)->toBeNull();
+});

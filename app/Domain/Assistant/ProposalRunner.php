@@ -44,7 +44,7 @@ final class ProposalRunner
         Proposal::LINK => Permission::ImportBanking, Proposal::UNLINK => Permission::ImportBanking,
         Proposal::MOVE => Permission::EditDocuments, Proposal::TITLE => Permission::EditDocuments, Proposal::CORRECT => Permission::EditDocuments,
         Proposal::SHRINK => Permission::EditDocuments, Proposal::STRAIGHTEN => Permission::EditDocuments,
-        Proposal::DUPLICATE => Permission::TrashDocuments, Proposal::DELETE => Permission::TrashDocuments,
+        Proposal::DUPLICATE => Permission::TrashDocuments, Proposal::DELETE => Permission::TrashDocuments, Proposal::RESTORE => Permission::TrashDocuments,
         Proposal::SETTING => Permission::ManageSettings,
     ];
 
@@ -118,6 +118,16 @@ final class ProposalRunner
                 $this->audit->record('document.trashed', orgId: $this->org->id(), userId: $user, subject: $document, meta: $meta(), ip: $ip);
 
                 return __('proposals.done.trash', ['name' => $document->title, 'trash' => Folder::trashName($this->org->organization())]);
+            })(),
+            // Point 45, A110: back from the Papierkorb into the Posteingang.
+            Proposal::RESTORE => (function () use ($p, $user, $meta, $ip): string {
+                $document = Document::query()->visibleTo($user, Gate::allows(Permission::ViewAllDocuments->value))->inTrash()->whereKey($p['document_id'] ?? '')->first()
+                    ?? throw new RuntimeException(__('proposals.gone_trash'));
+                $document->restore();
+                $document->update(['folder_id' => null]);
+                $this->audit->record('document.restored', orgId: $this->org->id(), userId: $user, subject: $document, meta: $meta(), ip: $ip);
+
+                return __('proposals.done.restore', ['name' => $document->title]);
             })(),
             Proposal::SHRINK => (function () use ($p): string {
                 $document = $this->document($p['document_id'] ?? '');

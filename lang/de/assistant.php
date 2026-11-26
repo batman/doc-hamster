@@ -14,6 +14,7 @@ return [
         'read' => 'Buchungen und Dokumente lesen',
         'images' => 'Seitenbilder ansehen (Texterkennung prüfen, Schiefes messen)',
         'log' => 'Logbuch lesen (was geklappt hat, was nicht, wo es Fehler gibt)',
+        'upload' => 'Dokumente hochladen (Belege und wichtige E-Mails als PDF – in den Posteingang, Quelle „Assistent“)',
         'link' => 'Verknüpfungen vorschlagen',
         'move' => 'Verschieben in Ordner vorschlagen',
         'folders' => 'Ordner vorschlagen (anlegen, umbenennen, verschieben, löschen)',
@@ -26,6 +27,13 @@ return [
     'needs_read' => 'Zum Vorschlagen braucht der Assistent auch „Buchungen und Dokumente lesen“.',
     'rights_first' => 'Bitte zuerst mindestens ein Recht anhaken – erst dann lässt sich der Zugang öffnen.',
     'no_picture' => 'Von dieser Seite gibt es kein Bild – ein PDF mit echtem Text (get_document liefert seinen Text) oder eine Seite, die es nicht gibt.',
+    // Point 45: upload_document.
+    'upload' => [
+        'too_big' => 'Die Datei ist zu groß – höchstens :mb MB pro Datei.',
+        'not_base64' => 'Der Inhalt ist kein gültiges Base64 (content).',
+        'wrong_type' => 'Dieser Dateityp geht nicht (:type) – nur PDF, JPEG oder PNG.',
+        'note' => 'Vom Assistenten hochgeladen: :reason',
+    ],
     'not_allowed' => 'Das darf der Assistent nicht – der Inhaber hat es unter Einstellungen → Assistenten nicht angehakt.',
     'propose_unknown' => [
         'booking' => 'Diese Buchung gibt es nicht.', 'document' => 'Dieses Dokument gibt es nicht (oder nicht für diese Person).',

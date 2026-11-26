@@ -9,6 +9,7 @@ return [
     'levels' => ['event' => 'Event', 'warning' => 'Notice', 'error' => 'Critical'],
     'level_filter' => ['' => 'All', 'errors' => 'Critical', 'hints' => 'Notices'],
     'help' => [
+        'server_error_view' => 'The server could not show a page; nothing was changed. Please try again – if it persists, pass the message to the admin.',
         'server_error' => 'The server could not complete an action; it was not saved. Please try again – if it persists, pass the message to the admin.',
         'browser_error' => 'An action in the browser did not complete. Reload the page and try again.',
         'ocr_timeout' => 'Text recognition took too long. It will retry on its own later.',
@@ -28,6 +29,10 @@ return [
     'filter' => 'Filter',
     'reset_filter' => 'Reset filter',
     'export' => 'Export',
+    'copy_all' => 'Copy the entries of this page',
+    'copy_one' => 'Copy entry',
+    'copied' => 'Copied to the clipboard.',
+    'copy_failed' => 'The browser did not allow copying.',
     'clear' => 'Reset',
     'clear_title' => 'Empty logbooks?',
     'clear_text' => 'Every entry of the ticked logbooks is deleted: :books. This cannot be undone.',
@@ -45,7 +50,7 @@ return [
         'auth' => ['login' => 'Signed in', 'logout' => 'Signed out', 'failed' => 'Sign-in failed (:name)', 'session_ended' => 'Device signed out', 'password_reset_by_mail' => 'Password set again by e-mail link', 'sessions_ended' => 'All other devices signed out'],
         'log' => ['cleared' => 'Logbooks emptied: :books'],
         'document' => [
-            'uploaded' => 'Document uploaded', 'created' => 'Document created', 'changed' => 'Document changed',
+            'uploaded' => 'Document uploaded', 'uploaded_assistant' => 'Uploaded by the assistant', 'created' => 'Document created', 'changed' => 'Document changed',
             'moved' => 'Document moved', 'trashed' => 'Moved to the bin', 'restored' => 'Restored from the bin',
             'purged' => 'Deleted for good', 'tags_changed' => 'Tags changed', 'taken_over' => 'Document taken over',
             'viewed' => 'Viewed', 'file_downloaded' => 'File downloaded',

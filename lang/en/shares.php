@@ -13,4 +13,9 @@ return [
     'until' => 'valid until :date',
     'revoke' => 'Revoke',
     'revoked' => 'The link is revoked.',
+    'made' => 'Made on :date',
+    'all' => 'All links for sending',
+    'open_text' => 'This document was shared with you. The link works until :date.',
+    'open_view' => 'View',
+    'open_download' => 'Download',
 ];

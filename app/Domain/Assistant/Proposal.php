@@ -58,6 +58,9 @@ final class Proposal extends Model
 
     public const SETTING = 'setting';
 
+    /** Point 45, A110: an uploaded file lies in the Papierkorb – bring it back into the Posteingang. */
+    public const RESTORE = 'restore';
+
     /** Point 33, A88: folders – {name, parent_id?, document_ids?} / {folder_id, name} / {folder_id, parent_id?} / {folder_id}. */
     public const FOLDER_CREATE = 'folder_create';
 
@@ -68,14 +71,14 @@ final class Proposal extends Model
     public const FOLDER_DELETE = 'folder_delete';
 
     /** In this order on the page. */
-    public const KINDS = [self::LINK, self::UNLINK, self::MOVE, self::FOLDER_CREATE, self::FOLDER_RENAME, self::FOLDER_MOVE, self::FOLDER_DELETE, self::DUPLICATE, self::DELETE, self::STRAIGHTEN, self::SHRINK, self::CORRECT, self::TITLE, self::SETTING];
+    public const KINDS = [self::LINK, self::UNLINK, self::MOVE, self::FOLDER_CREATE, self::FOLDER_RENAME, self::FOLDER_MOVE, self::FOLDER_DELETE, self::DUPLICATE, self::DELETE, self::RESTORE, self::STRAIGHTEN, self::SHRINK, self::CORRECT, self::TITLE, self::SETTING];
 
     /** Which right of the door each kind needs. */
     public const RIGHT = [
         self::LINK => AssistantAccess::PROPOSE_LINK, self::UNLINK => AssistantAccess::PROPOSE_LINK, self::MOVE => AssistantAccess::PROPOSE_MOVE, self::TITLE => AssistantAccess::PROPOSE_CORRECT,
         self::DUPLICATE => AssistantAccess::PROPOSE_CLEANUP, self::DELETE => AssistantAccess::PROPOSE_CLEANUP,
         self::SHRINK => AssistantAccess::PROPOSE_SHRINK, self::STRAIGHTEN => AssistantAccess::PROPOSE_STRAIGHTEN, self::CORRECT => AssistantAccess::PROPOSE_CORRECT,
-        self::SETTING => AssistantAccess::PROPOSE_SETTINGS,
+        self::SETTING => AssistantAccess::PROPOSE_SETTINGS, self::RESTORE => AssistantAccess::UPLOAD,
         self::FOLDER_CREATE => AssistantAccess::PROPOSE_FOLDERS, self::FOLDER_RENAME => AssistantAccess::PROPOSE_FOLDERS,
         self::FOLDER_MOVE => AssistantAccess::PROPOSE_FOLDERS, self::FOLDER_DELETE => AssistantAccess::PROPOSE_FOLDERS,
     ];

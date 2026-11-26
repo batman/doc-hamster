@@ -30,8 +30,8 @@ final class ProposalVisibility
             return $proposals;
         }
         $docIds = $proposals->flatMap(static fn (Proposal $p): array => self::documents($p))->unique()->values()->all();
-        $existing = $docIds === [] ? [] : Document::query()->whereIn('id', $docIds)->pluck('id')->all();
-        $visible = $docIds === [] ? [] : Document::query()->visibleTo($org->membership()->user_id, Gate::allows(Permission::ViewAllDocuments->value))
+        $existing = $docIds === [] ? [] : Document::query()->withTrashed()->whereIn('id', $docIds)->pluck('id')->all();
+        $visible = $docIds === [] ? [] : Document::query()->withTrashed()->visibleTo($org->membership()->user_id, Gate::allows(Permission::ViewAllDocuments->value))
             ->whereIn('id', $docIds)->pluck('id')->all();
         $hidden = array_diff($existing, $visible);
         $privateFolders = $org->seesPrivate() ? [] : Folder::privateBranch();

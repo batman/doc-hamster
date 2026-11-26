@@ -21,8 +21,8 @@
                 @endif
                 <a class="icon-button" href="{{ route('documents.index') }}" data-window aria-label="{{ __('inbox.open_folders') }}" data-tooltip="{{ __('inbox.open_folders') }}"><x-icon name="layout-columns" /></a>
                 {{-- Point 34, A92: the chosen source's settings (Drucker, E-Mail, Geräte) as the next window on the right. --}}
-                @php $setup = ['printer' => 'printers.index', 'mail' => 'inbox.mail', 'phone' => 'devices.index'][$source ?? ''] ?? null; @endphp
-                @if ($setup !== null && Route::has($setup) && Gate::allows('documents.upload'))
+                @php $setup = ['printer' => 'printers.index', 'mail' => 'inbox.mail', 'phone' => 'devices.index', 'assistant' => 'assistant.show'][$source ?? ''] ?? null; @endphp
+                @if ($setup !== null && Route::has($setup) && Gate::allows($source === 'assistant' ? 'assistant.manage' : 'documents.upload'))
                     <a class="icon-button" href="{{ route($setup) }}" data-window aria-label="{{ __('inbox.setup.'.$source) }}" data-tooltip="{{ __('inbox.setup.'.$source) }}"><x-icon name="settings" /></a>
                 @endif
                 @if ($documents->isNotEmpty())

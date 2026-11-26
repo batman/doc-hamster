@@ -28,7 +28,8 @@ final class McpController
         .'clearly fit. Also tidy up where your rights allow: propose_unlink for a link that does not fit, propose_move, '
         .'propose_duplicate (keep the better picture – links and values move to it), propose_delete (Papierkorb only), '
         .'propose_shrink, propose_correction / propose_clear for values the text recognition read wrong, propose_title, '
-        .'propose_setting. Check list_proposals first; a repeated call files nothing twice; withdraw_proposal takes back '
+        .'propose_setting. upload_document puts a receipt or an important e-mail (as PDF) into the Posteingang – the same file is '
+        .'never stored twice. Check list_proposals first; a repeated call files nothing twice; withdraw_proposal takes back '
         .'your own mistake. whoami shows which rights the owner ticked.';
 
     public function handle(Request $request, CurrentOrg $org): JsonResponse|Response

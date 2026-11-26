@@ -14,6 +14,7 @@ return [
         'read' => 'Read bookings and documents',
         'images' => 'Look at page pictures (check the text recognition, measure tilts)',
         'log' => 'Read the log (what worked, what did not, where errors are)',
+        'upload' => 'Upload documents (receipts and important e-mails as PDF – into the inbox, source “Assistant”)',
         'link' => 'Propose links',
         'move' => 'Propose moving into folders',
         'folders' => 'Propose folders (create, rename, move, delete)',
@@ -26,6 +27,12 @@ return [
     'needs_read' => 'To propose anything the assistant also needs “Read bookings and documents”.',
     'rights_first' => 'Please tick at least one right first – only then can the access be opened.',
     'no_picture' => 'There is no picture of this page – a PDF with real text (get_document has its text) or a page that does not exist.',
+    'upload' => [
+        'too_big' => 'The file is too large – at most :mb MB per file.',
+        'not_base64' => 'The content is not valid Base64 (content).',
+        'wrong_type' => 'This file type does not work (:type) – only PDF, JPEG or PNG.',
+        'note' => 'Uploaded by the assistant: :reason',
+    ],
     'not_allowed' => 'The assistant may not do this – the owner did not tick it under Settings → Assistants.',
     'propose_unknown' => [
         'booking' => 'This booking does not exist.', 'document' => 'This document does not exist (or not for this person).',
