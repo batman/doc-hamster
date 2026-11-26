@@ -52,6 +52,7 @@ final class MailInboxController
             'smtp_host' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z0-9.\-]*$/'],
             'smtp_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
             'smtp_security' => ['nullable', Rule::in(MailInbox::SECURITY)],
+            'after_fetch' => ['nullable', Rule::in(MailInbox::AFTER)],
         ]);
         $smtpSecurity = (string) ($data['smtp_security'] ?? 'ssl');
         $inbox = MailInbox::current();
@@ -70,6 +71,7 @@ final class MailInboxController
             'smtp_host' => mb_strtolower(trim((string) ($data['smtp_host'] ?? ''))),
             'smtp_port' => (int) ($data['smtp_port'] ?? 0) ?: ($smtpSecurity === 'ssl' ? 465 : 587),
             'smtp_security' => $smtpSecurity,
+            'after_fetch' => (string) ($data['after_fetch'] ?? 'move'),
         ]);
         if (($data['password'] ?? '') !== '') {
             $inbox->password = (string) $data['password'];

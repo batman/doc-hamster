@@ -9,10 +9,14 @@ use App\Domain\Mail\MailFetch;
 use App\Domain\Mail\MailInbox;
 use App\Domain\Mail\MailMessage;
 use App\Domain\Mail\MailReply;
+use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Membership;
 use App\Domain\Org\OrgScope;
+use App\Domain\Properties\PropertyValues;
+use App\Jobs\Net\FetchMailInbox;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
 /*
@@ -57,6 +61,11 @@ final class FakeMailbox implements Mailbox
     public function move(int $uid, string $folder): void
     {
         $this->moved[$uid] = $folder;
+    }
+
+    public function delete(int $uid): void
+    {
+        $this->moved[$uid] = 'deleted';
     }
 
     public function close(): void {}
@@ -216,4 +225,45 @@ it('answers allowed senders with what arrived – never rejected or automatic ma
         ->and($sent[1]['text'])->toContain(__('mail_inbox.reply_known'));
 
     MailReply::$send = null;
+});
+
+it('deletes taken mails when set, but keeps rejected ones in "Abgelehnt" (A127)', function (): void {
+    $owner = Membership::factory()->owner()->create();
+    $box = mailSetup($owner, ['after_fetch' => 'delete']);
+    $box->mails = [1 => syntheticMail('partner@example.com', 'Beleg', 'Anbei.', "%PDF-1.4\n%delete\n"), 2 => syntheticMail('fremd@example.com', 'x', 'y')];
+
+    $this->postJson('/inbox/mail/fetch')->assertOk();
+
+    expect($box->moved)->toBe([1 => 'deleted', 2 => 'Abgelehnt']);
+});
+
+it('hands due mailboxes to a net job by cron, which fetches as the person who set it up (A128)', function (): void {
+    $owner = Membership::factory()->owner()->create();
+    $box = mailSetup($owner);
+    $box->mails = [1 => syntheticMail('partner@example.com', 'Cron', 'Abgeholt.', "%PDF-1.4\n%cron\n")];
+    Queue::fake();
+
+    expect(MailFetch::schedule())->toBe(1)->and(MailFetch::schedule())->toBe(0);
+    Queue::assertPushed(FetchMailInbox::class, 1);
+
+    app(CurrentOrg::class)->clear();
+    (new FetchMailInbox((string) MailInbox::query()->withoutGlobalScope(OrgScope::class)->value('id')))->handle(app(CurrentOrg::class));
+    expect($box->moved)->toBe([1 => 'Verarbeitet'])
+        ->and(Document::query()->withoutGlobalScope(OrgScope::class)->where('source', 'mail')->value('uploaded_by'))->toBe($owner->user_id);
+});
+
+it('names the writer of the mail as Absender of its PDF – the original one when a member forwarded it (A130)', function (): void {
+    $owner = Membership::factory()->owner()->create();
+    $box = mailSetup($owner);
+    $forward = "Siehe unten.\n\n-------- Weitergeleitete Nachricht --------\nBetreff: Mahnung\nDatum: 25.11.2026\nVon: Musterfirma GmbH <rechnung@musterfirma.example.com>\nAn: max@example.com\n\nBitte zahlen.";
+    $box->mails = [
+        1 => syntheticMail('partner@example.com', 'Zahlungserinnerung', 'Hallo, bitte bis Freitag zahlen.'),
+        2 => syntheticMail((string) $owner->user->email, 'WG: Mahnung', $forward),
+    ];
+
+    $this->postJson('/inbox/mail/fetch')->assertOk()->assertJsonPath('documents', 2);
+
+    $sender = fn (string $title): ?string => app(PropertyValues::class)->get(Document::query()->withoutGlobalScope(OrgScope::class)->where('title', $title)->firstOrFail(), 'sender')?->value_text;
+    expect($sender('Zahlungserinnerung'))->toBe('Max Mustermann')
+        ->and($sender('WG: Mahnung'))->toBe('Musterfirma GmbH');
 });

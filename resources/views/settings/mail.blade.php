@@ -57,6 +57,18 @@
                     <input id="mail-password" name="password" type="password" value="" autocomplete="new-password" @if ((string) $inbox->password !== '') placeholder="{{ __('mail_inbox.password_saved') }}" @endif>
                     <p class="field-hint">{{ __('mail_inbox.password_hint') }}</p>
                 </div>
+                <fieldset>
+                    <legend>{{ __('mail_inbox.after') }}</legend>
+                    <span class="button-choice" data-choice>
+                        <input type="hidden" name="after_fetch" value="{{ $inbox->after_fetch }}">
+                        <span class="switcher" role="group" aria-label="{{ __('mail_inbox.after') }}">
+                            @foreach (\App\Domain\Mail\MailInbox::AFTER as $value)
+                                <button type="button" data-value="{{ $value }}" aria-pressed="{{ $inbox->after_fetch === $value ? 'true' : 'false' }}">{{ __('mail_inbox.after_choice.'.$value) }}</button>
+                            @endforeach
+                        </span>
+                    </span>
+                    <p class="field-hint">{{ __('mail_inbox.after_hint') }}</p>
+                </fieldset>
             </section>
 
             <section class="card">
@@ -149,6 +161,7 @@
 
     <section class="card">
         <h2 class="card-head"><x-icon name="refresh" />{{ __('mail_inbox.status') }}</h2>
+        <p class="card-text">{{ __('mail_inbox.auto_hint', ['minutes' => \App\Domain\Mail\MailInbox::AUTO_MINUTES]) }}</p>
         <p class="card-text">{{ $inbox->last_fetch_at ? __('mail_inbox.last_fetch', ['date' => $inbox->last_fetch_at->timezone(config('app.timezone'))->format('d.m.Y H:i')]) : __('mail_inbox.never') }}</p>
         @if ($inbox->last_error)
             <p class="error" role="alert">{{ __('mail_inbox.last_error', ['message' => $inbox->last_error]) }}</p>

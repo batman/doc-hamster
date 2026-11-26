@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Domain\Backup\Backup;
 use App\Domain\Documents\TrashSweeper;
 use App\Domain\Log\LogEntry;
+use App\Domain\Mail\MailFetch;
 use App\Domain\Ocr\OcrLog;
 use App\Domain\Optimize\OptimizeQueue;
 use App\Infrastructure\Environment\NativeSystemProbe;
@@ -55,6 +56,11 @@ Schedule::call(static fn () => Backup::prune())
 Schedule::call(static fn () => OptimizeQueue::sweep())
     ->name('optimize-sweep')
     ->everyFiveMinutes();
+
+// A128: the Mail-Eingang fetches its mailbox every few minutes (also without cron when the Posteingang opens).
+Schedule::call(static fn () => MailFetch::schedule())
+    ->name('mail-fetch')
+    ->everyMinute();
 
 // A97: the modules' own tasks (e.g. Revolut fetching its bookings), each at its own interval.
 Schedule::call(static fn () => ModuleRuntime::tick())

@@ -9,17 +9,21 @@ use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentIntake;
 use App\Domain\Documents\TextPdf;
 use App\Domain\Log\LogEntry;
+use App\Domain\Org\OrgScope;
+use App\Domain\Properties\PropertyValues;
+use App\Jobs\Net\FetchMailInbox;
 use App\Jobs\Net\ImapClient;
 use App\Jobs\Net\SmtpSender;
 use Closure;
 use finfo;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Throwable;
 
 /**
- * Point 48: fetches the Mail-Eingang once – on the button in the Posteingang (A118) or when the Posteingang opens (A124);
- * a cron job comes later. Each mail of INBOX, oldest first:
+ * Point 48: fetches the Mail-Eingang once – on the button in the Posteingang (A118), when the Posteingang opens (A124)
+ * and by cron every few minutes (A128). One fetch per organisation at a time (a lock). Each mail of INBOX, oldest first:
  * - not from an allowed sender (F27 a: the people here plus the list), or forged (A120) → folder "Abgelehnt", Logbuch;
  * - else it becomes documents in the Posteingang (source "E-Mail") as the settings say – the attachments, the mail as
  *   PDF, or both – and goes into the folder "Verarbeitet". PDF, JPEG and PNG up to 20 MB; other files are named in the
@@ -88,6 +92,38 @@ final class MailFetch
     public static function run(MailInbox $inbox): array
     {
         $result = ['documents' => 0, 'mails' => 0, 'rejected' => 0, 'more' => false, 'error' => null];
+        $lock = Cache::lock('mail-fetch:'.$inbox->org_id, self::SECONDS + 60);
+        if (! $lock->get()) {
+            return $result; // another fetch (cron or a second window) is at work
+        }
+        try {
+            return self::fetch($inbox, $result);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /** A128, cron every minute: hands each due Mail-Eingang to a net job. */
+    public static function schedule(): int
+    {
+        $count = 0;
+        foreach (MailInbox::query()->withoutGlobalScope(OrgScope::class)->where('enabled', true)->get() as $inbox) {
+            if ($inbox->due()) {
+                $inbox->forceFill(['last_fetch_at' => now()])->save();
+                FetchMailInbox::dispatch($inbox->id);
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * @param  array{documents: int, mails: int, rejected: int, more: bool, error: string|null}  $result
+     * @return array{documents: int, mails: int, rejected: int, more: bool, error: string|null}
+     */
+    private static function fetch(MailInbox $inbox, array $result): array
+    {
         $inbox->forceFill(['last_fetch_at' => now()])->save();
         $started = microtime(true);
         try {
@@ -176,7 +212,11 @@ final class MailFetch
 
                 continue;
             }
-            $documents[] = self::store($file, $inbox, $userId, $note);
+            $document = self::store($file, $inbox, $userId, $note);
+            if (isset($file['title'])) {
+                self::sender($document, $mail, $allowed[$entry] !== null);
+            }
+            $documents[] = $document;
             $received[] = $label;
         }
 
@@ -215,10 +255,27 @@ final class MailFetch
 
             return ['documents' => 0, 'rejected' => true];
         }
-        $mailbox->move($uid, self::DONE);
+        if ($inbox->after_fetch === 'delete') {
+            $mailbox->delete($uid);
+        } else {
+            $mailbox->move($uid, self::DONE);
+        }
         MailReply::after($mail, $inbox, $outcome['received'], $outcome['known'], $outcome['skipped']);
 
         return ['documents' => count($outcome['documents']), 'rejected' => false];
+    }
+
+    /**
+     * A130: the mail as PDF names its writer as Absender (confirmed, so the text recognition does not guess "Hallo,").
+     * A mail one of the people here forwarded names the original writer from the forwarded part – or nobody.
+     */
+    private static function sender(Document $document, MailMessage $mail, bool $fromMember): void
+    {
+        [$address, $name] = $fromMember ? ($mail->forwardedFrom() ?? ['', '']) : [$mail->from, $mail->fromName];
+        $sender = trim($name !== '' ? $name : $address);
+        if ($sender !== '') {
+            app(PropertyValues::class)->set($document, 'sender', Str::limit($sender, 180, ''));
+        }
     }
 
     /** @param  array{name: string, mime: string, bytes: string, title?: string}  $file */

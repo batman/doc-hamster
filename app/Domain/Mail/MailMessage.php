@@ -298,6 +298,23 @@ final class MailMessage
         return mb_scrub(trim($decoded), 'UTF-8');
     }
 
+    /**
+     * A130: the writer of a forwarded mail – the "Von:"/"From:" line below a forward marker (also the block this class
+     * writes for a message/rfc822 part).
+     *
+     * @return array{string, string}|null address (lower case) and display name
+     */
+    public function forwardedFrom(): ?array
+    {
+        $pattern = '/(?:weitergeleitet|forwarded|original message|urspr\x{00FC}ngliche nachricht)[^\n]*\n(?:[^\n]*\n){0,6}?[ \t>*]*(?:von|from)[ \t*]*:[ \t*]*([^\n]+)/iu';
+        if (preg_match($pattern, $this->text, $m) !== 1) {
+            return null;
+        }
+        [$address, $name] = self::address(trim($m[1], " \t*"));
+
+        return $address !== '' || $name !== '' ? [$address, $name] : null;
+    }
+
     /** @return array{string, string} address (lower case) and display name of "Max Mustermann <max@example.com>" */
     private static function address(string $value): array
     {

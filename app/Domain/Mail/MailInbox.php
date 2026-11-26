@@ -33,6 +33,7 @@ use Illuminate\Support\Carbon;
  * @property string $smtp_host the outgoing server of the same mailbox (same user and password)
  * @property int $smtp_port
  * @property string $smtp_security ssl|starttls|none
+ * @property string $after_fetch move|delete (A127: what happens to a taken mail in the mailbox)
  * @property Carbon|null $last_fetch_at
  * @property Carbon|null $last_success_at
  * @property string|null $last_error
@@ -48,11 +49,13 @@ final class MailInbox extends Model
 
     public const array WITHOUT = ['mail', 'skip'];
 
+    public const array AFTER = ['move', 'delete'];
+
     /** A124: opening the Posteingang fetches the mailbox by itself, at most this often. */
     public const int AUTO_MINUTES = 5;
 
     protected $fillable = ['org_id', 'user_id', 'enabled', 'host', 'port', 'security', 'username', 'password', 'with_attachments',
-        'without_attachments', 'senders', 'reply_enabled', 'reply_text', 'smtp_host', 'smtp_port', 'smtp_security', 'last_fetch_at', 'last_success_at', 'last_error'];
+        'without_attachments', 'senders', 'reply_enabled', 'reply_text', 'smtp_host', 'smtp_port', 'smtp_security', 'after_fetch', 'last_fetch_at', 'last_success_at', 'last_error'];
 
     protected $hidden = ['password'];
 
@@ -74,7 +77,7 @@ final class MailInbox extends Model
     public static function current(): self
     {
         return self::query()->first() ?? new self(['org_id' => app(CurrentOrg::class)->id(), 'enabled' => false, 'host' => '', 'port' => 993, 'security' => 'ssl', 'username' => '',
-            'with_attachments' => 'attachments', 'without_attachments' => 'mail', 'reply_enabled' => false, 'smtp_host' => '', 'smtp_port' => 465, 'smtp_security' => 'ssl']);
+            'with_attachments' => 'attachments', 'without_attachments' => 'mail', 'reply_enabled' => false, 'smtp_host' => '', 'smtp_port' => 465, 'smtp_security' => 'ssl', 'after_fetch' => 'move']);
     }
 
     public function ready(): bool
@@ -96,7 +99,7 @@ final class MailInbox extends Model
         return filter_var($user, FILTER_VALIDATE_EMAIL) !== false ? $user : null;
     }
 
-    /** A124: due for the automatic fetch when the Posteingang opens. */
+    /** A124/A128: due for the automatic fetch – when the Posteingang opens, and by cron. */
     public function due(): bool
     {
         return $this->ready() && ($this->last_fetch_at === null || $this->last_fetch_at->lt(now()->subMinutes(self::AUTO_MINUTES)));

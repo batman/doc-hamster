@@ -134,6 +134,12 @@ final class ImapClient implements Mailbox
         $this->command(in_array('UIDPLUS', $this->capabilities, true) ? 'UID EXPUNGE '.$uid : 'EXPUNGE');
     }
 
+    public function delete(int $uid): void
+    {
+        $this->command('UID STORE '.$uid.' +FLAGS.SILENT (\\Deleted)');
+        $this->command(in_array('UIDPLUS', $this->capabilities, true) ? 'UID EXPUNGE '.$uid : 'EXPUNGE');
+    }
+
     public function close(): void
     {
         if ($this->socket !== null) {

@@ -18,5 +18,8 @@ interface Mailbox
 
     public function move(int $uid, string $folder): void;
 
+    /** A127: removes the mail from the mailbox. */
+    public function delete(int $uid): void;
+
     public function close(): void;
 }
