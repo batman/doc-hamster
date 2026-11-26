@@ -19,16 +19,26 @@
             });
             side.querySelector('[data-badge-any]').hidden = Object.values(counts).every(count => !count);
         };
+        let lastStamp = null;
         const poll = () => {
             if (document.hidden) {
                 return;
             }
             fetch(side.dataset.badges, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
-                .then(response => (response.ok ? response.json() : null))
+                .then(response => {
+                    // Point 39 (A100): the data stamp moved – something the windows show changed (core/window-refresh.js).
+                    const stamp = response.headers.get('X-DocHamster-Stamp');
+                    if (stamp && lastStamp !== null && stamp !== lastStamp) {
+                        window.DocHamster?.emit('data:changed', document);
+                    }
+                    lastStamp = stamp ?? lastStamp;
+                    return response.ok ? response.json() : null;
+                })
                 .then(counts => counts && show(counts))
                 .catch(() => { /* offline or logged out: keep what is shown */ });
         };
         setInterval(poll, 60000);
+        setTimeout(poll, 10000); // point 39: the first stamp to compare with (not at once: the page itself loads first)
         // Point 149: a module that just changed what a badge counts asks for the numbers at once.
         if (window.DocHamster) {
             window.DocHamster.refreshBadges = poll;

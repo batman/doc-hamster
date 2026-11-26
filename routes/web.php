@@ -411,6 +411,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
 
 // A receipt handed out by link (A4): no login, until it expires or is revoked.
 Route::get('s/{token}', [ShareController::class, 'open'])->middleware('throttle:30,1')->name('shares.open');
+Route::get('s/{token}/file', [ShareController::class, 'file'])->middleware('throttle:60,1')->name('shares.file');
 
 // Temporary device probe (#37): open like the later home-screen page, holds no data.
 Route::get('phone-check', [PhoneCheckController::class, 'show'])->name('phone-check');

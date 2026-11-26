@@ -95,7 +95,13 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         // Point 115: every reported server error also lands in Einstellungen → Log ("Allgemein", level error).
         $exceptions->report(static function (Throwable $e): void {
-            LogEntry::write('general', 'error', class_basename($e).': '.$e->getMessage().' ('.basename($e->getFile()).':'.$e->getLine().')', 'server.error');
+            // A106: which page it was – the route's pattern (e.g. "GET /s/{token}"), never the address itself (a link's token).
+            // A107: a page that only shows something saved nothing – it gets its own hint.
+            $request = app()->runningInConsole() ? null : request();
+            $route = $request?->route();
+            $where = $route instanceof Illuminate\Routing\Route ? ' · '.$request->method().' /'.ltrim($route->uri(), '/') : '';
+            $event = $request !== null && $request->isMethodSafe() ? 'server.error_view' : 'server.error';
+            LogEntry::write('general', 'error', class_basename($e).': '.$e->getMessage().' ('.basename($e->getFile()).':'.$e->getLine().')'.$where, $event);
         });
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),

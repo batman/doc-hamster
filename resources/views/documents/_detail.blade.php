@@ -7,6 +7,8 @@
     $when = fn ($date) => $date?->format('d.m.Y H:i') ?? __('documents.never');
     $booking = $document->matches->map(fn ($match) => $match->transaction->bookedOn().' · '.$match->transaction->formattedAmount())->implode(', ');
     $shareUrl = session('share_url');
+    // A104: the links of this document that still work – each can be blocked right here.
+    $shareLinks = \App\Domain\Documents\ShareLink::query()->where('document_id', $document->id)->whereNull('revoked_at')->where('expires_at', '>', now())->latest()->get();
     $tagSummary = $document->tags->pluck('name')->implode(', ');
     $isText = \App\Domain\Documents\TextDocument::isText($file);
     // Text recognition state (A23): running wins over the stored status.
@@ -300,7 +302,7 @@
     </x-fold-card>
 
 @if ($file)
-    <div class="dialog-backdrop" data-dialog="share-document-{{ $document->id }}" @unless ($shareUrl) hidden @endunless>
+    <div class="dialog-backdrop" data-dialog="share-document-{{ $document->id }}" @unless ($shareUrl || session('share_dialog')) hidden @endunless>
         <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="share-document-{{ $document->id }}-title">
             <h2 id="share-document-{{ $document->id }}-title">{{ __('documents.send') }}</h2>
             @if ($shareUrl)
@@ -329,6 +331,31 @@
                 </div>
                 @endcan
             @endif
+            @can('exports.create')
+                @if ($shareLinks->isNotEmpty())
+                    {{-- A104: which links of this document still work; "Sperren" makes one dead at once. --}}
+                    <h3>{{ __('shares.active') }}</h3>
+                    <ul class="pick-list">
+                        @foreach ($shareLinks as $link)
+                            <li class="pick-row is-static">
+                                <span class="row-icon"><x-icon name="link" /></span>
+                                <span>
+                                    <strong>{{ __('shares.made', ['date' => $link->created_at->format('d.m.Y H:i')]) }}</strong>
+                                    <small>{{ __('shares.until', ['date' => $link->expires_at->format('d.m.Y H:i')]) }}</small>
+                                </span>
+                                <span class="row-actions">
+                                    <form method="post" action="{{ route('shares.revoke', $link->id) }}">
+                                        @csrf
+                                        <input type="hidden" name="back" value="1">
+                                        <button type="submit" class="control-button control-danger" aria-label="{{ __('shares.revoke') }}" data-tooltip="{{ __('shares.revoke') }}"><x-icon name="unlink" /></button>
+                                    </form>
+                                </span>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+                <p><a href="{{ route('shares.index') }}">{{ __('shares.all') }}</a></p>
+            @endcan
         </div>
     </div>
 @endif

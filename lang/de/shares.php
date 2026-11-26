@@ -13,4 +13,9 @@ return [
     'until' => 'gültig bis :date',
     'revoke' => 'Sperren',
     'revoked' => 'Der Link ist gesperrt.',
+    'made' => 'Erstellt am :date',
+    'all' => 'Alle Links zum Versenden',
+    'open_text' => 'Dieses Dokument wurde mit Ihnen geteilt. Der Link gilt bis :date.',
+    'open_view' => 'Ansehen',
+    'open_download' => 'Herunterladen',
 ];

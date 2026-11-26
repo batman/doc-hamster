@@ -67,7 +67,8 @@ it('hands out a receipt by link until it is revoked', function (): void {
     $url = $this->actingAs($this->admin->user)->post('/documents/'.$this->doc->id.'/share-link')->assertRedirect()->getSession()->get('share_url');
     auth()->logout();
 
-    $this->get($url)->assertOk()->assertDownload('bon.jpg');
+    $this->get($url)->assertOk();
+    $this->get($url.'/file?download=1')->assertOk()->assertDownload('bon.jpg');
     ShareLink::query()->withoutGlobalScope(OrgScope::class)->update(['revoked_at' => now()]);
     $this->get($url)->assertNotFound();
     $this->get('/s/'.str_repeat('a', 40))->assertNotFound();
@@ -90,7 +91,8 @@ it('names the download after the title, without slashes and with the file type',
 
     $url = $this->post('/documents/'.$this->doc->id.'/share-link')->getSession()->get('share_url');
     auth()->logout();
-    $this->get($url)->assertOk()->assertDownload('Rechnung 03-2026.jpg');
+    $this->get($url)->assertOk();
+    $this->get($url.'/file?download=1')->assertOk()->assertDownload('Rechnung 03-2026.jpg');
 
     expect(AuditLogEntry::query()->where('action', 'document.share_opened')->count())->toBe(1);
 });

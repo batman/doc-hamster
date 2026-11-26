@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Domain\Audit\AuditLogEntry;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\DocumentFile;
 use App\Domain\Documents\ShareLink;
+use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Membership;
 use App\Domain\Org\OrgScope;
 use App\Domain\Org\RoleRight;
@@ -64,7 +66,21 @@ it('downloads a title containing a slash without failing', function (): void {
 
     $url = $this->post('/documents/'.$this->doc->id.'/share-link')->assertRedirect()->getSession()->get('share_url');
     auth()->logout();
-    $this->get($url)->assertOk()->assertDownload('Rechnung 03-2026.jpg');
+    $this->get($url.'/file?download=1')->assertOk()->assertDownload('Rechnung 03-2026.jpg');
+});
+
+it('opens a link for a visitor who is not signed in at all – a page, the file shown and downloadable (point 40, A103)', function (): void {
+    $url = $this->actingAs($this->admin->user)->post('/documents/'.$this->doc->id.'/share-link')->assertRedirect()->getSession()->get('share_url');
+    auth()->logout();
+    // A visitor from outside: no organisation is active (in tests it would otherwise stay from the request above).
+    app(CurrentOrg::class)->clear();
+
+    $this->get($url)->assertOk()->assertSee('bon.jpg')->assertSee('Herunterladen');
+    app(CurrentOrg::class)->clear();
+    $this->get($url.'/file')->assertOk()->assertHeader('Content-Type', 'image/jpeg')->assertHeader('Content-Disposition', 'inline; filename=bon.jpg');
+    app(CurrentOrg::class)->clear();
+    $this->get($url.'/file?download=1')->assertDownload('bon.jpg');
+    expect(AuditLogEntry::query()->where('action', 'document.share_opened')->count())->toBe(1);
 });
 
 it('refuses a revoked link, and revoking twice stays revoked', function (): void {
@@ -106,4 +122,16 @@ it('locks a revoked member out of the share list', function (): void {
     $exporter->update(['revoked_at' => now()]);
 
     $this->actingAs($exporter->user)->get('/share-links')->assertForbidden();
+});
+
+it('lists a document\'s working links in its send dialog and blocks one from there (A104)', function (): void {
+    $url = $this->actingAs($this->admin->user)->post('/documents/'.$this->doc->id.'/share-link')->getSession()->get('share_url');
+    $link = ShareLink::query()->withoutGlobalScope(OrgScope::class)->firstOrFail();
+
+    $this->get('/documents/'.$this->doc->id)->assertOk()->assertSee(route('shares.revoke', $link->id));
+    $this->from('/documents/'.$this->doc->id)->post('/share-links/'.$link->id.'/revoke', ['back' => 1])->assertRedirect('/documents/'.$this->doc->id);
+    $this->get('/documents/'.$this->doc->id)->assertOk()->assertDontSee(route('shares.revoke', $link->id));
+
+    auth()->logout();
+    $this->get($url)->assertNotFound();
 });

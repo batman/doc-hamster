@@ -1,5 +1,7 @@
 /* Einstellungen → Log (point 115, A229-A234): filter bar, rows with logbook and kind as pills. */
 .log-filter { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; margin: .5rem 0 1rem; }
+/* Point 43: the reset button sits on the line of the fields (a button brings 1.5rem margin on top by default). */
+.log-filter > :is(button, .button) { margin: 0; }
 .log-filter .log-search { flex: 1 1 12rem; min-width: 0; width: auto; }
 .log-filter > .chips { flex-basis: 100%; }
 .log-filter .search-row { flex: 0 1 auto; }

@@ -26,7 +26,7 @@
                 <li class="pick-row is-static">
                     <span class="row-icon"><x-icon name="link" /></span>
                     <span>
-                        <strong>{{ $link->document?->title ?? '–' }}</strong>
+                        <strong>@if ($link->document)<a href="{{ route('documents.show', $link->document_id) }}">{{ $link->document->title }}</a>@else – @endif</strong>
                         <small>{{ __('shares.until', ['date' => $link->expires_at->format('d.m.Y H:i')]) }}</small>
                     </span>
                     <span class="row-actions">

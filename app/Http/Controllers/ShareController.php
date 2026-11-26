@@ -6,7 +6,9 @@ namespace App\Http\Controllers;
 
 use App\Domain\Audit\AuditLog;
 use App\Domain\Documents\Document;
+use App\Domain\Documents\DocumentFile;
 use App\Domain\Documents\ShareLink;
+use App\Domain\Documents\TextDocument;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\OrgScope;
 use App\Domain\Org\Permission;
@@ -37,19 +39,55 @@ final class ShareController
         return back()->with('share_url', route('shares.open', $token));
     }
 
-    /** The receipt behind a link, as a download; every opening lands in the audit log (PLAN §8, §11). */
-    public function open(Request $request, string $token, AuditLog $audit): Response
+    /**
+     * The receipt behind a link (point 40, A103): a small page with the receipt shown and "Herunterladen" – a bare
+     * download looked like "nothing happens" in WhatsApp's browser. The visitor is not signed in, so nothing here may
+     * lean on CurrentOrg: every query names its organisation itself. Every opening lands in the audit log (PLAN §8, §11).
+     */
+    public function open(Request $request, string $token, AuditLog $audit): View
+    {
+        [$link, $document, $file] = $this->shared($token);
+        $audit->record('document.share_opened', orgId: $link->org_id, subject: $document, meta: ['link' => $link->id], ip: $request->ip());
+
+        return view('shares.open', [
+            'document' => $document,
+            'file' => $file,
+            'token' => $token,
+            'inline' => self::inline($file),
+            'until' => $link->expires_at,
+        ]);
+    }
+
+    /** The file itself: shown in the browser where that is safe (images, PDF, text as plain text), else a download. */
+    public function file(Request $request, string $token): Response
+    {
+        [, $document, $file] = $this->shared($token);
+        $name = $file->downloadName($document->title);
+        if ($request->boolean('download') || ! self::inline($file)) {
+            return Storage::disk('local')->download($file->path, $name, ['Content-Type' => $file->mime, 'X-Content-Type-Options' => 'nosniff']);
+        }
+        $type = TextDocument::isText($file) ? 'text/plain; charset=UTF-8' : $file->mime;
+
+        return Storage::disk('local')->response($file->path, $name, ['Content-Type' => $type, 'X-Content-Type-Options' => 'nosniff']);
+    }
+
+    /** @return array{ShareLink, Document, DocumentFile} */
+    private function shared(string $token): array
     {
         $link = ShareLink::query()->withoutGlobalScope(OrgScope::class)->where('token_hash', hash('sha256', $token))->first();
         abort_if($link === null || ! $link->isActive(), 404);
 
-        $document = Document::query()->withoutGlobalScope(OrgScope::class)->with('files')->whereKey($link->document_id)->first();
-        $file = $document?->files()->withoutGlobalScope(OrgScope::class)->first();
-        abort_if($file === null, 404);
+        $document = Document::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $link->org_id)->whereKey($link->document_id)->first();
+        $file = $document === null ? null : DocumentFile::query()->withoutGlobalScope(OrgScope::class)->where('org_id', $link->org_id)
+            ->where('document_id', $document->id)->orderBy('page_no')->first();
+        abort_if($document === null || $file === null || ! Storage::disk('local')->exists($file->path), 404);
 
-        $audit->record('document.share_opened', orgId: $link->org_id, subject: $document, meta: ['link' => $link->id], ip: $request->ip());
+        return [$link, $document, $file];
+    }
 
-        return Storage::disk('local')->download($file->path, $file->downloadName($document->title), ['Content-Type' => $file->mime]);
+    private static function inline(DocumentFile $file): bool
+    {
+        return in_array($file->mime, ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'], true) || TextDocument::isText($file);
     }
 
     public function index(CurrentOrg $org): View
@@ -80,7 +118,8 @@ final class ShareController
         $link->update(['revoked_at' => now()]);
         $audit->record('document.share_revoked', orgId: $org->id(), userId: $org->membership()->user_id, subject: $link, ip: $request->ip());
 
-        return redirect()->route('shares.index')->with('status', __('shares.revoked'));
+        // A104: blocked from the document's dialog – back to the document.
+        return $request->boolean('back') ? back()->with('share_dialog', true) : redirect()->route('shares.index')->with('status', __('shares.revoked'));
     }
 
     /**

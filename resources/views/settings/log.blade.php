@@ -9,6 +9,11 @@
     @php
         $query = array_filter(['books' => $filters['books'] === $books ? null : $filters['books'], 'level' => $filters['level'],
             'from' => $filters['from'], 'to' => $filters['to'], 'q' => $filters['q'], 'doc' => $filters['doc'], 'engine' => $filters['engine']], static fn ($v) => $v !== null && $v !== '' && $v !== []);
+        // Point 42 (A105): each entry as one line of text for the clipboard – time, logbook, kind, text, hint, person, document.
+        $copyLines = array_map(static fn (array $row): string => implode(' · ', array_filter([
+            $row['time']->timezone(config('app.timezone'))->format('d.m.Y H:i:s'), __('log.books.'.$row['book']), __('log.levels.'.$row['level']),
+            $row['text'], $row['help'], $row['person'], $row['document'], ...$row['details'],
+        ], static fn ($v) => is_string($v) && $v !== '')).(($row['body'] ?? null) !== null ? "\n".$row['body'] : ''), $rows);
         $bookNames = implode(', ', array_map(static fn (string $b): string => __('log.books.'.$b), $filters['books']));
     @endphp
 
@@ -39,6 +44,10 @@
     <section class="card">
         <h2 class="card-head"><x-icon name="list-details" />{{ $filters['books'] === $books ? __('settings.links.log.title') : $bookNames }}
             <span class="card-action">
+                @if ($rows !== [])
+                    <button type="button" class="icon-button" data-copy-text="{{ implode("
+", $copyLines) }}" data-copied="{{ __('log.copied') }}" data-copy-failed="{{ __('log.copy_failed') }}" aria-label="{{ __('log.copy_all') }}" data-tooltip="{{ __('log.copy_all') }}"><x-icon name="copy" /></button>
+                @endif
                 <a class="icon-button" href="{{ route('log.export', $query) }}" aria-label="{{ __('log.export') }}" data-tooltip="{{ __('log.export') }}"><x-icon name="file-export" /></a>
                 <button type="button" class="icon-button" data-dialog-open="log-clear" aria-label="{{ __('log.clear') }}" data-tooltip="{{ __('log.clear') }}"><x-icon name="trash" /></button>
             </span>
@@ -112,6 +121,7 @@
                             ...$row['details'],
                         ]);
                         $new = $row['level'] === 'error' && $row['time']->greaterThan($since);
+                        $copyLine = $copyLines[$loop->index];
                     @endphp
                     <li class="pick-row is-static log-row log-{{ $row['level'] }} @if ($new) is-marked @endif">
                         <span class="row-icon"><x-icon :name="$icon" /></span>
@@ -142,6 +152,7 @@
                             @endif
                         </span>
                         <span class="log-pills">
+                            <button type="button" class="control-button" data-copy-text="{{ $copyLine }}" data-copied="{{ __('log.copied') }}" data-copy-failed="{{ __('log.copy_failed') }}" aria-label="{{ __('log.copy_one') }}" data-tooltip="{{ __('log.copy_one') }}"><x-icon name="copy" /></button>
                             @if ($new)
                                 <span class="pill pill-new">{{ __('log.new') }}</span>
                             @endif

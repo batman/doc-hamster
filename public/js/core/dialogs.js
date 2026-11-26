@@ -63,12 +63,17 @@
             open(button);
         });
         document.addEventListener('click', event => {
-            const button = event.target.closest('[data-copy]');
+            const button = event.target.closest('[data-copy], [data-copy-text]');
             if (!button) {
                 return;
             }
             // Kopierfeld (points 152, A329): the symbol button inside a field copies its value and toasts; a button with
             // text (the share link) shows the "copied" text instead. The field is found next to the button or by its id.
+            // Point 42 (A105): a Kopieren-Knopf carries its text itself (data-copy-text) – e.g. Logbuch entries.
+            if (button.dataset.copyText !== undefined) {
+                DocHamster.copyText(button.dataset.copyText).then(ok => DocHamster.toast?.(ok ? button.dataset.copied : button.dataset.copyFailed, { error: !ok }));
+                return;
+            }
             const field = button.closest('.field-addon')?.querySelector('input, textarea') ?? document.getElementById(button.dataset.copy);
             if (!field) {
                 return;

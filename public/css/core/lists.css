@@ -273,3 +273,8 @@ html.is-carrying, html.is-carrying * { cursor: grabbing !important; }
 .initials.is-paused { background: color-mix(in srgb, var(--muted) 18%, transparent); color: var(--muted); }
 .support-link { margin-top: 1rem; color: var(--muted); }
 .support-link .icon { color: var(--danger); }
+
+/* Point 39 (A102): a row that came in while the window was open fades in once (core/window-refresh.js). */
+.is-fresh { animation: row-fresh 1.5s ease-out; }
+@keyframes row-fresh { from { opacity: 0; background-color: color-mix(in srgb, var(--primary) 18%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .is-fresh { animation: none; } }

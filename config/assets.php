@@ -18,7 +18,7 @@ return [
     ],
     'js' => [
         'core/bus', 'core/error-report', 'core/menu', 'core/dropdowns', 'core/folder-menu', 'core/card-fold', 'core/button-choice', 'core/expand-plus', 'modules/documents-filter', 'core/sortable', 'core/tabs',
-        'core/tooltips', 'core/dialogs', 'core/window-cache', 'core/windows', 'core/window-rename', 'core/window-search', 'core/menu-window', 'core/scroll-hint',
+        'core/tooltips', 'core/dialogs', 'core/window-cache', 'core/windows', 'core/window-rename', 'core/window-search', 'core/window-refresh', 'core/menu-window', 'core/scroll-hint',
         'core/badges', 'core/upload', 'modules/notes', 'modules/tags-search', 'core/toasts', 'core/selection-bar', 'core/ajax-forms',
         'modules/updates-preview-pick', 'core/color-field', 'modules/folder-import', 'core/start',
         'core/pane-edge', 'modules/document-viewer', 'modules/doc-fullscreen', 'modules/doc-transform', 'modules/ocr-text', 'modules/translate', 'modules/palette', 'modules/ocr-ink', 'modules/ocr-browser', 'modules/documents', 'modules/documents-rows', 'modules/documents-forms',

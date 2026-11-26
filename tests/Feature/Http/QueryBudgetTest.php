@@ -22,7 +22,8 @@ use Illuminate\Support\Facades\DB;
 uses(RefreshDatabase::class)->group('db');
 
 // The Posteingang marks its sources seen and counts the menu again – since D-040 also the open Vorschläge (+1).
-const QUERY_BUDGETS = ['home' => 12, 'documents' => 12, 'folder' => 15, 'window' => 15, 'bank' => 6, 'account' => 16, 'settings' => 4, 'badges' => 3, 'inbox' => 13];
+// badges: +1 for the data stamp the open windows follow (point 39, one UNION query).
+const QUERY_BUDGETS = ['home' => 12, 'documents' => 12, 'folder' => 15, 'window' => 15, 'bank' => 6, 'account' => 16, 'settings' => 4, 'badges' => 4, 'inbox' => 13];
 
 beforeEach(function (): void {
     $this->admin = Membership::factory()->owner()->create();

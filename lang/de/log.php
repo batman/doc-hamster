@@ -13,6 +13,7 @@ return [
     // Batch 16 (2.5): one line "what it means / what to do" per critical event (event with "." as "_"; OCR events as ocr_…).
     'help' => [
         'server_error' => 'Der Server konnte eine Aktion nicht ausführen; sie wurde nicht gespeichert. Bitte noch einmal versuchen – bleibt es, die Meldung an den Admin geben.',
+        'server_error_view' => 'Der Server konnte eine Seite nicht anzeigen; geändert wurde dabei nichts. Bitte noch einmal versuchen – bleibt es, die Meldung an den Admin geben.',
         'browser_error' => 'Eine Aktion im Browser wurde nicht abgeschlossen. Seite neu laden und noch einmal versuchen.',
         'ocr_timeout' => 'Die Texterkennung hat zu lange gebraucht. Sie versucht es später von selbst noch einmal.',
         'ocr_failed' => 'Die Texterkennung ist an diesem Dokument gescheitert. Im Dokument „Neu erkennen“ versuchen.',
@@ -31,6 +32,10 @@ return [
     'filter' => 'Filtern',
     'reset_filter' => 'Filter zurücksetzen',
     'export' => 'Exportieren',
+    'copy_all' => 'Einträge dieser Seite kopieren',
+    'copy_one' => 'Eintrag kopieren',
+    'copied' => 'In die Zwischenablage kopiert.',
+    'copy_failed' => 'Der Browser hat das Kopieren nicht erlaubt.',
     'clear' => 'Zurücksetzen',
     'clear_title' => 'Logbücher leeren?',
     'clear_text' => 'Alle Einträge der angehakten Logbücher werden gelöscht: :books. Das lässt sich nicht rückgängig machen.',
