@@ -197,7 +197,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     });
 
     // Einstellungen → Eingang (point 153.5; before settings/{group}): the sources of the Posteingang.
-    // Drucker (point 127): each person's own computers with the printer "Hamster"; the old address redirects.
+    // Drucker (point 127): each person's own computers with the printer "docHamster"; the old address redirects.
     Route::redirect('settings/printer', '/settings/eingang/printer');
     Route::view('settings/eingang/mail', 'settings.mail')->middleware('can:documents.upload')->name('inbox.mail');
     Route::middleware('can:documents.upload')->prefix('settings/eingang/printer')->name('printers.')->group(function (): void {

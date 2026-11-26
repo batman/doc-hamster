@@ -14,7 +14,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Einstellungen → Drucker (point 127): set up the printer "Hamster" and the
+ * Einstellungen → Drucker (point 127): set up the printer "docHamster" and the
  * person's paired computers. Each person sees and deletes only their own.
  */
 final class PrinterSettingsController

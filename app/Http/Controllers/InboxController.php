@@ -20,7 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 /**
- * Posteingang (point 153, A327): one window with everything that came in – uploads, the printer "Hamster",
+ * Posteingang (point 153, A327): one window with everything that came in – uploads, the printer "docHamster",
  * e-mail, shared from a phone, other programs – newest first, until it is filed into a folder (A358-A361).
  * Tabs per source with their own red count; viewing a tab marks that source seen ("Alle": every source).
  */

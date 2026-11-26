@@ -1,4 +1,4 @@
-{{-- Einstellungen → Drucker (point 127): set up the printer "Hamster", the paired computers (126/A264: paired on, last used,
+{{-- Einstellungen → Drucker (point 127): set up the printer "docHamster", the paired computers (126/A264: paired on, last used,
      delete as row action with confirm) and the instructions. Moved here from the Druckerablage. --}}
 @extends('layouts.settings')
 
@@ -22,8 +22,15 @@
                     <span class="row-icon"><x-icon name="device-desktop" /></span>
                     <span>
                         <strong>{{ $printer->name }}</strong>
-                        <small>{{ __('print_tray.paired_at', ['date' => $printer->created_at->format('d.m.Y H:i')]) }} · {{ __('print_tray.last_used', ['date' => $printer->last_used_at?->format('d.m.Y H:i') ?? __('documents.never')]) }}</small>
+                        <small>{{ __('print_tray.paired_at', ['date' => $printer->created_at->format('d.m.Y H:i')]) }} · {{ __('print_tray.last_used', ['date' => $printer->last_used_at?->format('d.m.Y H:i') ?? __('documents.never')]) }}@if ($printer->last_seen_at) · {{ __('print_tray.last_seen', ['date' => $printer->last_seen_at->format('d.m.Y H:i')]) }}@endif</small>
+                        @if ($printer->silent())
+                            {{-- Point 46 (A113): the computer is on but its background script may not run. --}}
+                            <small class="field-hint">{{ __('print_tray.silent', ['hours' => \App\Domain\Printing\Printer::SILENT_HOURS]) }}</small>
+                        @endif
                     </span>
+                    @if ($printer->silent())
+                        <span class="pill pill-warning">{{ __('print_tray.silent_pill') }}</span>
+                    @endif
                     <span class="row-actions">
                         <button type="button" class="control-button control-danger" data-dialog-open="delete-printer-{{ $printer->id }}" aria-label="{{ __('print_tray.delete') }}: {{ $printer->name }}" data-tooltip="{{ __('print_tray.delete') }}"><x-icon name="trash" /></button>
                     </span>

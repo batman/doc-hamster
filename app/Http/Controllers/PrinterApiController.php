@@ -15,7 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 
 /**
- * What the computer with the printer "Hamster" talks to: linking it once
+ * What the computer with the printer "docHamster" talks to: linking it once
  * with the code from the download, then sending printed documents with its
  * token. No session and no cookies, so no CSRF; the token is the only key.
  */
@@ -36,6 +36,17 @@ final class PrinterApiController
         $audit->record('printer.paired', orgId: $printer->org_id, userId: $printer->user_id, subject: $printer, ip: $request->ip());
 
         return response()->json(['token' => $token], 201);
+    }
+
+    /** Point 46 (A113): the background script says "still here" – nothing else happens. */
+    public function ping(Request $request): JsonResponse
+    {
+        $token = $request->bearerToken();
+        $printer = $token === null ? null : Printer::byToken($token);
+        abort_if($printer === null, 401);
+        $printer->forceFill(['last_seen_at' => now()])->saveQuietly();
+
+        return response()->json(['ok' => true]);
     }
 
     public function upload(Request $request, AuditLog $audit, CurrentOrg $org): JsonResponse
@@ -62,7 +73,7 @@ final class PrinterApiController
         $title = $title !== '' ? $title : __('print_tray.default_title', ['date' => now()->format('d.m.Y H:i')]);
 
         $document = DocumentIntake::store($upload, $type[0], $type[1], $printer->org_id, $printer->user_id, $title, inPrintTray: true);
-        $printer->update(['last_used_at' => now()]);
+        $printer->update(['last_used_at' => now(), 'last_seen_at' => now()]);
         $audit->record('document.printed', orgId: $printer->org_id, userId: $printer->user_id, subject: $document, meta: ['printer' => $printer->id], ip: $request->ip());
 
         return response()->json(['id' => $document->id], 201);

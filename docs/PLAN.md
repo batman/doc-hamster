@@ -30,7 +30,7 @@ Lizenz: **MIT**. Code, Kommentare und Commits: **Englisch**. Oberfläche: **Deut
 
 **Eingang**
 - **Posteingang:** alles Neue wartet ungeordnet, Reiter pro Quelle (Upload, Drucker, E-Mail, Handy), „Erledigt“, Ablegen in Ordner.
-- Wege hinein: Hochladen/Ziehen, Ordner-Import, Android-Teilen-Ziel (installierbare App), **Geräteschlüssel + Upload-API** für iPhone-Kurzbefehle und Programme, Drucker „Hamster“ für Windows, Text → PDF.
+- Wege hinein: Hochladen/Ziehen, Ordner-Import, Android-Teilen-Ziel (installierbare App), **Geräteschlüssel + Upload-API** für iPhone-Kurzbefehle und Programme, Drucker „docHamster“ für Windows, Text → PDF.
 
 **Dokumente**
 - Ordner (Explorer-Baum, Ziehen & Ablegen, Mehrfachauswahl), Ansichten Liste/Details/Kacheln/Zeitachse/Kalender, Tags mit Farben, **Eigenschaften** (typisiert, mit Vorschlägen aus der Texterkennung), GiroCode-Karte, Lesemodus mit Wortkorrekturen, Übersetzung, Text-Dokumente.
@@ -215,7 +215,7 @@ Neu seit dem Plan (gebaut):
 - [x] AK-4.1.13: **Posteingang** – alles Neue ohne Ordner wartet dort, neueste zuerst; Reiter pro Quelle (Alle · Upload · Drucker · E-Mail · Handy) mit roten Zählern; „Erledigt“ pro Dokument und für alle; Ablegen in Ordner aus dem Posteingang (Punkt 153, A358).
 - [x] AK-4.1.14: Hochladen per Knopf im Posteingang und per Ziehen auf ein Fenster/einen Ordner (die Datei landet, wo sie fallen gelassen wird); ganze Ordner hochladen (Ordner-Import).
 - [x] AK-4.1.15: **Geräteschlüssel** (Einstellungen → Eingang → Geräte): pro Gerät/Programm ein Schlüssel, einmal angezeigt, neu erzeugbar, löschbar; der Schlüssel kann nur hochladen (Punkte 152, 201–203).
-- [x] AK-4.1.16: **Drucker „Hamster“** für Windows: gekoppelte Computer drucken direkt in den Posteingang (Einstellungen → Eingang → Drucker).
+- [x] AK-4.1.16: **Drucker „docHamster“** für Windows: gekoppelte Computer drucken direkt in den Posteingang (Einstellungen → Eingang → Drucker).
 - [x] AK-4.1.17: **Handy-Test** (Einstellungen → Eingang): prüft Home-Bildschirm, Kamera und gespeicherten Schlüssel auf dem Handy.
 - [x] AK-4.1.18: Text-Dokumente: Text oder Link wird ein PDF; eigene Text-Dokumente mit Editor (einfacher und formatierter Text).
 

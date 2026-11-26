@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
- * The printer "Hamster" on one computer. The download carries a one-time
+ * The printer "docHamster" on one computer. The download carries a one-time
  * code; the computer trades it once for its own token. Only SHA-256 hashes of
  * code and token are stored, so the database alone can't send documents.
  *
@@ -24,6 +24,7 @@ use Illuminate\Support\Str;
  * @property Carbon|null $pairing_expires_at
  * @property string|null $token_hash
  * @property Carbon|null $last_used_at
+ * @property Carbon|null $last_seen_at point 46: the background script's last "still here"
  * @property Carbon|null $revoked_at
  * @property Carbon $created_at
  */
@@ -35,7 +36,7 @@ final class Printer extends Model
     /** The download may sit in the Downloads folder for a while, but not for ever. */
     public const PAIRING_HOURS = 24;
 
-    protected $fillable = ['org_id', 'user_id', 'name', 'pairing_hash', 'pairing_expires_at', 'token_hash', 'last_used_at', 'revoked_at'];
+    protected $fillable = ['org_id', 'user_id', 'name', 'pairing_hash', 'pairing_expires_at', 'token_hash', 'last_used_at', 'last_seen_at', 'revoked_at'];
 
     protected $hidden = ['pairing_hash', 'token_hash'];
 
@@ -44,7 +45,7 @@ final class Printer extends Model
      */
     protected function casts(): array
     {
-        return ['pairing_expires_at' => 'datetime', 'last_used_at' => 'datetime', 'revoked_at' => 'datetime'];
+        return ['pairing_expires_at' => 'datetime', 'last_used_at' => 'datetime', 'last_seen_at' => 'datetime', 'revoked_at' => 'datetime'];
     }
 
     /**
@@ -109,6 +110,14 @@ final class Printer extends Model
     }
 
     /** The working printer behind a token, from any organisation. */
+    /** Point 46 (A113): silent this long while it used to say "still here" – the Drucker page warns. */
+    public const SILENT_HOURS = 24;
+
+    public function silent(): bool
+    {
+        return $this->last_seen_at !== null && $this->last_seen_at->lt(now()->subHours(self::SILENT_HOURS));
+    }
+
     public static function byToken(string $token): ?self
     {
         return self::query()->withoutGlobalScope(OrgScope::class)

@@ -8,12 +8,12 @@ use RuntimeException;
 
 /**
  * The download that sets up the printer on Windows. It is the readable file
- * clients/windows/Hamster-Drucker-einrichten.cmd from the repository; only
+ * clients/windows/docHamster-Drucker-einrichten.cmd from the repository; only
  * the server address and the one-time code are filled in.
  */
 final class WindowsInstaller
 {
-    public const FILENAME = 'Hamster-Drucker-einrichten.cmd';
+    public const FILENAME = 'docHamster-Drucker-einrichten.cmd';
 
     public static function build(string $serverUrl, string $code): string
     {

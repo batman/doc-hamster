@@ -63,7 +63,7 @@ return [
         'update' => ['title' => 'Software', 'text' => 'Version, modules and data packs'],
         'account' => ['title' => 'My account', 'text' => 'Name, password and signed-in devices'],
         'phone' => ['title' => 'Phone test', 'text' => 'Check whether your phone can do everything'],
-        'printer' => ['title' => 'Printer', 'text' => 'Set up the printer "Hamster", connected computers'],
+        'printer' => ['title' => 'Printer', 'text' => 'Set up the printer "docHamster", connected computers'],
         'mail' => ['title' => 'E-mail', 'text' => 'Documents by e-mail into the inbox (coming soon)'],
         'devices' => ['title' => 'Devices', 'text' => 'Phones that share documents into the inbox'],
         'log' => ['title' => 'All logbooks', 'text' => 'Events and errors of every logbook'],

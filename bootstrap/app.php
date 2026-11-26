@@ -38,10 +38,11 @@ return Application::configure(basePath: dirname(__DIR__))
             // Point 164.2: the empty route – what the server needs before any app code (baseline, browser ping).
             Route::get('/ping', static fn () => response('', 204, ['Cache-Control' => 'no-store']))->name('ping');
 
-            // The printer "Hamster" on a computer: no session, its own token (PrinterApiController).
+            // The printer "docHamster" on a computer: no session, its own token (PrinterApiController).
             Route::prefix('api/printer')->name('api.printer.')->group(function (): void {
                 Route::post('pair', [PrinterApiController::class, 'pair'])->middleware('throttle:pairing')->name('pair');
                 Route::post('upload', [PrinterApiController::class, 'upload'])->middleware('throttle:120,1')->name('upload');
+                Route::post('ping', [PrinterApiController::class, 'ping'])->middleware('throttle:30,1')->name('ping');
             });
 
             // Points 152.2, A330: an iPhone shortcut or a program sends documents with its device key.

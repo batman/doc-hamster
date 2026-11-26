@@ -35,7 +35,7 @@ return [
     'empty' => 'Nothing new here. What comes in – uploaded, printed, by e-mail or from a phone – stays here until it is filed into a folder.',
     'empty_source' => [
         'upload' => 'No new uploads.',
-        'printer' => 'Nothing new printed yet. Print from any program on the printer "Hamster" and the document shows up here.',
+        'printer' => 'Nothing new printed yet. Print from any program on the printer "docHamster" and the document shows up here.',
         'mail' => 'No new e-mails.',
         'phone' => 'Nothing new from a phone.',
         'assistant' => 'Nothing new from the assistant. With the right “Upload documents” it puts receipts and important e-mails here.',

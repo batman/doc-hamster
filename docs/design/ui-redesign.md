@@ -87,5 +87,5 @@ Reference for the markup: **`public/design/styleguide.html`** (open it at `/desi
 
 ## Point 24: new logo
 
-`public/img/logo.png` is the new logo for dark surfaces (white document symbol and "DOC", "Hamster" in the orange gradient); the dark block at the top left is always dark, so the app uses this file everywhere. `public/img/logo-on-light.png` is the same logo with black parts for light surfaces outside the app (README, social preview). Both are 476 x 186 px (ratio about 2.6 : 1, the old one was 3.9 : 1), so the logo in the dark block is now `3rem` high (`.brand img`) and the `width`/`height` attributes are 476 x 186.
+`public/img/logo.png` is the new logo for dark surfaces (white document symbol and "DOC", "docHamster" in the orange gradient); the dark block at the top left is always dark, so the app uses this file everywhere. `public/img/logo-on-light.png` is the same logo with black parts for light surfaces outside the app (README, social preview). Both are 476 x 186 px (ratio about 2.6 : 1, the old one was 3.9 : 1), so the logo in the dark block is now `3rem` high (`.brand img`) and the `width`/`height` attributes are 476 x 186.
 

@@ -1,4 +1,4 @@
-{{-- After "Teilen → DocHamster" (point 151.2): "N Dokumente gespeichert" with thumbnails; folder and tags save at once
+{{-- After "Teilen → docHamster" (point 151.2): "N Dokumente gespeichert" with thumbnails; folder and tags save at once
      (Properties module, data-autosave) for all of them; "Fertig" closes the page or returns (modules/share.js). --}}
 @extends('layouts.app')
 

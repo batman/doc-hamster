@@ -1,4 +1,4 @@
-{{-- "Teilen → DocHamster" (points 151, 151.3): the service worker kept the shared files on the phone and sent the phone here
+{{-- "Teilen → docHamster" (points 151, 151.3): the service worker kept the shared files on the phone and sent the phone here
      (after login, if needed). modules/share.js sends them now and goes on to the confirmation; on failure they stay kept. --}}
 @extends('layouts.app')
 

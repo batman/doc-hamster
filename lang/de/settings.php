@@ -63,7 +63,7 @@ return [
         'shares' => ['title' => 'Links', 'text' => 'Gültigkeit und gültige Links zum Versenden'],
         'update' => ['title' => 'Software', 'text' => 'Version, Module und Datenpakete'],
         'phone' => ['title' => 'Handy-Test', 'text' => 'Prüfen, ob Ihr Handy alles kann'],
-        'printer' => ['title' => 'Drucker', 'text' => 'Drucker „Hamster“ einrichten, verbundene Computer'],
+        'printer' => ['title' => 'Drucker', 'text' => 'Drucker „docHamster“ einrichten, verbundene Computer'],
         'mail' => ['title' => 'E-Mail', 'text' => 'Dokumente per E-Mail in den Posteingang (kommt bald)'],
         'devices' => ['title' => 'Geräte', 'text' => 'Handys, die Dokumente in den Posteingang teilen'],
         'log' => ['title' => 'Alle Logbücher', 'text' => 'Ereignisse und Fehler aller Logbücher'],

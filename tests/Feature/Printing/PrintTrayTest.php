@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 
 /*
-| Printer "Hamster": the download links one computer, prints land in the
+| Printer "docHamster": the download links one computer, prints land in the
 | Posteingang (point 153) as ordinary documents with the source "Drucker".
 */
 uses(RefreshDatabase::class)->group('db');
@@ -23,7 +23,7 @@ beforeEach(fn () => Storage::fake('local'));
 function pairPrinter(Membership $member): string
 {
     $download = test()->actingAs($member->user)->post('/settings/eingang/printer/setup');
-    $download->assertOk()->assertDownload('Hamster-Drucker-einrichten.cmd');
+    $download->assertOk()->assertDownload('docHamster-Drucker-einrichten.cmd');
     preg_match("/\\\$PairingCode = '([A-Za-z0-9]+)'/", (string) $download->getContent(), $code);
 
     return (string) test()->postJson('/api/printer/pair', ['code' => $code[1], 'name' => 'BUERO-PC'])->assertCreated()->json('token');
@@ -42,7 +42,7 @@ it('hands out the readable installer with server address and a one-time code', f
 
     $script = (string) $this->actingAs($owner->user)->post('/settings/eingang/printer/setup')->assertOk()->getContent();
 
-    expect($script)->toStartWith("<# : Hamster-Drucker-einrichten.cmd\r\n")
+    expect($script)->toStartWith("<# : docHamster-Drucker-einrichten.cmd\r\n")
         ->toContain("\$ServerUrl = '".rtrim((string) config('app.url'), '/')."'")
         ->not->toContain('__PAIRING_CODE__')
         ->and(preg_match("/(?<!\r)\n/", $script))->toBe(0);
@@ -134,4 +134,22 @@ it('points the empty printer tab to Einstellungen → Eingang → Drucker until 
     $this->actingAs($owner->user)->get('/inbox?source=printer')->assertOk()->assertSee('data-no-printer', false);
     pairPrinter($owner);
     $this->actingAs($owner->user)->get('/inbox?source=printer')->assertOk()->assertDontSee('data-no-printer', false);
+});
+
+it('names the printer docHamster, keeps the start with Windows, and shows when a computer was last connected (points 46, 47)', function (): void {
+    $owner = Membership::factory()->owner()->create();
+    $script = (string) $this->actingAs($owner->user)->post('/settings/eingang/printer/setup')->getContent();
+    expect($script)->toContain("Add-Printer -Name 'docHamster'")->toContain("Remove-Printer -Name 'Hamster'")
+        ->toContain('Register-ScheduledTask')->toContain('Confirm-Autostart')->not->toContain("Add-Printer -Name 'Hamster'");
+
+    $token = pairPrinter($owner);
+    $this->travel(-2)->days();
+    $this->withToken($token)->postJson('/api/printer/ping')->assertOk();
+    $this->travelBack();
+    app('auth')->forgetGuards();
+    $this->actingAs($owner->user)->get('/settings/eingang/printer')->assertOk()->assertSee('Keine Verbindung');
+
+    $this->withToken($token)->postJson('/api/printer/ping')->assertOk();
+    $this->actingAs($owner->user)->get('/settings/eingang/printer')->assertOk()->assertDontSee('Keine Verbindung');
+    $this->withToken('falsch')->postJson('/api/printer/ping')->assertUnauthorized();
 });

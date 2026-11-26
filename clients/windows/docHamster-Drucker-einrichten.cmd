@@ -1,9 +1,9 @@
-<# : Hamster-Drucker-einrichten.cmd
+<# : docHamster-Drucker-einrichten.cmd
 @echo off
-rem DocHamster - sets up the printer "Hamster" on this Windows computer.
+rem docHamster - sets up the printer "docHamster" on this Windows computer.
 rem This file is a Windows command and a PowerShell script at the same time:
 rem these first lines start PowerShell, which then runs the rest of this file.
-rem Source (MIT licence): clients/windows/Hamster-Drucker-einrichten.cmd in the DocHamster repository.
+rem Source (MIT licence): clients/windows/docHamster-Drucker-einrichten.cmd in the docHamster repository.
 set "HAMSTER_SELF=%~f0"
 powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Invoke-Expression ([IO.File]::ReadAllText($env:HAMSTER_SELF))"
 echo.
@@ -15,16 +15,19 @@ exit /b
 # What this script does, and nothing else:
 #  1. Asks Windows once for administrator rights, then
 #     - creates the folder C:\ProgramData\DocHamster\Spool,
-#     - adds the printer "Hamster". It uses the "Microsoft Print To PDF" driver
+#     - adds the printer "docHamster". It uses the "Microsoft Print To PDF" driver
 #       that comes with Windows (no driver of its own) and writes every print
-#       into that folder as a PDF.
-#  2. Links this computer to your DocHamster account with the one-time code
+#       into that folder as a PDF. A printer "Hamster" from an older set-up is
+#       replaced (point 47),
+#     - adds the task "docHamster Drucker" to the Windows Aufgabenplanung: it starts
+#       the background script at every sign-in of your Windows user (point 46).
+#  2. Links this computer to your docHamster account with the one-time code
 #     below. The key it gets back is stored encrypted for your Windows user
 #     (Windows DPAPI) in %LOCALAPPDATA%\DocHamster.
-#  3. Puts a small background script into your Autostart folder. It sends
-#     every print to the "Druckerablage" in DocHamster; offline, it waits and
-#     sends later.
-#  4. Adds "DocHamster Drucker" to Windows "Apps", which removes all of it.
+#  3. Writes the small background script and starts it. It sends every print
+#     to the Posteingang in docHamster; offline, it waits and sends later. At
+#     every start it checks that it starts again with Windows.
+#  4. Adds "docHamster Drucker" to Windows "Apps", which removes all of it.
 # The download only fills in the two values below; everything else is the
 # file from the repository.
 # ---------------------------------------------------------------------------
@@ -32,15 +35,20 @@ $ErrorActionPreference = 'Stop'
 $ServerUrl = '__DOCHAMSTER_URL__'
 $PairingCode = '__PAIRING_CODE__'
 
-$PrinterName = 'Hamster'
-$SpoolFile = Join-Path $env:ProgramData 'DocHamster\Spool\hamster.pdf'
+$PrinterName = 'docHamster'
+$SpoolDir = Join-Path $env:ProgramData 'DocHamster\Spool'
+$SpoolFile = Join-Path $SpoolDir 'docHamster.pdf'
+# Older set-ups printed into this file (printer "Hamster"); what still waits there is sent too.
+$LegacySpoolFile = Join-Path $SpoolDir 'hamster.pdf'
 $UserDir = Join-Path $env:LOCALAPPDATA 'DocHamster'
 $UploaderPath = Join-Path $UserDir 'hamster-uploader.ps1'
 $UninstallPath = Join-Path $UserDir 'uninstall.ps1'
 $ConfigPath = Join-Path $UserDir 'config.json'
-$StartupLink = Join-Path ([Environment]::GetFolderPath('Startup')) 'DocHamster Drucker.lnk'
+$TaskName = 'docHamster Drucker'
+$StartupLink = Join-Path ([Environment]::GetFolderPath('Startup')) 'docHamster Drucker.lnk'
 $UninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\DocHamsterPrinter'
 $PowerShellExe = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+$UploaderArguments = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "' + $UploaderPath + '"'
 
 function Stop-Setup([string] $message) {
     Write-Host ''
@@ -49,18 +57,18 @@ function Stop-Setup([string] $message) {
 }
 
 if ($PairingCode -notmatch '^[A-Za-z0-9]+$' -or $ServerUrl -notmatch '^https?://') {
-    Stop-Setup 'Bitte diese Datei in docHamster herunterladen: Druckerablage > Drucker einrichten.'
+    Stop-Setup 'Bitte diese Datei in docHamster herunterladen: Einstellungen > Drucker > Drucker einrichten.'
 }
 
-Write-Host 'docHamster: Drucker "Hamster" einrichten' -ForegroundColor Cyan
+Write-Host 'docHamster: Drucker "docHamster" einrichten' -ForegroundColor Cyan
 Write-Host ''
 
-# --- 1. Printer (needs administrator rights) --------------------------------
+# --- 1. Printer and start with Windows (needs administrator rights) -----------
 $machineScript = @'
 $ErrorActionPreference = 'Stop'
 try {
     $spoolDir = Join-Path $env:ProgramData 'DocHamster\Spool'
-    $port = Join-Path $spoolDir 'hamster.pdf'
+    $port = Join-Path $spoolDir 'docHamster.pdf'
     $driver = 'Microsoft Print To PDF'
 
     New-Item -ItemType Directory -Force -Path $spoolDir | Out-Null
@@ -70,23 +78,49 @@ try {
     if (-not (Get-PrinterDriver -Name $driver -ErrorAction SilentlyContinue)) {
         Enable-WindowsOptionalFeature -Online -FeatureName 'Printing-PrintToPDFServices-Features' -NoRestart | Out-Null
     }
+    # Point 47: the printer of an older set-up was called "Hamster" – it goes, "docHamster" comes.
+    if (Get-Printer -Name 'Hamster' -ErrorAction SilentlyContinue) {
+        Remove-Printer -Name 'Hamster'
+        Start-Sleep -Seconds 2
+        Remove-PrinterPort -Name (Join-Path $spoolDir 'hamster.pdf') -ErrorAction SilentlyContinue
+    }
     if (-not (Get-PrinterPort -Name $port -ErrorAction SilentlyContinue)) {
         Add-PrinterPort -Name $port
     }
-    if (-not (Get-Printer -Name 'Hamster' -ErrorAction SilentlyContinue)) {
-        Add-Printer -Name 'Hamster' -DriverName $driver -PortName $port
+    if (-not (Get-Printer -Name 'docHamster' -ErrorAction SilentlyContinue)) {
+        Add-Printer -Name 'docHamster' -DriverName $driver -PortName $port
     }
     # Finished jobs stay listed for a moment, so the background script can read the document name.
-    Set-Printer -Name 'Hamster' -KeepPrintedJobs $true
-    exit 0
+    Set-Printer -Name 'docHamster' -KeepPrintedJobs $true
 } catch {
     Write-Host $_ -ForegroundColor Red
     Start-Sleep -Seconds 10
     exit 1
 }
+
+# Point 46: the background script starts at every sign-in through the Windows Aufgabenplanung – the switches under
+# Task-Manager > Autostart do not reach it. If Windows refuses the task, the set-up falls back to the Autostart folder.
+try {
+    $action = New-ScheduledTaskAction -Execute $PowerShellExe -Argument $UploaderArguments
+    $trigger = New-ScheduledTaskTrigger -AtLogOn -User $TaskUser
+    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
+        -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1)
+    $principal = New-ScheduledTaskPrincipal -UserId $TaskUser -LogonType Interactive -RunLevel Limited
+    Register-ScheduledTask -TaskName 'docHamster Drucker' -Action $action -Trigger $trigger -Settings $settings -Principal $principal `
+        -Description 'docHamster: sends what is printed on the printer "docHamster" to docHamster.' -Force | Out-Null
+} catch {
+    Write-Host ('Aufgabenplanung: ' + $_) -ForegroundColor Yellow
+}
+exit 0
 '@
 
-Write-Host '1. Drucker "Hamster" anlegen (Windows fragt nach Administratorrechten) ...'
+# The elevated script needs to know whose task it is and what it starts (an administrator account may be another one).
+$quote = { param([string] $value) "'" + $value.Replace("'", "''") + "'" }
+$machineScript = '$TaskUser = ' + (& $quote ($env:USERDOMAIN + '\' + $env:USERNAME)) + "`n" +
+    '$PowerShellExe = ' + (& $quote $PowerShellExe) + "`n" +
+    '$UploaderArguments = ' + (& $quote $UploaderArguments) + "`n" + $machineScript
+
+Write-Host '1. Drucker "docHamster" anlegen (Windows fragt nach Administratorrechten) ...'
 try {
     $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($machineScript))
     $elevated = Start-Process -FilePath $PowerShellExe -Verb RunAs -Wait -PassThru -ArgumentList "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $encoded"
@@ -115,13 +149,13 @@ try {
 
 New-Item -ItemType Directory -Force -Path (Join-Path $UserDir 'Outbox') | Out-Null
 $secret = ConvertTo-SecureString $answer.token -AsPlainText -Force | ConvertFrom-SecureString
-@{ server = $ServerUrl; token = $secret; spool = $SpoolFile; printer = $PrinterName } | ConvertTo-Json |
-    Set-Content -LiteralPath $ConfigPath -Encoding UTF8
+@{ server = $ServerUrl; token = $secret; spool = $SpoolFile; legacy_spool = $LegacySpoolFile; printer = $PrinterName; task = $TaskName } |
+    ConvertTo-Json | Set-Content -LiteralPath $ConfigPath -Encoding UTF8
 
 # --- 3. Background script ------------------------------------------------------
 $uploader = @'
-# DocHamster: sends what is printed on "Hamster" to the Druckerablage.
-# Started with Windows from the Autostart folder; written by Hamster-Drucker-einrichten.cmd.
+# docHamster: sends what is printed on the printer "docHamster" to docHamster's Posteingang.
+# Started at every sign-in by the task "docHamster Drucker"; written by docHamster-Drucker-einrichten.cmd.
 $ErrorActionPreference = 'Stop'
 $UserDir = Join-Path $env:LOCALAPPDATA 'DocHamster'
 $Outbox = Join-Path $UserDir 'Outbox'
@@ -144,8 +178,33 @@ if (-not $mutex.WaitOne(0)) { exit 0 }
 $config = Get-Content -LiteralPath (Join-Path $UserDir 'config.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $secure = ConvertTo-SecureString $config.token
 $token = [Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure))
-$SpoolFile = $config.spool
+$SpoolFiles = @($config.spool, $config.legacy_spool) | Where-Object { $_ }
 $PrinterName = $config.printer
+
+# Point 46 (A115): make sure this script starts again with Windows – the task switched on, and an Autostart entry (if
+# there is one) not switched off under Task-Manager > Autostart.
+function Confirm-Autostart {
+    try {
+        if ($config.task) {
+            $task = Get-ScheduledTask -TaskName $config.task -ErrorAction SilentlyContinue
+            if ($task -and "$($task.State)" -eq 'Disabled') {
+                Enable-ScheduledTask -TaskName $config.task | Out-Null
+                Write-Log 'The task was switched off – switched on again.'
+            }
+        }
+        $approved = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\StartupFolder'
+        $link = Join-Path ([Environment]::GetFolderPath('Startup')) 'docHamster Drucker.lnk'
+        if ((Test-Path -LiteralPath $link) -and (Test-Path $approved)) {
+            $value = (Get-ItemProperty -Path $approved -ErrorAction SilentlyContinue).'docHamster Drucker.lnk'
+            if ($value -and $value[0] -ne 2) {
+                Set-ItemProperty -Path $approved -Name 'docHamster Drucker.lnk' -Value ([byte[]](2,0,0,0,0,0,0,0,0,0,0,0))
+                Write-Log 'Autostart was switched off – switched on again.'
+            }
+        }
+    } catch {
+        Write-Log ('Could not check the start with Windows: ' + $_.Exception.Message)
+    }
+}
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 Add-Type -AssemblyName System.Net.Http
@@ -180,6 +239,14 @@ function Get-PrintTitle {
     if ($null -eq $newest) { return '' }
 
     return ("$($newest.DocumentName)" -replace '^Microsoft (Word|Excel|PowerPoint) - ', '').Trim()
+}
+
+# Point 46 (A113): "still here" – docHamster shows when this computer was last connected.
+function Send-Ping {
+    try {
+        $content = New-Object System.Net.Http.StringContent('{}', [Text.Encoding]::UTF8, 'application/json')
+        [void] $client.PostAsync($config.server + '/api/printer/ping', $content).GetAwaiter().GetResult()
+    } catch { }
 }
 
 # Sends everything waiting in the outbox; returns the seconds until the next try.
@@ -225,31 +292,40 @@ function Send-Outbox {
 }
 
 Write-Log 'Started.'
-$lastSize = -1
+Confirm-Autostart
+$lastSize = @{}
 $nextSend = Get-Date
+$nextPing = Get-Date
 while ($true) {
     try {
-        if (Test-Path -LiteralPath $SpoolFile) {
-            $size = (Get-Item -LiteralPath $SpoolFile).Length
-            # Done when the size stays the same for a second and Windows has let go of the file.
-            if ($size -gt 0 -and $size -eq $lastSize -and (Test-Unlocked $SpoolFile)) {
-                $target = Join-Path $Outbox ((Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '.pdf')
-                Move-Item -LiteralPath $SpoolFile -Destination $target
-                $title = Get-PrintTitle
-                if ($title -ne '') {
-                    [IO.File]::WriteAllText([IO.Path]::ChangeExtension($target, '.txt'), $title, [Text.Encoding]::UTF8)
+        # Point 46 (A114): prints made while this script was not running wait in the spool file and go now.
+        foreach ($spool in $SpoolFiles) {
+            if (Test-Path -LiteralPath $spool) {
+                $size = (Get-Item -LiteralPath $spool).Length
+                # Done when the size stays the same for a second and Windows has let go of the file.
+                if ($size -gt 0 -and $size -eq $lastSize[$spool] -and (Test-Unlocked $spool)) {
+                    $target = Join-Path $Outbox ((Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '.pdf')
+                    Move-Item -LiteralPath $spool -Destination $target
+                    $title = Get-PrintTitle
+                    if ($title -ne '') {
+                        [IO.File]::WriteAllText([IO.Path]::ChangeExtension($target, '.txt'), $title, [Text.Encoding]::UTF8)
+                    }
+                    $lastSize[$spool] = -1
+                    $nextSend = Get-Date
+                } else {
+                    $lastSize[$spool] = $size
                 }
-                $lastSize = -1
-                $nextSend = Get-Date
             } else {
-                $lastSize = $size
+                $lastSize[$spool] = -1
             }
-        } else {
-            $lastSize = -1
         }
 
         if ((Get-Date) -ge $nextSend) {
             $nextSend = (Get-Date).AddSeconds((Send-Outbox))
+        }
+        if ((Get-Date) -ge $nextPing) {
+            Send-Ping
+            $nextPing = (Get-Date).AddMinutes(10)
         }
     } catch {
         Write-Log ('Error: ' + $_.Exception.Message)
@@ -260,15 +336,18 @@ while ($true) {
 '@
 
 $uninstaller = @'
-# DocHamster: removes the printer "Hamster" again (Windows "Apps" > "DocHamster Drucker").
-# Written by Hamster-Drucker-einrichten.cmd.
+# docHamster: removes the printer "docHamster" again (Windows "Apps" > "docHamster Drucker").
+# Written by docHamster-Drucker-einrichten.cmd.
 param([switch] $Machine)
 
 if ($Machine) {
-    # Runs with administrator rights: printer, its port and the folder.
+    # Runs with administrator rights: printers (also an old "Hamster"), their ports, the task and the folder.
     $spoolDir = Join-Path $env:ProgramData 'DocHamster\Spool'
+    Unregister-ScheduledTask -TaskName 'docHamster Drucker' -Confirm:$false -ErrorAction SilentlyContinue
+    Remove-Printer -Name 'docHamster' -ErrorAction SilentlyContinue
     Remove-Printer -Name 'Hamster' -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 2
+    Remove-PrinterPort -Name (Join-Path $spoolDir 'docHamster.pdf') -ErrorAction SilentlyContinue
     Remove-PrinterPort -Name (Join-Path $spoolDir 'hamster.pdf') -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath (Join-Path $env:ProgramData 'DocHamster') -Recurse -Force -ErrorAction SilentlyContinue
     exit 0
@@ -284,7 +363,8 @@ try {
 Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe'" |
     Where-Object { $_.CommandLine -like '*hamster-uploader.ps1*' } |
     ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
-Remove-Item -LiteralPath (Join-Path ([Environment]::GetFolderPath('Startup')) 'DocHamster Drucker.lnk') -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath (Join-Path ([Environment]::GetFolderPath('Startup')) 'docHamster Drucker.lnk') -Force -ErrorAction SilentlyContinue
+Remove-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\StartupFolder' -Name 'docHamster Drucker.lnk' -ErrorAction SilentlyContinue
 Remove-Item -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\DocHamsterPrinter' -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath (Join-Path $env:LOCALAPPDATA 'DocHamster') -Recurse -Force -ErrorAction SilentlyContinue
 '@
@@ -300,15 +380,26 @@ Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe'" |
     Where-Object { $_.CommandLine -like '*hamster-uploader.ps1*' } |
     ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 
-$uploaderArguments = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "' + $UploaderPath + '"'
-$shell = New-Object -ComObject WScript.Shell
-$link = $shell.CreateShortcut($StartupLink)
-$link.TargetPath = $PowerShellExe
-$link.Arguments = $uploaderArguments
-$link.WindowStyle = 7
-$link.Description = 'docHamster Drucker'
-$link.Save()
-Start-Process -FilePath $PowerShellExe -ArgumentList $uploaderArguments -WindowStyle Hidden
+# The Autostart entry of older set-ups ("DocHamster Drucker.lnk" – Windows treats the name without case) goes; the task
+# starts the script now. Only if Windows refused the task, the Autostart entry stays – switched on.
+$approved = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\StartupFolder'
+$hasTask = $null -ne (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue)
+Remove-Item -LiteralPath $StartupLink -Force -ErrorAction SilentlyContinue
+Remove-ItemProperty -Path $approved -Name 'docHamster Drucker.lnk' -ErrorAction SilentlyContinue
+if ($hasTask) {
+    Start-ScheduledTask -TaskName $TaskName
+} else {
+    $shell = New-Object -ComObject WScript.Shell
+    $link = $shell.CreateShortcut($StartupLink)
+    $link.TargetPath = $PowerShellExe
+    $link.Arguments = $UploaderArguments
+    $link.WindowStyle = 7
+    $link.Description = 'docHamster Drucker'
+    $link.Save()
+    if (-not (Test-Path $approved)) { New-Item -Path $approved -Force | Out-Null }
+    Set-ItemProperty -Path $approved -Name 'docHamster Drucker.lnk' -Value ([byte[]](2,0,0,0,0,0,0,0,0,0,0,0))
+    Start-Process -FilePath $PowerShellExe -ArgumentList $UploaderArguments -WindowStyle Hidden
+}
 
 # --- 4. Entry under Windows "Apps" ---------------------------------------------
 New-Item -Path $UninstallKey -Force | Out-Null
@@ -319,5 +410,5 @@ New-ItemProperty -Path $UninstallKey -Name 'NoModify' -Value 1 -PropertyType DWo
 New-ItemProperty -Path $UninstallKey -Name 'NoRepair' -Value 1 -PropertyType DWord -Force | Out-Null
 
 Write-Host ''
-Write-Host 'Fertig. In jedem Programm gibt es jetzt den Drucker "Hamster".' -ForegroundColor Green
-Write-Host 'Was Sie darauf drucken, landet in docHamster in der Druckerablage.'
+Write-Host 'Fertig. In jedem Programm gibt es jetzt den Drucker "docHamster".' -ForegroundColor Green
+Write-Host 'Was Sie darauf drucken, landet in docHamster im Posteingang - auch nach einem Neustart.'

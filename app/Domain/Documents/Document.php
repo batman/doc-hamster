@@ -30,7 +30,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $doc_time Point 219: the time printed on the receipt ("H:i", OCR), null = none read
  * @property string|null $doc_date_source confirmed|recognised|exif|pdf|upload, null = not worked out yet
  * @property string|null $note
- * @property bool $in_print_tray came from the printer "Hamster" (the source before the source column)
+ * @property bool $in_print_tray came from the printer "docHamster" (the source before the source column)
  * @property Carbon|null $inbox_done_at marked "Erledigt" in the Posteingang (point 153)
  * @property string|null $source upload|printer|mail|phone|api, null = upload (points 151/152)
  * @property Carbon $created_at
@@ -58,7 +58,7 @@ final class Document extends Model
     }
 
     /**
-     * Only what came from the printer "Hamster".
+     * Only what came from the printer "docHamster".
      *
      * @param  Builder<Document>  $query
      * @return Builder<Document>

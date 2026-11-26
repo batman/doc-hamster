@@ -36,7 +36,7 @@ return [
     'empty' => 'Hier ist nichts Neues. Was hereinkommt – hochgeladen, gedruckt, per E-Mail oder vom Handy –, steht hier, bis es in einem Ordner abgelegt ist.',
     'empty_source' => [
         'upload' => 'Keine neuen Uploads.',
-        'printer' => 'Noch nichts Neues gedruckt. Drucken Sie aus einem beliebigen Programm auf den Drucker „Hamster“, dann erscheint das Dokument hier.',
+        'printer' => 'Noch nichts Neues gedruckt. Drucken Sie aus einem beliebigen Programm auf den Drucker „docHamster“, dann erscheint das Dokument hier.',
         'mail' => 'Keine neuen E-Mails.',
         'phone' => 'Nichts Neues vom Handy.',
         'assistant' => 'Nichts Neues vom Assistenten. Mit dem Recht „Dokumente hochladen“ legt er Belege und wichtige E-Mails hier ab.',

@@ -6,9 +6,12 @@ return [
     'setup' => 'Set up printer',
     'default_title' => 'Print of :date',
     'new_printer' => 'Windows PC',
-    'printers' => 'Your computers with the printer "Hamster"',
+    'printers' => 'Your computers with the printer "docHamster"',
     'no_printers' => 'No computer set up yet.',
     'last_used' => 'last: :date',
+    'last_seen' => 'connected: :date',
+    'silent_pill' => 'Not connected',
+    'silent' => 'No connection for more than :hours hours. If the computer is on, its background program is not running – set the printer up again here.',
     'paired_at' => 'paired on :date',
     'delete' => 'Delete',
     'delete_title' => 'Delete entry?',
@@ -22,7 +25,7 @@ return [
     'howto' => [
         'Click "Set up printer". This downloads a small file for Windows that is already linked to your account. It is valid for 24 hours and for one computer.',
         'Double-click the file and confirm the Windows question for administrator rights.',
-        'Done: every program now has the printer "Hamster". What you print on it lands in the inbox – if the computer was offline, a little later.',
+        'Done: every program now has the printer "docHamster". What you print on it lands in the inbox – if the computer was offline, a little later. After a restart everything keeps running by itself.',
         'Remove: uninstall "docHamster Drucker" under Windows "Apps". Delete its entry here, then nothing from that computer arrives any more.',
     ],
 ];
