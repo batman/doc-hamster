@@ -1,6 +1,6 @@
 /* Listeneintrag (point 163) ----------------------------------------------------------------------------------------
    ONE row building block for every clickable entry: main menu (.nav-item), dropdown and "⋯" entries (.menu-item), menu-
-   window entries (.menu-entry – also the Einstellungen), window list rows (.pick-row, .view-list li) and .list-entry for
+   window entries (.menu-entry – also the Einstellungen), window list rows (.pick-row, .view-list > li) and .list-entry for
    anything new. The flavours keep their class names (layout, icon sizes); their states are defined only here:
    - rest: no fill; in a filled list (pick rows) the fill is the row's surface (--surface, a coloured row its colour)
    - hover: one hover colour on every surface – the text colour at 7 % laid over the fill (--row-tint as a background
@@ -10,7 +10,7 @@
    - disabled: faded, no hover, no hand
    - sizes: normal at least 48 px high, .85rem side padding; compact (.is-compact, .view-list rows) 36 px, .35rem .6rem */
 :root { --row-radius: 8px; --row-tint: color-mix(in srgb, currentColor 7%, transparent); }
-:is(.list-entry, .nav-item, .menu-item, .menu-entry, .pick-row), .view-list li { border-radius: var(--row-radius); }
+:is(.list-entry, .nav-item, .menu-item, .menu-entry, .pick-row), .view-list > li { border-radius: var(--row-radius); }
 :is(.list-entry, .nav-item, .menu-item) {
     display: flex; align-items: center; justify-content: flex-start; gap: .75rem;
     width: 100%; min-height: 48px; margin: 0; padding: 0 .85rem;
@@ -18,17 +18,17 @@
     font: inherit; font-weight: 500; letter-spacing: normal; text-align: left; text-decoration: none; cursor: pointer;
 }
 :is(.list-entry, .nav-item, .menu-item) .icon { width: 1.4rem; height: 1.4rem; }
-.view-list li { display: flex; align-items: center; gap: .75rem; min-height: 36px; padding: .35rem .6rem; border-bottom: 1px solid var(--border); }
+.view-list > li { display: flex; align-items: center; gap: .75rem; min-height: 36px; padding: .35rem .6rem; border-bottom: 1px solid var(--border); }
 .is-compact:is(.list-entry, .nav-item, .menu-item, .menu-entry, .pick-row) { min-height: 36px; padding: .35rem .6rem; }
 
 /* Hover */
-:is(.list-entry, .nav-item, .menu-item, .menu-entry):hover, .view-list li:hover,
+:is(.list-entry, .nav-item, .menu-item, .menu-entry):hover, .view-list > li:hover,
 .pick-list label.pick-row:hover, .pick-row.is-static:has(> span a):hover { background-image: linear-gradient(var(--row-tint), var(--row-tint)); box-shadow: none; }
 
 /* Focus (keyboard) */
-:is(.list-entry, .nav-item, .menu-item, .menu-entry):focus-visible, .view-list li:has(a:focus-visible),
+:is(.list-entry, .nav-item, .menu-item, .menu-entry):focus-visible, .view-list > li:has(a:focus-visible),
 .pick-row:has(input:focus-visible), .pick-row.is-static:has(> span a:focus-visible) { outline: 2px solid var(--primary); outline-offset: -2px; }
-.pick-row.is-static > span a:focus-visible, .view-list li a:focus-visible { outline: none; }
+.pick-row.is-static > span a:focus-visible, .view-list > li a:focus-visible { outline: none; }
 
 /* Disabled */
 :is(.list-entry, .nav-item, .menu-item, .menu-entry):is(:disabled, [aria-disabled="true"], .is-disabled), .pick-row:has(input:disabled) {
@@ -155,7 +155,7 @@ html.is-sorting, html.is-sorting * { cursor: grabbing !important; }
 .row-color .row-actions .control-button:hover { color: inherit; background: rgb(127 127 127 / .22); }
 .control-button.control-danger:hover { color: var(--error); }
 .view-details td.row-actions-cell { width: 1%; padding-block: 0; white-space: nowrap; }
-.view-list li .row-actions { margin-left: .25rem; }
+.view-list > li .row-actions { margin-left: .25rem; }
 .is-renaming .row-actions { display: none; }
 .folder-rows { position: relative; }
 .folder-rows > .folder-row { position: relative; }

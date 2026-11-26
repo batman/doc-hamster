@@ -52,7 +52,7 @@
 .view-details .tags { gap: .35rem; }
 /* The open document: the framework's marked look in every view (white, lifted). */
 .view-details tr.is-open td { background: var(--mark-surface); }
-.view-list li.is-open, .timeline li.is-open { background: var(--mark-surface); box-shadow: var(--mark-shadow); border-radius: var(--row-radius); }
+.view-list > li.is-open, .timeline li.is-open { background: var(--mark-surface); box-shadow: var(--mark-shadow); border-radius: var(--row-radius); }
 .view-tiles li.is-open .thumb-frame { box-shadow: var(--mark-shadow); }
 
 .detail-doc { height: 20rem; margin-bottom: .5rem; }
