@@ -47,7 +47,13 @@ final class MailInboxController
             'with_attachments' => ['required', Rule::in(MailInbox::WITH)],
             'without_attachments' => ['required', Rule::in(MailInbox::WITHOUT)],
             'senders' => ['nullable', 'string', 'max:20000'],
+            'reply_enabled' => ['nullable', 'boolean'],
+            'reply_text' => ['nullable', 'string', 'max:5000'],
+            'smtp_host' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z0-9.\-]*$/'],
+            'smtp_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
+            'smtp_security' => ['nullable', Rule::in(MailInbox::SECURITY)],
         ]);
+        $smtpSecurity = (string) ($data['smtp_security'] ?? 'ssl');
         $inbox = MailInbox::current();
         $was = $inbox->exists && $inbox->enabled;
         $inbox->fill([
@@ -59,6 +65,11 @@ final class MailInboxController
             'with_attachments' => $data['with_attachments'],
             'without_attachments' => $data['without_attachments'],
             'senders' => implode("\n", MailInbox::addresses((string) ($data['senders'] ?? ''))),
+            'reply_enabled' => (bool) ($data['reply_enabled'] ?? false),
+            'reply_text' => trim((string) ($data['reply_text'] ?? '')) ?: null,
+            'smtp_host' => mb_strtolower(trim((string) ($data['smtp_host'] ?? ''))),
+            'smtp_port' => (int) ($data['smtp_port'] ?? 0) ?: ($smtpSecurity === 'ssl' ? 465 : 587),
+            'smtp_security' => $smtpSecurity,
         ]);
         if (($data['password'] ?? '') !== '') {
             $inbox->password = (string) $data['password'];

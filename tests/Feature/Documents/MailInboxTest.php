@@ -8,6 +8,7 @@ use App\Domain\Mail\MailboxError;
 use App\Domain\Mail\MailFetch;
 use App\Domain\Mail\MailInbox;
 use App\Domain\Mail\MailMessage;
+use App\Domain\Mail\MailReply;
 use App\Domain\Org\Membership;
 use App\Domain\Org\OrgScope;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -94,6 +95,7 @@ beforeEach(function (): void {
 
 afterEach(function (): void {
     MailFetch::$connect = null;
+    MailReply::$send = null;
 });
 
 it('reads a mail: sender, subject, text, attachments with RFC 2231 names, and HTML made plain', function (): void {
@@ -174,4 +176,44 @@ it('fetches by itself when the Posteingang opens only every few minutes', functi
     $this->get('/inbox')->assertOk()->assertSee('data-mail-auto', false);
     $this->postJson('/inbox/mail/fetch', ['auto' => 1])->assertOk();
     $this->get('/inbox')->assertOk()->assertDontSee('data-mail-auto', false)->assertSee(__('mail_inbox.fetch'));
+});
+
+it('lets a whole domain send when the list names it (A125)', function (): void {
+    expect(MailInbox::addresses("@Example.org\n*@firma.example.com\n@nodot\nmax@example.com"))->toBe(['@example.org', '@firma.example.com', 'max@example.com'])
+        ->and(MailInbox::match(['@example.org' => null], 'anna@example.org'))->toBe('@example.org')
+        ->and(MailInbox::match(['@example.org' => null], 'anna@sub.example.org'))->toBeNull();
+
+    $owner = Membership::factory()->owner()->create();
+    $box = mailSetup($owner, ['senders' => '@lieferant.example.com']);
+    $box->mails = [1 => syntheticMail('buchhaltung@lieferant.example.com', 'Rechnung 7', 'Anbei.', "%PDF-1.4\n%domain\n"), 2 => syntheticMail('x@other.example.com', 'Nein', 'y')];
+
+    $this->postJson('/inbox/mail/fetch')->assertOk()->assertJsonPath('documents', 1);
+    expect($box->moved)->toBe([1 => 'Verarbeitet', 2 => 'Abgelehnt']);
+});
+
+it('answers allowed senders with what arrived – never rejected or automatic mails (A126)', function (): void {
+    $owner = Membership::factory()->owner()->create();
+    $box = mailSetup($owner, ['reply_enabled' => 1, 'reply_text' => 'Danke, ist angekommen.', 'smtp_host' => 'smtp.example.com', 'smtp_security' => 'ssl']);
+    $sent = [];
+    MailReply::$send = static function (MailInbox $inbox, array $message) use (&$sent): void {
+        $sent[] = $message;
+    };
+    $pdf = "%PDF-1.4\n%reply\n";
+    $box->mails = [
+        1 => syntheticMail('partner@example.com', 'Beleg', 'Anbei.', $pdf, "Message-ID: <a1@example.com>\r\n"),
+        2 => syntheticMail('fremd@example.com', 'Spam', 'x'),
+        3 => syntheticMail('partner@example.com', 'Abwesend', 'Bin im Urlaub.', null, "Auto-Submitted: auto-replied\r\n"),
+        4 => syntheticMail('partner@example.com', 'Nochmal', 'Dasselbe.', $pdf),
+    ];
+
+    $this->postJson('/inbox/mail/fetch')->assertOk();
+
+    expect($sent)->toHaveCount(2)
+        ->and($sent[0]['to'])->toBe('partner@example.com')
+        ->and($sent[0]['subject'])->toBe('Re: Beleg')
+        ->and($sent[0]['in_reply_to'])->toBe('<a1@example.com>')
+        ->and($sent[0]['text'])->toStartWith('Danke, ist angekommen.')->toContain('- Rechnung März.pdf')->toContain('- daten.zip')
+        ->and($sent[1]['text'])->toContain(__('mail_inbox.reply_known'));
+
+    MailReply::$send = null;
 });

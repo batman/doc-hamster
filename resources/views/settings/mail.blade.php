@@ -101,6 +101,45 @@
                     <p class="field-hint">{{ __('mail_inbox.senders_hint') }}</p>
                 </div>
             </section>
+
+            <section class="card">
+                <h2 class="card-head"><x-icon name="send" />{{ __('mail_inbox.reply') }}</h2>
+                <fieldset>
+                    <legend>{{ __('mail_inbox.reply_state') }}</legend>
+                    <span class="button-choice" data-choice>
+                        <input type="hidden" name="reply_enabled" value="{{ $inbox->reply_enabled ? '1' : '0' }}">
+                        <span class="switcher" role="group" aria-label="{{ __('mail_inbox.reply_state') }}">
+                            <button type="button" data-value="1" aria-pressed="{{ $inbox->reply_enabled ? 'true' : 'false' }}">{{ __('mail_inbox.state_on') }}</button>
+                            <button type="button" data-value="0" aria-pressed="{{ $inbox->reply_enabled ? 'false' : 'true' }}">{{ __('mail_inbox.state_off') }}</button>
+                        </span>
+                    </span>
+                </fieldset>
+                <div class="field">
+                    <label for="mail-reply-text">{{ __('mail_inbox.reply_text') }}</label>
+                    <textarea id="mail-reply-text" name="reply_text" rows="3" placeholder="{{ __('mail_inbox.reply_default') }}">{{ $inbox->reply_text }}</textarea>
+                    <p class="field-hint">{{ __('mail_inbox.reply_hint') }}</p>
+                </div>
+                <div class="field">
+                    <label for="mail-smtp-host">{{ __('mail_inbox.smtp_host') }}</label>
+                    <input id="mail-smtp-host" name="smtp_host" value="{{ $inbox->smtp_host }}" placeholder="smtp.example.com" autocomplete="off" spellcheck="false">
+                    <p class="field-hint">{{ __('mail_inbox.smtp_hint') }}</p>
+                </div>
+                <fieldset>
+                    <legend>{{ __('mail_inbox.security') }}</legend>
+                    <span class="button-choice" data-choice>
+                        <input type="hidden" name="smtp_security" value="{{ $inbox->smtp_security }}">
+                        <span class="switcher" role="group" aria-label="{{ __('mail_inbox.security') }}">
+                            @foreach (\App\Domain\Mail\MailInbox::SECURITY as $value)
+                                <button type="button" data-value="{{ $value }}" aria-pressed="{{ $inbox->smtp_security === $value ? 'true' : 'false' }}">{{ __('mail_inbox.security_choice.'.$value) }}</button>
+                            @endforeach
+                        </span>
+                    </span>
+                </fieldset>
+                <div class="field">
+                    <label for="mail-smtp-port">{{ __('mail_inbox.port') }}</label>
+                    <input id="mail-smtp-port" name="smtp_port" type="number" inputmode="numeric" min="1" max="65535" value="{{ $inbox->smtp_port }}">
+                </div>
+            </section>
             <noscript><button type="submit">{{ __('mail_inbox.save') }}</button></noscript>
         </form>
         <form id="mail-test" method="post" action="{{ route('inbox.mail.test') }}" data-mail-action>

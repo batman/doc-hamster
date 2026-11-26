@@ -10,6 +10,7 @@ use App\Domain\Documents\DocumentIntake;
 use App\Domain\Documents\TextPdf;
 use App\Domain\Log\LogEntry;
 use App\Jobs\Net\ImapClient;
+use App\Jobs\Net\SmtpSender;
 use Closure;
 use finfo;
 use Illuminate\Http\UploadedFile;
@@ -44,6 +45,9 @@ final class MailFetch
     /** @var (Closure(MailInbox): Mailbox)|null tests put a fake mailbox here */
     public static ?Closure $connect = null;
 
+    /** @var (Closure(MailInbox): void)|null tests check the outgoing server here */
+    public static ?Closure $check = null;
+
     public static function open(MailInbox $inbox): Mailbox
     {
         $mailbox = self::$connect !== null ? (self::$connect)($inbox) : new ImapClient($inbox->host, $inbox->port, $inbox->security);
@@ -63,8 +67,16 @@ final class MailFetch
             $mailbox = self::open($inbox);
             $count = count($mailbox->inbox());
             $mailbox->close();
+            $message = trans_choice('mail_inbox.test_ok', $count, ['count' => $count]);
+            if ($inbox->reply_enabled && $inbox->smtp_host !== '') {
+                if ($inbox->replyFrom() === null) {
+                    return [false, __('mail_inbox.test_failed', ['message' => __('mail_inbox.errors.smtp_from')])];
+                }
+                self::$check !== null ? (self::$check)($inbox) : SmtpSender::check($inbox);
+                $message .= ' '.__('mail_inbox.test_smtp_ok');
+            }
 
-            return [true, trans_choice('mail_inbox.test_ok', $count, ['count' => $count])];
+            return [true, $message];
         } catch (Throwable $error) {
             return [false, __('mail_inbox.test_failed', ['message' => self::message($error)])];
         }
@@ -108,19 +120,21 @@ final class MailFetch
      * What one mail becomes – for the fetch and the tests.
      *
      * @param  array<string, string|null>  $allowed  address => user id
-     * @return array{status: 'stored'|'rejected', reason: string, documents: list<Document>}
+     * @return array{status: 'stored'|'rejected', reason: string, documents: list<Document>, received: list<string>, known: list<string>, skipped: list<string>}
      */
     public static function process(MailMessage $mail, MailInbox $inbox, array $allowed): array
     {
-        if ($mail->from === '' || ! array_key_exists($mail->from, $allowed)) {
-            return ['status' => 'rejected', 'reason' => 'sender', 'documents' => []];
+        $none = ['documents' => [], 'received' => [], 'known' => [], 'skipped' => []];
+        $entry = MailInbox::match($allowed, $mail->from);
+        if ($entry === null) {
+            return ['status' => 'rejected', 'reason' => 'sender', ...$none];
         }
         if ($mail->authentication() === 'fail') {
-            return ['status' => 'rejected', 'reason' => 'forged', 'documents' => []];
+            return ['status' => 'rejected', 'reason' => 'forged', ...$none];
         }
-        $userId = $allowed[$mail->from] ?? $inbox->user_id;
+        $userId = $allowed[$entry] ?? $inbox->user_id;
         if ($userId === null) {
-            return ['status' => 'rejected', 'reason' => 'nobody', 'documents' => []];
+            return ['status' => 'rejected', 'reason' => 'nobody', ...$none];
         }
 
         // The attachments docHamster takes; the others are named in the note.
@@ -153,15 +167,20 @@ final class MailFetch
         ]).($skipped !== [] ? "\n".__('mail_inbox.note_skipped', ['files' => implode(', ', $skipped)]) : ''));
 
         $documents = [];
+        $received = [];
+        $known = [];
         foreach ($files as $file) {
-            $known = DocumentIntake::known(hash('sha256', $file['bytes']));
-            if ($known !== null) {
-                continue; // here already (or in the Papierkorb): never stored twice
+            $label = $file['title'] ?? $file['name'];
+            if (DocumentIntake::known(hash('sha256', $file['bytes'])) !== null) {
+                $known[] = $label; // here already (or in the Papierkorb): never stored twice
+
+                continue;
             }
             $documents[] = self::store($file, $inbox, $userId, $note);
+            $received[] = $label;
         }
 
-        return ['status' => 'stored', 'reason' => '', 'documents' => $documents];
+        return ['status' => 'stored', 'reason' => '', 'documents' => $documents, 'received' => $received, 'known' => $known, 'skipped' => $skipped];
     }
 
     /**
@@ -197,6 +216,7 @@ final class MailFetch
             return ['documents' => 0, 'rejected' => true];
         }
         $mailbox->move($uid, self::DONE);
+        MailReply::after($mail, $inbox, $outcome['received'], $outcome['known'], $outcome['skipped']);
 
         return ['documents' => count($outcome['documents']), 'rejected' => false];
     }
