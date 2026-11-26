@@ -78,6 +78,9 @@
    (Go 2026-11-07, point 4). Windows reach the top with their background and keep their content below the gap. */
 @media (min-width: 64rem) {
     .shell:not(:has(> .side-plain)) .content { height: 100vh; padding-top: 3.5rem; overflow: auto; }
+    /* Windows fill the height exactly and scroll inside themselves: the area only scrolls sideways, so the wheel over the
+       edge between two windows can no longer push the whole page up. */
+    .shell:not(:has(> .side-plain)) .content:has(> .page-windows) { overflow-y: hidden; }
     /* Menu hidden: only the menu button is left, the first strip slides under it (point 5). */
     :is(html.nav-closed, .shell.nav-closed) .side:not(.side-plain) { position: fixed; top: 0; left: 0; height: 3.5rem; }
     /* A shade at the edge while there is more to scroll sideways (A6). */
