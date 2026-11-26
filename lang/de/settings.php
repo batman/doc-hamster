@@ -64,7 +64,7 @@ return [
         'update' => ['title' => 'Software', 'text' => 'Version, Module und Datenpakete'],
         'phone' => ['title' => 'Handy-Test', 'text' => 'Prüfen, ob Ihr Handy alles kann'],
         'printer' => ['title' => 'Drucker', 'text' => 'Drucker „docHamster“ einrichten, verbundene Computer'],
-        'mail' => ['title' => 'E-Mail', 'text' => 'Dokumente per E-Mail in den Posteingang (kommt bald)'],
+        'mail' => ['title' => 'E-Mail', 'text' => 'Weitergeleitete E-Mails und Belege in den Posteingang'],
         'devices' => ['title' => 'Geräte', 'text' => 'Handys, die Dokumente in den Posteingang teilen'],
         'log' => ['title' => 'Alle Logbücher', 'text' => 'Ereignisse und Fehler aller Logbücher'],
         'log_general' => ['title' => 'Allgemein', 'text' => 'Anmelden, Hochladen, Ändern, Fehler'],

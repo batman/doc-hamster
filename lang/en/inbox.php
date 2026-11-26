@@ -40,6 +40,4 @@ return [
         'phone' => 'Nothing new from a phone.',
         'assistant' => 'Nothing new from the assistant. With the right “Upload documents” it puts receipts and important e-mails here.',
     ],
-    'mail_title' => 'E-mail',
-    'mail_soon' => 'Sending documents by e-mail comes soon. What arrives then shows in the inbox under "E-mail".',
 ];

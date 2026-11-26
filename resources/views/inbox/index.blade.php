@@ -25,6 +25,13 @@
                 @if ($setup !== null && Route::has($setup) && Gate::allows($source === 'assistant' ? 'assistant.manage' : 'documents.upload'))
                     <a class="icon-button" href="{{ route($setup) }}" data-window aria-label="{{ __('inbox.setup.'.$source) }}" data-tooltip="{{ __('inbox.setup.'.$source) }}"><x-icon name="settings" /></a>
                 @endif
+                @if ($mailInbox !== null && in_array($source, [null, 'mail'], true))
+                    {{-- Point 48 (A118, A124): fetch the Mail-Eingang – on click, and by itself when the window opens (at most every few minutes). --}}
+                    <form method="post" action="{{ route('inbox.mail.fetch') }}" data-mail-action @if ($mailInbox) data-mail-auto @endif data-failed="{{ __('mail_inbox.fetch_failed', ['message' => '']) }}">
+                        @csrf
+                        <button type="submit" class="icon-button" aria-label="{{ __('mail_inbox.fetch') }}" data-tooltip="{{ __('mail_inbox.fetch') }}"><x-icon name="refresh" /></button>
+                    </form>
+                @endif
                 @if ($documents->isNotEmpty())
                     <form method="post" action="{{ route('inbox.done-all') }}" data-inbox-action>
                         @csrf

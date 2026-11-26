@@ -50,7 +50,7 @@ return [
         'auth' => ['login' => 'Signed in', 'logout' => 'Signed out', 'failed' => 'Sign-in failed (:name)', 'session_ended' => 'Device signed out', 'password_reset_by_mail' => 'Password set again by e-mail link', 'sessions_ended' => 'All other devices signed out'],
         'log' => ['cleared' => 'Logbooks emptied: :books'],
         'document' => [
-            'uploaded' => 'Document uploaded', 'uploaded_assistant' => 'Uploaded by the assistant', 'created' => 'Document created', 'changed' => 'Document changed',
+            'uploaded' => 'Document uploaded', 'uploaded_assistant' => 'Uploaded by the assistant', 'uploaded_mail' => 'Arrived by e-mail', 'created' => 'Document created', 'changed' => 'Document changed',
             'moved' => 'Document moved', 'trashed' => 'Moved to the bin', 'restored' => 'Restored from the bin',
             'purged' => 'Deleted for good', 'tags_changed' => 'Tags changed', 'taken_over' => 'Document taken over',
             'viewed' => 'Viewed', 'file_downloaded' => 'File downloaded',

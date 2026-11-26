@@ -88,4 +88,16 @@ final class DocumentIntake
 
         return $document;
     }
+
+    /** Point 45/48: a document with this file (SHA-256 of its bytes) – one that is there wins over one in the Papierkorb; one being deleted for good counts as gone. */
+    public static function known(string $sha): ?Document
+    {
+        $ids = DocumentFile::query()->where('sha256', $sha)->pluck('document_id')->all();
+        if ($ids === []) {
+            return null;
+        }
+
+        return Document::query()->withTrashed()->whereIn('id', $ids)->whereNull('purge_after')
+            ->orderByRaw('case when deleted_at is null then 0 else 1 end')->first();
+    }
 }

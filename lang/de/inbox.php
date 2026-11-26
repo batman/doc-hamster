@@ -41,6 +41,4 @@ return [
         'phone' => 'Nichts Neues vom Handy.',
         'assistant' => 'Nichts Neues vom Assistenten. Mit dem Recht „Dokumente hochladen“ legt er Belege und wichtige E-Mails hier ab.',
     ],
-    'mail_title' => 'E-Mail',
-    'mail_soon' => 'Dokumente per E-Mail schicken kommt bald. Was dann ankommt, steht im Posteingang unter „E-Mail“.',
 ];

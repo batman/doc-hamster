@@ -38,6 +38,7 @@ use App\Http\Controllers\GiroCodeController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InboxController;
 use App\Http\Controllers\LogController;
+use App\Http\Controllers\MailInboxController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\NoteColumnController;
@@ -199,7 +200,12 @@ Route::middleware(['auth', 'org'])->group(function (): void {
     // Einstellungen → Eingang (point 153.5; before settings/{group}): the sources of the Posteingang.
     // Drucker (point 127): each person's own computers with the printer "docHamster"; the old address redirects.
     Route::redirect('settings/printer', '/settings/eingang/printer');
-    Route::view('settings/eingang/mail', 'settings.mail')->middleware('can:documents.upload')->name('inbox.mail');
+    // Point 48: the Mail-Eingang – everyone who uploads sees it, the owner's right sets it up.
+    Route::get('settings/eingang/mail', [MailInboxController::class, 'show'])->middleware('can:documents.upload')->name('inbox.mail');
+    Route::middleware('can:settings.manage')->group(function (): void {
+        Route::post('settings/eingang/mail', [MailInboxController::class, 'save'])->name('inbox.mail.save');
+        Route::post('settings/eingang/mail/test', [MailInboxController::class, 'test'])->middleware('throttle:10,1')->name('inbox.mail.test');
+    });
     Route::middleware('can:documents.upload')->prefix('settings/eingang/printer')->name('printers.')->group(function (): void {
         Route::get('/', [PrinterSettingsController::class, 'index'])->name('index');
         Route::post('setup', [PrinterSettingsController::class, 'setup'])->name('setup');
@@ -282,6 +288,7 @@ Route::middleware(['auth', 'org'])->group(function (): void {
         Route::get('inbox', [InboxController::class, 'index'])->name('inbox.index');
         Route::post('inbox/done', [InboxController::class, 'doneAll'])->name('inbox.done-all');
         Route::post('inbox/{id}/done', [InboxController::class, 'done'])->name('inbox.done');
+        Route::post('inbox/mail/fetch', [MailInboxController::class, 'fetch'])->middleware('throttle:20,1')->name('inbox.mail.fetch');
         Route::redirect('print-tray', '/inbox?source=printer');
         Route::redirect('mail-tray', '/inbox?source=mail');
     });

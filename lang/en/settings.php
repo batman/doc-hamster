@@ -64,7 +64,7 @@ return [
         'account' => ['title' => 'My account', 'text' => 'Name, password and signed-in devices'],
         'phone' => ['title' => 'Phone test', 'text' => 'Check whether your phone can do everything'],
         'printer' => ['title' => 'Printer', 'text' => 'Set up the printer "docHamster", connected computers'],
-        'mail' => ['title' => 'E-mail', 'text' => 'Documents by e-mail into the inbox (coming soon)'],
+        'mail' => ['title' => 'E-mail', 'text' => 'Forwarded e-mails and receipts into the inbox'],
         'devices' => ['title' => 'Devices', 'text' => 'Phones that share documents into the inbox'],
         'log' => ['title' => 'All logbooks', 'text' => 'Events and errors of every logbook'],
         'log_general' => ['title' => 'General', 'text' => 'Sign-ins, uploads, changes, errors'],

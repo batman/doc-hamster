@@ -8,6 +8,7 @@ use App\Domain\Audit\AuditLog;
 use App\Domain\Documents\Document;
 use App\Domain\Documents\Folder;
 use App\Domain\Documents\Inbox;
+use App\Domain\Mail\MailInbox;
 use App\Domain\Org\CurrentOrg;
 use App\Domain\Org\Permission;
 use App\Domain\Printing\Printer;
@@ -38,6 +39,8 @@ final class InboxController
             // A360: "Ablegen in …" – the folders filed into last on top, below the whole tree.
             'folders' => Folder::flat(),
             'recent' => Inbox::recentFolders($org->id(), $org->membership()->user_id),
+            // Point 48: the Mail-Eingang's button – null while it is not set up or off; true when the automatic fetch is due (A124).
+            'mailInbox' => ($mail = MailInbox::current())->ready() ? $mail->due() : null,
             // A266: until a computer is paired, the empty printer tab points to Einstellungen → Eingang → Drucker.
             'hasPrinter' => $source !== 'printer' || Printer::query()->where('user_id', $org->membership()->user_id)
                 ->whereNotNull('token_hash')->whereNull('revoked_at')->exists(),

@@ -77,4 +77,56 @@
         DocHamster.uploadFiles(files, { url: form.action, folder: form.querySelector('[name="folder"]')?.value ?? '', name: win.dataset.windowTitle ?? '', after: () => reload(win) })
             .finally(() => reload(win));
     });
+
+    // --- Mail-Eingang (point 48) -----------------------------------------------------------------------------------
+    // form[data-mail-action]: "Postfach abrufen" in the head (A118) and "Verbindung testen" in Einstellungen → E-Mail;
+    // the button spins, the answer becomes the toast, new documents reload the window. form[data-mail-auto]: the same
+    // fetch once when the Posteingang opens (A124; the server says whether it is due) – quiet unless something came.
+    const mailPost = (form, auto) => {
+        const body = new FormData(form);
+        if (auto) body.set('auto', '1');
+        return fetch(form.action, { method: 'POST', body, credentials: 'same-origin', headers: { Accept: 'application/json' } })
+            .then(response => response.json().catch(() => ({})).then(data => ({ ok: response.ok, data })));
+    };
+    const afterMail = (form, data) => {
+        const win = winOf(form);
+        if (win && (data.documents ?? 0) > 0) reload(win);
+    };
+
+    document.addEventListener('submit', event => {
+        const form = event.target.closest?.('form[data-mail-action]');
+        if (!form) {
+            return;
+        }
+        event.preventDefault();
+        const button = form.querySelector('button[type="submit"]') ?? document.querySelector(`button[form="${form.id}"]`);
+        button?.setAttribute('disabled', '');
+        button?.classList.add('is-busy');
+        mailPost(form, false)
+            .then(({ ok, data }) => {
+                if (data.message) DocHamster.toast?.(data.message, { error: !ok });
+                afterMail(form, data);
+            })
+            .catch(() => DocHamster.toast?.(form.dataset.failed ?? '', { error: true }))
+            .finally(() => {
+                button?.removeAttribute('disabled');
+                button?.classList.remove('is-busy');
+            });
+    });
+
+    DocHamster.on('window:open', root => {
+        const form = root?.querySelector?.('form[data-mail-auto]');
+        if (!form) {
+            return;
+        }
+        form.removeAttribute('data-mail-auto');
+        mailPost(form, true)
+            .then(({ ok, data }) => {
+                if (ok && (data.documents ?? 0) > 0) {
+                    DocHamster.toast?.(data.message);
+                    afterMail(form, data);
+                }
+            })
+            .catch(() => { /* offline: the button is still there */ });
+    });
 })();

@@ -8,7 +8,6 @@ use App\Domain\Assistant\AssistantAccess;
 use App\Domain\Assistant\Proposal;
 use App\Domain\Audit\AuditLog;
 use App\Domain\Documents\Document;
-use App\Domain\Documents\DocumentFile;
 use App\Domain\Documents\DocumentIntake;
 use App\Domain\Documents\Folder;
 use App\Domain\Org\CurrentOrg;
@@ -92,7 +91,7 @@ final class McpUpload
         $reason = mb_substr($text('reason'), 0, 1000);
 
         // A110: the same file is there already – or in the Papierkorb, where only the person brings it back.
-        $known = self::known(hash('sha256', $bytes));
+        $known = DocumentIntake::known(hash('sha256', $bytes));
         if ($known !== null) {
             if (! $known->trashed()) {
                 $visible = Document::query()->visibleTo($userId, Gate::allows(Permission::ViewAllDocuments->value))->whereKey($known->id)->exists();
@@ -137,18 +136,6 @@ final class McpUpload
             'message' => 'Stored in the Posteingang (source "Assistent"); the text recognition reads it now.'
                 .($text('folder') !== '' && $folder === null ? ' The folder "'.$text('folder').'" was not found – use list_folders.' : ''),
         ], static fn (mixed $v): bool => $v !== []))];
-    }
-
-    /** A document with this file – one that is there wins over one in the Papierkorb; one being deleted for good counts as gone. */
-    private static function known(string $sha): ?Document
-    {
-        $ids = DocumentFile::query()->where('sha256', $sha)->pluck('document_id')->all();
-        if ($ids === []) {
-            return null;
-        }
-
-        return Document::query()->withTrashed()->whereIn('id', $ids)->whereNull('purge_after')
-            ->orderByRaw('case when deleted_at is null then 0 else 1 end')->first();
     }
 
     /** A folder the person may file into, by id or by its exact name (only when that name is unique). */

@@ -53,7 +53,7 @@ return [
         'auth' => ['login' => 'Angemeldet', 'logout' => 'Abgemeldet', 'failed' => 'Anmeldung fehlgeschlagen (:name)', 'session_ended' => 'Gerät abgemeldet', 'password_reset_by_mail' => 'Passwort per E-Mail-Link neu gesetzt', 'sessions_ended' => 'Alle anderen Geräte abgemeldet'],
         'log' => ['cleared' => 'Logbücher geleert: :books'],
         'document' => [
-            'uploaded' => 'Dokument hochgeladen', 'uploaded_assistant' => 'Vom Assistenten hochgeladen', 'created' => 'Dokument angelegt', 'changed' => 'Dokument geändert',
+            'uploaded' => 'Dokument hochgeladen', 'uploaded_assistant' => 'Vom Assistenten hochgeladen', 'uploaded_mail' => 'Per E-Mail angekommen', 'created' => 'Dokument angelegt', 'changed' => 'Dokument geändert',
             'moved' => 'Dokument verschoben', 'trashed' => 'In den Papierkorb gelegt', 'restored' => 'Aus dem Papierkorb geholt',
             'purged' => 'Endgültig gelöscht', 'tags_changed' => 'Tags geändert', 'taken_over' => 'Dokument übernommen',
             'viewed' => 'Angesehen', 'file_downloaded' => 'Datei heruntergeladen',
